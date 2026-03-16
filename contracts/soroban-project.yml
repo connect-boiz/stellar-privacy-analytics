@@ -1,0 +1,83 @@
+name: stellar-analytics
+version: "1.0.0"
+description: "Privacy-preserving analytics smart contracts on Stellar blockchain"
+
+dependencies:
+  - name: soroban-sdk
+    version: "^20.0.0"
+
+networks:
+  standalone:
+    passphrase: "Standalone Network ; February 2017"
+    network_id: "Standalone Network ; February 2017"
+    friendbot_url: "https://friendbot-futurenet.stellar.org"
+  
+  testnet:
+    passphrase: "Test SDF Network ; September 2015"
+    network_id: "Test SDF Network ; September 2015"
+    friendbot_url: "https://friendbot.stellar.org"
+  
+  futurenet:
+    passphrase: "Test SDF Future Network ; October 2022"
+    network_id: "Test SDF Future Network ; October 2022"
+    friendbot_url: "https://friendbot-futurenet.stellar.org"
+  
+  mainnet:
+    passphrase: "Public Global Stellar Network ; September 2015"
+    network_id: "Public Global Stellar Network ; September 2015"
+
+contracts:
+  stellar_analytics:
+    type: rust
+    path: "./src/stellar_analytics.rs"
+    wasm_path: "./target/wasm32-unknown-unknown/release/stellar_analytics.wasm"
+    
+  privacy_oracle:
+    type: rust
+    path: "./src/privacy_oracle.rs"
+    wasm_path: "./target/wasm32-unknown-unknown/release/privacy_oracle.wasm"
+
+build:
+  target: "wasm32-unknown-unknown"
+  release: true
+
+test:
+  network: "standalone"
+  accounts:
+    - name: admin
+      secret_key: "SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    - name: user1
+      secret_key: "SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    - name: user2
+      secret_key: "SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"
+
+deploy:
+  testnet:
+    stellar_analytics:
+      wasm_hash: "auto"
+      source_account: "admin"
+      options:
+        - --network testnet
+        - --source admin
+    
+    privacy_oracle:
+      wasm_hash: "auto"
+      source_account: "admin"
+      options:
+        - --network testnet
+        - --source admin
+  
+  mainnet:
+    stellar_analytics:
+      wasm_hash: "auto"
+      source_account: "admin"
+      options:
+        - --network mainnet
+        - --source admin
+    
+    privacy_oracle:
+      wasm_hash: "auto"
+      source_account: "admin"
+      options:
+        - --network mainnet
+        - --source admin

@@ -1,0 +1,42 @@
+[package]
+name = "stellar-analytics"
+version = "1.0.0"
+edition = "2021"
+description = "Privacy-preserving analytics smart contracts on Stellar blockchain"
+authors = ["Stellar Team <team@stellar-ecosystem.com>"]
+license = "MIT"
+repository = "https://github.com/your-org/stellar"
+homepage = "https://stellar-ecosystem.com"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = "20.0.0"
+soroban-sdk-macros = "20.0.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+hmac = "0.12"
+rand = { version = "0.8", features = ["std_rng"] }
+
+[dev-dependencies]
+soroban-sdk = { version = "20.0.0", features = ["testutils"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.release-with-overflow]
+inherits = "release"
+overflow-checks = true
+
+[[bin]]
+name = "stellar_analytics"
+path = "src/stellar_analytics.rs"
+
+[[bin]]
+name = "privacy_oracle"
+path = "src/privacy_oracle.rs"
