@@ -1,0 +1,28 @@
+{
+  "payload_id": "payload_1234567890abcdef",
+  "schema_id": "schema_abcdef1234567890",
+  "provider_id": "GD5KJPMHRNCX5GBWHN7MUYXDQZI6J5X2K6LYZMQZJIQJ2X2LHXQYQYQ",
+  "data_hash": "sha256_hash_of_encrypted_data",
+  "encrypted_fields": {
+    "customer_id": "enc_A1B2C3D4E5F6789012345678901234567890ABCDEF",
+    "transaction_amount": "enc_F1E2D3C4B5A6987012345678901234567890ABCDEF",
+    "transaction_date": "enc_1234567890ABCDEF1234567890ABCDEF12345678",
+    "customer_age": "enc_ABCDEF12345678901234567890ABCDEF12345678",
+    "product_category": "enc_567890ABCDEF1234567890ABCDEF1234567890AB"
+  },
+  "metadata": {
+    "timestamp": "2024-03-15T10:30:00Z",
+    "provider_id": "GD5KJPMHRNCX5GBWHN7MUYXDQZI6J5X2K6LYZMQZJIQJ2X2LHXQYQYQ",
+    "data_classification": "sensitive",
+    "retention_period": "365",
+    "batch_id": "batch_20240315_001",
+    "encryption_algorithm": "AES-256-GCM",
+    "key_derivation": "PBKDF2"
+  },
+  "privacy_metadata": {
+    "epsilon_spent": 50,
+    "noise_applied": true,
+    "differential_privacy": true,
+    "aggregation_ready": true
+  }
+}

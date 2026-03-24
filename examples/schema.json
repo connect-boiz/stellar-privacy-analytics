@@ -1,0 +1,57 @@
+{
+  "name": "Customer Analytics Schema",
+  "version": "1.0",
+  "org_id": "GD5KJPMHRNCX5GBWHN7MUYXDQZI6J5X2K6LYZMQZJIQJ2X2LHXQYQYQ",
+  "description": "Schema for customer analytics data with privacy requirements",
+  "fields": [
+    {
+      "name": "customer_id",
+      "type": "encrypted_string",
+      "required": true,
+      "min_length": 10,
+      "max_length": 256,
+      "description": "Encrypted customer identifier"
+    },
+    {
+      "name": "transaction_amount",
+      "type": "encrypted_float",
+      "required": true,
+      "min_value": 0,
+      "max_value": 1000000,
+      "description": "Encrypted transaction amount"
+    },
+    {
+      "name": "transaction_date",
+      "type": "encrypted_integer",
+      "required": true,
+      "description": "Unix timestamp of transaction"
+    },
+    {
+      "name": "customer_age",
+      "type": "encrypted_integer",
+      "required": false,
+      "min_value": 18,
+      "max_value": 120,
+      "description": "Customer age range"
+    },
+    {
+      "name": "product_category",
+      "type": "encrypted_string",
+      "required": true,
+      "max_length": 100,
+      "description": "Product category identifier"
+    }
+  ],
+  "required_metadata": [
+    "timestamp",
+    "provider_id",
+    "data_classification",
+    "retention_period"
+  ],
+  "privacy_settings": {
+    "epsilon_budget": 1000,
+    "delta_threshold": 0.0001,
+    "noise_multiplier": 1.5,
+    "aggregation_allowed": ["sum", "average", "count"]
+  }
+}
