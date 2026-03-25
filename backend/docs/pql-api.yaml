@@ -1,0 +1,1057 @@
+openapi: 3.0.3
+info:
+  title: Stellar Privacy-Preserving Query Language API
+  description: |
+    RESTful API for executing privacy-preserving analytical queries using the Privacy-Preserving Query Language (PQL).
+    
+    This API provides secure access to differential privacy-protected data analysis with strict privacy guarantees,
+    query validation, and comprehensive audit logging.
+  
+  version: 1.0.0
+  contact:
+    name: Stellar API Team
+    email: api@stellar-privacy.com
+    url: https://stellar-privacy.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.stellar-privacy.com/v1
+    description: Production server
+  - url: https://staging-api.stellar-privacy.com/v1
+    description: Staging server
+  - url: http://localhost:3001/v1
+    description: Development server
+
+security:
+  - StellarAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /query:
+    post:
+      operationId: executeQuery
+      summary: Execute a privacy-preserving query
+      description: |
+        Execute a PQL query with differential privacy guarantees. The query is validated,
+        analyzed for complexity, and executed with appropriate privacy budget allocation.
+      tags:
+        - Query Execution
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+            examples:
+              simpleCount:
+                summary: Simple count query
+                value:
+                  query: "SELECT COUNT(*) FROM users WHERE age > 25"
+                  privacyBudget:
+                    epsilon: 0.1
+                    delta: 1e-6
+                  options:
+                    timeout: 30
+              complexAggregation:
+                summary: Complex aggregation with grouping
+                value:
+                  query: "SELECT department, AVG(salary) as avg_salary, COUNT(*) as employee_count FROM employees GROUP BY department"
+                  privacyBudget:
+                    epsilon: 0.5
+                    delta: 1e-5
+                  options:
+                    timeout: 60
+                    maxGroups: 10
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+              examples:
+                successfulQuery:
+                  summary: Successful query response
+                  value:
+                    success: true
+                    data:
+                      results:
+                        - { "count": 1250 }
+                        - { "department": "Engineering", "avg_salary": 95000, "employee_count": 150 }
+                        - { "department": "Sales", "avg_salary": 72000, "employee_count": 200 }
+                      metadata:
+                        queryId: "q_1234567890"
+                        executionTime: 1250
+                        privacyBudgetUsed:
+                          epsilon: 0.08
+                          delta: 8e-7
+                        noiseAdded: true
+                        rowCount: 3
+                    traceId: "trace_abc123"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /query/validate:
+    post:
+      operationId: validateQuery
+      summary: Validate a PQL query without execution
+      description: |
+        Validate the syntax and analyze the complexity of a PQL query without executing it.
+        Useful for pre-validation and cost estimation.
+      tags:
+        - Query Validation
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequest'
+      responses:
+        '200':
+          description: Query validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /query/estimate:
+    post:
+      operationId: estimateQuery
+      summary: Estimate query cost and complexity
+      description: |
+        Estimate the computational cost, privacy budget consumption, and execution time
+        for a query without actually executing it.
+      tags:
+        - Query Estimation
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstimationRequest'
+      responses:
+        '200':
+          description: Cost estimation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /query/status/{queryId}:
+    get:
+      operationId: getQueryStatus
+      summary: Get query execution status
+      description: |
+        Get the current status of an asynchronous query execution.
+        Useful for long-running queries.
+      tags:
+        - Query Status
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^q_[a-zA-Z0-9]{10}$'
+          description: Unique identifier for the query
+      responses:
+        '200':
+          description: Query status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /query/history:
+    get:
+      operationId: getQueryHistory
+      summary: Get user's query history
+      description: |
+        Retrieve the query execution history for the authenticated user with pagination.
+      tags:
+        - Query History
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of records to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of records to skip
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [completed, failed, running, cancelled]
+          description: Filter by query status
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter queries from this date onwards
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter queries up to this date
+      responses:
+        '200':
+          description: Query history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /query/cancel/{queryId}:
+    delete:
+      operationId: cancelQuery
+      summary: Cancel a running query
+      description: |
+        Cancel an asynchronous query that is currently running.
+      tags:
+        - Query Management
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      parameters:
+        - name: queryId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^q_[a-zA-Z0-9]{10}$'
+          description: Unique identifier for the query
+      responses:
+        '200':
+          description: Query cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Query cannot be cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /privacy/budget:
+    get:
+      operationId: getPrivacyBudget
+      summary: Get user's privacy budget status
+      description: |
+        Get the current privacy budget status for the authenticated user,
+        including remaining budget and usage history.
+      tags:
+        - Privacy Management
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      responses:
+        '200':
+          description: Privacy budget information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyBudgetResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /schemas:
+    get:
+      operationId: getDataSchemas
+      summary: Get available data schemas
+      description: |
+        Get the available data schemas and table information that can be queried
+        using PQL. This helps users construct valid queries.
+      tags:
+        - Schema Information
+      security:
+        - StellarAuth: []
+          ApiKeyAuth: []
+      responses:
+        '200':
+          description: Data schemas retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    StellarAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Stellar-signed JWT token containing user identity and permissions.
+        The token must be signed by Stellar's private key and include the following claims:
+        - sub: User identifier
+        - exp: Expiration time
+        - iat: Issued at time
+        - permissions: Array of granted permissions
+        - rateLimit: User's rate limit tier
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key for service-to-service authentication.
+        Must be kept secure and should only be used in trusted environments.
+
+  schemas:
+    QueryRequest:
+      type: object
+      required:
+        - query
+        - privacyBudget
+      properties:
+        query:
+          type: string
+          description: PQL query to execute
+          minLength: 10
+          maxLength: 10000
+          example: "SELECT COUNT(*) FROM users WHERE age > 25"
+        privacyBudget:
+          $ref: '#/components/schemas/PrivacyBudget'
+        options:
+          $ref: '#/components/schemas/QueryOptions'
+        context:
+          type: object
+          description: Additional context for the query
+          properties:
+            sessionId:
+              type: string
+              description: Session identifier for grouping related queries
+            requestId:
+              type: string
+              description: Client-side request identifier for deduplication
+            metadata:
+              type: object
+              description: Additional metadata
+              additionalProperties: true
+
+    PrivacyBudget:
+      type: object
+      required:
+        - epsilon
+      properties:
+        epsilon:
+          type: number
+          minimum: 0.0001
+          maximum: 1.0
+          description: Epsilon privacy parameter (ε)
+          example: 0.1
+        delta:
+          type: number
+          minimum: 1e-12
+          maximum: 1e-3
+          description: Delta privacy parameter (δ)
+          default: 1e-6
+          example: 1e-6
+
+    QueryOptions:
+      type: object
+      properties:
+        timeout:
+          type: integer
+          minimum: 1
+          maximum: 300
+          default: 30
+          description: Query timeout in seconds
+        maxGroups:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          description: Maximum number of groups in GROUP BY queries
+        maxRows:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Maximum number of rows to return
+        includeNoise:
+          type: boolean
+          default: true
+          description: Whether to add differential privacy noise
+        confidenceLevel:
+          type: number
+          minimum: 0.8
+          maximum: 0.99
+          default: 0.95
+          description: Confidence level for confidence intervals
+
+    QueryResponse:
+      type: object
+      required:
+        - success
+        - data
+        - traceId
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required:
+            - results
+            - metadata
+          properties:
+            results:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+              description: Query results
+            metadata:
+              $ref: '#/components/schemas/QueryMetadata'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Warning messages
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+          description: Unique trace identifier for observability
+          example: "trace_abc123def456"
+
+    QueryMetadata:
+      type: object
+      required:
+        - queryId
+        - executionTime
+        - privacyBudgetUsed
+      properties:
+        queryId:
+          type: string
+          pattern: '^q_[a-zA-Z0-9]{10}$'
+          description: Unique query identifier
+          example: "q_1234567890"
+        executionTime:
+          type: integer
+          description: Execution time in milliseconds
+          example: 1250
+        privacyBudgetUsed:
+          $ref: '#/components/schemas/PrivacyBudget'
+        noiseAdded:
+          type: boolean
+          description: Whether differential privacy noise was added
+          example: true
+        rowCount:
+          type: integer
+          description: Number of rows returned
+          example: 150
+        cacheHit:
+          type: boolean
+          description: Whether the result was served from cache
+          example: false
+        complexity:
+          type: object
+          description: Query complexity metrics
+          properties:
+            joins:
+              type: integer
+              description: Number of join operations
+            aggregations:
+              type: integer
+              description: Number of aggregation operations
+            filters:
+              type: integer
+              description: Number of filter operations
+
+    ValidationRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: PQL query to validate
+          minLength: 10
+          maxLength: 10000
+        options:
+          $ref: '#/components/schemas/QueryOptions'
+
+    ValidationResponse:
+      type: object
+      required:
+        - valid
+        - traceId
+      properties:
+        valid:
+          type: boolean
+          description: Whether the query is valid
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          description: Validation errors if query is invalid
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Validation warnings
+        complexity:
+          $ref: '#/components/schemas/QueryComplexity'
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+          description: Unique trace identifier
+
+    ValidationError:
+      type: object
+      required:
+        - code
+        - message
+        - location
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "SYNTAX_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Unexpected token at line 5, column 10"
+        location:
+          type: object
+          description: Error location in query
+          properties:
+            line:
+              type: integer
+              example: 5
+            column:
+              type: integer
+              example: 10
+            token:
+              type: string
+              example: "FROMX"
+
+    QueryComplexity:
+      type: object
+      properties:
+        score:
+          type: number
+          minimum: 1
+          maximum: 100
+          description: Complexity score (1-100)
+          example: 25
+        estimatedTime:
+          type: integer
+          description: Estimated execution time in milliseconds
+          example: 500
+        estimatedCost:
+          type: number
+          description: Estimated computational cost units
+          example: 15.5
+        operations:
+          type: object
+          description: Breakdown of operations
+          properties:
+            scans:
+              type: integer
+              description: Number of table scans
+            joins:
+              type: integer
+              description: Number of join operations
+            aggregations:
+              type: integer
+              description: Number of aggregation operations
+            filters:
+              type: integer
+              description: Number of filter operations
+
+    EstimationRequest:
+      type: object
+      required:
+        - query
+        - privacyBudget
+      properties:
+        query:
+          type: string
+          description: PQL query to estimate
+          minLength: 10
+          maxLength: 10000
+        privacyBudget:
+          $ref: '#/components/schemas/PrivacyBudget'
+        options:
+          $ref: '#/components/schemas/QueryOptions'
+
+    EstimationResponse:
+      type: object
+      required:
+        - canExecute
+        - traceId
+      properties:
+        canExecute:
+          type: boolean
+          description: Whether the query can be executed
+        reason:
+          type: string
+          description: Reason if query cannot be executed
+        estimatedCost:
+          type: object
+          properties:
+            time:
+              type: integer
+              description: Estimated execution time in milliseconds
+            privacyBudget:
+              $ref: '#/components/schemas/PrivacyBudget'
+            computeUnits:
+              type: number
+              description: Estimated compute units required
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: Optimization recommendations
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+
+    QueryStatusResponse:
+      type: object
+      required:
+        - queryId
+        - status
+        - traceId
+      properties:
+        queryId:
+          type: string
+          pattern: '^q_[a-zA-Z0-9]{10}$'
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+          description: Current query status
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Progress percentage for running queries
+        startedAt:
+          type: string
+          format: date-time
+          description: Query start time
+        completedAt:
+          type: string
+          format: date-time
+          description: Query completion time
+        error:
+          type: string
+          description: Error message if query failed
+        result:
+          $ref: '#/components/schemas/QueryResponse'
+          description: Result if query completed
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+
+    QueryHistoryResponse:
+      type: object
+      required:
+        - queries
+        - total
+        - traceId
+      properties:
+        queries:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryHistoryItem'
+        total:
+          type: integer
+          description: Total number of queries
+        hasMore:
+          type: boolean
+          description: Whether more queries are available
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+
+    QueryHistoryItem:
+      type: object
+      required:
+        - queryId
+        - query
+        - status
+        - createdAt
+      properties:
+        queryId:
+          type: string
+          pattern: '^q_[a-zA-Z0-9]{10}$'
+        query:
+          type: string
+          description: The PQL query
+        status:
+          type: string
+          enum: [completed, failed, running, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+        executionTime:
+          type: integer
+          description: Execution time in milliseconds
+        privacyBudgetUsed:
+          $ref: '#/components/schemas/PrivacyBudget'
+
+    CancelResponse:
+      type: object
+      required:
+        - success
+        - queryId
+        - traceId
+      properties:
+        success:
+          type: boolean
+          example: true
+        queryId:
+          type: string
+          pattern: '^q_[a-zA-Z0-9]{10}$'
+        message:
+          type: string
+          description: Cancellation message
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+
+    PrivacyBudgetResponse:
+      type: object
+      required:
+        - currentBudget
+        - totalBudget
+        - traceId
+      properties:
+        currentBudget:
+          $ref: '#/components/schemas/PrivacyBudget'
+        totalBudget:
+          $ref: '#/components/schemas/PrivacyBudget'
+        usage:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              epsilon:
+                type: number
+              delta:
+                type: number
+              queryCount:
+                type: integer
+        resetDate:
+          type: string
+          format: date-time
+          description: When the budget resets
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+
+    SchemaResponse:
+      type: object
+      required:
+        - schemas
+        - traceId
+      properties:
+        schemas:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSchema'
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+
+    DataSchema:
+      type: object
+      required:
+        - name
+        - columns
+      properties:
+        name:
+          type: string
+          description: Table name
+          example: "users"
+        description:
+          type: string
+          description: Table description
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnDefinition'
+        rowCount:
+          type: integer
+          description: Approximate row count
+        privacyLevel:
+          type: string
+          enum: [public, restricted, confidential]
+          description: Privacy level of the table
+
+    ColumnDefinition:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: Column name
+        type:
+          type: string
+          enum: [string, integer, float, boolean, date, timestamp]
+          description: Column data type
+        nullable:
+          type: boolean
+          default: true
+          description: Whether column can be null
+        description:
+          type: string
+          description: Column description
+        sensitivity:
+          type: string
+          enum: [low, medium, high]
+          description: Sensitivity level for privacy calculations
+
+    Error:
+      type: object
+      required:
+        - error
+        - traceId
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: "INVALID_QUERY"
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Query syntax is invalid"
+            details:
+              type: object
+              description: Additional error details
+              additionalProperties: true
+        traceId:
+          type: string
+          pattern: '^trace_[a-zA-Z0-9]{16}$'
+          description: Unique trace identifier
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalidQuery:
+              summary: Invalid query syntax
+              value:
+                error:
+                  code: "INVALID_QUERY"
+                  message: "Query syntax is invalid"
+                  details:
+                    errors:
+                      - code: "SYNTAX_ERROR"
+                        message: "Unexpected token at line 3, column 15"
+                        location: { line: 3, column: 15, token: "INVALID" }
+                traceId: "trace_abc123def456"
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missingToken:
+              summary: Missing authentication token
+              value:
+                error:
+                  code: "UNAUTHORIZED"
+                  message: "Authentication token is required"
+                traceId: "trace_abc123def456"
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            insufficientPermissions:
+              summary: User lacks required permissions
+              value:
+                error:
+                  code: "FORBIDDEN"
+                  message: "Insufficient permissions to access this resource"
+                traceId: "trace_abc123def456"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            queryNotFound:
+              summary: Query ID not found
+              value:
+                error:
+                  code: "NOT_FOUND"
+                  message: "Query with ID 'q_invalid123' not found"
+                traceId: "trace_abc123def456"
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            rateLimitExceeded:
+              summary: Rate limit exceeded
+              value:
+                error:
+                  code: "RATE_LIMIT_EXCEEDED"
+                  message: "Rate limit exceeded. Try again later."
+                  details:
+                    retryAfter: 60
+                    limit: 100
+                    remaining: 0
+                traceId: "trace_abc123def456"
+      headers:
+        Retry-After:
+          description: Number of seconds to wait before retrying
+          schema:
+            type: integer
+          example: 60
+        X-RateLimit-Limit:
+          description: Rate limit quota
+          schema:
+            type: integer
+          example: 100
+        X-RateLimit-Remaining:
+          description: Remaining requests in current window
+          schema:
+            type: integer
+          example: 0
+        X-RateLimit-Reset:
+          description: Time when rate limit resets
+          schema:
+            type: integer
+          example: 1640995200
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            internalError:
+              summary: Internal server error
+              value:
+                error:
+                  code: "INTERNAL_ERROR"
+                  message: "An internal error occurred"
+                traceId: "trace_abc123def456"
+
+    ServiceUnavailable:
+      description: Service temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            serviceUnavailable:
+              summary: Service unavailable
+              value:
+                error:
+                  code: "SERVICE_UNAVAILABLE"
+                  message: "Service is temporarily unavailable"
+                traceId: "trace_abc123def456"
+
+tags:
+  - name: Query Execution
+    description: Core query execution endpoints
+  - name: Query Validation
+    description: Query validation and syntax checking
+  - name: Query Estimation
+    description: Query cost estimation and analysis
+  - name: Query Status
+    description: Query status tracking and management
+  - name: Query History
+    description: Historical query information
+  - name: Query Management
+    description: Query lifecycle management
+  - name: Privacy Management
+    description: Privacy budget management
+  - name: Schema Information
+    description: Data schema and metadata
