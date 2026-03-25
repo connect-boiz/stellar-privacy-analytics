@@ -12,6 +12,8 @@ import { authRoutes } from './routes/auth';
 import { analyticsRoutes } from './routes/analytics';
 import { dataRoutes } from './routes/data';
 import { privacyRoutes } from './routes/privacy';
+import { queryRoutes } from './routes/query';
+import ipfsRoutes from './routes/ipfs';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { privacyMiddleware } from './middleware/privacy';
@@ -83,6 +85,8 @@ apiRouter.use('/auth', authRoutes);
 apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/data', dataRoutes);
 apiRouter.use('/privacy', privacyRoutes);
+apiRouter.use('/query', queryRoutes);
+apiRouter.use('/ipfs', ipfsRoutes);
 
 app.use('/api/v1', apiRouter);
 
