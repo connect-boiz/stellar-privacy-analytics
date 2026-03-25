@@ -14,11 +14,15 @@ import { dataRoutes } from './routes/data';
 import { privacyRoutes } from './routes/privacy';
 import { queryRoutes } from './routes/query';
 import ipfsRoutes from './routes/ipfs';
+import hsmRoutes from './routes/hsm';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { privacyMiddleware } from './middleware/privacy';
 import { metricsMiddleware } from './middleware/metrics';
 import { logger } from './utils/logger';
+
+// Import HSM integration
+import { getHSMIntegration } from './services/hsmIntegration';
 
 // Load environment variables
 dotenv.config();
@@ -87,6 +91,7 @@ apiRouter.use('/data', dataRoutes);
 apiRouter.use('/privacy', privacyRoutes);
 apiRouter.use('/query', queryRoutes);
 apiRouter.use('/ipfs', ipfsRoutes);
+apiRouter.use('/hsm', hsmRoutes);
 
 app.use('/api/v1', apiRouter);
 
@@ -135,10 +140,39 @@ process.on('uncaughtException', (error) => {
 const PORT = process.env.API_PORT || 3001;
 const HOST = process.env.API_HOST || 'localhost';
 
-server.listen(PORT, () => {
-  logger.info(`🚀 Stellar API Server running on http://${HOST}:${PORT}`);
-  logger.info(`📊 Metrics available on port ${process.env.METRICS_PORT || 9090}`);
-  logger.info(`🔒 Privacy-first mode: ${process.env.PRIVACY_MODE || 'enabled'}`);
+// Initialize HSM integration before starting server
+async function initializeServices() {
+  try {
+    const hsmIntegration = getHSMIntegration({
+      autoInitializeMasterKey: true,
+      enableAutoRecovery: false,
+      auditRetentionDays: 90
+    });
+
+    await hsmIntegration.initialize();
+    logger.info('HSM integration initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize HSM integration:', error);
+    // Continue without HSM for development, but fail in production
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    } else {
+      logger.warn('Continuing without HSM integration in development mode');
+    }
+  }
+}
+
+// Start server after services are initialized
+initializeServices().then(() => {
+  server.listen(PORT, () => {
+    logger.info(`🚀 Stellar API Server running on http://${HOST}:${PORT}`);
+    logger.info(`📊 Metrics available on port ${process.env.METRICS_PORT || 9090}`);
+    logger.info(`🔒 Privacy-first mode: ${process.env.PRIVACY_MODE || 'enabled'}`);
+    logger.info(`🔐 HSM integration: ${getHSMIntegration().isInitialized() ? 'enabled' : 'disabled'}`);
+  });
+}).catch((error) => {
+  logger.error('Failed to initialize services:', error);
+  process.exit(1);
 });
 
 export default app;
