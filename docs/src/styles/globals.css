@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --foreground-rgb: 51, 65, 85;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 241, 245, 249;
+    --background-start-rgb: 15, 23, 42;
+    --background-end-rgb: 30, 41, 59;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Code block styling */
+.prose pre {
+  @apply bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto;
+}
+
+.prose code {
+  @apply bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm font-mono;
+}
+
+.prose pre code {
+  @apply bg-transparent text-inherit p-0;
+}
+
+/* Custom component styles */
+.glass-effect {
+  @apply backdrop-blur-sm bg-white/70 border border-white/20;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+/* Search input styling */
+.search-input {
+  @apply w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+/* Navigation active state */
+.nav-active {
+  @apply bg-blue-50 text-blue-600 border-l-4 border-blue-600;
+}
+
+/* Glossary term styling */
+.glossary-term {
+  @apply text-blue-600 font-medium cursor-pointer hover:text-blue-800 border-b-2 border-dotted border-blue-400;
+}
+
+/* Interactive code block */
+.code-block {
+  @apply relative group;
+}
+
+.copy-button {
+  @apply absolute top-2 right-2 px-2 py-1 text-xs bg-gray-700 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-gray-600;
+}
+
+/* Learning track cards */
+.track-card {
+  @apply bg-white rounded-xl shadow-md p-6 border border-gray-200 hover:shadow-xl transition-shadow duration-300;
+}
+
+.track-card.beginner {
+  @apply border-l-4 border-green-500;
+}
+
+.track-card.provider {
+  @apply border-l-4 border-blue-500;
+}
+
+.track-card.analyst {
+  @apply border-l-4 border-purple-500;
+}
+
+/* Progress indicator */
+.progress-indicator {
+  @apply h-2 bg-gray-200 rounded-full overflow-hidden;
+}
+
+.progress-bar {
+  @apply h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out;
+}
+
+/* Tooltip styling */
+.tooltip {
+  @apply absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-200;
+}
+
+.tooltip.show {
+  @apply opacity-100;
+}
+
+/* Mobile menu */
+.mobile-menu {
+  @apply fixed inset-0 z-50 bg-white transform translate-x-full transition-transform duration-300 ease-in-out;
+}
+
+.mobile-menu.open {
+  @apply translate-x-0;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-after: always;
+  }
+}
