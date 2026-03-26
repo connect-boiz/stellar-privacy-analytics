@@ -15,6 +15,7 @@ import { privacyRoutes } from './routes/privacy';
 import { queryRoutes } from './routes/query';
 import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
+import { mpcRoutes } from './routes/mpc';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { privacyMiddleware } from './middleware/privacy';
@@ -92,6 +93,7 @@ apiRouter.use('/privacy', privacyRoutes);
 apiRouter.use('/query', queryRoutes);
 apiRouter.use('/ipfs', ipfsRoutes);
 apiRouter.use('/hsm', hsmRoutes);
+apiRouter.use('/mpc', mpcRoutes);
 
 app.use('/api/v1', apiRouter);
 
