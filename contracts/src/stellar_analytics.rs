@@ -28,6 +28,11 @@ const DATA_AVAILABILITY_KEY: &str = "DATA_AVAILABILITY";
 const MAX_PRIVACY_BUDGET: i128 = 1000000000000000000; // 1e18 (1000 tokens)
 const DEFAULT_PRIVACY_BUDGET: i128 = 100000000000000000; // 1e17 (100 tokens)
 const MIN_PARTICIPANTS: u32 = 5;
+const MIN_DATASET_SIZE_BYTES: u64 = 1;
+const MAX_DATASET_SIZE_BYTES: u64 = 1_099_511_627_776; // 1 TiB
+const MIN_DATASET_VERSION: u32 = 1;
+const MAX_DATASET_VERSION: u32 = 1_000_000;
+const MAX_PIN_COUNT: u32 = 10_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
@@ -108,6 +113,7 @@ pub enum StellarAnalyticsError {
     DatasetNotFound = 13,
     InvalidDecryptionKey = 14,
     VersionMismatch = 15,
+    InvalidInputRange = 16,
 }
 
 pub struct StellarAnalytics;
@@ -324,11 +330,15 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::RequestAlreadyCancelled);
         }
 
+        if privacy_budget_used < 0 {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
         if privacy_budget_used > request.privacy_budget {
             return Err(StellarAnalyticsError::BudgetExceeded);
         }
 
-        if accuracy > 100 {
+        if accuracy == 0 || accuracy > 100 {
             return Err(StellarAnalyticsError::InvalidConfidence);
         }
 
@@ -616,6 +626,14 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::InvalidCID);
         }
 
+        if size_bytes < MIN_DATASET_SIZE_BYTES || size_bytes > MAX_DATASET_SIZE_BYTES {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
+        if version < MIN_DATASET_VERSION || version > MAX_DATASET_VERSION {
+            return Err(StellarAnalyticsError::VersionMismatch);
+        }
+
         let dataset = IPFSDataset {
             cid: cid.clone(),
             dataset_hash,
@@ -700,6 +718,10 @@ impl StellarAnalytics {
 
         if caller != admin {
             return Err(StellarAnalyticsError::NotAuthorizedOracle);
+        }
+
+        if pin_count > MAX_PIN_COUNT {
+            return Err(StellarAnalyticsError::InvalidInputRange);
         }
 
         let mut availability_map: Map<String, DataAvailability> = env
@@ -806,6 +828,10 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::InvalidCID);
         }
 
+        if size_bytes < MIN_DATASET_SIZE_BYTES || size_bytes > MAX_DATASET_SIZE_BYTES {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
         // Get old dataset to inherit properties
         let mut datasets: Map<String, IPFSDataset> = env
             .storage()
@@ -816,6 +842,10 @@ impl StellarAnalytics {
         let old_dataset = datasets
             .get(old_cid.clone())
             .ok_or(StellarAnalyticsError::DatasetNotFound)?;
+
+        if old_dataset.version >= MAX_DATASET_VERSION {
+            return Err(StellarAnalyticsError::VersionMismatch);
+        }
 
         let new_version = old_dataset.version + 1;
 
