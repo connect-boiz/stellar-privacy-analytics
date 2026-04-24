@@ -10,7 +10,7 @@ import { createServer } from 'http';
 // Import routes and middleware
 import { authRoutes } from './routes/auth';
 import { analyticsRoutes } from './routes/analytics';
-import { dataRoutes } from './routes/data';
+import { dataRoutes, initializeUploadSocket } from './routes/data';
 import { privacyRoutes } from './routes/privacy';
 import { queryRoutes } from './routes/query';
 import ipfsRoutes from './routes/ipfs';
@@ -38,6 +38,15 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
+
+// Initialize WebSocket for upload progress
+const uploadSocket = initializeUploadSocket(server);
+
+// Initialize federated learning WebSocket
+federatedLearning.setSocketIO(uploadSocket);
+
+// Initialize performance service (will be properly injected with pool and redis)
+// initializePerformanceService(new DatabasePerformanceService(pool, redis));
 
 // Security middleware
 app.use(helmet({
