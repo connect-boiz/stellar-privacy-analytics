@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Play, BarChart3, TrendingUp, Users, Target } from 'lucide-react';
+import { Activity, Play, BarChart3, TrendingUp, Users, Target, Code, Settings } from 'lucide-react';
+import { QueryConstructor } from '../components/QueryConstructor';
+import { WalletConnect } from '../components/WalletConnect';
 
 export const Analytics: React.FC = () => {
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'traditional' | 'nocode'>('nocode');
 
   const analysisTypes = [
     {
@@ -90,63 +93,112 @@ export const Analytics: React.FC = () => {
         </div>
       </div>
 
-      {/* Analysis Types */}
+      {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Start New Analysis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {analysisTypes.map((analysis) => {
-            const Icon = analysis.icon;
-            return (
-              <motion.div
-                key={analysis.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                  selectedAnalysis === analysis.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedAnalysis(analysis.id)}
-              >
-                <div className="flex items-start">
-                  <div className={`p-2 rounded-lg ${analysis.color}`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="font-medium text-gray-900">{analysis.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{analysis.description}</p>
-                    <div className="flex items-center mt-2 space-x-4 text-xs text-gray-500">
-                      <span>Privacy: {analysis.privacy}</span>
-                      <span>Duration: {analysis.duration}</span>
+        <div className="flex space-x-4 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('nocode')}
+            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'nocode'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center">
+              <Code className="h-4 w-4 mr-2" />
+              No-Code Query Constructor
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('traditional')}
+            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'traditional'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center">
+              <Settings className="h-4 w-4 mr-2" />
+              Traditional Analysis
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'nocode' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <QueryConstructor />
+          </div>
+          <div className="lg:col-span-1">
+            <WalletConnect requiredBalance={1.0} />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Traditional Analysis Content */}
+      {activeTab === 'traditional' && (
+        <>
+          {/* Analysis Types */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Start New Analysis</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {analysisTypes.map((analysis) => {
+                const Icon = analysis.icon;
+                return (
+                  <motion.div
+                    key={analysis.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                      selectedAnalysis === analysis.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedAnalysis(analysis.id)}
+                  >
+                    <div className="flex items-start">
+                      <div className={`p-2 rounded-lg ${analysis.color}`}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <h3 className="font-medium text-gray-900">{analysis.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{analysis.description}</p>
+                        <div className="flex items-center mt-2 space-x-4 text-xs text-gray-500">
+                          <span>Privacy: {analysis.privacy}</span>
+                          <span>Duration: {analysis.duration}</span>
+                        </div>
+                      </div>
                     </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+            
+            {selectedAnalysis && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 bg-gray-50 rounded-lg"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-gray-900">Ready to start analysis?</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Your data will be processed with maximum privacy protection
+                    </p>
                   </div>
+                  <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Analysis
+                  </button>
                 </div>
               </motion.div>
-            );
-          })}
-        </div>
-        
-        {selectedAnalysis && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 bg-gray-50 rounded-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-gray-900">Ready to start analysis?</h4>
-                <p className="text-sm text-gray-600 mt-1">
-                  Your data will be processed with maximum privacy protection
-                </p>
-              </div>
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Play className="h-4 w-4 mr-2" />
-                Start Analysis
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Recent Analyses */}
       <div className="bg-white rounded-lg shadow p-6">

@@ -3,25 +3,44 @@
 @tailwind utilities;
 
 @layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
   html {
     font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-cyber-dark dark:text-slate-100;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium;
+    @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
+  .btn-cyber {
+    @apply bg-cyber-blue text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(0,240,255,0.4)] active:scale-95 disabled:opacity-50;
+  }
+
   .btn-secondary {
-    @apply bg-gray-200 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium;
+    @apply bg-obsidian-200 text-obsidian-900 px-4 py-2 rounded-lg hover:bg-obsidian-300 transition-colors font-medium dark:bg-obsidian-800 dark:text-obsidian-100 dark:hover:bg-obsidian-700;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow p-6;
+    @apply bg-white rounded-xl shadow-lg p-6 dark:bg-obsidian-900 dark:border dark:border-obsidian-800;
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 dark:bg-obsidian-900/60 dark:border-obsidian-700/30;
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    @apply w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:bg-obsidian-800 dark:border-obsidian-700 dark:text-white dark:focus:ring-cyber-blue;
+  }
+
+  .xray-scan-line {
+    @apply absolute left-0 right-0 h-[2px] bg-cyber-blue shadow-[0_0_8px_#00F0FF] z-10 pointer-events-none;
   }
 }
+

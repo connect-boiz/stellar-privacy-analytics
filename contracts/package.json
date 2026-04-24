@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "cargo build --target wasm32-unknown-unknown --release",
+    "compile": "cargo build --target wasm32-unknown-unknown --release",
     "deploy:testnet": "npm run build && ts-node scripts/deploy.ts testnet",
     "deploy:mainnet": "npm run build && ts-node scripts/deploy.ts mainnet",
     "deploy:local": "npm run build && ts-node scripts/deploy.ts standalone",
@@ -13,9 +14,13 @@
     "lint": "eslint src/**/*.ts test/**/*.ts",
     "lint:fix": "eslint src/**/*.ts test/**/*.ts --fix",
     "type-check": "tsc --noEmit",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "simulate": "soroban contract simulate",
     "verify": "soroban contract verify",
-    "clean": "cargo clean && rimraf dist"
+    "clean": "cargo clean && rimraf dist",
+    "gas-report": "echo 'Gas reporting not implemented for Soroban contracts'",
+    "size": "echo 'Contract size checking not implemented for Soroban contracts'"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^12.0.0",
@@ -29,6 +34,7 @@
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.45.0",
     "jest": "^29.6.0",
+    "prettier": "^3.0.0",
     "rimraf": "^5.0.0",
     "soroban-cli": "^1.0.0",
     "ts-jest": "^29.1.0",

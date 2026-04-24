@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Database, Upload, Lock, Eye, Download, Trash2, Search } from 'lucide-react';
-import { FileUpload } from '../components/FileUpload';
+import { SecureDataUpload } from '../components/SecureDataUpload';
+import { UploadReceipt } from '../lib/stellarWallet';
+import { toast } from 'react-hot-toast';
 
 export const DataManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
+  const [showSecureUpload, setShowSecureUpload] = useState(false);
+  const [recentUploads, setRecentUploads] = useState<UploadReceipt[]>([]);
+
+  const handleUploadComplete = (receipt: UploadReceipt) => {
+    setRecentUploads(prev => [receipt, ...prev]);
+    toast.success('Data uploaded successfully to Stellar blockchain!');
+    setShowSecureUpload(false);
+  };
 
   const datasets = [
     {
@@ -79,31 +89,40 @@ export const DataManagement: React.FC = () => {
       </div>
 
       {/* Upload Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload New Dataset</h2>
-        <FileUpload 
-          maxFileSize={1024 * 1024 * 1024} // 1GB
-          onUploadComplete={(fileName, fileSize) => {
-            // Refresh the dataset list or show success message
-            console.log(`Upload completed: ${fileName} (${fileSize} bytes)`);
-          }}
-        />
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <div className="flex">
-            <Lock className="h-5 w-5 text-blue-400 mt-0.5" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">Enhanced Upload Features</h3>
-              <p className="text-sm text-blue-700 mt-1">
-                • Chunked uploads for large files up to 1GB<br/>
-                • Real-time progress tracking with speed and time estimates<br/>
-                • Pause/resume functionality for interrupted uploads<br/>
-                • Network quality indicators and automatic retry<br/>
-                • AES-256 encryption immediately upon upload
-              </p>
+      {!showSecureUpload ? (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Upload New Dataset</h2>
+            <button
+              onClick={() => setShowSecureUpload(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Secure Upload
+            </button>
+          </div>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer">
+            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="mt-4">
+              <p className="text-lg font-medium text-gray-900">Click to start secure upload</p>
+              <p className="text-sm text-gray-600 mt-1">CSV, JSON, or Parquet files up to 10GB</p>
+            </div>
+          </div>
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <div className="flex">
+              <Lock className="h-5 w-5 text-blue-400 mt-0.5" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Enhanced Security Features</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  New secure upload provides client-side encryption, zero-knowledge proofs, and Stellar blockchain integration.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <SecureDataUpload onUploadComplete={handleUploadComplete} />
+      )}
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow p-6">

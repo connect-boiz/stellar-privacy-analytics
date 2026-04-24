@@ -5,6 +5,8 @@ pub mod schema_enforcer;
 pub mod onchain_aggregator;
 pub mod access_control;
 pub mod invariant_testing;
+pub mod upgradeable_proxy;
+pub mod admin;
 
 #[cfg(test)]
 mod access_control_tests;
@@ -18,3 +20,5 @@ pub use schema_enforcer::SchemaEnforcer;
 pub use onchain_aggregator::OnChainAggregator;
 pub use access_control::DataSovereigntyAccessControl;
 pub use invariant_testing::InvariantTesting;
+pub use upgradeable_proxy::UpgradeableProxy;
+pub use admin::MultiSigAdmin;
