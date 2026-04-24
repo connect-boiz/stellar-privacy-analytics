@@ -43,7 +43,10 @@
     "axios": "^1.6.2",
     "form-data": "^4.0.0",
     "crypto": "^1.0.1",
-    "jsbn": "^1.2.1"
+    "jsbn": "^1.2.1",
+    "http-proxy-middleware": "^2.0.6",
+    "rate-limiter-flexible": "^4.0.1",
+    "lru-cache": "^10.0.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

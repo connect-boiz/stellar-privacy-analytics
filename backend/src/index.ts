@@ -30,6 +30,8 @@ import { getHSMIntegration } from './services/hsmIntegration';
 // Import workers
 import { StellarTransactionWatcher } from './workers/StellarTransactionWatcher';
 import { privacyBudgetRoutes } from './routes/privacy-budget';
+import { gatewayRoutes } from './routes/gateway';
+import { createGateway, startGateway } from './gateway';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +41,7 @@ const server = createServer(app);
 
 // Initialize WebSocket for upload progress
 const uploadSocket = initializeUploadSocket(server);
+
 
 // Security middleware
 app.use(helmet({
@@ -105,6 +108,7 @@ apiRouter.use('/ipfs', ipfsRoutes);
 apiRouter.use('/hsm', hsmRoutes);
 apiRouter.use('/mpc', mpcRoutes);
 apiRouter.use('/audit', auditRoutes);
+apiRouter.use('/gateway', gatewayRoutes);
 
 app.use('/api/v1', apiRouter);
 
@@ -191,12 +195,23 @@ async function initializeServices() {
 
 
 // Start server after services are initialized
-initializeServices().then(() => {
-  server.listen(PORT, () => {
+initializeServices().then(async () => {
+  server.listen(PORT, async () => {
     logger.info(`🚀 Stellar API Server running on http://${HOST}:${PORT}`);
     logger.info(`📊 Metrics available on port ${process.env.METRICS_PORT || 9090}`);
     logger.info(`🔒 Privacy-first mode: ${process.env.PRIVACY_MODE || 'enabled'}`);
     logger.info(`🔐 HSM integration: ${getHSMIntegration().isInitialized() ? 'enabled' : 'disabled'}`);
+    
+    // Start Privacy API Gateway if enabled
+    if (process.env.GATEWAY_ENABLED !== 'false') {
+      const gatewayPort = parseInt(process.env.GATEWAY_PORT || '8080');
+      try {
+        await startGateway(gatewayPort);
+        logger.info(`🌐 Privacy API Gateway running on port ${gatewayPort}`);
+      } catch (error) {
+        logger.error('Failed to start Privacy API Gateway:', error);
+      }
+    }
   });
 }).catch((error) => {
   logger.error('Failed to initialize services:', error);
