@@ -23,6 +23,8 @@ import ConsentPage from './pages/ConsentPage';
 import PerformancePage from './pages/PerformancePage';
 import PrivacyBudgetPage from './pages/PrivacyBudgetPage';
 import { NetworkTestPage } from './pages/NetworkTestPage';
+import { PrivacyEducation } from './pages/PrivacyEducation';
+import DataTableDemo from './pages/DataTableDemo';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -112,6 +114,8 @@ function App() {
                         <Route path="/performance" element={<PerformancePage />} />
                         <Route path="/budget" element={<PrivacyBudgetPage />} />
                         <Route path="/network-test" element={<NetworkTestPage />} />
+                        <Route path="/education" element={<PrivacyEducation />} />
+                        <Route path="/data-table" element={<DataTableDemo />} />
                         <Route path="/" element={<Navigate to="/dashboard" />} />
                       </Routes>
                     </Layout>

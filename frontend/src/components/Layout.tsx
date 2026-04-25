@@ -13,7 +13,9 @@ import {
   Activity,
   Search,
   Users,
-  Sliders
+  Sliders,
+  BookOpen,
+  Table
 } from 'lucide-react';
 import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 
@@ -29,6 +31,8 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Consent', href: '/consent', icon: Users },
     { name: 'Performance', href: '/performance', icon: Sliders },
+    { name: 'Education', href: '/education', icon: BookOpen },
+    { name: 'Data Table', href: '/data-table', icon: Table },
   ];
 
   const isActive = (href: string) => location.pathname === href;
