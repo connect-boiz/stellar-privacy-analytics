@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Database, 
-  Filter, 
-  Plus, 
-  Trash2, 
-  Eye, 
-  Save, 
-  Play, 
+import {
+  Database,
+  Filter,
+  Plus,
+  Trash2,
+  Eye,
+  Save,
+  Play,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -17,6 +17,7 @@ import {
   Settings
 } from 'lucide-react';
 import { AggregationType, AnalysisFilter } from '@stellar/shared/types/analytics';
+import { Modal } from './ui/Modal';
 
 interface DataField {
   id: string;
@@ -138,7 +139,7 @@ export const QueryConstructor: React.FC = () => {
 
   const validateQuery = useCallback((steps: QueryStep[]) => {
     const errors: string[] = [];
-    
+
     if (steps.length === 0) {
       errors.push('Query must have at least one step');
     }
@@ -188,7 +189,7 @@ export const QueryConstructor: React.FC = () => {
 
   const updateStep = useCallback((stepId: string, updates: Partial<QueryStep>) => {
     setQuerySteps(prev => {
-      const updated = prev.map(step => 
+      const updated = prev.map(step =>
         step.id === stepId ? { ...step, ...updates } : step
       );
       setPrivacyCost(calculatePrivacyCost(updated));
@@ -406,12 +407,12 @@ export const QueryConstructor: React.FC = () => {
                             </span>
                             <span className="font-medium text-gray-900">{step.label}</span>
                             <ArrowRight className="h-4 w-4 mx-2 text-gray-400" />
-                            
+
                             {/* Step-specific controls */}
                             {step.type === 'select' && (
                               <select
                                 value={step.field || ''}
-                                onChange={(e) => updateStep(step.id, { 
+                                onChange={(e) => updateStep(step.id, {
                                   field: e.target.value,
                                   label: `Select ${e.target.value}`
                                 })}
@@ -470,7 +471,7 @@ export const QueryConstructor: React.FC = () => {
                                 </select>
                                 <select
                                   value={step.aggregation || ''}
-                                  onChange={(e) => updateStep(step.id, { 
+                                  onChange={(e) => updateStep(step.id, {
                                     aggregation: e.target.value as AggregationType,
                                     label: `${e.target.value} of ${step.field || 'field'}`
                                   })}
@@ -487,7 +488,7 @@ export const QueryConstructor: React.FC = () => {
                             {step.type === 'group' && (
                               <select
                                 value={step.field || ''}
-                                onChange={(e) => updateStep(step.id, { 
+                                onChange={(e) => updateStep(step.id, {
                                   field: e.target.value,
                                   label: `Group by ${e.target.value}`
                                 })}
@@ -595,91 +596,67 @@ export const QueryConstructor: React.FC = () => {
         </div>
 
         {/* Preview Modal */}
-        <AnimatePresence>
-          {showPreview && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-6 z-50"
-              onClick={() => setShowPreview(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Query Preview</h3>
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
-                  >
-                    ×
-                  </button>
+        <Modal
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          title="Query Preview"
+          size="lg"
+        >
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Generated Query</h4>
+              <pre className="text-sm text-gray-700 overflow-x-auto">
+                {JSON.stringify({
+                  select: querySteps.filter(s => s.type === 'select').map(s => s.field),
+                  filter: querySteps.filter(s => s.type === 'filter').map(s => ({
+                    field: s.field,
+                    operator: s.operator,
+                    value: s.value
+                  })),
+                  aggregate: querySteps.filter(s => s.type === 'aggregate').map(s => ({
+                    field: s.field,
+                    function: s.aggregation
+                  })),
+                  groupBy: querySteps.filter(s => s.type === 'group').map(s => s.field)
+                }, null, 2)}
+              </pre>
+            </div>
+
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">Privacy Analysis</h4>
+              <div className="space-y-2 text-sm text-blue-800">
+                <div className="flex items-center justify-between">
+                  <span>Privacy Cost:</span>
+                  <span className="font-medium">{privacyCost.toFixed(2)} units</span>
                 </div>
-
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Generated Query</h4>
-                    <pre className="text-sm text-gray-700 overflow-x-auto">
-                      {JSON.stringify({
-                        select: querySteps.filter(s => s.type === 'select').map(s => s.field),
-                        filter: querySteps.filter(s => s.type === 'filter').map(s => ({
-                          field: s.field,
-                          operator: s.operator,
-                          value: s.value
-                        })),
-                        aggregate: querySteps.filter(s => s.type === 'aggregate').map(s => ({
-                          field: s.field,
-                          function: s.aggregation
-                        })),
-                        groupBy: querySteps.filter(s => s.type === 'group').map(s => s.field)
-                      }, null, 2)}
-                    </pre>
-                  </div>
-
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">Privacy Analysis</h4>
-                    <div className="space-y-2 text-sm text-blue-800">
-                      <div className="flex items-center justify-between">
-                        <span>Privacy Cost:</span>
-                        <span className="font-medium">{privacyCost.toFixed(2)} units</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Risk Level:</span>
-                        <span className={`font-medium ${
-                          privacyCost < 2 ? 'text-green-600' : 
-                          privacyCost < 5 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {privacyCost < 2 ? 'Low' : privacyCost < 5 ? 'Medium' : 'High'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Differential Privacy ε:</span>
-                        <span className="font-medium">{(privacyCost * 0.1).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-medium text-green-900 mb-2">Execution Plan</h4>
-                    <div className="space-y-1 text-sm text-green-800">
-                      {querySteps.map((step, index) => (
-                        <div key={step.id} className="flex items-center">
-                          <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                          <span>Step {index + 1}: {step.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span>Risk Level:</span>
+                  <span className={`font-medium ${privacyCost < 2 ? 'text-green-600' :
+                      privacyCost < 5 ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                    {privacyCost < 2 ? 'Low' : privacyCost < 5 ? 'Medium' : 'High'}
+                  </span>
                 </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div className="flex items-center justify-between">
+                  <span>Differential Privacy ε:</span>
+                  <span className="font-medium">{(privacyCost * 0.1).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">Execution Plan</h4>
+              <div className="space-y-1 text-sm text-green-800">
+                {querySteps.map((step, index) => (
+                  <div key={step.id} className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                    <span>Step {index + 1}: {step.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );
