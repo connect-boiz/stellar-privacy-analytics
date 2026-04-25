@@ -1,7 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
-import { createHash, timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual, randomBytes } from 'crypto';
+import { RedisClientType } from 'redis';
+import { Counter, Histogram } from 'prom-client';
+
+// Auth Metrics
+const authDuration = new Histogram({
+  name: 'auth_validation_duration_seconds',
+  help: 'Duration of authentication validation in seconds',
+  labelNames: ['method', 'status']
+});
+
+const tokenCacheHits = new Counter({
+  name: 'auth_token_cache_hits_total',
+  help: 'Total number of auth token cache hits'
+});
+
+const tokenCacheMisses = new Counter({
+  name: 'auth_token_cache_misses_total',
+  help: 'Total number of auth token cache misses'
+});
 
 export interface StellarUser {
   id: string;
@@ -37,16 +56,19 @@ export class StellarAuthMiddleware {
   private allowedIssuers: string[];
   private allowedAudiences: string[];
   private clockSkewTolerance: number;
+  private redis: RedisClientType;
 
   constructor(config: {
     stellarPublicKey: string;
     apiKeySecret: string;
+    redis: RedisClientType;
     allowedIssuers?: string[];
     allowedAudiences?: string[];
     clockSkewTolerance?: number;
   }) {
     this.stellarPublicKey = config.stellarPublicKey;
     this.apiKeySecret = config.apiKeySecret;
+    this.redis = config.redis;
     this.allowedIssuers = config.allowedIssuers || ['stellar-privacy'];
     this.allowedAudiences = config.allowedAudiences || ['stellar-api'];
     this.clockSkewTolerance = config.clockSkewTolerance || 30; // 30 seconds
@@ -110,22 +132,37 @@ export class StellarAuthMiddleware {
    * JWT authentication with Stellar signature verification
    */
   private async authenticateJWT(token: string, traceId: string): Promise<StellarUser> {
+    const startTime = process.hrtime();
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const cacheKey = `auth:token:${tokenHash}`;
+
     try {
-      // Verify JWT signature and claims
+      // 1. Check Cache first
+      const cachedUser = await this.redis.get(cacheKey);
+      if (cachedUser) {
+        tokenCacheHits.inc();
+        const user = JSON.parse(cachedUser);
+        this.recordAuthMetrics(startTime, 'jwt', 'success');
+        return user;
+      }
+
+      tokenCacheMisses.inc();
+
+      // 2. Verify JWT signature and claims
       const decoded = jwt.verify(token, this.stellarPublicKey, {
-        algorithms: ['ES256'], // Elliptic Curve signature
+        algorithms: ['ES256'],
         issuer: this.allowedIssuers,
         audience: this.allowedAudiences,
         clockTolerance: this.clockSkewTolerance
       }) as StellarJWTPayload;
 
-      // Validate required claims
+      // 3. Validate required claims
       this.validateJWTPayload(decoded);
 
-      // Check if JWT is revoked (implement your revocation check logic)
+      // 4. Check if JWT is revoked
       await this.checkJWTRevocation(decoded.jti);
 
-      return {
+      const user: StellarUser = {
         id: decoded.sub,
         email: decoded.email,
         permissions: decoded.permissions,
@@ -133,7 +170,17 @@ export class StellarAuthMiddleware {
         organizationId: decoded.organizationId,
         sessionId: decoded.sessionId
       };
+
+      // 5. Cache the result (expires when JWT expires)
+      const ttl = Math.max(0, decoded.exp - Math.floor(Date.now() / 1000));
+      if (ttl > 0) {
+        await this.redis.setEx(cacheKey, Math.min(ttl, 3600), JSON.stringify(user)); // Max cache 1 hour
+      }
+
+      this.recordAuthMetrics(startTime, 'jwt', 'success');
+      return user;
     } catch (error) {
+      this.recordAuthMetrics(startTime, 'jwt', 'error');
       if (error instanceof jwt.TokenExpiredError) {
         throw new Error('JWT token expired');
       } else if (error instanceof jwt.JsonWebTokenError) {
@@ -142,6 +189,12 @@ export class StellarAuthMiddleware {
         throw error;
       }
     }
+  }
+
+  private recordAuthMetrics(startTime: [number, number], method: string, status: string): void {
+    const diff = process.hrtime(startTime);
+    const duration = diff[0] + diff[1] / 1e9;
+    authDuration.observe({ method, status }, duration);
   }
 
   /**
@@ -221,18 +274,20 @@ export class StellarAuthMiddleware {
    * Check if JWT has been revoked (implement your revocation logic)
    */
   private async checkJWTRevocation(jti: string): Promise<void> {
-    // This would typically check against a Redis cache or database
-    // For now, we'll implement a simple in-memory cache check
-    
-    // In a real implementation, you would:
-    // 1. Check a Redis cache for revoked JWT IDs
-    // 2. Fall back to database check if not in cache
-    // 3. Cache the result for future lookups
-    
-    // Placeholder implementation
-    const revokedTokens = new Set<string>(); // This should be a persistent cache
-    if (revokedTokens.has(jti)) {
+    const isRevoked = await this.redis.get(`auth:revoked:${jti}`);
+    if (isRevoked) {
       throw new Error('JWT token has been revoked');
+    }
+  }
+
+  /**
+   * Revoke a JWT token
+   */
+  async revokeToken(jti: string, expirationTimestamp: number): Promise<void> {
+    const ttl = Math.max(0, expirationTimestamp - Math.floor(Date.now() / 1000));
+    if (ttl > 0) {
+      await this.redis.setEx(`auth:revoked:${jti}`, ttl, '1');
+      logger.info('JWT token revoked', { jti });
     }
   }
 

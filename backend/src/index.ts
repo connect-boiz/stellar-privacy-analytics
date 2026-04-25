@@ -39,8 +39,11 @@ import { MemoryMonitorService } from './services/memoryMonitorService';
 // Import workers
 import { StellarTransactionWatcher } from './workers/StellarTransactionWatcher';
 import { privacyBudgetRoutes } from './routes/privacy-budget';
-import { gatewayRoutes } from './routes/gateway';
 import { createGateway, startGateway } from './gateway';
+import { DatabaseService } from './services/databaseService';
+import { PrivacyBudgetService } from './services/privacyBudgetService';
+import { PrivacyBudgetRepository } from './repositories/privacyBudgetRepository';
+import { StorageService } from './services/storageService';
 
 // Load environment variables
 dotenv.config();
@@ -104,7 +107,7 @@ let enhancedRateLimiter: any;
 
 // Initialize rate limiters after Redis is connected
 async function initializeRateLimiters() {
-  const redisClient = getRedisClient();
+  const redisClient = getRedisClient() as any;
   
   // Create standard rate limiters
   rateLimiter = createRateLimiter(redisClient);
@@ -120,7 +123,10 @@ async function initializeRateLimiters() {
   rateLimitMonitor.registerRateLimiter('pql', pqlRateLimiter);
   rateLimitMonitor.registerRateLimiter('admin', adminRateLimiter);
   
-  logger.info('Enhanced rate limiters initialized with Redis and monitoring');
+  // Update stellarAuth with redis
+  (stellarAuth as any).redis = redisClient;
+
+  logger.info('Enhanced rate limiters and Auth initialized with Redis and monitoring');
 }
 
 // General middleware
@@ -318,6 +324,27 @@ async function initializeServices() {
 
     await hsmIntegration.initialize();
     logger.info('HSM integration initialized successfully');
+
+    // Initialize Database Service
+    const dbService = new DatabaseService({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'stellar_privacy',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      max: 100, // High concurrency
+    });
+    await dbService.healthCheck();
+    logger.info('Database Service initialized');
+
+    // Initialize Privacy Budget Service
+    const budgetRepo = new PrivacyBudgetRepository(dbService);
+    const budgetService = new PrivacyBudgetService(budgetRepo);
+    app.set('budgetService', budgetService);
+
+    // Initialize Storage Service
+    const storageService = new StorageService(process.env.STORAGE_MASTER_KEY || 'default-master-key-32-chars-long!!!');
+    app.set('storageService', storageService);
 
     // Start Stellar Transaction Watcher
     const stellarWatcher = new StellarTransactionWatcher(
