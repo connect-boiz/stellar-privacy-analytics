@@ -1,222 +1,265 @@
+import { Pool, PoolClient, PoolConfig } from 'pg';
 import { logger } from '../utils/logger';
-import { Certification, CertificationFilter, IndustryStandard } from '../types/certification';
+import { Counter, Gauge, Histogram } from 'prom-client';
 
-// Mock database implementation - in production, this would connect to PostgreSQL
-class DatabaseService {
-  private certifications: Map<string, Certification> = new Map();
-  private industryStandards: Map<string, IndustryStandard> = new Map();
+// Performance metrics
+const dbQueryDuration = new Histogram({
+  name: 'db_query_duration_seconds',
+  help: 'Duration of database queries in seconds',
+  labelNames: ['query_type', 'status'],
+  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10]
+});
 
-  async storeCertification(certification: Certification): Promise<void> {
-    try {
-      this.certifications.set(certification.id, certification);
-      logger.info(`Stored certification ${certification.id} in database`);
-    } catch (error) {
-      logger.error('Error storing certification:', error);
-      throw error;
-    }
-  }
+const dbConnectionsActive = new Gauge({
+  name: 'db_connections_active',
+  help: 'Number of active database connections'
+});
 
-  async getCertification(id: string): Promise<Certification | null> {
-    try {
-      return this.certifications.get(id) || null;
-    } catch (error) {
-      logger.error('Error fetching certification from database:', error);
-      throw error;
-    }
-  }
+const dbConnectionsIdle = new Gauge({
+  name: 'db_connections_idle',
+  help: 'Number of idle database connections'
+});
 
-  async getCertificationByVerificationCode(verificationCode: string): Promise<Certification | null> {
-    try {
-      for (const certification of this.certifications.values()) {
-        if (certification.verificationCode === verificationCode) {
-          return certification;
-        }
-      }
-      return null;
-    } catch (error) {
-      logger.error('Error fetching certification by verification code:', error);
-      throw error;
-    }
-  }
+const dbPoolWaiting = new Gauge({
+  name: 'db_pool_waiting_queries',
+  help: 'Number of queries waiting for a connection'
+});
 
-  async getOrganizationCertifications(filters: CertificationFilter): Promise<Certification[]> {
-    try {
-      let certifications = Array.from(this.certifications.values());
+const dbErrorsTotal = new Counter({
+  name: 'db_errors_total',
+  help: 'Total number of database errors',
+  labelNames: ['error_type']
+});
 
-      if (filters.organizationId) {
-        // In a real implementation, this would filter by organization ID
-        // For now, we'll return all certifications
-      }
+const dbCircuitBreakerState = new Gauge({
+  name: 'db_circuit_breaker_state',
+  help: 'State of the database circuit breaker (0=closed, 1=open, 2=half-open)',
+  labelNames: ['resource']
+});
 
-      if (filters.status) {
-        certifications = certifications.filter(cert => cert.status === filters.status);
-      }
-
-      if (filters.certificationType) {
-        certifications = certifications.filter(cert => cert.certificationType === filters.certificationType);
-      }
-
-      if (filters.dateFrom) {
-        certifications = certifications.filter(cert => cert.createdAt >= filters.dateFrom!);
-      }
-
-      if (filters.dateTo) {
-        certifications = certifications.filter(cert => cert.createdAt <= filters.dateTo!);
-      }
-
-      if (filters.privacyLevel) {
-        certifications = certifications.filter(cert => cert.privacyLevel === filters.privacyLevel);
-      }
-
-      return certifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (error) {
-      logger.error('Error fetching organization certifications:', error);
-      throw error;
-    }
-  }
-
-  async updateCertification(certification: Certification): Promise<void> {
-    try {
-      this.certifications.set(certification.id, certification);
-      logger.info(`Updated certification ${certification.id} in database`);
-    } catch (error) {
-      logger.error('Error updating certification:', error);
-      throw error;
-    }
-  }
-
-  async deleteCertification(id: string): Promise<void> {
-    try {
-      this.certifications.delete(id);
-      logger.info(`Deleted certification ${id} from database`);
-    } catch (error) {
-      logger.error('Error deleting certification:', error);
-      throw error;
-    }
-  }
-
-  async getCertificationsExpiringBefore(date: Date): Promise<Certification[]> {
-    try {
-      return Array.from(this.certifications.values()).filter(
-        cert => cert.expiryDate <= date && cert.status === 'validated'
-      );
-    } catch (error) {
-      logger.error('Error fetching expiring certifications:', error);
-      throw error;
-    }
-  }
-
-  async getIndustryStandards(): Promise<IndustryStandard[]> {
-    try {
-      return Array.from(this.industryStandards.values());
-    } catch (error) {
-      logger.error('Error fetching industry standards:', error);
-      throw error;
-    }
-  }
-
-  async getIndustryStandard(id: string): Promise<IndustryStandard | null> {
-    try {
-      return this.industryStandards.get(id) || null;
-    } catch (error) {
-      logger.error('Error fetching industry standard:', error);
-      throw error;
-    }
-  }
-
-  async storeIndustryStandard(standard: IndustryStandard): Promise<void> {
-    try {
-      this.industryStandards.set(standard.id, standard);
-      logger.info(`Stored industry standard ${standard.id} in database`);
-    } catch (error) {
-      logger.error('Error storing industry standard:', error);
-      throw error;
-    }
-  }
-
-  async searchCertifications(query: string): Promise<Certification[]> {
-    try {
-      const lowerQuery = query.toLowerCase();
-      return Array.from(this.certifications.values()).filter(cert =>
-        cert.organizationName.toLowerCase().includes(lowerQuery) ||
-        cert.certificationType.toLowerCase().includes(lowerQuery) ||
-        cert.contactEmail.toLowerCase().includes(lowerQuery)
-      );
-    } catch (error) {
-      logger.error('Error searching certifications:', error);
-      throw error;
-    }
-  }
-
-  async getCertificationStats(): Promise<{
-    total: number;
-    byStatus: Record<string, number>;
-    byType: Record<string, number>;
-    byPrivacyLevel: Record<string, number>;
-  }> {
-    try {
-      const certifications = Array.from(this.certifications.values());
-      
-      const stats = {
-        total: certifications.length,
-        byStatus: {} as Record<string, number>,
-        byType: {} as Record<string, number>,
-        byPrivacyLevel: {} as Record<string, number>,
-      };
-
-      certifications.forEach(cert => {
-        stats.byStatus[cert.status] = (stats.byStatus[cert.status] || 0) + 1;
-        stats.byType[cert.certificationType] = (stats.byType[cert.certificationType] || 0) + 1;
-        stats.byPrivacyLevel[cert.privacyLevel] = (stats.byPrivacyLevel[cert.privacyLevel] || 0) + 1;
-      });
-
-      return stats;
-    } catch (error) {
-      logger.error('Error fetching certification stats:', error);
-      throw error;
-    }
-  }
-
-  async initializeMockData(): Promise<void> {
-    try {
-      // Initialize some mock industry standards
-      const mockStandards: IndustryStandard[] = [
-        {
-          id: 'gdpr-2018',
-          name: 'General Data Protection Regulation',
-          description: 'EU regulation on data protection and privacy',
-          requirements: [
-            { id: 'gdpr-1', description: 'Lawful basis for processing', category: 'Legal', mandatory: true },
-            { id: 'gdpr-2', description: 'Data minimization', category: 'Technical', mandatory: true },
-            { id: 'gdpr-3', description: 'Data subject rights', category: 'Legal', mandatory: true },
-          ],
-          version: '1.0',
-          lastUpdated: new Date('2018-05-25'),
-        },
-        {
-          id: 'ccpa-2020',
-          name: 'California Consumer Privacy Act',
-          description: 'California state privacy law',
-          requirements: [
-            { id: 'ccpa-1', description: 'Right to know', category: 'Legal', mandatory: true },
-            { id: 'ccpa-2', description: 'Right to delete', category: 'Legal', mandatory: true },
-            { id: 'ccpa-3', description: 'Right to opt-out', category: 'Legal', mandatory: true },
-          ],
-          version: '1.0',
-          lastUpdated: new Date('2020-01-01'),
-        },
-      ];
-
-      for (const standard of mockStandards) {
-        await this.storeIndustryStandard(standard);
-      }
-
-      logger.info('Initialized mock industry standards');
-    } catch (error) {
-      logger.error('Error initializing mock data:', error);
-      throw error;
-    }
-  }
+export enum CircuitBreakerState {
+  CLOSED = 0,
+  OPEN = 1,
+  HALF_OPEN = 2
 }
 
-export const databaseService = new DatabaseService();
+interface ConnectionInfo {
+  client: PoolClient;
+  acquiredAt: number;
+  traceId?: string;
+}
+
+export class DatabaseService {
+  private pool: Pool;
+  private activeConnections: Map<PoolClient, ConnectionInfo> = new Map();
+  private circuitBreakerState: CircuitBreakerState = CircuitBreakerState.CLOSED;
+  private failureCount: number = 0;
+  private lastFailureTime: number = 0;
+  private readonly failureThreshold: number = 5;
+  private readonly recoveryTimeout: number = 30000; // 30 seconds
+
+  constructor(config: PoolConfig) {
+    this.pool = new Pool({
+      ...config,
+      max: config.max || 50, // Optimize for high concurrency
+      idleTimeoutMillis: config.idleTimeoutMillis || 10000,
+      connectionTimeoutMillis: config.connectionTimeoutMillis || 5000,
+      maxUses: 7500, // Close connection after 7500 uses to prevent memory leaks
+    });
+
+    this.setupMonitoring();
+    this.startLeakDetection();
+  }
+
+  private setupMonitoring(): void {
+    this.pool.on('connect', () => {
+      logger.debug('Database connection established');
+      this.updatePoolMetrics();
+    });
+
+    this.pool.on('error', (err) => {
+      logger.error('Database pool error', { error: err.message });
+      dbErrorsTotal.inc({ error_type: 'pool' });
+      this.handleFailure();
+      this.updatePoolMetrics();
+    });
+
+    this.pool.on('acquire', (client) => {
+      this.activeConnections.set(client, {
+        client,
+        acquiredAt: Date.now()
+      });
+      this.updatePoolMetrics();
+    });
+
+    this.pool.on('remove', () => {
+      this.updatePoolMetrics();
+    });
+  }
+
+  private updatePoolMetrics(): void {
+    dbConnectionsActive.set(this.pool.totalCount - this.pool.idleCount);
+    dbConnectionsIdle.set(this.pool.idleCount);
+    dbPoolWaiting.set(this.pool.waitingCount);
+    dbCircuitBreakerState.set({ resource: 'postgres' }, this.circuitBreakerState);
+  }
+
+  private handleFailure(): void {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+
+    if (this.failureCount >= this.failureThreshold) {
+      this.circuitBreakerState = CircuitBreakerState.OPEN;
+      logger.warn('Database circuit breaker OPENED due to multiple failures');
+    }
+  }
+
+  private handleSuccess(): void {
+    if (this.circuitBreakerState !== CircuitBreakerState.CLOSED) {
+      logger.info('Database circuit breaker CLOSED - service recovered');
+    }
+    this.failureCount = 0;
+    this.circuitBreakerState = CircuitBreakerState.CLOSED;
+  }
+
+  private checkCircuitBreaker(): void {
+    if (this.circuitBreakerState === CircuitBreakerState.OPEN) {
+      const now = Date.now();
+      if (now - this.lastFailureTime > this.recoveryTimeout) {
+        this.circuitBreakerState = CircuitBreakerState.HALF_OPEN;
+        logger.info('Database circuit breaker HALF-OPEN - attempting recovery');
+      } else {
+        throw new Error('Database circuit breaker is OPEN. Request rejected.');
+      }
+    }
+  }
+
+  async query<T = any>(text: string, params: any[] = [], traceId?: string): Promise<T[]> {
+    this.checkCircuitBreaker();
+    
+    const startTime = process.hrtime();
+    let client: PoolClient | undefined;
+
+    try {
+      client = await this.pool.connect();
+      const res = await client.query(text, params);
+      
+      this.handleSuccess();
+      this.recordMetrics(startTime, 'query', 'success');
+      
+      return res.rows;
+    } catch (error) {
+      this.handleFailure();
+      this.recordMetrics(startTime, 'query', 'error');
+      dbErrorsTotal.inc({ error_type: 'query' });
+      
+      logger.error('Database query error', { 
+        error: error.message, 
+        query: text.substring(0, 100),
+        traceId 
+      });
+      
+      throw error;
+    } finally {
+      if (client) {
+        client.release();
+        this.activeConnections.delete(client);
+      }
+      this.updatePoolMetrics();
+    }
+  }
+
+  async transaction<T>(callback: (client: PoolClient) => Promise<T>, traceId?: string): Promise<T> {
+    this.checkCircuitBreaker();
+    
+    const startTime = process.hrtime();
+    const client = await this.pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      
+      this.handleSuccess();
+      this.recordMetrics(startTime, 'transaction', 'success');
+      
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      this.handleFailure();
+      this.recordMetrics(startTime, 'transaction', 'error');
+      dbErrorsTotal.inc({ error_type: 'transaction' });
+      
+      logger.error('Database transaction error', { 
+        error: error.message, 
+        traceId 
+      });
+      
+      throw error;
+    } finally {
+      client.release();
+      this.activeConnections.delete(client);
+      this.updatePoolMetrics();
+    }
+  }
+
+  private recordMetrics(startTime: [number, number], type: string, status: string): void {
+    const diff = process.hrtime(startTime);
+    const duration = diff[0] + diff[1] / 1e9;
+    dbQueryDuration.observe({ query_type: type, status }, duration);
+  }
+
+  private startLeakDetection(): void {
+    // Check for leaked connections every minute
+    setInterval(() => {
+      const now = Date.now();
+      const leakThreshold = 30000; // 30 seconds
+
+      for (const [client, info] of this.activeConnections.entries()) {
+        const duration = now - info.acquiredAt;
+        if (duration > leakThreshold) {
+          logger.warn('Potential database connection leak detected', {
+            durationMs: duration,
+            traceId: info.traceId,
+            totalActive: this.activeConnections.size
+          });
+
+          // In case of extreme leaks, we might want to force close
+          if (duration > leakThreshold * 10) {
+            logger.error('Forcing release of long-running connection', {
+              durationMs: duration
+            });
+            client.release(true); // Release with error to force close
+            this.activeConnections.delete(client);
+          }
+        }
+      }
+      this.updatePoolMetrics();
+    }, 60000);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      const result = await this.query('SELECT 1');
+      return result.length > 0;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
+    logger.info('Database connection pool closed');
+  }
+
+  getPoolStats() {
+    return {
+      total: this.pool.totalCount,
+      idle: this.pool.idleCount,
+      waiting: this.pool.waitingCount,
+      active: this.activeConnections.size,
+      circuitBreaker: CircuitBreakerState[this.circuitBreakerState]
+    };
+  }
+}
+>>>>>>> upstream/main

@@ -21,11 +21,18 @@ const AUTHORIZED_ORACLES_KEY: &str = "AUTHORIZED_ORACLES";
 const TOTAL_ANALYSES_KEY: &str = "TOTAL_ANALYSES";
 const TOTAL_PRIVACY_BUDGET_USED_KEY: &str = "TOTAL_PRIVACY_BUDGET_USED";
 const ACTIVE_ANALYSES_KEY: &str = "ACTIVE_ANALYSES";
+const IPFS_DATASETS_KEY: &str = "IPFS_DATASETS";
+const DATA_AVAILABILITY_KEY: &str = "DATA_AVAILABILITY";
 
 // Constants
 const MAX_PRIVACY_BUDGET: i128 = 1000000000000000000; // 1e18 (1000 tokens)
 const DEFAULT_PRIVACY_BUDGET: i128 = 100000000000000000; // 1e17 (100 tokens)
 const MIN_PARTICIPANTS: u32 = 5;
+const MIN_DATASET_SIZE_BYTES: u64 = 1;
+const MAX_DATASET_SIZE_BYTES: u64 = 1_099_511_627_776; // 1 TiB
+const MIN_DATASET_VERSION: u32 = 1;
+const MAX_DATASET_VERSION: u32 = 1_000_000;
+const MAX_PIN_COUNT: u32 = 10_000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
@@ -33,11 +40,13 @@ pub struct AnalysisRequest {
     pub request_id: BytesN<32>,
     pub requester: Address,
     pub dataset_hash: BytesN<32>,
+    pub ipfs_cid: String,
     pub privacy_budget: i128,
     pub timestamp: u64,
     pub completed: bool,
     pub cancelled: bool,
     pub analysis_type: String,
+    pub cid_immutable: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,20 +62,35 @@ pub struct AnalysisResult {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
+pub struct IPFSDataset {
+    pub cid: String,
+    pub dataset_hash: BytesN<32>,
+    pub uploader: Address,
+    pub timestamp: u64,
+    pub size_bytes: u64,
+    pub encrypted: bool,
+    pub version: u32,
+    pub pinned: bool,
+    pub decryption_key_hash: Option<BytesN<32>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[contracttype]
+pub struct DataAvailability {
+    pub cid: String,
+    pub available: bool,
+    pub last_checked: u64,
+    pub pin_count: u32,
+    pub filecoin_deal_id: Option<u64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[contracttype]
 pub struct PrivacyLevel {
     pub min_participants: u32,
     pub noise_multiplier: u32,
     pub require_consent: bool,
     pub max_data_points: u64,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[contracttype]
-pub enum PrivacyLevelName {
-    Minimal,
-    Standard,
-    High,
-    Maximum,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -83,6 +107,13 @@ pub enum StellarAnalyticsError {
     InvalidConfidence = 7,
     InvalidSignature = 8,
     OracleNotActive = 9,
+    InvalidCID = 10,
+    CIDImmutable = 11,
+    DataNotAvailable = 12,
+    DatasetNotFound = 13,
+    InvalidDecryptionKey = 14,
+    VersionMismatch = 15,
+    InvalidInputRange = 16,
 }
 
 pub struct StellarAnalytics;
@@ -155,14 +186,20 @@ impl StellarAnalytics {
     /// Request a new analysis with privacy protection
     pub fn request_analysis(
         env: Env,
+        requester: Address,
         dataset_hash: BytesN<32>,
+        ipfs_cid: String,
         analysis_type: String,
         privacy_level_name: String,
-        signature: BytesN<64>,
     ) -> Result<BytesN<32>, StellarAnalyticsError> {
-        let requester = env.current_contract_address(); // In real implementation, get from auth
+        // Validate IPFS CID format (basic validation)
+        if ipfs_cid.is_empty() || ipfs_cid.len() < 10 {
+            return Err(StellarAnalyticsError::InvalidCID);
+        }
 
-        // Validate privacy level
+        // Check if dataset exists and is available
+        Self::check_data_availability(env.clone(), ipfs_cid.clone())?;
+
         let privacy_levels: Map<String, PrivacyLevel> = env
             .storage()
             .instance()
@@ -183,6 +220,7 @@ impl StellarAnalytics {
         let mut input_data = Vec::new(&env);
         input_data.push_back(requester.clone().into());
         input_data.push_back(dataset_hash.clone().into());
+        input_data.push_back(ipfs_cid.clone().into());
         input_data.push_back(analysis_type.clone().into());
         input_data.push_back(env.ledger().timestamp().into());
         input_data.push_back(env.ledger().sequence().into());
@@ -200,11 +238,13 @@ impl StellarAnalytics {
             request_id: request_id.clone(),
             requester: requester.clone(),
             dataset_hash,
+            ipfs_cid: ipfs_cid.clone(),
             privacy_budget: DEFAULT_PRIVACY_BUDGET,
             timestamp: env.ledger().timestamp(),
             completed: false,
             cancelled: false,
             analysis_type,
+            cid_immutable: true, // CID becomes immutable once request is created
         };
 
         // Store the request
@@ -290,11 +330,15 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::RequestAlreadyCancelled);
         }
 
+        if privacy_budget_used < 0 {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
         if privacy_budget_used > request.privacy_budget {
             return Err(StellarAnalyticsError::BudgetExceeded);
         }
 
-        if accuracy > 100 {
+        if accuracy == 0 || accuracy > 100 {
             return Err(StellarAnalyticsError::InvalidConfidence);
         }
 
@@ -426,7 +470,14 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::BudgetExceeded);
         }
 
-        Self::set_user_privacy_budget(env, user, current_budget + amount);
+        Self::set_user_privacy_budget(env.clone(), user.clone(), current_budget + amount);
+
+        // Emit event
+        env.events().publish(
+            (symbol!("budget_added"), user),
+            (amount, current_budget + amount),
+        );
+
         Ok(())
     }
 
@@ -557,5 +608,286 @@ impl StellarAnalytics {
             }
         }
         false
+    }
+
+    /// Register a new IPFS dataset
+    pub fn register_dataset(
+        env: Env,
+        cid: String,
+        dataset_hash: BytesN<32>,
+        uploader: Address,
+        size_bytes: u64,
+        encrypted: bool,
+        version: u32,
+        decryption_key_hash: Option<BytesN<32>>,
+    ) -> Result<(), StellarAnalyticsError> {
+        // Validate CID format
+        if cid.is_empty() || cid.len() < 10 {
+            return Err(StellarAnalyticsError::InvalidCID);
+        }
+
+        if size_bytes < MIN_DATASET_SIZE_BYTES || size_bytes > MAX_DATASET_SIZE_BYTES {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
+        if version < MIN_DATASET_VERSION || version > MAX_DATASET_VERSION {
+            return Err(StellarAnalyticsError::VersionMismatch);
+        }
+
+        let dataset = IPFSDataset {
+            cid: cid.clone(),
+            dataset_hash,
+            uploader: uploader.clone(),
+            timestamp: env.ledger().timestamp(),
+            size_bytes,
+            encrypted,
+            version,
+            pinned: false,
+            decryption_key_hash,
+        };
+
+        let mut datasets: Map<String, IPFSDataset> = env
+            .storage()
+            .instance()
+            .get(&symbol!("ipfs_datasets"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        datasets.set(cid.clone(), dataset);
+        env.storage().instance().set(&symbol!("ipfs_datasets"), &datasets);
+
+        // Initialize data availability
+        let availability = DataAvailability {
+            cid: cid.clone(),
+            available: true,
+            last_checked: env.ledger().timestamp(),
+            pin_count: 0,
+            filecoin_deal_id: None,
+        };
+
+        let mut availability_map: Map<String, DataAvailability> = env
+            .storage()
+            .instance()
+            .get(&symbol!("data_availability"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        availability_map.set(cid.clone(), availability);
+        env.storage().instance().set(&symbol!("data_availability"), &availability_map);
+
+        // Emit event
+        env.events().publish(
+            (symbol!("dataset_registered"), uploader),
+            (cid, dataset_hash, size_bytes),
+        );
+
+        Ok(())
+    }
+
+    /// Check data availability for a given CID
+    pub fn check_data_availability(env: Env, cid: String) -> Result<(), StellarAnalyticsError> {
+        let availability_map: Map<String, DataAvailability> = env
+            .storage()
+            .instance()
+            .get(&symbol!("data_availability"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        let availability = availability_map
+            .get(cid.clone())
+            .ok_or(StellarAnalyticsError::DatasetNotFound)?;
+
+        if !availability.available {
+            return Err(StellarAnalyticsError::DataNotAvailable);
+        }
+
+        Ok(())
+    }
+
+    /// Update data availability status
+    pub fn update_data_availability(
+        env: Env,
+        cid: String,
+        available: bool,
+        pin_count: u32,
+        filecoin_deal_id: Option<u64>,
+    ) -> Result<(), StellarAnalyticsError> {
+        let caller = env.current_contract_address(); // In real implementation, get from auth
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&symbol!("admin"))
+            .ok_or(StellarAnalyticsError::NotAuthorizedOracle)?;
+
+        if caller != admin {
+            return Err(StellarAnalyticsError::NotAuthorizedOracle);
+        }
+
+        if pin_count > MAX_PIN_COUNT {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
+        let mut availability_map: Map<String, DataAvailability> = env
+            .storage()
+            .instance()
+            .get(&symbol!("data_availability"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        let mut availability = availability_map
+            .get(cid.clone())
+            .ok_or(StellarAnalyticsError::DatasetNotFound)?;
+
+        availability.available = available;
+        availability.last_checked = env.ledger().timestamp();
+        availability.pin_count = pin_count;
+        availability.filecoin_deal_id = filecoin_deal_id;
+
+        availability_map.set(cid.clone(), availability);
+        env.storage().instance().set(&symbol!("data_availability"), &availability_map);
+
+        // Emit event
+        env.events().publish(
+            (symbol!("availability_updated"), cid),
+            (available, pin_count),
+        );
+
+        Ok(())
+    }
+
+    /// Pin a dataset (mark as pinned)
+    pub fn pin_dataset(env: Env, cid: String) -> Result<(), StellarAnalyticsError> {
+        let caller = env.current_contract_address(); // In real implementation, get from auth
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&symbol!("admin"))
+            .ok_or(StellarAnalyticsError::NotAuthorizedOracle)?;
+
+        if caller != admin {
+            return Err(StellarAnalyticsError::NotAuthorizedOracle);
+        }
+
+        let mut datasets: Map<String, IPFSDataset> = env
+            .storage()
+            .instance()
+            .get(&symbol!("ipfs_datasets"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        let mut dataset = datasets
+            .get(cid.clone())
+            .ok_or(StellarAnalyticsError::DatasetNotFound)?;
+
+        dataset.pinned = true;
+        datasets.set(cid.clone(), dataset);
+        env.storage().instance().set(&symbol!("ipfs_datasets"), &datasets);
+
+        // Emit event
+        env.events().publish(
+            (symbol!("dataset_pinned"), cid),
+            (),
+        );
+
+        Ok(())
+    }
+
+    /// Get dataset information
+    pub fn get_dataset(env: Env, cid: String) -> Result<IPFSDataset, StellarAnalyticsError> {
+        let datasets: Map<String, IPFSDataset> = env
+            .storage()
+            .instance()
+            .get(&symbol!("ipfs_datasets"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        datasets
+            .get(cid)
+            .ok_or(StellarAnalyticsError::DatasetNotFound)
+    }
+
+    /// Get data availability information
+    pub fn get_data_availability(env: Env, cid: String) -> Result<DataAvailability, StellarAnalyticsError> {
+        let availability_map: Map<String, DataAvailability> = env
+            .storage()
+            .instance()
+            .get(&symbol!("data_availability"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        availability_map
+            .get(cid)
+            .ok_or(StellarAnalyticsError::DatasetNotFound)
+    }
+
+    /// Create a new version of a dataset
+    pub fn create_dataset_version(
+        env: Env,
+        old_cid: String,
+        new_cid: String,
+        new_dataset_hash: BytesN<32>,
+        uploader: Address,
+        size_bytes: u64,
+        decryption_key_hash: Option<BytesN<32>>,
+    ) -> Result<(), StellarAnalyticsError> {
+        // Validate new CID format
+        if new_cid.is_empty() || new_cid.len() < 10 {
+            return Err(StellarAnalyticsError::InvalidCID);
+        }
+
+        if size_bytes < MIN_DATASET_SIZE_BYTES || size_bytes > MAX_DATASET_SIZE_BYTES {
+            return Err(StellarAnalyticsError::InvalidInputRange);
+        }
+
+        // Get old dataset to inherit properties
+        let mut datasets: Map<String, IPFSDataset> = env
+            .storage()
+            .instance()
+            .get(&symbol!("ipfs_datasets"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        let old_dataset = datasets
+            .get(old_cid.clone())
+            .ok_or(StellarAnalyticsError::DatasetNotFound)?;
+
+        if old_dataset.version >= MAX_DATASET_VERSION {
+            return Err(StellarAnalyticsError::VersionMismatch);
+        }
+
+        let new_version = old_dataset.version + 1;
+
+        let new_dataset = IPFSDataset {
+            cid: new_cid.clone(),
+            dataset_hash: new_dataset_hash.clone(),
+            uploader,
+            timestamp: env.ledger().timestamp(),
+            size_bytes,
+            encrypted: old_dataset.encrypted,
+            version: new_version,
+            pinned: false,
+            decryption_key_hash,
+        };
+
+        datasets.set(new_cid.clone(), new_dataset);
+        env.storage().instance().set(&symbol!("ipfs_datasets"), &datasets);
+
+        // Initialize data availability for new version
+        let availability = DataAvailability {
+            cid: new_cid.clone(),
+            available: true,
+            last_checked: env.ledger().timestamp(),
+            pin_count: 0,
+            filecoin_deal_id: None,
+        };
+
+        let mut availability_map: Map<String, DataAvailability> = env
+            .storage()
+            .instance()
+            .get(&symbol!("data_availability"))
+            .unwrap_or_else(|| Map::new(&env));
+
+        availability_map.set(new_cid.clone(), availability);
+        env.storage().instance().set(&symbol!("data_availability"), &availability_map);
+
+        // Emit event
+        env.events().publish(
+            (symbol!("version_created"), old_cid),
+            (new_cid, new_dataset_hash, new_version),
+        );
+
+        Ok(())
     }
 }

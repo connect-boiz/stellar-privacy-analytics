@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
-  Database, 
-  Shield, 
-  Settings, 
-  Menu, 
-  X, 
+import {
+  BarChart3,
+  Database,
+  Shield,
+  Settings,
+  Menu,
+  X,
   Lock,
   Eye,
-  Activity
+  Activity,
+  Search,
+  Users,
+  Sliders,
+  GraduationCap
 } from 'lucide-react';
+import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 
 export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,8 +25,13 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'X-Ray Analytics', href: '/analytics', icon: Activity },
+    { name: 'Workflow Builder', href: '/workflow', icon: Target },
     { name: 'Data Management', href: '/data', icon: Database },
     { name: 'Privacy Settings', href: '/privacy', icon: Shield },
+    { name: 'Search', href: '/search', icon: Search },
+    { name: 'Consent', href: '/consent', icon: Users },
+    { name: 'Performance', href: '/performance', icon: Sliders },
+    { name: 'Training', href: '/training', icon: GraduationCap },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -53,11 +63,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive(item.href)
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
+                      ? 'bg-blue-100 text-blue-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                     onClick={() => setSidebarOpen(false)}
                   >
                     <Icon className="mr-3 h-5 w-5" />
@@ -87,11 +96,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isActive(item.href)
-                          ? 'bg-blue-100 text-blue-900'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                      className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
                     >
                       <Icon className="mr-3 h-5 w-5" />
                       {item.name}
@@ -109,6 +117,9 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <p className="text-sm font-medium text-gray-700">Privacy Mode</p>
                   <p className="text-xs text-gray-500">Maximum Protection</p>
                 </div>
+              </div>
+              <div className="mt-3">
+                <NetworkStatusIndicator className="w-full" />
               </div>
             </div>
           </div>

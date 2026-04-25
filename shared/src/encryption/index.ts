@@ -2,6 +2,11 @@ import CryptoJS from 'crypto-js';
 import { v4 as uuidv4 } from 'uuid';
 import { EncryptedData } from '../types/privacy';
 
+// Export new blob storage components
+export * from './aes';
+export * from './storage';
+export * from './blob-storage';
+
 export class EncryptionService {
   private static readonly ALGORITHM = 'AES-256-GCM';
   private static readonly KEY_DERIVATION_ITERATIONS = 100000;
