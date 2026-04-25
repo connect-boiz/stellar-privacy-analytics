@@ -42,5 +42,20 @@
   .xray-scan-line {
     @apply absolute left-0 right-0 h-[2px] bg-cyber-blue shadow-[0_0_8px_#00F0FF] z-10 pointer-events-none;
   }
+
+  /* Mobile accessibility improvements */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .prevent-select {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
 }
 
