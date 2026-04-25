@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Shield, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface FormValues {
@@ -17,18 +18,18 @@ interface FormErrors {
   dataRetention?: string;
 }
 
-const validate = (values: FormValues): FormErrors => {
+const validate = (values: FormValues, t: any): FormErrors => {
   const errors: FormErrors = {};
   if (values.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.contactEmail)) {
-    errors.contactEmail = 'Enter a valid email address.';
+    errors.contactEmail = t('privacy.settings.validation.validEmail');
   }
   const eps = parseFloat(values.epsilonBudget);
   if (isNaN(eps) || eps <= 0 || eps > 10) {
-    errors.epsilonBudget = 'Epsilon must be a number between 0 and 10.';
+    errors.epsilonBudget = t('privacy.settings.validation.epsilonRange');
   }
   const ret = parseInt(values.dataRetention, 10);
   if (isNaN(ret) || ret < 1) {
-    errors.dataRetention = 'Retention period must be at least 1 day.';
+    errors.dataRetention = t('privacy.settings.validation.retentionMinDays');
   }
   return errors;
 };
@@ -50,6 +51,7 @@ const riskColor: Record<string, string> = {
 const STORAGE_KEY = 'privacy_settings';
 
 export const PrivacySettings: React.FC = () => {
+  const { t } = useTranslation();
   const [values, setValues] = useState<FormValues>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -72,13 +74,13 @@ export const PrivacySettings: React.FC = () => {
 
   // Real-time validation on touched fields
   useEffect(() => {
-    const errs = validate(values);
+    const errs = validate(values, t);
     const visibleErrors: FormErrors = {};
     if (touched.contactEmail) visibleErrors.contactEmail = errs.contactEmail;
     if (touched.epsilonBudget) visibleErrors.epsilonBudget = errs.epsilonBudget;
     if (touched.dataRetention) visibleErrors.dataRetention = errs.dataRetention;
     setErrors(visibleErrors);
-  }, [values, touched]);
+  }, [values, touched, t]);
 
   const set = <K extends keyof FormValues>(key: K, val: FormValues[K]) =>
     setValues((prev) => ({ ...prev, [key]: val }));
@@ -90,7 +92,7 @@ export const PrivacySettings: React.FC = () => {
     e.preventDefault();
     const allTouched = { contactEmail: true, epsilonBudget: true, dataRetention: true };
     setTouched(allTouched);
-    const errs = validate(values);
+    const errs = validate(values, t);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
     setSaved(true);

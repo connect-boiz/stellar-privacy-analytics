@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "プライバシー保護機械学習",
+      "subtitle": "連合学習、差分プライバシー、暗号化推論",
+      "badge": "プライバシー第一",
+      "tabs": {
+        "federated": "連合学習",
+        "privacy": "差分プライバシー",
+        "encryption": "準同型暗号化"
+      },
+      "federated": {
+        "trainingStatus": "トレーニング状況",
+        "active": "アクティブ",
+        "inactive": "非アクティブ",
+        "connectedClients": "接続中のクライアント",
+        "currentRound": "現在のラウンド",
+        "startTraining": "トレーニング開始",
+        "stopTraining": "トレーニング停止",
+        "trainingProgress": "トレーニング進捗",
+        "round": "ラウンド",
+        "accuracy": "精度",
+        "loss": "損失",
+        "clients": "クライアント",
+        "connectedClientsTitle": "接続中のクライアント",
+        "client": "クライアント",
+        "samples": "サンプル"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "使用済みプライバシー予算",
+        "budgetRemaining": "残り予算",
+        "totalQueries": "総クエリ数",
+        "initializePrivacyBudget": "プライバシー予算を初期化",
+        "recentQueries": "最近のクエリ",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "暗号化モデル",
+        "keyPairs": "キーペア",
+        "encryptedInferences": "暗号化推論",
+        "generateEncryptionKeys": "暗号化キーを生成",
+        "encryptionSchemes": "暗号化方式",
+        "models": "モデル"
+      }
+    },
+    "settings": {
+      "title": "プライバシー設定",
+      "subtitle": "プライバシーとセキュリティの設定を管理",
+      "badge": "プライバシー保護済み",
+      "privacyLevel": "プライバシーレベル",
+      "risk": "リスク",
+      "dataManagement": "データ管理",
+      "dataRetentionPeriod": "データ保持期間（日）",
+      "privacyBudget": "プライバシー予算（ε イプシロン、0～10）",
+      "notificationEmail": "通知メール（オプション）",
+      "allowDataExport": "データエクスポートを許可",
+      "allowDataExportDesc": "ユーザーが分析結果をエクスポートすることを許可",
+      "allowDataSharing": "データ共有を許可",
+      "allowDataSharingDesc": "匿名化された洞察をパートナーと共有",
+      "saveSettings": "設定を保存",
+      "settingsSaved": "設定が保存されました",
+      "fixErrors": "保存前にエラーを修正",
+      "levels": {
+        "minimal": "最小",
+        "standard": "標準",
+        "high": "高",
+        "maximum": "最大"
+      },
+      "riskLevels": {
+        "veryLow": "非常に低い",
+        "low": "低い",
+        "medium": "中程度",
+        "high": "高い"
+      },
+      "features": {
+        "dataEncryption": "データ暗号化",
+        "basicAccessControl": "基本アクセス制御",
+        "accessControl": "アクセス制御",
+        "auditLogging": "監査ログ",
+        "differentialPrivacy": "差分プライバシー",
+        "zeroKnowledgeProofs": "ゼロ知識証明"
+      },
+      "validation": {
+        "validEmail": "有効なメールアドレスを入力してください。",
+        "epsilonRange": "イプシロンは0から10までの数値である必要があります。",
+        "retentionMinDays": "保持期間は最低1日である必要があります。"
+      }
+    },
+    "budget": {
+      "title": "プライバシー予算モニター",
+      "backToDashboard": "ダッシュボードに戻る",
+      "datasets": {
+        "customerAnalytics": "顧客分析データセット",
+        "financialTransactions": "金融取引データセット",
+        "healthcareRecords": "医療記録データセット"
+      }
+    },
+    "upload": {
+      "title": "暗号化データアップロード",
+      "steps": {
+        "select": "ファイルを選択",
+        "metadata": "メタデータを設定",
+        "encrypt": "データを暗号化",
+        "upload": "セキュアストレージにアップロード"
+      },
+      "fileTypes": {
+        "csv": "CSVファイル",
+        "json": "JSONファイル",
+        "excel": "Excelファイル",
+        "parquet": "Parquetファイル"
+      },
+      "encryption": {
+        "standard": "標準暗号化",
+        "advanced": "高度な暗号化",
+        "quantum": "量子耐性暗号化"
+      },
+      "privacyLevel": "プライバシーレベル",
+      "department": "部門",
+      "dateRange": "日付範囲",
+      "tags": "タグ",
+      "start": "開始",
+      "end": "終了",
+      "encryptData": "データを暗号化",
+      "uploadComplete": "アップロード完了",
+      "uploadFailed": "アップロード失敗"
+    },
+    "education": {
+      "title": "プライバシー教育",
+      "subtitle": "プライバシー保護技術について学ぶ",
+      "modules": {
+        "differentialPrivacy": "差分プライバシー",
+        "federatedLearning": "連合学習",
+        "homomorphicEncryption": "準同型暗号化",
+        "zeroKnowledgeProofs": "ゼロ知識証明"
+      }
+    },
+    "monitoring": {
+      "title": "プライバシー監視",
+      "subtitle": "リアルタイムプライバシー指標とアラート",
+      "metrics": {
+        "privacyBudget": "プライバシー予算",
+        "dataAccess": "データアクセス",
+        "encryptionStatus": "暗号化状態",
+        "complianceScore": "コンプライアンススコア"
+      },
+      "alerts": {
+        "budgetWarning": "プライバシー予算警告",
+        "unauthorizedAccess": "不正アクセス試行",
+        "encryptionFailure": "暗号化失敗"
+      }
+    },
+    "health": {
+      "title": "プライバシー健全性ダッシュボード",
+      "subtitle": "組織のプライバシー姿勢を監視",
+      "score": "プライバシースコア",
+      "excellent": "優秀",
+      "good": "良好",
+      "fair": "普通",
+      "poor": "不良",
+      "recommendations": "推奨事項",
+      "lastUpdated": "最終更新"
+    },
+    "common": {
+      "privacy": "プライバシー",
+      "security": "セキュリティ",
+      "encryption": "暗号化",
+      "decryption": "復号",
+      "data": "データ",
+      "access": "アクセス",
+      "control": "制御",
+      "audit": "監査",
+      "compliance": "コンプライアンス",
+      "risk": "リスク",
+      "protection": "保護",
+      "anonymization": "匿名化",
+      "pseudonymization": "仮名化",
+      "consent": "同意",
+      "notification": "通知",
+      "alert": "アラート",
+      "warning": "警告",
+      "error": "エラー",
+      "success": "成功",
+      "loading": "読み込み中",
+      "processing": "処理中",
+      "complete": "完了",
+      "failed": "失敗",
+      "cancel": "キャンセル",
+      "confirm": "確認",
+      "save": "保存",
+      "delete": "削除",
+      "edit": "編集",
+      "view": "表示",
+      "download": "ダウンロード",
+      "upload": "アップロード",
+      "export": "エクスポート",
+      "import": "インポート",
+      "share": "共有",
+      "copy": "コピー",
+      "move": "移動",
+      "search": "検索",
+      "filter": "フィルター",
+      "sort": "ソート",
+      "refresh": "更新",
+      "settings": "設定",
+      "configuration": "設定",
+      "administration": "管理"
+    }
+  },
+  "navigation": {
+    "dashboard": "ダッシュボード",
+    "privacy": "プライバシー",
+    "analytics": "分析",
+    "data": "データ",
+    "settings": "設定",
+    "help": "ヘルプ",
+    "logout": "ログアウト"
+  },
+  "language": {
+    "select": "言語を選択",
+    "english": "英語",
+    "spanish": "スペイン語",
+    "french": "フランス語",
+    "german": "ドイツ語",
+    "chinese": "中国語",
+    "arabic": "アラビア語",
+    "japanese": "日本語",
+    "hindi": "ヒンディー語",
+    "portuguese": "ポルトガル語",
+    "russian": "ロシア語"
+  },
+  "formats": {
+    "date": "YYYY/MM/DD",
+    "time": "HH:mm",
+    "dateTime": "YYYY/MM/DD HH:mm",
+    "currency": "¥",
+    "number": "#,##0.##",
+    "percentage": "#,##0.##%"
+  }
+}
