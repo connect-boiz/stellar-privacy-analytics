@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger';
 import { Certification, CertificationStatus, CertificationType } from '../types/certification';
-import { databaseService } from './databaseService';
+import { certificationDatabaseService } from './certificationDatabaseService';
 import { cryptoService } from './cryptoService';
 import { badgeService } from './badgeService';
 
@@ -71,7 +71,7 @@ class CertificationService {
       };
 
       // Store in database
-      await databaseService.storeCertification(certification);
+      await certificationDatabaseService.storeCertification(certification);
       
       // Store in memory cache
       this.certifications.set(data.id, certification);
@@ -92,7 +92,7 @@ class CertificationService {
       }
 
       // Fetch from database
-      const certification = await databaseService.getCertification(id);
+      const certification = await certificationDatabaseService.getCertification(id);
       if (certification) {
         this.certifications.set(id, certification);
       }
@@ -106,11 +106,11 @@ class CertificationService {
 
   async getOrganizationCertifications(filters: {
     organizationId: string;
-    status?: string;
-    certificationType?: string;
+    status?: CertificationStatus;
+    certificationType?: CertificationType;
   }): Promise<Certification[]> {
     try {
-      const certifications = await databaseService.getOrganizationCertifications(filters);
+      const certifications = await certificationDatabaseService.getOrganizationCertifications(filters);
       
       // Apply additional filters if needed
       let filteredCertifications = certifications;
@@ -173,7 +173,7 @@ class CertificationService {
       });
 
       // Update in database
-      await databaseService.updateCertification(certification);
+      await certificationDatabaseService.updateCertification(certification);
       
       // Update memory cache
       this.certifications.set(data.certificationId, certification);
@@ -192,7 +192,7 @@ class CertificationService {
 
   async verifyPublicCertification(verificationCode: string): Promise<PublicVerification | null> {
     try {
-      const certification = await databaseService.getCertificationByVerificationCode(verificationCode);
+      const certification = await certificationDatabaseService.getCertificationByVerificationCode(verificationCode);
       
       if (!certification) {
         return null;
@@ -238,7 +238,7 @@ class CertificationService {
       });
 
       // Update in database
-      await databaseService.updateCertification(certification);
+      await certificationDatabaseService.updateCertification(certification);
       
       // Update memory cache
       this.certifications.set(certificationId, certification);
@@ -299,7 +299,7 @@ class CertificationService {
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + daysAhead);
 
-      const certifications = await databaseService.getCertificationsExpiringBefore(expiryDate);
+      const certifications = await certificationDatabaseService.getCertificationsExpiringBefore(expiryDate);
       
       return certifications.filter(cert => 
         cert.status === 'validated' && 
@@ -343,7 +343,7 @@ class CertificationService {
         details: `Renewed as certification ${newCertification.id}`,
       });
 
-      await databaseService.updateCertification(certification);
+      await certificationDatabaseService.updateCertification(certification);
 
       logger.info(`Renewed certification ${certificationId} as ${newCertification.id}`);
       return newCertification;

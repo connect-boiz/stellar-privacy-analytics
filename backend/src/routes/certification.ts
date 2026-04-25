@@ -97,8 +97,8 @@ router.get('/organization/:organizationId', [
   try {
     const filters = {
       organizationId: req.params.organizationId,
-      status: req.query.status as string,
-      certificationType: req.query.certificationType as string,
+      status: req.query.status as 'pending' | 'validated' | 'expired' | 'revoked' | undefined,
+      certificationType: req.query.certificationType as 'GDPR' | 'CCPA' | 'HIPAA' | 'ISO27001' | 'SOC2' | 'CUSTOM' | undefined,
     };
 
     const certifications = await certificationService.getOrganizationCertifications(filters);
