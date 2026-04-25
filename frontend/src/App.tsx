@@ -14,8 +14,7 @@ import AuditExplorerPage from './pages/AuditExplorerPage';
 import EncryptedUploadPage from './pages/EncryptedUploadPage';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { NetworkStatusIndicator } from './components/NetworkStatusIndicator';
+import { WorkflowBuilder } from './pages/WorkflowBuilder';
 
 // New pages
 import SearchPage from './pages/SearchPage';
@@ -83,55 +82,36 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <div className="min-h-screen bg-gray-50">
-            {/* Network Status Indicator */}
-            <div className="fixed top-4 right-4 z-50">
-              <NetworkStatusIndicator />
-            </div>
-            
-            <Routes>
-              <Route 
-                path="/login" 
-                element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} 
-              />
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute isAuthenticated={isAuthenticated}>
-                    <Layout>
-                      <Routes>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/analytics" element={<Analytics />} />
-                        <Route path="/data" element={<DataManagement />} />
-                        <Route path="/privacy" element={<PrivacySettings />} />
-                        <Route path="/audit" element={<AuditExplorerPage />} />
-                        <Route path="/upload" element={<EncryptedUploadPage />} />
-                        <Route path="/search" element={<SearchPage />} />
-                        <Route path="/consent" element={<ConsentPage />} />
-                        <Route path="/performance" element={<PerformancePage />} />
-                        <Route path="/budget" element={<PrivacyBudgetPage />} />
-                        <Route path="/network-test" element={<NetworkTestPage />} />
-                        <Route path="/education" element={<PrivacyEducation />} />
-                        <Route path="/data-table" element={<DataTableDemo />} />
-                        <Route path="/" element={<Navigate to="/dashboard" />} />
-                      </Routes>
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-              }}
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route 
+              path="/login" 
+              element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} 
+            />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <Layout>
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/data" element={<DataManagement />} />
+                      <Route path="/privacy" element={<PrivacySettings />} />
+                      <Route path="/audit" element={<AuditExplorerPage />} />
+                      <Route path="/upload" element={<EncryptedUploadPage />} />
+                      <Route path="/search" element={<SearchPage />} />
+                      <Route path="/consent" element={<ConsentPage />} />
+                      <Route path="/performance" element={<PerformancePage />} />
+                      <Route path="/budget" element={<PrivacyBudgetPage />} />
+                      <Route path="/workflow" element={<WorkflowBuilder />} />
+                      <Route path="/" element={<Navigate to="/dashboard" />} />
+                    </Routes>
+                  </Layout>
+                </ProtectedRoute>
+              }
             />
           </div>
         </Router>
