@@ -15,6 +15,7 @@ import {
   Users,
   Sliders
 } from 'lucide-react';
+import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 
 export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -115,6 +116,9 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <p className="text-sm font-medium text-gray-700">Privacy Mode</p>
                   <p className="text-xs text-gray-500">Maximum Protection</p>
                 </div>
+              </div>
+              <div className="mt-3">
+                <NetworkStatusIndicator className="w-full" />
               </div>
             </div>
           </div>
