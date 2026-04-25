@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { DataManagement } from './pages/DataManagement';
 import { PrivacySettings } from './pages/PrivacySettings';
+import CertificationDashboard from './pages/CertificationDashboard';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -62,6 +63,7 @@ function App() {
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/data" element={<DataManagement />} />
                       <Route path="/privacy" element={<PrivacySettings />} />
+                      <Route path="/certification" element={<CertificationDashboard />} />
                       <Route path="/" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </Layout>
