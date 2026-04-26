@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { signTransaction } from '@stellar/freighter-api';
 import { AlertTriangle, ShieldX, CheckCircle, Loader2, X } from 'lucide-react';
+import { Modal, ConfirmDialog } from './ui/Modal';
 
 interface Consumer {
   id: string;
@@ -32,24 +33,24 @@ export const DataOwnerControlCenter: React.FC = () => {
 
   const handleRevoke = async (consumerId: string | 'ALL') => {
     const previousConsumers = [...consumers];
-    
+
     // Optimistic UI Update
     if (consumerId === 'ALL') {
       setConsumers([]);
     } else {
       setConsumers(consumers.filter(c => c.id !== consumerId));
     }
-    
+
     setIsPending(true);
     setModalState({ ...modalState, step: 2 });
 
     try {
       // Mock XDR creation for Stellar transaction
-      const mockXdr = "AAAAAgAAAAB..."; 
-      
+      const mockXdr = "AAAAAgAAAAB...";
+
       // Freighter integration: Sign the revocation transaction
       const signedTx = await signTransaction(mockXdr, { network: 'TESTNET' });
-      
+
       if (!signedTx) throw new Error("User declined transaction");
 
       // In production, submit the signedTx to Horizon here...
@@ -82,7 +83,7 @@ export const DataOwnerControlCenter: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Data Owner Control Center</h1>
           <p className="text-gray-500 mt-1">Manage dataset permissions and active consumer keys.</p>
         </div>
-        <button 
+        <button
           onClick={() => setModalState({ isOpen: true, consumer: null, step: 1 })}
           className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-sm transition-colors"
         >
@@ -115,7 +116,7 @@ export const DataOwnerControlCenter: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-gray-500 text-sm">{consumer.activeSince}</td>
                   <td className="px-6 py-4 text-right">
-                    <button 
+                    <button
                       onClick={() => setModalState({ isOpen: true, consumer, step: 1 })}
                       className="text-red-600 hover:text-red-800 font-medium text-sm flex items-center justify-end w-full"
                       disabled={isPending}
@@ -131,60 +132,55 @@ export const DataOwnerControlCenter: React.FC = () => {
       </div>
 
       {/* Multi-step Revocation Modal */}
-      {modalState.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
-            {!isPending && (
-              <button onClick={() => setModalState({ isOpen: false, consumer: null, step: 1 })} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <X size={20} />
+      <Modal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ isOpen: false, consumer: null, step: 1 })}
+        title={modalState.consumer ? `Revoke ${modalState.consumer.name}?` : 'Emergency: Revoke All?'}
+        size="md"
+        showCloseButton={!isPending}
+        closeOnOverlayClick={!isPending}
+        closeOnEscape={!isPending}
+      >
+        {modalState.step === 1 ? (
+          <>
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
+              <AlertTriangle size={24} />
+            </div>
+            <p className="text-gray-600 mb-6">
+              {modalState.consumer
+                ? `This will instantly invalidate client-side decryption keys for ${modalState.consumer.name}. They will lose all access.`
+                : 'This is a destructive action. All active consumers will instantly lose decryption access. Use only in emergencies.'}
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setModalState({ isOpen: false, consumer: null, step: 1 })}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
               </button>
-            )}
-
-            {modalState.step === 1 ? (
-              <>
-                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
-                  <AlertTriangle size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {modalState.consumer ? `Revoke ${modalState.consumer.name}?` : 'Emergency: Revoke All?'}
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  {modalState.consumer 
-                    ? `This will instantly invalidate client-side decryption keys for ${modalState.consumer.name}. They will lose all access.` 
-                    : 'This is a destructive action. All active consumers will instantly lose decryption access. Use only in emergencies.'}
-                </p>
-                <div className="flex space-x-3">
-                  <button 
-                    onClick={() => setModalState({ isOpen: false, consumer: null, step: 1 })}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={() => handleRevoke(modalState.consumer ? modalState.consumer.id : 'ALL')}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
-                  >
-                    Confirm Revocation
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-6">
-                <div className="mb-4 flex justify-center text-blue-600">
-                  <Loader2 size={40} className="animate-spin" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Awaiting Signature</h3>
-                <p className="text-gray-600 text-sm">
-                  Please sign the transaction using the Freighter wallet prompt to process the revocation on the Stellar ledger.
-                </p>
-                <p className="text-yellow-600 text-xs mt-4 font-medium animate-pulse">
-                  Waiting for ledger consensus...
-                </p>
-              </div>
-            )}
+              <button
+                onClick={() => handleRevoke(modalState.consumer ? modalState.consumer.id : 'ALL')}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+              >
+                Confirm Revocation
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <div className="mb-4 flex justify-center text-blue-600">
+              <Loader2 size={40} className="animate-spin" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Awaiting Signature</h3>
+            <p className="text-gray-600 text-sm">
+              Please sign the transaction using the Freighter wallet prompt to process the revocation on the Stellar ledger.
+            </p>
+            <p className="text-yellow-600 text-xs mt-4 font-medium animate-pulse">
+              Waiting for ledger consensus...
+            </p>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

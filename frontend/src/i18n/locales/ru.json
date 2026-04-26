@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "ML с Защитой Приватности",
+      "subtitle": "Федеративное обучение, дифференциальная приватность и зашифрованный вывод",
+      "badge": "Приватность Прежде Всего",
+      "tabs": {
+        "federated": "Федеративное Обучение",
+        "privacy": "Дифференциальная Приватность",
+        "encryption": "Гомоморфное Шифрование"
+      },
+      "federated": {
+        "trainingStatus": "Статус Обучения",
+        "active": "Активно",
+        "inactive": "Неактивно",
+        "connectedClients": "Подключенные Клиенты",
+        "currentRound": "Текущий Раунд",
+        "startTraining": "Начать Обучение",
+        "stopTraining": "Остановить Обучение",
+        "trainingProgress": "Прогресс Обучения",
+        "round": "Раунд",
+        "accuracy": "Точность",
+        "loss": "Потеря",
+        "clients": "клиентов",
+        "connectedClientsTitle": "Подключенные Клиенты",
+        "client": "Клиент",
+        "samples": "образцов"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "Использованный Бюджет Приватности",
+        "budgetRemaining": "Оставшийся Бюджет",
+        "totalQueries": "Всего Запросов",
+        "initializePrivacyBudget": "Инициализировать Бюджет Приватности",
+        "recentQueries": "Недавние Запросы",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "Зашифрованные Модели",
+        "keyPairs": "Пары Ключей",
+        "encryptedInferences": "Зашифрованные Выводы",
+        "generateEncryptionKeys": "Сгенерировать Ключи Шифрования",
+        "encryptionSchemes": "Схемы Шифрования",
+        "models": "модели"
+      }
+    },
+    "settings": {
+      "title": "Настройки Приватности",
+      "subtitle": "Управление вашими предпочтениями приватности и безопасности",
+      "badge": "Приватность Защищена",
+      "privacyLevel": "Уровень Приватности",
+      "risk": "Риск",
+      "dataManagement": "Управление Данными",
+      "dataRetentionPeriod": "Период Хранения Данных (дни)",
+      "privacyBudget": "Бюджет Приватности (ε эпсилон, 0–10)",
+      "notificationEmail": "Email Уведомлений (опционально)",
+      "allowDataExport": "Разрешить Экспорт Данных",
+      "allowDataExportDesc": "Разрешить пользователям экспортировать результаты анализа",
+      "allowDataSharing": "Разрешить Обмен Данными",
+      "allowDataSharingDesc": "Делиться анонимизированными инсайтами с партнерами",
+      "saveSettings": "Сохранить Настройки",
+      "settingsSaved": "Настройки сохранены",
+      "fixErrors": "Исправить ошибки перед сохранением",
+      "levels": {
+        "minimal": "Минимальный",
+        "standard": "Стандартный",
+        "high": "Высокий",
+        "maximum": "Максимальный"
+      },
+      "riskLevels": {
+        "veryLow": "Очень Низкий",
+        "low": "Низкий",
+        "medium": "Средний",
+        "high": "Высокий"
+      },
+      "features": {
+        "dataEncryption": "Шифрование данных",
+        "basicAccessControl": "Базовый контроль доступа",
+        "accessControl": "Контроль доступа",
+        "auditLogging": "Журнал аудита",
+        "differentialPrivacy": "Дифференциальная приватность",
+        "zeroKnowledgeProofs": "Доказательства с нулевым разглашением"
+      },
+      "validation": {
+        "validEmail": "Введите действительный адрес электронной почты.",
+        "epsilonRange": "Эпсилон должен быть числом от 0 до 10.",
+        "retentionMinDays": "Период хранения должен составлять не менее 1 дня."
+      }
+    },
+    "budget": {
+      "title": "Монитор Бюджета Приватности",
+      "backToDashboard": "Вернуться к Панели Управления",
+      "datasets": {
+        "customerAnalytics": "Набор Данных Аналитики Клиентов",
+        "financialTransactions": "Набор Данных Финансовых Транзакций",
+        "healthcareRecords": "Набор Данных Медицинских Записей"
+      }
+    },
+    "upload": {
+      "title": "Загрузка Зашифрованных Данных",
+      "steps": {
+        "select": "Выбрать Файлы",
+        "metadata": "Настроить Метаданные",
+        "encrypt": "Зашифровать Данные",
+        "upload": "Загрузить в Безопасное Хранилище"
+      },
+      "fileTypes": {
+        "csv": "CSV файлы",
+        "json": "JSON файлы",
+        "excel": "Excel файлы",
+        "parquet": "Parquet файлы"
+      },
+      "encryption": {
+        "standard": "Стандартное Шифрование",
+        "advanced": "Расширенное Шифрование",
+        "quantum": "Квантово-устойчивое Шифрование"
+      },
+      "privacyLevel": "Уровень Приватности",
+      "department": "Отдел",
+      "dateRange": "Диапазон Дат",
+      "tags": "Теги",
+      "start": "Начало",
+      "end": "Конец",
+      "encryptData": "Зашифровать Данные",
+      "uploadComplete": "Загрузка Завершена",
+      "uploadFailed": "Загрузка Неудалась"
+    },
+    "education": {
+      "title": "Образование по Приватности",
+      "subtitle": "Узнайте о технологиях защиты приватности",
+      "modules": {
+        "differentialPrivacy": "Дифференциальная Приватность",
+        "federatedLearning": "Федеративное Обучение",
+        "homomorphicEncryption": "Гомоморфное Шифрование",
+        "zeroKnowledgeProofs": "Доказательства с Нулевым Разглашением"
+      }
+    },
+    "monitoring": {
+      "title": "Мониторинг Приватности",
+      "subtitle": "Метрики и оповещения приватности в реальном времени",
+      "metrics": {
+        "privacyBudget": "Бюджет Приватности",
+        "dataAccess": "Доступ к Данным",
+        "encryptionStatus": "Статус Шифрования",
+        "complianceScore": "Оценка Соответствия"
+      },
+      "alerts": {
+        "budgetWarning": "Предупреждение Бюджета Приватности",
+        "unauthorizedAccess": "Попытка Несанкционированного Доступа",
+        "encryptionFailure": "Сбой Шифрования"
+      }
+    },
+    "health": {
+      "title": "Панель Здоровья Приватности",
+      "subtitle": "Отслеживайте положение с приватностью вашей организации",
+      "score": "Оценка Приватности",
+      "excellent": "Отлично",
+      "good": "Хорошо",
+      "fair": "Удовлетворительно",
+      "poor": "Плохо",
+      "recommendations": "Рекомендации",
+      "lastUpdated": "Последнее Обновление"
+    },
+    "common": {
+      "privacy": "Приватность",
+      "security": "Безопасность",
+      "encryption": "Шифрование",
+      "decryption": "Расшифровка",
+      "data": "Данные",
+      "access": "Доступ",
+      "control": "Контроль",
+      "audit": "Аудит",
+      "compliance": "Соответствие",
+      "risk": "Риск",
+      "protection": "Защита",
+      "anonymization": "Анонимизация",
+      "pseudonymization": "Псевдонимизация",
+      "consent": "Согласие",
+      "notification": "Уведомление",
+      "alert": "Оповещение",
+      "warning": "Предупреждение",
+      "error": "Ошибка",
+      "success": "Успех",
+      "loading": "Загрузка",
+      "processing": "Обработка",
+      "complete": "Завершено",
+      "failed": "Неудалось",
+      "cancel": "Отмена",
+      "confirm": "Подтвердить",
+      "save": "Сохранить",
+      "delete": "Удалить",
+      "edit": "Редактировать",
+      "view": "Просмотр",
+      "download": "Скачать",
+      "upload": "Загрузить",
+      "export": "Экспорт",
+      "import": "Импорт",
+      "share": "Поделиться",
+      "copy": "Копировать",
+      "move": "Переместить",
+      "search": "Поиск",
+      "filter": "Фильтр",
+      "sort": "Сортировка",
+      "refresh": "Обновить",
+      "settings": "Настройки",
+      "configuration": "Конфигурация",
+      "administration": "Администрация"
+    }
+  },
+  "navigation": {
+    "dashboard": "Панель Управления",
+    "privacy": "Приватность",
+    "analytics": "Аналитика",
+    "data": "Данные",
+    "settings": "Настройки",
+    "help": "Помощь",
+    "logout": "Выход"
+  },
+  "language": {
+    "select": "Выбрать Язык",
+    "english": "Английский",
+    "spanish": "Испанский",
+    "french": "Французский",
+    "german": "Немецкий",
+    "chinese": "Китайский",
+    "arabic": "Арабский",
+    "japanese": "Японский",
+    "hindi": "Хинди",
+    "portuguese": "Португальский",
+    "russian": "Русский"
+  },
+  "formats": {
+    "date": "DD.MM.YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD.MM.YYYY HH:mm",
+    "currency": "₽",
+    "number": "# ##0,##",
+    "percentage": "# ##0,##%"
+  }
+}

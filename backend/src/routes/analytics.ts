@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../utils/audit';
 
@@ -22,7 +22,7 @@ router.post('/', auditMiddleware('create_analysis', 'privacy_query'), asyncHandl
 }));
 
 // Get analysis by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   res.json({
     analysis: {
       id: req.params.id,
@@ -33,7 +33,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Run analysis
-router.post('/:id/run', asyncHandler(async (req, res) => {
+router.post('/:id/run', asyncHandler(async (req: Request, res: Response) => {
   res.json({
     message: 'X-Ray analysis started',
     jobId: 'temp-job-id'

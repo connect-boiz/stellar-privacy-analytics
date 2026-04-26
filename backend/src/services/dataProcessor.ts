@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { logger } from '../utils/logger';
 import { PerformanceObserver, performance } from 'perf_hooks';
+import { DistributedLock } from '../utils/lock';
 
 export interface DataProcessingOptions {
   chunkSize?: number;
@@ -111,10 +112,49 @@ export class DataProcessor extends EventEmitter {
   async processDataset<T>(
     dataset: any[],
     processor: (chunk: any[], index: number) => Promise<T>,
-    options?: { skipGC?: boolean; priority?: 'low' | 'normal' | 'high' }
+    options?: { 
+      skipGC?: boolean; 
+      priority?: 'low' | 'normal' | 'high';
+      lockKey?: string; // Optional key for distributed locking
+    }
   ): Promise<ProcessingResult<T[]>> {
     const startTime = performance.now();
     this.abortController = new AbortController();
+    
+    // If a lock key is provided, wrap the entire processing in a distributed lock
+    if (options?.lockKey) {
+      const lock = new DistributedLock(options.lockKey);
+      const acquired = await lock.acquire();
+      
+      if (!acquired) {
+        logger.error('Failed to acquire lock for dataset processing', { lockKey: options.lockKey });
+        return {
+          success: false,
+          error: `Lock acquisition failed for key: ${options.lockKey}`,
+          metrics: { ...this.metrics },
+          processingTime: performance.now() - startTime,
+        };
+      }
+
+      try {
+        return await this.executeProcessing(dataset, processor, options);
+      } finally {
+        await lock.release();
+      }
+    }
+
+    return await this.executeProcessing(dataset, processor, options);
+  }
+
+  /**
+   * Internal method to execute the actual processing logic
+   */
+  private async executeProcessing<T>(
+    dataset: any[],
+    processor: (chunk: any[], index: number) => Promise<T>,
+    options?: { skipGC?: boolean; priority?: 'low' | 'normal' | 'high' }
+  ): Promise<ProcessingResult<T[]>> {
+    const startTime = performance.now();
     
     try {
       this.isProcessing = true;

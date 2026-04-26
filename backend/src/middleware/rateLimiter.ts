@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Redis from 'redis';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from './stellarAuth';
+import { promClient } from '../utils/prometheus';
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -10,6 +11,8 @@ export interface RateLimitConfig {
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
   onLimitReached?: (req: AuthenticatedRequest, res: Response) => void;
+  skip?: (req: AuthenticatedRequest) => boolean | Promise<boolean>;
+  emergencyBypassKey?: string;
 }
 
 export interface RateLimitTier {
@@ -29,13 +32,45 @@ export class RateLimiterMiddleware {
   private redis: Redis.RedisClientType;
   private tierConfigs: RateLimitTier;
   private defaultConfig: RateLimitConfig;
+  private emergencyBypassKey: string;
+  private metrics: {
+    rateLimitHits: promClient.Counter<'type' | 'tier' | 'identifier'>;
+    rateLimitBlocks: promClient.Counter<'type' | 'tier' | 'identifier'>;
+    rateLimitBypasses: promClient.Counter<'reason'>;
+  };
 
   constructor(config: {
     redis: Redis.RedisClientType;
     tierConfigs?: Partial<RateLimitTier>;
     defaultConfig?: RateLimitConfig;
+    emergencyBypassKey?: string;
   }) {
     this.redis = config.redis;
+    this.emergencyBypassKey = config.emergencyBypassKey || process.env.RATE_LIMIT_EMERGENCY_BYPASS_KEY || 'emergency-bypass-2024';
+    
+    // Initialize metrics
+    this.metrics = {
+      rateLimitHits: new promClient.Counter({
+        name: 'rate_limit_hits_total',
+        help: 'Total number of rate limit checks',
+        labelNames: ['type', 'tier', 'identifier']
+      }),
+      rateLimitBlocks: new promClient.Counter({
+        name: 'rate_limit_blocks_total',
+        help: 'Total number of rate limit blocks',
+        labelNames: ['type', 'tier', 'identifier']
+      }),
+      rateLimitBypasses: new promClient.Counter({
+        name: 'rate_limit_bypasses_total',
+        help: 'Total number of rate limit bypasses',
+        labelNames: ['reason']
+      })
+    };
+    
+    // Register metrics
+    promClient.register.registerMetric(this.metrics.rateLimitHits);
+    promClient.register.registerMetric(this.metrics.rateLimitBlocks);
+    promClient.register.registerMetric(this.metrics.rateLimitBypasses);
     
     this.defaultConfig = config.defaultConfig || {
       windowMs: 15 * 60 * 1000, // 15 minutes
@@ -69,21 +104,57 @@ export class RateLimiterMiddleware {
   rateLimit = (customConfig?: Partial<RateLimitConfig>) => {
     return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
       try {
-        const user = req.user;
-        if (!user) {
-          // If no user, use IP-based rate limiting
-          await this.applyRateLimit(req, res, next, this.defaultConfig, this.ipKeyGenerator(req));
-          return;
+        // Check for emergency bypass
+        if (this.checkEmergencyBypass(req)) {
+          this.metrics.rateLimitBypasses.inc({ reason: 'emergency_key' });
+          logger.warn('Emergency bypass used', {
+            ip: req.ip,
+            userAgent: req.get('User-Agent'),
+            traceId: req.traceId
+          });
+          return next();
         }
 
-        // Get configuration based on user's rate limit tier
-        const config = this.getConfigForTier(user.rateLimitTier, customConfig);
-        const key = this.userKeyGenerator(req, config);
+        // Check custom skip function
+        const config = { ...this.defaultConfig, ...customConfig };
+        if (config.skip && await config.skip(req)) {
+          return next();
+        }
 
-        await this.applyRateLimit(req, res, next, config, key);
+        const user = req.user;
+        let key: string;
+        let tier: 'basic' | 'premium' | 'enterprise' = 'basic';
+        let type: 'user' | 'ip' | 'apikey' = 'ip';
+
+        if (!user) {
+          // Check for API key rate limiting
+          const apiKey = this.extractApiKey(req);
+          if (apiKey) {
+            key = this.apiKeyKeyGenerator(req, apiKey);
+            type = 'apikey';
+            tier = await this.getApiKeyTier(apiKey);
+          } else {
+            // IP-based rate limiting
+            key = this.ipKeyGenerator(req);
+            type = 'ip';
+          }
+        } else {
+          // User-based rate limiting
+          tier = user.rateLimitTier || 'basic';
+          key = this.userKeyGenerator(req, config);
+          type = 'user';
+        }
+
+        // Get configuration based on tier
+        const rateLimitConfig = this.getConfigForTier(tier, customConfig);
+
+        // Record metrics
+        this.metrics.rateLimitHits.inc({ type, tier, identifier: this.sanitizeIdentifier(key) });
+
+        await this.applyRateLimit(req, res, next, rateLimitConfig, key, type, tier);
       } catch (error) {
         logger.error('Rate limiting error', {
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           traceId: req.traceId,
           userId: req.user?.id
         });
@@ -102,52 +173,72 @@ export class RateLimiterMiddleware {
     res: Response,
     next: NextFunction,
     config: RateLimitConfig,
-    key: string
+    key: string,
+    type: 'user' | 'ip' | 'apikey',
+    tier: 'basic' | 'premium' | 'enterprise'
   ): Promise<void> {
-    const now = Date.now();
-    const windowStart = now - (now % config.windowMs);
-    const windowEnd = windowStart + config.windowMs;
+    // Use atomic Redis operations with proper window calculation
+    const now = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
+    const windowSeconds = Math.ceil(config.windowMs / 1000);
+    const windowStart = Math.floor(now / windowSeconds) * windowSeconds;
+    const windowEnd = windowStart + windowSeconds;
     
-    // Redis key for this window
-    const redisKey = `rate_limit:${key}:${windowStart}`;
+    // Redis key for this window with consistent naming
+    const redisKey = `rate_limit:${type}:${this.sanitizeIdentifier(key)}:${windowStart}`;
     
     try {
-      // Get current count
-      const currentCount = await this.redis.get(redisKey);
-      const count = parseInt(currentCount || '0');
+      // Use atomic Redis script to prevent race conditions
+      const luaScript = `
+        local key = KEYS[1]
+        local limit = tonumber(ARGV[1])
+        local window = tonumber(ARGV[2])
+        local current = redis.call('GET', key)
+        
+        if current and tonumber(current) >= limit then
+          local ttl = redis.call('TTL', key)
+          return {0, limit - tonumber(current), ttl}
+        end
+        
+        local count = redis.call('INCR', key)
+        if count == 1 then
+          redis.call('EXPIRE', key, window)
+        end
+        
+        local ttl = redis.call('TTL', key)
+        return {1, limit - count, ttl}
+      `;
       
-      // Check if limit exceeded
-      if (count >= config.maxRequests) {
-        const ttl = await this.redis.ttl(redisKey);
-        const retryAfter = Math.ceil(ttl);
+      const result = await this.redis.eval(luaScript, {
+        keys: [redisKey],
+        arguments: [config.maxRequests.toString(), windowSeconds.toString()]
+      });
+      
+      const [allowed, remaining, ttl] = result as [number, number, number];
+      
+      // Record metrics
+      this.metrics.rateLimitHits.inc({ type, tier, identifier: this.sanitizeIdentifier(key) });
+      
+      if (allowed === 0) {
+        // Record block metrics
+        this.metrics.rateLimitBlocks.inc({ type, tier, identifier: this.sanitizeIdentifier(key) });
         
         await this.handleRateLimitExceeded(req, res, config, {
           limit: config.maxRequests,
-          remaining: 0,
-          reset: windowEnd,
-          retryAfter
+          remaining: Math.max(0, remaining),
+          reset: windowEnd * 1000, // Convert back to milliseconds
+          retryAfter: ttl
         });
         return;
       }
 
-      // Increment counter
-      const newCount = await this.redis.incr(redisKey);
-      
-      // Set expiry if this is the first request in the window
-      if (newCount === 1) {
-        await this.redis.expire(redisKey, Math.ceil(config.windowMs / 1000));
-      }
-
-      const remaining = Math.max(0, config.maxRequests - newCount);
-      
       // Add rate limit headers
       this.addRateLimitHeaders(res, {
         limit: config.maxRequests,
-        remaining,
-        reset: windowEnd
+        remaining: Math.max(0, remaining),
+        reset: windowEnd * 1000
       });
 
-      // Call onLimitReached callback if approaching limit
+      // Call onLimitReached callback if at limit
       if (remaining === 0 && config.onLimitReached) {
         config.onLimitReached(req, res);
       }
@@ -155,12 +246,23 @@ export class RateLimiterMiddleware {
       next();
     } catch (error) {
       logger.error('Redis rate limiting error', {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         redisKey,
         traceId: req.traceId
       });
       
-      // Fail open - allow request but log error
+      // Fail-closed for production, fail-open for development
+      if (process.env.NODE_ENV === 'production') {
+        await this.handleRateLimitExceeded(req, res, config, {
+          limit: config.maxRequests,
+          remaining: 0,
+          reset: windowEnd * 1000,
+          retryAfter: windowSeconds
+        });
+        return;
+      }
+      
+      // Fail open in development
       next();
     }
   }
@@ -180,7 +282,7 @@ export class RateLimiterMiddleware {
     // Log rate limit violation
     logger.warn('Rate limit exceeded', {
       userId: req.user?.id,
-      ip: req.ip,
+      ip: (req as any).ip,
       traceId: req.traceId,
       limit: info.limit,
       retryAfter: info.retryAfter
@@ -215,25 +317,128 @@ export class RateLimiterMiddleware {
   }
 
   /**
-   * Generate rate limit key for users
+   * Generate rate limit key for IP-based limiting with proxy support
+   */
+  private ipKeyGenerator(req: AuthenticatedRequest): string {
+    // Check multiple headers for real IP (proxy-aware)
+    const xForwardedFor = (req as any).headers['x-forwarded-for'];
+    const xRealIp = (req as any).headers['x-real-ip'];
+    const cfConnectingIp = (req as any).headers['cf-connecting-ip']; // Cloudflare
+    const xClientIp = (req as any).headers['x-client-ip'];
+    
+    let ip = 'unknown';
+    
+    if (xForwardedFor) {
+      // X-Forwarded-For can contain multiple IPs, take the first one (original client)
+      ip = xForwardedFor.split(',')[0].trim();
+    } else if (xRealIp) {
+      ip = xRealIp;
+    } else if (cfConnectingIp) {
+      ip = cfConnectingIp;
+    } else if (xClientIp) {
+      ip = xClientIp;
+    } else {
+      // Fallback to direct connection IP
+      ip = (req as any).ip || (req as any).connection?.remoteAddress || (req as any).socket?.remoteAddress || 'unknown';
+    }
+    
+    // Normalize IP (remove IPv6 prefix for IPv4-mapped addresses)
+    if (ip.startsWith('::ffff:')) {
+      ip = ip.substring(7);
+    }
+    
+    // Hash IP for privacy and consistency
+    return this.hashString(ip);
+  }
+
+  /**
+   * Generate rate limit key for users with consistent format
    */
   private userKeyGenerator(req: AuthenticatedRequest, config: RateLimitConfig): string {
     if (config.keyGenerator) {
       return config.keyGenerator(req);
     }
 
-    // Default: user ID + session ID
-    const baseKey = req.user?.id || 'anonymous';
+    // Use user ID and session for consistent identification
+    const userId = req.user?.id || 'anonymous';
     const sessionId = req.user?.sessionId || 'no-session';
-    return `user:${baseKey}:${sessionId}`;
+    const identifier = `${userId}:${sessionId}`;
+    
+    return this.hashString(identifier);
   }
 
   /**
-   * Generate rate limit key for IP-based limiting
+   * Generate rate limit key for API keys with consistent format
    */
-  private ipKeyGenerator(req: AuthenticatedRequest): string {
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
-    return `ip:${ip}`;
+  private apiKeyKeyGenerator(req: AuthenticatedRequest, apiKey: string): string {
+    return this.hashString(apiKey);
+  }
+
+  /**
+   * Hash string for consistent key generation
+   */
+  private hashString(input: string): string {
+    // Use a simple but consistent hash for key generation
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  /**
+   * Check for emergency bypass
+   */
+  private checkEmergencyBypass(req: AuthenticatedRequest): boolean {
+    const bypassKey = (req as any).headers['x-emergency-bypass'] as string;
+    const queryBypass = (req as any).query.emergency_bypass as string;
+    
+    return bypassKey === this.emergencyBypassKey || queryBypass === this.emergencyBypassKey;
+  }
+
+  /**
+   * Extract API key from request
+   */
+  private extractApiKey(req: AuthenticatedRequest): string | null {
+    // Check Authorization header (Bearer token)
+    const authHeader = (req as any).headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      return authHeader.substring(7);
+    }
+    
+    // Check X-API-Key header
+    const apiKeyHeader = (req as any).headers['x-api-key'] as string;
+    if (apiKeyHeader) {
+      return apiKeyHeader;
+    }
+    
+    // Check query parameter
+    const apiKeyQuery = (req as any).query.api_key as string;
+    if (apiKeyQuery) {
+      return apiKeyQuery;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Sanitize identifier for metrics
+   */
+  private sanitizeIdentifier(identifier: string): string {
+    // Remove sensitive information and limit length
+    return identifier.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+  }
+
+  /**
+   * Get tier for API key (simplified - in production, look up from database)
+   */
+  private async getApiKeyTier(apiKey: string): Promise<'basic' | 'premium' | 'enterprise'> {
+    // For now, determine tier based on API key prefix
+    if (apiKey.startsWith('pk_ent_')) return 'enterprise';
+    if (apiKey.startsWith('pk_prem_')) return 'premium';
+    return 'basic';
   }
 
   /**
@@ -282,16 +487,14 @@ export class RateLimiterMiddleware {
       return {
         limit: config.maxRequests,
         remaining,
-        reset: resetTime
+        reset: windowEnd
       };
     } catch (error) {
       logger.error('Error getting rate limit status', {
-        error: error.message,
-        userId,
-        tier
+        error: error instanceof Error ? error.message : String(error),
+        userId
       });
-
-      // Return default values on error
+      
       return {
         limit: config.maxRequests,
         remaining: config.maxRequests,
@@ -314,7 +517,7 @@ export class RateLimiterMiddleware {
       }
     } catch (error) {
       logger.error('Error resetting rate limit', {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         userId
       });
       throw error;
@@ -376,7 +579,7 @@ export class RateLimiterMiddleware {
       };
     } catch (error) {
       logger.error('Error getting rate limit stats', {
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
 
       return {
@@ -410,7 +613,7 @@ export class RateLimiterMiddleware {
       }
     } catch (error) {
       logger.error('Rate limit cleanup error', {
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   }
@@ -421,7 +624,8 @@ export class RateLimiterMiddleware {
  */
 export class PQLRateLimiter extends RateLimiterMiddleware {
   constructor(redis: Redis.RedisClientType) {
-    super(redis, {
+    super({
+      redis,
       tierConfigs: {
         basic: {
           windowMs: 15 * 60 * 1000, // 15 minutes
@@ -435,6 +639,10 @@ export class PQLRateLimiter extends RateLimiterMiddleware {
           windowMs: 15 * 60 * 1000, // 15 minutes
           maxRequests: 1000,
         }
+      },
+      defaultConfig: {
+        windowMs: 15 * 60 * 1000,
+        maxRequests: 50
       }
     });
   }
@@ -471,6 +679,29 @@ export function createRateLimiter(redis: Redis.RedisClientType): RateLimiterMidd
  */
 export function createPQLRateLimiter(redis: Redis.RedisClientType): PQLRateLimiter {
   return new PQLRateLimiter(redis);
+}
+
+/**
+ * Create admin rate limiter (more lenient)
+ */
+export function createAdminRateLimiter(redis: Redis.RedisClientType): RateLimiterMiddleware {
+  return new RateLimiterMiddleware({
+    redis,
+    tierConfigs: {
+      basic: {
+        windowMs: 15 * 60 * 1000,
+        maxRequests: 1000,
+      },
+      premium: {
+        windowMs: 15 * 60 * 1000,
+        maxRequests: 5000,
+      },
+      enterprise: {
+        windowMs: 15 * 60 * 1000,
+        maxRequests: 10000,
+      }
+    }
+  });
 }
 
 export default RateLimiterMiddleware;

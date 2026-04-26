@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package stellar_privacy;
+
+// Schema versioning implemented via versioned message structures
+message DataPayloadV1 {
+  string id = 1;
+  int64 timestamp = 2;
+  string sender_service = 3;
+  bytes encrypted_data = 4;
+}
+
+message AnalyticsRequestV1 {
+  string query_id = 1;
+  double privacy_budget_epsilon = 2;
+  double privacy_budget_delta = 3;
+}

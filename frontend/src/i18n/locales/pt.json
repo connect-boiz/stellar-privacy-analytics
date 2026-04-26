@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "ML com Preservação de Privacidade",
+      "subtitle": "Aprendizado federado, privacidade diferencial e inferência criptografada",
+      "badge": "Privacidade Primeiro",
+      "tabs": {
+        "federated": "Aprendizado Federado",
+        "privacy": "Privacidade Diferencial",
+        "encryption": "Criptografia Homomórfica"
+      },
+      "federated": {
+        "trainingStatus": "Status do Treinamento",
+        "active": "Ativo",
+        "inactive": "Inativo",
+        "connectedClients": "Clientes Conectados",
+        "currentRound": "Rodada Atual",
+        "startTraining": "Iniciar Treinamento",
+        "stopTraining": "Parar Treinamento",
+        "trainingProgress": "Progresso do Treinamento",
+        "round": "Rodada",
+        "accuracy": "Precisão",
+        "loss": "Perda",
+        "clients": "clientes",
+        "connectedClientsTitle": "Clientes Conectados",
+        "client": "Cliente",
+        "samples": "amostras"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "Orçamento de Privacidade Usado",
+        "budgetRemaining": "Orçamento Restante",
+        "totalQueries": "Total de Consultas",
+        "initializePrivacyBudget": "Inicializar Orçamento de Privacidade",
+        "recentQueries": "Consultas Recentes",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "Modelos Criptografados",
+        "keyPairs": "Pares de Chaves",
+        "encryptedInferences": "Inferências Criptografadas",
+        "generateEncryptionKeys": "Gerar Chaves de Criptografia",
+        "encryptionSchemes": "Esquemas de Criptografia",
+        "models": "modelos"
+      }
+    },
+    "settings": {
+      "title": "Configurações de Privacidade",
+      "subtitle": "Gerencie suas preferências de privacidade e segurança",
+      "badge": "Privacidade Protegida",
+      "privacyLevel": "Nível de Privacidade",
+      "risk": "Risco",
+      "dataManagement": "Gerenciamento de Dados",
+      "dataRetentionPeriod": "Período de Retenção de Dados (dias)",
+      "privacyBudget": "Orçamento de Privacidade (ε epsilon, 0–10)",
+      "notificationEmail": "Email de Notificação (opcional)",
+      "allowDataExport": "Permitir Exportação de Dados",
+      "allowDataExportDesc": "Permitir que usuários exportem resultados de análise",
+      "allowDataSharing": "Permitir Compartilhamento de Dados",
+      "allowDataSharingDesc": "Compartilhar insights anonimizados com parceiros",
+      "saveSettings": "Salvar Configurações",
+      "settingsSaved": "Configurações salvas",
+      "fixErrors": "Corrigir erros antes de salvar",
+      "levels": {
+        "minimal": "Mínimo",
+        "standard": "Padrão",
+        "high": "Alto",
+        "maximum": "Máximo"
+      },
+      "riskLevels": {
+        "veryLow": "Muito Baixo",
+        "low": "Baixo",
+        "medium": "Médio",
+        "high": "Alto"
+      },
+      "features": {
+        "dataEncryption": "Criptografia de dados",
+        "basicAccessControl": "Controle de acesso básico",
+        "accessControl": "Controle de acesso",
+        "auditLogging": "Registro de auditoria",
+        "differentialPrivacy": "Privacidade diferencial",
+        "zeroKnowledgeProofs": "Provas de conhecimento zero"
+      },
+      "validation": {
+        "validEmail": "Digite um endereço de email válido.",
+        "epsilonRange": "Epsilon deve ser um número entre 0 e 10.",
+        "retentionMinDays": "O período de retenção deve ser de pelo menos 1 dia."
+      }
+    },
+    "budget": {
+      "title": "Monitor de Orçamento de Privacidade",
+      "backToDashboard": "Voltar ao Painel",
+      "datasets": {
+        "customerAnalytics": "Conjunto de Dados de Análise de Clientes",
+        "financialTransactions": "Conjunto de Dados de Transações Financeiras",
+        "healthcareRecords": "Conjunto de Dados de Registros de Saúde"
+      }
+    },
+    "upload": {
+      "title": "Upload de Dados Criptografados",
+      "steps": {
+        "select": "Selecionar Arquivos",
+        "metadata": "Configurar Metadados",
+        "encrypt": "Criptografar Dados",
+        "upload": "Fazer Upload para Armazenamento Seguro"
+      },
+      "fileTypes": {
+        "csv": "Arquivos CSV",
+        "json": "Arquivos JSON",
+        "excel": "Arquivos Excel",
+        "parquet": "Arquivos Parquet"
+      },
+      "encryption": {
+        "standard": "Criptografia Padrão",
+        "advanced": "Criptografia Avançada",
+        "quantum": "Criptografia Resistente a Quântica"
+      },
+      "privacyLevel": "Nível de Privacidade",
+      "department": "Departamento",
+      "dateRange": "Intervalo de Datas",
+      "tags": "Tags",
+      "start": "Início",
+      "end": "Fim",
+      "encryptData": "Criptografar Dados",
+      "uploadComplete": "Upload Concluído",
+      "uploadFailed": "Upload Falhou"
+    },
+    "education": {
+      "title": "Educação sobre Privacidade",
+      "subtitle": "Aprenda sobre tecnologias de preservação de privacidade",
+      "modules": {
+        "differentialPrivacy": "Privacidade Diferencial",
+        "federatedLearning": "Aprendizado Federado",
+        "homomorphicEncryption": "Criptografia Homomórfica",
+        "zeroKnowledgeProofs": "Provas de Conhecimento Zero"
+      }
+    },
+    "monitoring": {
+      "title": "Monitoramento de Privacidade",
+      "subtitle": "Métricas e alertas de privacidade em tempo real",
+      "metrics": {
+        "privacyBudget": "Orçamento de Privacidade",
+        "dataAccess": "Acesso a Dados",
+        "encryptionStatus": "Status da Criptografia",
+        "complianceScore": "Pontuação de Conformidade"
+      },
+      "alerts": {
+        "budgetWarning": "Aviso de Orçamento de Privacidade",
+        "unauthorizedAccess": "Tentativa de Acesso Não Autorizado",
+        "encryptionFailure": "Falha na Criptografia"
+      }
+    },
+    "health": {
+      "title": "Painel de Saúde da Privacidade",
+      "subtitle": "Monitore a postura de privacidade da sua organização",
+      "score": "Pontuação de Privacidade",
+      "excellent": "Excelente",
+      "good": "Bom",
+      "fair": "Razoável",
+      "poor": "Ruim",
+      "recommendations": "Recomendações",
+      "lastUpdated": "Última Atualização"
+    },
+    "common": {
+      "privacy": "Privacidade",
+      "security": "Segurança",
+      "encryption": "Criptografia",
+      "decryption": "Descriptografia",
+      "data": "Dados",
+      "access": "Acesso",
+      "control": "Controle",
+      "audit": "Auditoria",
+      "compliance": "Conformidade",
+      "risk": "Risco",
+      "protection": "Proteção",
+      "anonymization": "Anonimização",
+      "pseudonymization": "Pseudonimização",
+      "consent": "Consentimento",
+      "notification": "Notificação",
+      "alert": "Alerta",
+      "warning": "Aviso",
+      "error": "Erro",
+      "success": "Sucesso",
+      "loading": "Carregando",
+      "processing": "Processando",
+      "complete": "Concluído",
+      "failed": "Falhou",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "save": "Salvar",
+      "delete": "Excluir",
+      "edit": "Editar",
+      "view": "Visualizar",
+      "download": "Baixar",
+      "upload": "Upload",
+      "export": "Exportar",
+      "import": "Importar",
+      "share": "Compartilhar",
+      "copy": "Copiar",
+      "move": "Mover",
+      "search": "Pesquisar",
+      "filter": "Filtrar",
+      "sort": "Classificar",
+      "refresh": "Atualizar",
+      "settings": "Configurações",
+      "configuration": "Configuração",
+      "administration": "Administração"
+    }
+  },
+  "navigation": {
+    "dashboard": "Painel",
+    "privacy": "Privacidade",
+    "analytics": "Análise",
+    "data": "Dados",
+    "settings": "Configurações",
+    "help": "Ajuda",
+    "logout": "Sair"
+  },
+  "language": {
+    "select": "Selecionar Idioma",
+    "english": "Inglês",
+    "spanish": "Espanhol",
+    "french": "Francês",
+    "german": "Alemão",
+    "chinese": "Chinês",
+    "arabic": "Árabe",
+    "japanese": "Japonês",
+    "hindi": "Híndi",
+    "portuguese": "Português",
+    "russian": "Russo"
+  },
+  "formats": {
+    "date": "DD/MM/YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD/MM/YYYY HH:mm",
+    "currency": "R$",
+    "number": "#.##0,##",
+    "percentage": "#.##0,##%"
+  }
+}

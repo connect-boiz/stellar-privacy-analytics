@@ -9,6 +9,7 @@ export class SecureTransport extends EventEmitter {
   private nodeId: string;
   private connections: Map<string, Connection> = new Map();
   private messageQueue: Map<string, any[]> = new Map();
+  private readonly MAX_QUEUE_SIZE = 1000;
   private isEncrypted: boolean = true;
 
   constructor(nodeId: string, encryptionEnabled: boolean = true) {
@@ -81,6 +82,11 @@ export class SecureTransport extends EventEmitter {
       // Queue message for simulation
       const queue = this.messageQueue.get(nodeId);
       if (queue) {
+        if (queue.length >= this.MAX_QUEUE_SIZE) {
+          queue.shift(); // Remove oldest message to prevent unbounded growth
+          logger.warn(`Message queue for node ${nodeId} exceeded max size, dropping oldest message`);
+        }
+        
         queue.push({
           ...encryptedMessage,
           timestamp: new Date(),
@@ -266,10 +272,14 @@ export class SecureTransport extends EventEmitter {
       this.disconnectFromNode(nodeId);
     }
     
+    // Explicitly clear all maps and buffers
     this.connections.clear();
+    this.messageQueue.forEach(queue => {
+      queue.length = 0; // Clear array content
+    });
     this.messageQueue.clear();
     
-    logger.info(`Secure transport for node ${this.nodeId} cleaned up`);
+    logger.info(`Secure transport for node ${this.nodeId} cleaned up and buffers released`);
   }
 }
 
