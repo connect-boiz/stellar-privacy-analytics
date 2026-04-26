@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
@@ -16,17 +16,22 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Pages
 import PrivacyHealthDashboard from './pages/PrivacyHealthDashboard';
+import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { DataManagement } from './pages/DataManagement';
 import { PrivacySettings } from './pages/PrivacySettings';
+import CertificationDashboard from './pages/CertificationDashboard';
 import AuditExplorerPage from './pages/AuditExplorerPage';
 import EncryptedUploadPage from './pages/EncryptedUploadPage';
 import { Login } from './pages/Login';
+import { WorkflowBuilder } from './pages/WorkflowBuilder';
 import SearchPage from './pages/SearchPage';
 import ConsentPage from './pages/ConsentPage';
 import PerformancePage from './pages/PerformancePage';
 import PrivacyBudgetPage from './pages/PrivacyBudgetPage';
 import { NetworkTestPage } from './pages/NetworkTestPage';
+import { PrivacyEducation } from './pages/PrivacyEducation';
+import DataTableDemo from './pages/DataTableDemo';
 import TrainingPage from './pages/TrainingPage';
 import TrainingModulePage from './pages/TrainingModulePage';
 import TrainingAdminPage from './pages/TrainingAdminPage';

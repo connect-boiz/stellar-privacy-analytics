@@ -15,7 +15,8 @@ import {
   Users,
   Sliders,
   GraduationCap,
-  Target
+  Target,
+  Key
 } from 'lucide-react';
 import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -32,6 +33,7 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     { name: 'Workflow Builder', href: '/workflow', icon: Target },
     { name: t('navigation.data'), href: '/data', icon: Database },
     { name: t('navigation.privacy'), href: '/privacy', icon: Shield },
+    { name: 'Key Management', href: '/key-management', icon: Key },
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Consent', href: '/consent', icon: Users },
     { name: 'Performance', href: '/performance', icon: Sliders },
@@ -67,10 +69,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
+                    className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${isActive(item.href)
                       ? 'bg-blue-100 text-blue-900'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                      } touch-target`}
                     onClick={() => setSidebarOpen(false)}
                   >
                     <Icon className="mr-3 h-5 w-5" />
@@ -100,10 +102,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${isActive(item.href)
+                      className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${isActive(item.href)
                         ? 'bg-blue-100 text-blue-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
+                        } touch-target`}
                     >
                       <Icon className="mr-3 h-5 w-5" />
                       {item.name}
