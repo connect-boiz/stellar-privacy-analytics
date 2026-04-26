@@ -41,7 +41,8 @@
     "axios": "^1.6.2",
     "form-data": "^4.0.0",
     "crypto": "^1.0.1",
-    "jsbn": "^1.2.1"
+    "jsbn": "^1.2.1",
+    "events": "^3.3.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -65,6 +66,7 @@
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "supertest": "^6.3.3",
-    "@types/supertest": "^2.0.16"
+    "@types/supertest": "^2.0.16",
+    "@types/events": "^3.0.0"
   }
 }

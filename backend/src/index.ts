@@ -17,6 +17,7 @@ import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
 import { mpcRoutes } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
+import serviceDiscoveryRoutes, { initializeServiceDiscovery } from './routes/serviceDiscovery';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -30,6 +31,9 @@ import { getHSMIntegration } from './services/hsmIntegration';
 // Import workers
 import { StellarTransactionWatcher } from './workers/StellarTransactionWatcher';
 import { privacyBudgetRoutes } from './routes/privacy-budget';
+
+// Import Service Discovery
+import { ServiceDiscovery } from './services/ServiceDiscovery';
 
 // Load environment variables
 dotenv.config();
@@ -102,6 +106,7 @@ apiRouter.use('/ipfs', ipfsRoutes);
 apiRouter.use('/hsm', hsmRoutes);
 apiRouter.use('/mpc', mpcRoutes);
 apiRouter.use('/audit', auditRoutes);
+apiRouter.use('/service-discovery', serviceDiscoveryRoutes);
 
 app.use('/api/v1', apiRouter);
 
@@ -153,6 +158,42 @@ const HOST = process.env.API_HOST || 'localhost';
 // Initialize HSM and Stellar Watcher integration before starting server
 async function initializeServices() {
   try {
+    // Initialize Service Discovery
+    const serviceDiscovery = new ServiceDiscovery({
+      redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+      autoRegister: true,
+      enableFailover: true,
+      enableMonitoring: true,
+      healthCheckInterval: 30000,
+      serviceMesh: {
+        requestTimeout: 30000,
+        retryAttempts: 3,
+        retryDelay: 1000,
+        enableLoadBalancing: true,
+        enableCircuitBreaker: true,
+        enableMetrics: true
+      }
+    });
+
+    // Initialize service discovery with current service info
+    await serviceDiscovery.initialize({
+      name: 'stellar-backend',
+      host: process.env.SERVICE_HOST || 'localhost',
+      port: parseInt(process.env.API_PORT || '3001'),
+      version: '1.0.0',
+      weight: 1,
+      tags: ['api', 'backend', 'privacy'],
+      metadata: {
+        environment: process.env.NODE_ENV || 'development',
+        region: process.env.AWS_REGION || 'us-east-1'
+      }
+    });
+
+    // Initialize service discovery routes
+    initializeServiceDiscovery(serviceDiscovery);
+
+    logger.info('Service Discovery initialized successfully');
+
     const hsmIntegration = getHSMIntegration({
       autoInitializeMasterKey: true,
       enableAutoRecovery: false,
@@ -176,12 +217,12 @@ async function initializeServices() {
     });
 
   } catch (error) {
-    logger.error('Failed to initialize HSM integration:', error);
+    logger.error('Failed to initialize services:', error);
     // Continue without HSM for development, but fail in production
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);
     } else {
-      logger.warn('Continuing without HSM integration in development mode');
+      logger.warn('Continuing with limited services in development mode');
     }
   }
 }
