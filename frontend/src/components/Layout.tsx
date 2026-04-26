@@ -10,7 +10,9 @@ import {
   X, 
   Lock,
   Eye,
-  Activity
+  Activity,
+  Users,
+  Star
 } from 'lucide-react';
 
 export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -22,6 +24,9 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     { name: 'X-Ray Analytics', href: '/analytics', icon: Activity },
     { name: 'Data Management', href: '/data', icon: Database },
     { name: 'Privacy Settings', href: '/privacy', icon: Shield },
+    { name: 'Privacy Config', href: '/privacy-config', icon: Settings },
+    { name: 'Privacy Score', href: '/privacy-score', icon: Star },
+    { name: 'Collaborate', href: '/collaborate', icon: Users },
   ];
 
   const isActive = (href: string) => location.pathname === href;

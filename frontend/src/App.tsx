@@ -12,6 +12,9 @@ import { DataManagement } from './pages/DataManagement';
 import { PrivacySettings } from './pages/PrivacySettings';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { CollaborationPage } from './pages/CollaborationPage';
+import { PrivacyScorePage } from './pages/PrivacyScorePage';
+import { AccessiblePrivacyConfigForm } from './components/AccessiblePrivacyConfigForm';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -62,6 +65,9 @@ function App() {
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/data" element={<DataManagement />} />
                       <Route path="/privacy" element={<PrivacySettings />} />
+                      <Route path="/privacy-config" element={<AccessiblePrivacyConfigForm />} />
+                      <Route path="/privacy-score" element={<PrivacyScorePage />} />
+                      <Route path="/collaborate" element={<CollaborationPage />} />
                       <Route path="/" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </Layout>
