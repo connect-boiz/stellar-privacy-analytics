@@ -24,7 +24,7 @@ import { mpcRoutes } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
 import { privacyNoiseRoutes } from './routes/privacy-noise';
 import { zkpRoutes } from './routes/zkp';
-
+import { certificationRoutes } from './routes/certification';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { privacyMiddleware } from './middleware/privacy';
@@ -263,7 +263,7 @@ apiRouter.use('/mpc', mpcRoutes);
 apiRouter.use('/training', trainingRoutes);
 apiRouter.use('/privacy/noise', privacyNoiseRoutes);
 apiRouter.use('/zkp', zkpRoutes);
-
+apiRouter.use('/certification', certificationRoutes);
 
 app.use('/api/v1', apiRouter);
 
