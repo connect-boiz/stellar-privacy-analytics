@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
+
+// i18n
+import './i18n';
+import { getDirection } from './i18n';
 
 // Components
 import { Layout } from './components/Layout';
@@ -76,6 +80,13 @@ const queryClient = new QueryClient({
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Set initial document direction and language
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('preferred-language') || 'en';
+    document.documentElement.dir = getDirection(savedLanguage);
+    document.documentElement.lang = savedLanguage;
+  }, []);
 
   if (isLoading) {
     return (

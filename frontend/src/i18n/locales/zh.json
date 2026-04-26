@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "隐私保护机器学习",
+      "subtitle": "联邦学习、差分隐私和加密推理",
+      "badge": "隐私优先",
+      "tabs": {
+        "federated": "联邦学习",
+        "privacy": "差分隐私",
+        "encryption": "同态加密"
+      },
+      "federated": {
+        "trainingStatus": "训练状态",
+        "active": "活跃",
+        "inactive": "非活跃",
+        "connectedClients": "连接的客户端",
+        "currentRound": "当前轮次",
+        "startTraining": "开始训练",
+        "stopTraining": "停止训练",
+        "trainingProgress": "训练进度",
+        "round": "轮次",
+        "accuracy": "准确率",
+        "loss": "损失",
+        "clients": "客户端",
+        "connectedClientsTitle": "连接的客户端",
+        "client": "客户端",
+        "samples": "样本"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "已使用隐私预算",
+        "budgetRemaining": "剩余预算",
+        "totalQueries": "总查询数",
+        "initializePrivacyBudget": "初始化隐私预算",
+        "recentQueries": "最近查询",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "加密模型",
+        "keyPairs": "密钥对",
+        "encryptedInferences": "加密推理",
+        "generateEncryptionKeys": "生成加密密钥",
+        "encryptionSchemes": "加密方案",
+        "models": "模型"
+      }
+    },
+    "settings": {
+      "title": "隐私设置",
+      "subtitle": "管理您的隐私和安全偏好",
+      "badge": "隐私受保护",
+      "privacyLevel": "隐私级别",
+      "risk": "风险",
+      "dataManagement": "数据管理",
+      "dataRetentionPeriod": "数据保留期（天）",
+      "privacyBudget": "隐私预算（ε epsilon，0–10）",
+      "notificationEmail": "通知邮箱（可选）",
+      "allowDataExport": "允许数据导出",
+      "allowDataExportDesc": "允许用户导出分析结果",
+      "allowDataSharing": "允许数据共享",
+      "allowDataSharingDesc": "与合作伙伴共享匿名化洞察",
+      "saveSettings": "保存设置",
+      "settingsSaved": "设置已保存",
+      "fixErrors": "保存前修复错误",
+      "levels": {
+        "minimal": "最低",
+        "standard": "标准",
+        "high": "高",
+        "maximum": "最高"
+      },
+      "riskLevels": {
+        "veryLow": "很低",
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      },
+      "features": {
+        "dataEncryption": "数据加密",
+        "basicAccessControl": "基本访问控制",
+        "accessControl": "访问控制",
+        "auditLogging": "审计日志",
+        "differentialPrivacy": "差分隐私",
+        "zeroKnowledgeProofs": "零知识证明"
+      },
+      "validation": {
+        "validEmail": "请输入有效的邮箱地址。",
+        "epsilonRange": "Epsilon 必须是 0 到 10 之间的数字。",
+        "retentionMinDays": "保留期必须至少为 1 天。"
+      }
+    },
+    "budget": {
+      "title": "隐私预算监控器",
+      "backToDashboard": "返回仪表板",
+      "datasets": {
+        "customerAnalytics": "客户分析数据集",
+        "financialTransactions": "金融交易数据集",
+        "healthcareRecords": "医疗记录数据集"
+      }
+    },
+    "upload": {
+      "title": "加密数据上传",
+      "steps": {
+        "select": "选择文件",
+        "metadata": "配置元数据",
+        "encrypt": "加密数据",
+        "upload": "上传到安全存储"
+      },
+      "fileTypes": {
+        "csv": "CSV 文件",
+        "json": "JSON 文件",
+        "excel": "Excel 文件",
+        "parquet": "Parquet 文件"
+      },
+      "encryption": {
+        "standard": "标准加密",
+        "advanced": "高级加密",
+        "quantum": "抗量子加密"
+      },
+      "privacyLevel": "隐私级别",
+      "department": "部门",
+      "dateRange": "日期范围",
+      "tags": "标签",
+      "start": "开始",
+      "end": "结束",
+      "encryptData": "加密数据",
+      "uploadComplete": "上传完成",
+      "uploadFailed": "上传失败"
+    },
+    "education": {
+      "title": "隐私教育",
+      "subtitle": "了解隐私保护技术",
+      "modules": {
+        "differentialPrivacy": "差分隐私",
+        "federatedLearning": "联邦学习",
+        "homomorphicEncryption": "同态加密",
+        "zeroKnowledgeProofs": "零知识证明"
+      }
+    },
+    "monitoring": {
+      "title": "隐私监控",
+      "subtitle": "实时隐私指标和警报",
+      "metrics": {
+        "privacyBudget": "隐私预算",
+        "dataAccess": "数据访问",
+        "encryptionStatus": "加密状态",
+        "complianceScore": "合规分数"
+      },
+      "alerts": {
+        "budgetWarning": "隐私预算警告",
+        "unauthorizedAccess": "未授权访问尝试",
+        "encryptionFailure": "加密失败"
+      }
+    },
+    "health": {
+      "title": "隐私健康仪表板",
+      "subtitle": "监控您组织的隐私状况",
+      "score": "隐私分数",
+      "excellent": "优秀",
+      "good": "良好",
+      "fair": "一般",
+      "poor": "差",
+      "recommendations": "建议",
+      "lastUpdated": "最后更新"
+    },
+    "common": {
+      "privacy": "隐私",
+      "security": "安全",
+      "encryption": "加密",
+      "decryption": "解密",
+      "data": "数据",
+      "access": "访问",
+      "control": "控制",
+      "audit": "审计",
+      "compliance": "合规",
+      "risk": "风险",
+      "protection": "保护",
+      "anonymization": "匿名化",
+      "pseudonymization": "假名化",
+      "consent": "同意",
+      "notification": "通知",
+      "alert": "警报",
+      "warning": "警告",
+      "error": "错误",
+      "success": "成功",
+      "loading": "加载中",
+      "processing": "处理中",
+      "complete": "完成",
+      "failed": "失败",
+      "cancel": "取消",
+      "confirm": "确认",
+      "save": "保存",
+      "delete": "删除",
+      "edit": "编辑",
+      "view": "查看",
+      "download": "下载",
+      "upload": "上传",
+      "export": "导出",
+      "import": "导入",
+      "share": "分享",
+      "copy": "复制",
+      "move": "移动",
+      "search": "搜索",
+      "filter": "筛选",
+      "sort": "排序",
+      "refresh": "刷新",
+      "settings": "设置",
+      "configuration": "配置",
+      "administration": "管理"
+    }
+  },
+  "navigation": {
+    "dashboard": "仪表板",
+    "privacy": "隐私",
+    "analytics": "分析",
+    "data": "数据",
+    "settings": "设置",
+    "help": "帮助",
+    "logout": "登出"
+  },
+  "language": {
+    "select": "选择语言",
+    "english": "英语",
+    "spanish": "西班牙语",
+    "french": "法语",
+    "german": "德语",
+    "chinese": "中文",
+    "arabic": "阿拉伯语",
+    "japanese": "日语",
+    "hindi": "印地语",
+    "portuguese": "葡萄牙语",
+    "russian": "俄语"
+  },
+  "formats": {
+    "date": "YYYY/MM/DD",
+    "time": "HH:mm",
+    "dateTime": "YYYY/MM/DD HH:mm",
+    "currency": "¥",
+    "number": "#,##0.##",
+    "percentage": "#,##0.##%"
+  }
+}

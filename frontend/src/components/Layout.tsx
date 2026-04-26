@@ -14,20 +14,24 @@ import {
   Search,
   Users,
   Sliders,
-  GraduationCap
+  GraduationCap,
+  Target
 } from 'lucide-react';
 import { NetworkStatusIndicator } from './NetworkStatusIndicator';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: t('navigation.dashboard'), href: '/dashboard', icon: BarChart3 },
     { name: 'X-Ray Analytics', href: '/analytics', icon: Activity },
     { name: 'Workflow Builder', href: '/workflow', icon: Target },
-    { name: 'Data Management', href: '/data', icon: Database },
-    { name: 'Privacy Settings', href: '/privacy', icon: Shield },
+    { name: t('navigation.data'), href: '/data', icon: Database },
+    { name: t('navigation.privacy'), href: '/privacy', icon: Shield },
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Consent', href: '/consent', icon: Users },
     { name: 'Performance', href: '/performance', icon: Sliders },
@@ -140,6 +144,9 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
             <div className="flex items-center">
               <Lock className="h-6 w-6 text-blue-600" />
               <span className="ml-2 text-lg font-semibold text-gray-900">Stellar</span>
+            </div>
+            <div className="flex items-center">
+              <LanguageSwitcher />
             </div>
           </div>
         </div>

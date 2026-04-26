@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { 
   Brain, 
   Shield, 
@@ -57,6 +58,7 @@ interface EncryptionStatus {
 }
 
 export const PrivacyMLDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'federated' | 'privacy' | 'encryption'>('federated');
   const [federatedStatus, setFederatedStatus] = useState<FederatedLearningStatus | null>(null);
   const [privacyMetrics, setPrivacyMetrics] = useState<PrivacyMetrics | null>(null);
@@ -202,12 +204,12 @@ export const PrivacyMLDashboard: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Privacy-Preserving ML</h1>
-            <p className="text-gray-600 mt-1">Federated learning, differential privacy, and encrypted inference</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('privacy.dashboard.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('privacy.dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center space-x-2">
             <Shield className="h-5 w-5 text-green-500" />
-            <span className="text-sm font-medium text-green-600">Privacy-First</span>
+            <span className="text-sm font-medium text-green-600">{t('privacy.dashboard.badge')}</span>
           </div>
         </div>
       </div>
@@ -217,9 +219,9 @@ export const PrivacyMLDashboard: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: 'federated', name: 'Federated Learning', icon: Network },
-              { id: 'privacy', name: 'Differential Privacy', icon: Shield },
-              { id: 'encryption', name: 'Homomorphic Encryption', icon: Lock }
+              { id: 'federated', name: t('privacy.dashboard.tabs.federated'), icon: Network },
+              { id: 'privacy', name: t('privacy.dashboard.tabs.privacy'), icon: Shield },
+              { id: 'encryption', name: t('privacy.dashboard.tabs.encryption'), icon: Lock }
             ].map((tab) => (
               <button
                 key={tab.id}

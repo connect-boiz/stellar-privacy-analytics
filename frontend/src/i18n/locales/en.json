@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "Privacy-Preserving ML",
+      "subtitle": "Federated learning, differential privacy, and encrypted inference",
+      "badge": "Privacy-First",
+      "tabs": {
+        "federated": "Federated Learning",
+        "privacy": "Differential Privacy",
+        "encryption": "Homomorphic Encryption"
+      },
+      "federated": {
+        "trainingStatus": "Training Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "connectedClients": "Connected Clients",
+        "currentRound": "Current Round",
+        "startTraining": "Start Training",
+        "stopTraining": "Stop Training",
+        "trainingProgress": "Training Progress",
+        "round": "Round",
+        "accuracy": "Accuracy",
+        "loss": "Loss",
+        "clients": "clients",
+        "connectedClientsTitle": "Connected Clients",
+        "client": "Client",
+        "samples": "samples"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "Privacy Budget Used",
+        "budgetRemaining": "Budget Remaining",
+        "totalQueries": "Total Queries",
+        "initializePrivacyBudget": "Initialize Privacy Budget",
+        "recentQueries": "Recent Queries",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "Encrypted Models",
+        "keyPairs": "Key Pairs",
+        "encryptedInferences": "Encrypted Inferences",
+        "generateEncryptionKeys": "Generate Encryption Keys",
+        "encryptionSchemes": "Encryption Schemes",
+        "models": "models"
+      }
+    },
+    "settings": {
+      "title": "Privacy Settings",
+      "subtitle": "Manage your privacy and security preferences",
+      "badge": "Privacy Protected",
+      "privacyLevel": "Privacy Level",
+      "risk": "Risk",
+      "dataManagement": "Data Management",
+      "dataRetentionPeriod": "Data Retention Period (days)",
+      "privacyBudget": "Privacy Budget (ε epsilon, 0–10)",
+      "notificationEmail": "Notification Email (optional)",
+      "allowDataExport": "Allow Data Export",
+      "allowDataExportDesc": "Permit users to export analysis results",
+      "allowDataSharing": "Allow Data Sharing",
+      "allowDataSharingDesc": "Share anonymized insights with partners",
+      "saveSettings": "Save Settings",
+      "settingsSaved": "Settings saved",
+      "fixErrors": "Fix errors before saving",
+      "levels": {
+        "minimal": "Minimal",
+        "standard": "Standard",
+        "high": "High",
+        "maximum": "Maximum"
+      },
+      "riskLevels": {
+        "veryLow": "Very Low",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "features": {
+        "dataEncryption": "Data encryption",
+        "basicAccessControl": "Basic access control",
+        "accessControl": "Access control",
+        "auditLogging": "Audit logging",
+        "differentialPrivacy": "Differential privacy",
+        "zeroKnowledgeProofs": "Zero-knowledge proofs"
+      },
+      "validation": {
+        "validEmail": "Enter a valid email address.",
+        "epsilonRange": "Epsilon must be a number between 0 and 10.",
+        "retentionMinDays": "Retention period must be at least 1 day."
+      }
+    },
+    "budget": {
+      "title": "Privacy Budget Monitor",
+      "backToDashboard": "Back to Dashboard",
+      "datasets": {
+        "customerAnalytics": "Customer Analytics Dataset",
+        "financialTransactions": "Financial Transactions Dataset",
+        "healthcareRecords": "Healthcare Records Dataset"
+      }
+    },
+    "upload": {
+      "title": "Encrypted Data Upload",
+      "steps": {
+        "select": "Select Files",
+        "metadata": "Configure Metadata",
+        "encrypt": "Encrypt Data",
+        "upload": "Upload to Secure Storage"
+      },
+      "fileTypes": {
+        "csv": "CSV Files",
+        "json": "JSON Files",
+        "excel": "Excel Files",
+        "parquet": "Parquet Files"
+      },
+      "encryption": {
+        "standard": "Standard Encryption",
+        "advanced": "Advanced Encryption",
+        "quantum": "Quantum-Resistant Encryption"
+      },
+      "privacyLevel": "Privacy Level",
+      "department": "Department",
+      "dateRange": "Date Range",
+      "tags": "Tags",
+      "start": "Start",
+      "end": "End",
+      "encryptData": "Encrypt Data",
+      "uploadComplete": "Upload Complete",
+      "uploadFailed": "Upload Failed"
+    },
+    "education": {
+      "title": "Privacy Education",
+      "subtitle": "Learn about privacy-preserving technologies",
+      "modules": {
+        "differentialPrivacy": "Differential Privacy",
+        "federatedLearning": "Federated Learning",
+        "homomorphicEncryption": "Homomorphic Encryption",
+        "zeroKnowledgeProofs": "Zero-Knowledge Proofs"
+      }
+    },
+    "monitoring": {
+      "title": "Privacy Monitoring",
+      "subtitle": "Real-time privacy metrics and alerts",
+      "metrics": {
+        "privacyBudget": "Privacy Budget",
+        "dataAccess": "Data Access",
+        "encryptionStatus": "Encryption Status",
+        "complianceScore": "Compliance Score"
+      },
+      "alerts": {
+        "budgetWarning": "Privacy Budget Warning",
+        "unauthorizedAccess": "Unauthorized Access Attempt",
+        "encryptionFailure": "Encryption Failure"
+      }
+    },
+    "health": {
+      "title": "Privacy Health Dashboard",
+      "subtitle": "Monitor your organization's privacy posture",
+      "score": "Privacy Score",
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "recommendations": "Recommendations",
+      "lastUpdated": "Last Updated"
+    },
+    "common": {
+      "privacy": "Privacy",
+      "security": "Security",
+      "encryption": "Encryption",
+      "decryption": "Decryption",
+      "data": "Data",
+      "access": "Access",
+      "control": "Control",
+      "audit": "Audit",
+      "compliance": "Compliance",
+      "risk": "Risk",
+      "protection": "Protection",
+      "anonymization": "Anonymization",
+      "pseudonymization": "Pseudonymization",
+      "consent": "Consent",
+      "notification": "Notification",
+      "alert": "Alert",
+      "warning": "Warning",
+      "error": "Error",
+      "success": "Success",
+      "loading": "Loading",
+      "processing": "Processing",
+      "complete": "Complete",
+      "failed": "Failed",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "view": "View",
+      "download": "Download",
+      "upload": "Upload",
+      "export": "Export",
+      "import": "Import",
+      "share": "Share",
+      "copy": "Copy",
+      "move": "Move",
+      "search": "Search",
+      "filter": "Filter",
+      "sort": "Sort",
+      "refresh": "Refresh",
+      "settings": "Settings",
+      "configuration": "Configuration",
+      "administration": "Administration"
+    }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "privacy": "Privacy",
+    "analytics": "Analytics",
+    "data": "Data",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout"
+  },
+  "language": {
+    "select": "Select Language",
+    "english": "English",
+    "spanish": "Spanish",
+    "french": "French",
+    "german": "German",
+    "chinese": "Chinese",
+    "arabic": "Arabic",
+    "japanese": "Japanese",
+    "hindi": "Hindi",
+    "portuguese": "Portuguese",
+    "russian": "Russian"
+  },
+  "formats": {
+    "date": "MM/DD/YYYY",
+    "time": "h:mm A",
+    "dateTime": "MM/DD/YYYY h:mm A",
+    "currency": "$",
+    "number": "#,##0.##",
+    "percentage": "#,##0.##%"
+  }
+}
