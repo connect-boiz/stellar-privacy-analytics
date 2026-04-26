@@ -81,6 +81,34 @@ const PrivacyHealthDashboard: React.FC = () => {
   const [scoreBreakdown, setScoreBreakdown] = useState<PrivacyScoreBreakdown[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'grants' | 'analysis'>('overview');
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchStart) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+      const tabOrder: Array<'overview' | 'grants' | 'analysis'> = ['overview', 'grants', 'analysis'];
+      const currentIndex = tabOrder.indexOf(selectedTab);
+      if (deltaX < 0 && currentIndex < tabOrder.length - 1) {
+        setSelectedTab(tabOrder[currentIndex + 1]);
+      }
+      if (deltaX > 0 && currentIndex > 0) {
+        setSelectedTab(tabOrder[currentIndex - 1]);
+      }
+    }
+
+    setTouchStart(null);
+  };
 
   // Mock data - replace with actual API calls
   useEffect(() => {
@@ -319,22 +347,39 @@ const PrivacyHealthDashboard: React.FC = () => {
         </div>
 
         {/* Charts and Details */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="grants">Data Grants</TabsTrigger>
-            <TabsTrigger value="analysis">Privacy Analysis</TabsTrigger>
-          </TabsList>
+        <Tabs
+          value={selectedTab}
+          onValueChange={setSelectedTab}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="space-y-4"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <TabsList className="flex flex-wrap gap-2" aria-label="Privacy dashboard sections">
+              <TabsTrigger value="overview" className="min-h-[44px] px-4 py-3 text-sm">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="grants" className="min-h-[44px] px-4 py-3 text-sm">
+                Data Grants
+              </TabsTrigger>
+              <TabsTrigger value="analysis" className="min-h-[44px] px-4 py-3 text-sm">
+                Privacy Analysis
+              </TabsTrigger>
+            </TabsList>
+            <div className="text-sm text-gray-500 sm:ml-auto">
+              Swipe left or right to navigate sections
+            </div>
+          </div>
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Budget Consumption Chart */}
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader>
                   <CardTitle>Privacy Budget Consumption</CardTitle>
                   <CardDescription>Monthly epsilon usage vs budget allocation</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-h-[320px] min-w-0">
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={consumptionData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -366,12 +411,12 @@ const PrivacyHealthDashboard: React.FC = () => {
               </Card>
 
               {/* Privacy Score Breakdown */}
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader>
                   <CardTitle>Privacy Score Breakdown</CardTitle>
                   <CardDescription>Detailed privacy metrics</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-h-[320px] min-w-0">
                   <div className="space-y-4">
                     {scoreBreakdown.map((item, index) => (
                       <div key={index} className="space-y-2">
