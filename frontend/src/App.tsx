@@ -11,6 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Analytics } from './pages/Analytics';
 import { DataManagement } from './pages/DataManagement';
 import { PrivacySettings } from './pages/PrivacySettings';
+import CertificationDashboard from './pages/CertificationDashboard';
 import AuditExplorerPage from './pages/AuditExplorerPage';
 import EncryptedUploadPage from './pages/EncryptedUploadPage';
 import { Login } from './pages/Login';
@@ -149,11 +150,28 @@ function App() {
                 },
               }}
             />
-          </div>
-        </Router>
+<Route
+              path="/*"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <Layout>
+                    <Routes>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/data" element={<DataManagement />} />
+                      <Route path="/privacy" element={<PrivacySettings />} />
+                      <Route path="/certification" element={<CertificationDashboard />} />
+                      <Route path="/" element={<Navigate to="/dashboard" />} />
+                    </Routes>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </Router>
       </ModalProvider>
     </QueryClientProvider>
-      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
