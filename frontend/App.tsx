@@ -37,6 +37,9 @@ import TrainingModulePage from './pages/TrainingModulePage';
 import TrainingAdminPage from './pages/TrainingAdminPage';
 import OnboardingPage from './pages/OnboardingPage';
 import KeyManagementPage from './pages/KeyManagementPage';
+import DifferentialPrivacyConfig from './pages/DifferentialPrivacyConfig';
+import PrivacyDashboard from './pages/PrivacyDashboard';
+import ZKProofVisualization from './pages/ZKProofVisualization';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -127,6 +130,9 @@ function App() {
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/network-test" element={<NetworkTestPage />} />
                   <Route path="/key-management" element={<KeyManagementPage />} />
+                  <Route path="/dp-config" element={<DifferentialPrivacyConfig />} />
+                  <Route path="/privacy-dashboard" element={<PrivacyDashboard />} />
+                  <Route path="/zk-visualization" element={<ZKProofVisualization />} />
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 </Route>
               </Routes>
