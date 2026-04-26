@@ -3,6 +3,7 @@ import { Agent } from 'https';
 import axios, { AxiosInstance } from 'axios';
 import { logger } from '../utils/logger';
 import { EventEmitter } from 'events';
+import { auditService } from '../utils/audit';
 
 export interface HSMConfig {
   endpoint: string;
@@ -124,6 +125,26 @@ export class HSMService extends EventEmitter {
 
     // Emit for external logging systems
     this.emit('audit', auditEntry);
+
+    // Log to central audit service
+    auditService.log({
+      category: 'key_management',
+      action: auditEntry.action,
+      actor: {
+        userId: auditEntry.userId,
+      },
+      resource: {
+        type: 'hsm_key',
+        id: auditEntry.keyId,
+        metadata: auditEntry.metadata
+      },
+      outcome: auditEntry.success ? 'success' : 'failure',
+      riskLevel: auditEntry.action === 'key_revoke' ? 'critical' : 'high',
+      complianceTags: ['PCI-DSS', 'HIPAA'],
+      details: {
+        errorMessage: auditEntry.errorMessage
+      }
+    }).catch(err => logger.error('Failed to log to central audit service from HSM:', err));
 
     logger.info('HSM Audit', {
       action: auditEntry.action,

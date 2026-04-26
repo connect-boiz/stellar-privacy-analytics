@@ -7,10 +7,11 @@ import { EventEmitter } from 'events';
 export interface AuditRecord {
   id: string;
   timestamp: Date;
-  category: 'key_management' | 'access_control' | 'system_event' | 'security_violation';
+  category: 'key_management' | 'access_control' | 'system_event' | 'security_violation' | 'privacy_query' | 'data_access' | 'data_modification';
   action: string;
   actor: {
     userId?: string;
+    publicKey?: string;
     sessionId?: string;
     ipAddress?: string;
     userAgent?: string;
@@ -22,10 +23,14 @@ export interface AuditRecord {
   };
   outcome: 'success' | 'failure' | 'attempted';
   details?: Record<string, any>;
+  privacyBudgetConsumed?: number; // Epsilon value
+  zkProofStatus?: 'passed' | 'failed' | 'not_applicable';
+  stellarTransactionId?: string;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   complianceTags: string[];
   signature?: string;
 }
+
 
 export interface AuditQuery {
   startDate?: Date;

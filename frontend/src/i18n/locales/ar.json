@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "التعلم الآلي مع حماية الخصوصية",
+      "subtitle": "التعلم الفيدرالي، الخصوصية التفاضلية، والاستدلال المشفر",
+      "badge": "الخصوصية أولاً",
+      "tabs": {
+        "federated": "التعلم الفيدرالي",
+        "privacy": "الخصوصية التفاضلية",
+        "encryption": "التشفير المتماثل"
+      },
+      "federated": {
+        "trainingStatus": "حالة التدريب",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "connectedClients": "العملاء المتصلون",
+        "currentRound": "الجولة الحالية",
+        "startTraining": "بدء التدريب",
+        "stopTraining": "إيقاف التدريب",
+        "trainingProgress": "تقدم التدريب",
+        "round": "جولة",
+        "accuracy": "الدقة",
+        "loss": "الخسارة",
+        "clients": "عملاء",
+        "connectedClientsTitle": "العملاء المتصلون",
+        "client": "عميل",
+        "samples": "عينات"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "ميزانية الخصوصية المستخدمة",
+        "budgetRemaining": "الميزانية المتبقية",
+        "totalQueries": "إجمالي الاستعلامات",
+        "initializePrivacyBudget": "تهيئة ميزانية الخصوصية",
+        "recentQueries": "الاستعلامات الأخيرة",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "النماذج المشفرة",
+        "keyPairs": "أزواج المفاتيح",
+        "encryptedInferences": "الاستدلالات المشفرة",
+        "generateEncryptionKeys": "إنشاء مفاتيح التشفير",
+        "encryptionSchemes": "خطط التشفير",
+        "models": "نماذج"
+      }
+    },
+    "settings": {
+      "title": "إعدادات الخصوصية",
+      "subtitle": "إدارة تفضيلات الخصوصية والأمان الخاصة بك",
+      "badge": "الخصوصية محمية",
+      "privacyLevel": "مستوى الخصوصية",
+      "risk": "المخاطرة",
+      "dataManagement": "إدارة البيانات",
+      "dataRetentionPeriod": "فترة الاحتفاظ بالبيانات (أيام)",
+      "privacyBudget": "ميزانية الخصوصية (ε إبسيلون، 0–10)",
+      "notificationEmail": "بريد الإشعار (اختياري)",
+      "allowDataExport": "السماح بتصدير البيانات",
+      "allowDataExportDesc": "السماح للمستخدمين بتصدير نتائج التحليل",
+      "allowDataSharing": "السماح بمشاركة البيانات",
+      "allowDataSharingDesc": "مشاركة رؤى مجهولة المصدر مع الشركاء",
+      "saveSettings": "حفظ الإعدادات",
+      "settingsSaved": "تم حفظ الإعدادات",
+      "fixErrors": "تصحيح الأخطاء قبل الحفظ",
+      "levels": {
+        "minimal": "أدنى",
+        "standard": "قياسي",
+        "high": "عالي",
+        "maximum": "أقصى"
+      },
+      "riskLevels": {
+        "veryLow": "منخفض جداً",
+        "low": "منخفض",
+        "medium": "متوسط",
+        "high": "عالي"
+      },
+      "features": {
+        "dataEncryption": "تشفير البيانات",
+        "basicAccessControl": "التحكم الأساسي في الوصول",
+        "accessControl": "التحكم في الوصول",
+        "auditLogging": "تسجيل التدقيق",
+        "differentialPrivacy": "الخصوصية التفاضلية",
+        "zeroKnowledgeProofs": "إثباتات المعرفة الصفرية"
+      },
+      "validation": {
+        "validEmail": "أدخل عنوان بريد إلكتروني صالح.",
+        "epsilonRange": "يجب أن يكون إبسيلون رقمًا بين 0 و 10.",
+        "retentionMinDays": "يجب أن تكون فترة الاحتفاظ يومًا واحدًا على الأقل."
+      }
+    },
+    "budget": {
+      "title": "مراقب ميزانية الخصوصية",
+      "backToDashboard": "العودة إلى لوحة التحكم",
+      "datasets": {
+        "customerAnalytics": "مجموعة بيانات تحليل العملاء",
+        "financialTransactions": "مجموعة بيانات المعاملات المالية",
+        "healthcareRecords": "مجموعة بيانات السجلات الطبية"
+      }
+    },
+    "upload": {
+      "title": "رفع البيانات المشفرة",
+      "steps": {
+        "select": "اختيار الملفات",
+        "metadata": "تكوين البيانات الوصفية",
+        "encrypt": "تشفير البيانات",
+        "upload": "رفع إلى التخزين الآمن"
+      },
+      "fileTypes": {
+        "csv": "ملفات CSV",
+        "json": "ملفات JSON",
+        "excel": "ملفات Excel",
+        "parquet": "ملفات Parquet"
+      },
+      "encryption": {
+        "standard": "التشفير القياسي",
+        "advanced": "التشفير المتقدم",
+        "quantum": "التشفير المقاوم للكم"
+      },
+      "privacyLevel": "مستوى الخصوصية",
+      "department": "القسم",
+      "dateRange": "نطاق التاريخ",
+      "tags": "الوسوم",
+      "start": "البداية",
+      "end": "النهاية",
+      "encryptData": "تشفير البيانات",
+      "uploadComplete": "اكتمل الرفع",
+      "uploadFailed": "فشل الرفع"
+    },
+    "education": {
+      "title": "تعليم الخصوصية",
+      "subtitle": "تعلم حول تقنيات حماية الخصوصية",
+      "modules": {
+        "differentialPrivacy": "الخصوصية التفاضلية",
+        "federatedLearning": "التعلم الفيدرالي",
+        "homomorphicEncryption": "التشفير المتماثل",
+        "zeroKnowledgeProofs": "إثباتات المعرفة الصفرية"
+      }
+    },
+    "monitoring": {
+      "title": "مراقبة الخصوصية",
+      "subtitle": "مقاييس وتنبيهات الخصوصية في الوقت الفعلي",
+      "metrics": {
+        "privacyBudget": "ميزانية الخصوصية",
+        "dataAccess": "الوصول إلى البيانات",
+        "encryptionStatus": "حالة التشفير",
+        "complianceScore": "درجة الامتثال"
+      },
+      "alerts": {
+        "budgetWarning": "تحذير ميزانية الخصوصية",
+        "unauthorizedAccess": "محاولة وصول غير مصرح بها",
+        "encryptionFailure": "فشل التشفير"
+      }
+    },
+    "health": {
+      "title": "لوحة تحكم صحة الخصوصية",
+      "subtitle": "مراقبة وضع الخصوصية لمؤسستك",
+      "score": "درجة الخصوصية",
+      "excellent": "ممتاز",
+      "good": "جيد",
+      "fair": "مقبول",
+      "poor": "ضعيف",
+      "recommendations": "التوصيات",
+      "lastUpdated": "آخر تحديث"
+    },
+    "common": {
+      "privacy": "الخصوصية",
+      "security": "الأمان",
+      "encryption": "التشفير",
+      "decryption": "فك التشفير",
+      "data": "البيانات",
+      "access": "الوصول",
+      "control": "التحكم",
+      "audit": "التدقيق",
+      "compliance": "الامتثال",
+      "risk": "المخاطرة",
+      "protection": "الحماية",
+      "anonymization": "إخفاء الهوية",
+      "pseudonymization": "إخفاء الهوية الجزئي",
+      "consent": "الموافقة",
+      "notification": "الإشعار",
+      "alert": "تنبيه",
+      "warning": "تحذير",
+      "error": "خطأ",
+      "success": "نجح",
+      "loading": "التحميل",
+      "processing": "المعالجة",
+      "complete": "مكتمل",
+      "failed": "فشل",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "save": "حفظ",
+      "delete": "حذف",
+      "edit": "تحرير",
+      "view": "عرض",
+      "download": "تنزيل",
+      "upload": "رفع",
+      "export": "تصدير",
+      "import": "استيراد",
+      "share": "مشاركة",
+      "copy": "نسخ",
+      "move": "نقل",
+      "search": "بحث",
+      "filter": "تصفية",
+      "sort": "فرز",
+      "refresh": "تحديث",
+      "settings": "الإعدادات",
+      "configuration": "التكوين",
+      "administration": "الإدارة"
+    }
+  },
+  "navigation": {
+    "dashboard": "لوحة التحكم",
+    "privacy": "الخصوصية",
+    "analytics": "التحليلات",
+    "data": "البيانات",
+    "settings": "الإعدادات",
+    "help": "المساعدة",
+    "logout": "تسجيل الخروج"
+  },
+  "language": {
+    "select": "اختيار اللغة",
+    "english": "الإنجليزية",
+    "spanish": "الإسبانية",
+    "french": "الفرنسية",
+    "german": "الألمانية",
+    "chinese": "الصينية",
+    "arabic": "العربية",
+    "japanese": "اليابانية",
+    "hindi": "الهندية",
+    "portuguese": "البرتغالية",
+    "russian": "الروسية"
+  },
+  "formats": {
+    "date": "DD/MM/YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD/MM/YYYY HH:mm",
+    "currency": "ر.س",
+    "number": "#,##0.##",
+    "percentage": "#,##0.##%"
+  }
+}

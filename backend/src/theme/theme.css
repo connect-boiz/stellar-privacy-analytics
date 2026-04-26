@@ -1,0 +1,23 @@
+/* Smooth transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light Theme */
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --text: #111111;
+  --primary: #2563eb;
+}
+
+/* Dark Theme */
+:root[data-theme='dark'] {
+  --bg: #0f172a;
+  --text: #f1f5f9;
+  --primary: #60a5fa;
+}
+
+/* Accessibility contrast improvements */
+:root[data-theme='dark'] {
+  --text: #f8fafc;
+}

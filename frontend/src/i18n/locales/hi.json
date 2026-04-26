@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "गोपनीयता-संरक्षित एमएल",
+      "subtitle": "संघीय शिक्षण, अंतर गोपनीयता, और एन्क्रिप्टेड अनुमान",
+      "badge": "गोपनीयता-प्रथम",
+      "tabs": {
+        "federated": "संघीय शिक्षण",
+        "privacy": "अंतर गोपनीयता",
+        "encryption": "होमोमॉर्फिक एन्क्रिप्शन"
+      },
+      "federated": {
+        "trainingStatus": "प्रशिक्षण स्थिति",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय",
+        "connectedClients": "कनेक्टेड क्लाइंट",
+        "currentRound": "वर्तमान राउंड",
+        "startTraining": "प्रशिक्षण शुरू करें",
+        "stopTraining": "प्रशिक्षण रोकें",
+        "trainingProgress": "प्रशिक्षण प्रगति",
+        "round": "राउंड",
+        "accuracy": "सटीकता",
+        "loss": "हानि",
+        "clients": "क्लाइंट",
+        "connectedClientsTitle": "कनेक्टेड क्लाइंट",
+        "client": "क्लाइंट",
+        "samples": "नमूने"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "उपयोग किया गया गोपनीयता बजट",
+        "budgetRemaining": "शेष बजट",
+        "totalQueries": "कुल क्वेरी",
+        "initializePrivacyBudget": "गोपनीयता बजट प्रारंभ करें",
+        "recentQueries": "हाल की क्वेरी",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "एन्क्रिप्टेड मॉडल",
+        "keyPairs": "की-पेयर",
+        "encryptedInferences": "एन्क्रिप्टेड अनुमान",
+        "generateEncryptionKeys": "एन्क्रिप्शन की जेनरेट करें",
+        "encryptionSchemes": "एन्क्रिप्शन योजनाएं",
+        "models": "मॉडल"
+      }
+    },
+    "settings": {
+      "title": "गोपनीयता सेटिंग्स",
+      "subtitle": "अपनी गोपनीयता और सुरक्षा प्राथमिकताएं प्रबंधित करें",
+      "badge": "गोपनीयता संरक्षित",
+      "privacyLevel": "गोपनीयता स्तर",
+      "risk": "जोखिम",
+      "dataManagement": "डेटा प्रबंधन",
+      "dataRetentionPeriod": "डेटा अवधारण अवधि (दिन)",
+      "privacyBudget": "गोपनीयता बजट (ε एप्सिलॉन, 0–10)",
+      "notificationEmail": "अधिसूचना ईमेल (वैकल्पिक)",
+      "allowDataExport": "डेटा निर्यात की अनुमति दें",
+      "allowDataExportDesc": "उपयोगकर्ताओं को विश्लेषण परिणाम निर्यात करने की अनुमति दें",
+      "allowDataSharing": "डेटा साझाकरण की अनुमति दें",
+      "allowDataSharingDesc": "गुमनाम अंतर्दृष्टि को साझेदारों के साथ साझा करें",
+      "saveSettings": "सेटिंग्स सहेजें",
+      "settingsSaved": "सेटिंग्स सहेजी गई",
+      "fixErrors": "सहेजने से पहले त्रुटियां ठीक करें",
+      "levels": {
+        "minimal": "न्यूनतम",
+        "standard": "मानक",
+        "high": "उच्च",
+        "maximum": "अधिकतम"
+      },
+      "riskLevels": {
+        "veryLow": "बहुत कम",
+        "low": "कम",
+        "medium": "मध्यम",
+        "high": "उच्च"
+      },
+      "features": {
+        "dataEncryption": "डेटा एन्क्रिप्शन",
+        "basicAccessControl": "बेसिक एक्सेस कंट्रोल",
+        "accessControl": "एक्सेस कंट्रोल",
+        "auditLogging": "ऑडिट लॉगिंग",
+        "differentialPrivacy": "अंतर गोपनीयता",
+        "zeroKnowledgeProofs": "जीरो-नॉलेज प्रूफ"
+      },
+      "validation": {
+        "validEmail": "एक वैध ईमेल पता दर्ज करें।",
+        "epsilonRange": "एप्सिलॉन 0 से 10 के बीच एक संख्या होना चाहिए।",
+        "retentionMinDays": "अवधारण अवधि कम से कम 1 दिन होनी चाहिए।"
+      }
+    },
+    "budget": {
+      "title": "गोपनीयता बजट मॉनिटर",
+      "backToDashboard": "डैशबोर्ड पर वापस जाएं",
+      "datasets": {
+        "customerAnalytics": "ग्राहक विश्लेषण डेटासेट",
+        "financialTransactions": "वित्तीय लेनदेन डेटासेट",
+        "healthcareRecords": "स्वास्थ्य रिकॉर्ड डेटासेट"
+      }
+    },
+    "upload": {
+      "title": "एन्क्रिप्टेड डेटा अपलोड",
+      "steps": {
+        "select": "फाइलें चुनें",
+        "metadata": "मेटाडेटा कॉन्फिगर करें",
+        "encrypt": "डेटा एन्क्रिप्ट करें",
+        "upload": "सुरक्षित स्टोरेज में अपलोड करें"
+      },
+      "fileTypes": {
+        "csv": "CSV फाइलें",
+        "json": "JSON फाइलें",
+        "excel": "Excel फाइलें",
+        "parquet": "Parquet फाइलें"
+      },
+      "encryption": {
+        "standard": "मानक एन्क्रिप्शन",
+        "advanced": "उन्नत एन्क्रिप्शन",
+        "quantum": "क्वांटम-प्रतिरोधी एन्क्रिप्शन"
+      },
+      "privacyLevel": "गोपनीयता स्तर",
+      "department": "विभाग",
+      "dateRange": "दिनांक सीमा",
+      "tags": "टैग",
+      "start": "प्रारंभ",
+      "end": "अंत",
+      "encryptData": "डेटा एन्क्रिप्ट करें",
+      "uploadComplete": "अपलोड पूर्ण",
+      "uploadFailed": "अपलोड विफल"
+    },
+    "education": {
+      "title": "गोपनीयता शिक्षा",
+      "subtitle": "गोपनीयता-संरक्षण प्रौद्योगिकियों के बारे में जानें",
+      "modules": {
+        "differentialPrivacy": "अंतर गोपनीयता",
+        "federatedLearning": "संघीय शिक्षण",
+        "homomorphicEncryption": "होमोमॉर्फिक एन्क्रिप्शन",
+        "zeroKnowledgeProofs": "जीरो-नॉलेज प्रूफ"
+      }
+    },
+    "monitoring": {
+      "title": "गोपनीयता मॉनिटरिंग",
+      "subtitle": "रीयल-टाइम गोपनीयता मेट्रिक्स और अलर्ट",
+      "metrics": {
+        "privacyBudget": "गोपनीयता बजट",
+        "dataAccess": "डेटा एक्सेस",
+        "encryptionStatus": "एन्क्रिप्शन स्थिति",
+        "complianceScore": "अनुपालन स्कोर"
+      },
+      "alerts": {
+        "budgetWarning": "गोपनीयता बजट चेतावनी",
+        "unauthorizedAccess": "अनधिकृत पहुंच प्रयास",
+        "encryptionFailure": "एन्क्रिप्शन विफलता"
+      }
+    },
+    "health": {
+      "title": "गोपनीयता स्वास्थ्य डैशबोर्ड",
+      "subtitle": "अपने संगठन की गोपनीयता मुद्रा की निगरानी करें",
+      "score": "गोपनीयता स्कोर",
+      "excellent": "उत्कृष्ट",
+      "good": "अच्छा",
+      "fair": "औसत",
+      "poor": "खराब",
+      "recommendations": "सिफारिशें",
+      "lastUpdated": "अंतिम अपडेट"
+    },
+    "common": {
+      "privacy": "गोपनीयता",
+      "security": "सुरक्षा",
+      "encryption": "एन्क्रिप्शन",
+      "decryption": "डिक्रिप्शन",
+      "data": "डेटा",
+      "access": "एक्सेस",
+      "control": "नियंत्रण",
+      "audit": "ऑडिट",
+      "compliance": "अनुपालन",
+      "risk": "जोखिम",
+      "protection": "सुरक्षा",
+      "anonymization": "गुमनामीकरण",
+      "pseudonymization": "छद्मनामीकरण",
+      "consent": "सहमति",
+      "notification": "अधिसूचना",
+      "alert": "अलर्ट",
+      "warning": "चेतावनी",
+      "error": "त्रुटि",
+      "success": "सफलता",
+      "loading": "लोड हो रहा है",
+      "processing": "प्रसंस्करण",
+      "complete": "पूर्ण",
+      "failed": "विफल",
+      "cancel": "रद्द करें",
+      "confirm": "पुष्टि करें",
+      "save": "सहेजें",
+      "delete": "हटाएं",
+      "edit": "संपादित करें",
+      "view": "देखें",
+      "download": "डाउनलोड करें",
+      "upload": "अपलोड करें",
+      "export": "निर्यात करें",
+      "import": "आयात करें",
+      "share": "साझा करें",
+      "copy": "कॉपी करें",
+      "move": "घुमाएं",
+      "search": "खोजें",
+      "filter": "फिल्टर करें",
+      "sort": "सॉर्ट करें",
+      "refresh": "रिफ्रेश करें",
+      "settings": "सेटिंग्स",
+      "configuration": "कॉन्फिगरेशन",
+      "administration": "प्रशासन"
+    }
+  },
+  "navigation": {
+    "dashboard": "डैशबोर्ड",
+    "privacy": "गोपनीयता",
+    "analytics": "विश्लेषण",
+    "data": "डेटा",
+    "settings": "सेटिंग्स",
+    "help": "सहायता",
+    "logout": "लॉगआउट"
+  },
+  "language": {
+    "select": "भाषा चुनें",
+    "english": "अंग्रेजी",
+    "spanish": "स्पैनिश",
+    "french": "फ्रेंच",
+    "german": "जर्मन",
+    "chinese": "चीनी",
+    "arabic": "अरबी",
+    "japanese": "जापानी",
+    "hindi": "हिंदी",
+    "portuguese": "पुर्तगाली",
+    "russian": "रूसी"
+  },
+  "formats": {
+    "date": "DD/MM/YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD/MM/YYYY HH:mm",
+    "currency": "₹",
+    "number": "#,##0.##",
+    "percentage": "#,##0.##%"
+  }
+}

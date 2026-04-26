@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Upload, 
-  Lock, 
-  Shield, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Upload,
+  Lock,
+  Shield,
+  CheckCircle,
+  AlertCircle,
   Download,
   X,
   FileText,
@@ -13,6 +13,7 @@ import {
   Zap
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { Modal } from './ui/Modal';
 
 import { WebCryptoService, EncryptedFile, UploadProgress } from '../lib/webCrypto';
 import { ZKProofService, ZKProof } from '../lib/zkProof';
@@ -46,7 +47,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
   const [encryptionKey, setEncryptionKey] = useState<string>('');
   const [showReceipt, setShowReceipt] = useState<UploadReceipt | null>(null);
   const [stellarAccount, setStellarAccount] = useState<StellarAccount | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Generate secure encryption key on component mount
@@ -68,7 +69,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
   }, []);
@@ -99,7 +100,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
     });
 
     setSelectedFiles(prev => [...prev, ...validFiles]);
-    
+
     if (validFiles.length > 0) {
       toast.success(`${validFiles.length} file(s) added successfully`);
     }
@@ -141,13 +142,13 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
       setUploadState({ isUploading: false, progress: null, stage: 'completed' });
       toast.success('All files uploaded successfully');
-      
+
     } catch (error) {
       console.error('Upload error:', error);
-      setUploadState({ 
-        isUploading: false, 
-        progress: null, 
-        stage: 'error', 
+      setUploadState({
+        isUploading: false,
+        progress: null,
+        stage: 'error',
         error: error instanceof Error ? error.message : 'Upload failed'
       });
       toast.error('Upload failed');
@@ -157,7 +158,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
   const processSingleFile = async (file: File) => {
     // Stage 1: Encrypt file
     setUploadState(prev => ({ ...prev, stage: 'encrypting' }));
-    
+
     const encryptedFile = await WebCryptoService.encryptFile(
       file,
       encryptionKey,
@@ -168,7 +169,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
     // Stage 2: Generate ZK-proof
     setUploadState(prev => ({ ...prev, stage: 'generating-proof' }));
-    
+
     const zkProof = await ZKProofService.generateFileIntegrityProof(
       file,
       encryptedFile.checksum,
@@ -177,12 +178,12 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
     // Stage 3: Simulate upload to storage (in real implementation, this would upload to IPFS/storage)
     setUploadState(prev => ({ ...prev, stage: 'uploading' }));
-    
+
     const dataCID = await simulateFileUpload(encryptedFile);
-    
+
     // Stage 4: Sign transaction on Stellar
     setUploadState(prev => ({ ...prev, stage: 'signing' }));
-    
+
     const receipt = await StellarWalletService.signAndSubmitUploadTransaction(
       stellarAccount!,
       {
@@ -211,7 +212,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
     while (uploaded < uploadSize) {
       uploaded = Math.min(uploaded + chunkSize, uploadSize);
-      
+
       setUploadState(prev => ({
         ...prev,
         progress: {
@@ -285,14 +286,13 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
       {/* Upload Zone */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Secure Data Upload</h2>
-        
+
         {/* Drag and Drop Zone */}
         <div
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-            isDragOver 
-              ? 'border-blue-500 bg-blue-50' 
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDragOver
+              ? 'border-blue-500 bg-blue-50'
               : 'border-gray-300 hover:border-gray-400'
-          } ${uploadState.isUploading ? 'pointer-events-none opacity-50' : ''}`}
+            } ${uploadState.isUploading ? 'pointer-events-none opacity-50' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -307,7 +307,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
             className="hidden"
             disabled={uploadState.isUploading}
           />
-          
+
           <Upload className="mx-auto h-12 w-12 text-gray-400" />
           <div className="mt-4">
             <p className="text-lg font-medium text-gray-900">
@@ -428,7 +428,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
                 </span>
               )}
             </div>
-            
+
             {uploadState.progress && (
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <motion.div
@@ -457,63 +457,44 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
       )}
 
       {/* Receipt Modal */}
-      <AnimatePresence>
-        {showReceipt && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      <Modal
+        isOpen={showReceipt !== null}
+        onClose={() => setShowReceipt(null)}
+        title="Upload Receipt"
+        size="md"
+      >
+        <div className="space-y-3">
+          <div className="p-3 bg-green-50 rounded-lg">
+            <CheckCircle className="h-5 w-5 text-green-600 mb-2" />
+            <p className="text-sm text-green-800">Your data has been securely uploaded to the Stellar blockchain</p>
+          </div>
+
+          {showReceipt && (
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="font-medium text-gray-700">Transaction Hash:</span>
+                <div className="font-mono text-xs text-gray-600 break-all">{showReceipt.transactionHash}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Data CID:</span>
+                <div className="font-mono text-xs text-gray-600 break-all">{showReceipt.dataCID}</div>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Network:</span>
+                <span className="text-gray-600 ml-2">{showReceipt.network}</span>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={downloadReceipt}
+            className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg p-6 max-w-md w-full"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Upload Receipt</h3>
-                <button
-                  onClick={() => setShowReceipt(null)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600 mb-2" />
-                  <p className="text-sm text-green-800">Your data has been securely uploaded to the Stellar blockchain</p>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Transaction Hash:</span>
-                    <div className="font-mono text-xs text-gray-600 break-all">{showReceipt.transactionHash}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Data CID:</span>
-                    <div className="font-mono text-xs text-gray-600 break-all">{showReceipt.dataCID}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Network:</span>
-                    <span className="text-gray-600 ml-2">{showReceipt.network}</span>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={downloadReceipt}
-                  className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Receipt
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <Download className="h-4 w-4 mr-2" />
+            Download Receipt
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };
