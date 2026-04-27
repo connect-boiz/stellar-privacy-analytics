@@ -1,0 +1,300 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with Read Replica
+  postgres:
+    image: postgres:15-alpine
+    container_name: stellar-postgres
+    environment:
+      POSTGRES_DB: stellar_db
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - stellar-network
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+
+  # PostgreSQL Read Replica
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: stellar-postgres-replica
+    environment:
+      POSTGRES_DB: stellar_db
+      POSTGRES_USER: stellar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_MASTER_HOST: postgres
+      POSTGRES_MASTER_PORT: 5432
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator_password}
+    ports:
+      - "5433:5432"
+    depends_on:
+      - postgres
+    networks:
+      - stellar-network
+
+  # Redis Cache with optimized configuration
+  redis:
+    image: redis:7-alpine
+    container_name: stellar-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - stellar-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stellar-backend
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://stellar:${POSTGRES_PASSWORD:-password}@postgres:5432/stellar_db
+      - POSTGRES_READ_HOST=postgres-replica
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MIN_WORKERS=3
+      - MAX_WORKERS=10
+      - WORKER_CONCURRENCY=20
+      - SCALE_UP_THRESHOLD=500
+      - SCALE_DOWN_THRESHOLD=100
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - postgres-replica
+      - redis
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - stellar-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Worker instances for horizontal scaling
+  worker-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stellar-worker-1
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://stellar:${POSTGRES_PASSWORD:-password}@postgres:5432/stellar_db
+      - POSTGRES_READ_HOST=postgres-replica
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_CONCURRENCY=20
+      - WORKER_ID=worker-1
+    command: npm run worker
+    depends_on:
+      - postgres
+      - postgres-replica
+      - redis
+    networks:
+      - stellar-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  worker-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stellar-worker-2
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://stellar:${POSTGRES_PASSWORD:-password}@postgres:5432/stellar_db
+      - POSTGRES_READ_HOST=postgres-replica
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_CONCURRENCY=20
+      - WORKER_ID=worker-2
+    command: npm run worker
+    depends_on:
+      - postgres
+      - postgres-replica
+      - redis
+    networks:
+      - stellar-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  worker-3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stellar-worker-3
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://stellar:${POSTGRES_PASSWORD:-password}@postgres:5432/stellar_db
+      - POSTGRES_READ_HOST=postgres-replica
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_CONCURRENCY=20
+      - WORKER_ID=worker-3
+    command: npm run worker
+    depends_on:
+      - postgres
+      - postgres-replica
+      - redis
+    networks:
+      - stellar-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stellar-frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - stellar-network
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: stellar-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - stellar-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: stellar-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - stellar-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: stellar-grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - stellar-network
+
+  # Redis Exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: stellar-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - stellar-network
+
+  # PostgreSQL Exporter for Prometheus
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: stellar-postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://stellar:${POSTGRES_PASSWORD:-password}@postgres:5432/stellar_db?sslmode=disable
+    depends_on:
+      - postgres
+    networks:
+      - stellar-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  stellar-network:
+    driver: bridge
