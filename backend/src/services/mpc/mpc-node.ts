@@ -235,6 +235,19 @@ export class MPCNode extends EventEmitter {
   private async performComputation(session: MPCSession): Promise<string> {
     const shares = Array.from(session.shares.values());
     
+    // Simulate computation progress
+    const totalSteps = 10;
+    for (let step = 1; step <= totalSteps; step++) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing time
+      
+      this.emit('computationProgress', session.id, {
+        step,
+        totalSteps,
+        percentage: (step / totalSteps) * 100,
+        message: `Processing step ${step}/${totalSteps}`
+      });
+    }
+    
     switch (session.operation) {
       case MPCOperation.SUM:
         return this.performSum(shares);

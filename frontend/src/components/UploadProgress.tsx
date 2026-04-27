@@ -10,9 +10,10 @@ import {
   Wifi, 
   WifiOff,
   Clock,
-  Zap
+  Zap,
+  RefreshCw
 } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
+import { useSocketIO } from '../hooks/useSocketIO';
 
 interface UploadProgress {
   uploadId: string;
@@ -46,38 +47,91 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
   onComplete
 }) => {
   const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const [isPolling, setIsPolling] = useState(false);
+  
+  const { socket, connectionState, reconnect, isOnline, reconnectAttempts, lastError } = useSocketIO({
+    enableOfflineQueue: true,
+    maxReconnectAttempts: 10,
+    enableHeartbeat: true
+  });
 
   useEffect(() => {
-    // Initialize WebSocket connection
-    const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:3001');
-    socketRef.current = newSocket;
-    setSocket(newSocket);
+    if (socket) {
+      // Join upload room
+      socket.emit('join-upload', uploadId);
 
-    // Join upload room
-    newSocket.emit('join-upload', uploadId);
+      // Listen for progress updates
+      socket.on('upload-progress', (progressData: UploadProgress) => {
+        setProgress(progressData);
+        setError(null);
+        
+        if (progressData.status === 'completed') {
+          onComplete();
+        } else if (progressData.status === 'error') {
+          setError('Upload failed. Please try again.');
+        }
+      });
 
-    // Listen for progress updates
-    newSocket.on('upload-progress', (progressData: UploadProgress) => {
-      setProgress(progressData);
-      setError(null);
-      
-      if (progressData.status === 'completed') {
-        onComplete();
-      } else if (progressData.status === 'error') {
-        setError('Upload failed. Please try again.');
-      }
-    });
+      // Listen for connection issues
+      socket.on('connect_error', () => {
+        setError('Connection lost. Attempting to reconnect...');
+      });
+
+      socket.on('disconnect', () => {
+        if (isOnline) {
+          setError('Connection lost. Using polling fallback...');
+          startPolling();
+        }
+      });
+    }
 
     // Fetch initial progress
     fetchInitialProgress();
 
     return () => {
-      newSocket.disconnect();
+      if (socket) {
+        socket.off('upload-progress');
+        socket.off('connect_error');
+        socket.off('disconnect');
+      }
     };
-  }, [uploadId]);
+  }, [socket, uploadId, isOnline]);
+
+  // Polling fallback when WebSocket is unavailable
+  const startPolling = () => {
+    if (isPolling) return;
+    setIsPolling(true);
+    
+    const pollInterval = setInterval(async () => {
+      if (connectionState === 'connected') {
+        setIsPolling(false);
+        clearInterval(pollInterval);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/data/upload/${uploadId}/progress`);
+        if (response.ok) {
+          const data = await response.json();
+          setProgress(data);
+          
+          if (data.status === 'completed') {
+            onComplete();
+            clearInterval(pollInterval);
+          }
+        }
+      } catch (err) {
+        console.error('Polling failed:', err);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Clean up polling after 5 minutes
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      setIsPolling(false);
+    }, 300000);
+  };
 
   const fetchInitialProgress = async () => {
     try {
@@ -213,8 +267,49 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
           </div>
         </div>
         
-        {/* Status and Actions */}
+        {/* Connection Status and Actions */}
         <div className="flex items-center space-x-2">
+          {/* Connection Status Indicator */}
+          <div className="flex items-center space-x-1">
+            {connectionState === 'connected' && (
+              <div className="flex items-center space-x-1 text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-xs">Live</span>
+              </div>
+            )}
+            {connectionState === 'reconnecting' && (
+              <div className="flex items-center space-x-1 text-yellow-600">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                <span className="text-xs">Reconnecting</span>
+              </div>
+            )}
+            {(connectionState === 'disconnected' || connectionState === 'failed') && (
+              <div className="flex items-center space-x-1 text-red-600">
+                <WifiOff className="h-3 w-3" />
+                <span className="text-xs">
+                  {isPolling ? 'Polling' : 'Offline'}
+                </span>
+              </div>
+            )}
+            {connectionState === 'connecting' && (
+              <div className="flex items-center space-x-1 text-gray-600">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+                <span className="text-xs">Connecting</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Reconnect Button */}
+          {(connectionState === 'disconnected' || connectionState === 'failed') && (
+            <button
+              onClick={reconnect}
+              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+              title="Reconnect"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          )}
+          
           {progress.status === 'completed' && (
             <div className="flex items-center space-x-1 text-green-600">
               <Check className="h-4 w-4" />
@@ -329,6 +424,35 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Connection Diagnostics */}
+      {(connectionState !== 'connected' || reconnectAttempts > 0 || lastError) && (
+        <div className="mt-3 p-2 bg-gray-50 border border-gray-200 rounded-md">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-600">Connection:</span>
+              <span className={`font-medium capitalize ${
+                connectionState === 'connected' ? 'text-green-600' :
+                connectionState === 'reconnecting' ? 'text-yellow-600' :
+                'text-red-600'
+              }`}>
+                {connectionState}
+              </span>
+              {reconnectAttempts > 0 && (
+                <span className="text-gray-500">
+                  (Attempt {reconnectAttempts})
+                </span>
+              )}
+            </div>
+            {!isOnline && (
+              <span className="text-red-600 font-medium">Offline</span>
+            )}
+          </div>
+          {lastError && (
+            <p className="text-xs text-red-600 mt-1">{lastError}</p>
+          )}
+        </div>
+      )}
 
       {/* Error Message */}
       <AnimatePresence>
