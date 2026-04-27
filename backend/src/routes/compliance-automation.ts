@@ -79,7 +79,7 @@ router.post('/scan', async (req: Request, res: Response) => {
     logger.error('Error running compliance scan:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to run compliance scan'
+      error: error instanceof Error ? error.message : 'Failed to run compliance scan'
     });
   }
 });
@@ -102,7 +102,7 @@ router.post('/scan/all', async (req: Request, res: Response) => {
         results.push({
           regulation: regulation.name,
           status: 'error',
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
       }
     }
@@ -189,7 +189,7 @@ router.get('/report/:regulationId', async (req: Request, res: Response) => {
     logger.error('Error generating compliance report:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to generate compliance report'
+      error: error instanceof Error ? error.message : 'Failed to generate compliance report'
     });
   }
 });

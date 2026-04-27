@@ -360,7 +360,7 @@ export class ComplianceWorkflowService {
       await this.updateStepStatus(workflowId, stepId, 'completed', 'system', 'Automated execution completed');
     } catch (error) {
       logger.error('Error executing automated step:', error);
-      await this.updateStepStatus(workflowId, stepId, 'failed', 'system', `Error: ${error.message}`);
+      await this.updateStepStatus(workflowId, stepId, 'failed', 'system', `Error: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }

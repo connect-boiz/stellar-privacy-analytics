@@ -321,7 +321,7 @@ export class ComplianceAutomationService {
           action: 'rule_check_error',
           actor: 'system',
           resource: rule.id,
-          details: { error: error.message }
+          details: { error: error instanceof Error ? error.message : String(error) }
         });
       }
     }
