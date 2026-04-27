@@ -26,6 +26,8 @@ import serviceDiscoveryRoutes, { initializeServiceDiscovery } from './routes/ser
 import { privacyNoiseRoutes } from './routes/privacy-noise';
 import { zkpRoutes } from './routes/zkp';
 import { riskAssessmentRoutes } from './routes/risk-assessment';
+import { helpRoutes } from './routes/help';
+import { stellarAuth } from './middleware/stellarAuth';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -33,6 +35,7 @@ import { privacyMiddleware } from './middleware/privacy';
 import { metricsMiddleware } from './middleware/metrics';
 import { corsMonitor, corsErrorHandler } from './middleware/corsMonitor';
 import { logger } from './utils/logger';
+import setupSwaggerDocumentation from './docs/swagger';
 
 // Import services
 import { getHSMIntegration } from './services/hsmIntegration';
@@ -133,7 +136,7 @@ async function initializeRateLimiters() {
 
   logger.info('Enhanced rate limiters initialized with Redis and monitoring');
   
-  // Update stellarAuth with redis
+  // Update stellarAuth with redis client
   (stellarAuth as any).redis = redisClient;
 
   logger.info('Enhanced rate limiters and Auth initialized with Redis and monitoring');
@@ -144,6 +147,9 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+
+// Setup API documentation
+setupSwaggerDocumentation(app);
 
 // Custom middleware
 app.use(requestLogger);
@@ -236,10 +242,10 @@ app.get('/health', (req, res) => {
 const apiRouter = express.Router();
 
 // Apply specialized rate limiting to different route groups
-apiRouter.use('/auth', authRoutes); // Enhanced rate limiting applied above
+apiRouter.use('/auth', authRoutes); // No auth required for auth endpoints
 
-// Analytics and Query endpoints - Enhanced PQL rate limiting with stricter controls
-apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+// Protected routes - Apply authentication middleware
+apiRouter.use('/analytics', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -249,7 +255,7 @@ apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRa
   alertThreshold: 0.1
 }) : (req: any, res: any, next: any) => next(), analyticsRoutes);
 
-apiRouter.use('/query', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+apiRouter.use('/query', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -259,18 +265,19 @@ apiRouter.use('/query', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLi
   alertThreshold: 0.08
 }) : (req: any, res: any, next: any) => next(), queryRoutes);
 
-apiRouter.use('/data', dataRoutes);
-apiRouter.use('/privacy', privacyRoutes);
-apiRouter.use('/privacy/budget', privacyBudgetRoutes);
-apiRouter.use('/ipfs', ipfsRoutes);
-apiRouter.use('/hsm', hsmRoutes);
-apiRouter.use('/mpc', mpcRoutes);
-apiRouter.use('/audit', auditRoutes);
-apiRouter.use('/service-discovery', serviceDiscoveryRoutes);
-apiRouter.use('/training', trainingRoutes);
-apiRouter.use('/privacy/noise', privacyNoiseRoutes);
-apiRouter.use('/zkp', zkpRoutes);
-apiRouter.use('/risk-assessment', riskAssessmentRoutes);
+apiRouter.use('/data', stellarAuth.authenticate, dataRoutes);
+apiRouter.use('/privacy', stellarAuth.authenticate, privacyRoutes);
+apiRouter.use('/privacy/budget', stellarAuth.authenticate, privacyBudgetRoutes);
+apiRouter.use('/ipfs', stellarAuth.authenticate, ipfsRoutes);
+apiRouter.use('/hsm', stellarAuth.authenticate, hsmRoutes);
+apiRouter.use('/mpc', stellarAuth.authenticate, mpcRoutes);
+apiRouter.use('/audit', stellarAuth.authenticate, auditRoutes);
+apiRouter.use('/service-discovery', stellarAuth.authenticate, serviceDiscoveryRoutes);
+apiRouter.use('/training', stellarAuth.authenticate, trainingRoutes);
+apiRouter.use('/privacy/noise', stellarAuth.authenticate, privacyNoiseRoutes);
+apiRouter.use('/zkp', stellarAuth.authenticate, zkpRoutes);
+apiRouter.use('/risk-assessment', stellarAuth.authenticate, riskAssessmentRoutes);
+apiRouter.use('/help', helpRoutes); // Public help documentation
 
 app.use('/api/v1', apiRouter);
 
@@ -323,7 +330,12 @@ const HOST = process.env.API_HOST || 'localhost';
 // Initialize services before starting server
 async function initializeServices() {
   try {
-<<<<<<< HEAD
+    // Initialize Redis first
+    await initializeRedis();
+
+    // Initialize rate limiters
+    await initializeRateLimiters();
+
     // Initialize Service Discovery
     const serviceDiscovery = new ServiceDiscovery({
       redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
@@ -359,13 +371,6 @@ async function initializeServices() {
     initializeServiceDiscovery(serviceDiscovery);
 
     logger.info('Service Discovery initialized successfully');
-=======
-    // Initialize Redis first
-    await initializeRedis();
-
-    // Initialize rate limiters
-    await initializeRateLimiters();
->>>>>>> fork/Service-Discovery-Failures-in-Microservices-Architecture1
 
     const hsmIntegration = getHSMIntegration({
       autoInitializeMasterKey: true,

@@ -47,7 +47,9 @@
     "events": "^3.3.0",
     "http-proxy-middleware": "^2.0.6",
     "rate-limiter-flexible": "^4.0.1",
-    "lru-cache": "^10.0.1"
+    "lru-cache": "^10.0.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -76,6 +78,8 @@
     "supertest": "^6.3.3",
     "@types/supertest": "^2.0.16",
     "@types/events": "^3.0.0",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.6"
   }
 }
