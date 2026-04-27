@@ -20,14 +20,13 @@ import { privacyRoutes } from './routes/privacy';
 import { queryRoutes } from './routes/query';
 import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
-import { mpcRoutes } from './routes/mpc';
+import { mpcRoutes, initializeMPCSocket } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
 import serviceDiscoveryRoutes, { initializeServiceDiscovery } from './routes/serviceDiscovery';
 import { privacyNoiseRoutes } from './routes/privacy-noise';
 import { zkpRoutes } from './routes/zkp';
 import { riskAssessmentRoutes } from './routes/risk-assessment';
-import { helpRoutes } from './routes/help';
-import { stellarAuth } from './middleware/stellarAuth';
+import { complianceAutomationRoutes } from './routes/compliance-automation';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -40,6 +39,7 @@ import setupSwaggerDocumentation from './docs/swagger';
 // Import services
 import { getHSMIntegration } from './services/hsmIntegration';
 import { MemoryMonitorService } from './services/memoryMonitorService';
+import { initializeCacheService } from './services/cacheService';
 
 // Import workers
 import { StellarTransactionWatcher } from './workers/StellarTransactionWatcher';
@@ -62,6 +62,9 @@ const server = createServer(app);
 
 // Initialize WebSocket for upload progress
 const uploadSocket = initializeUploadSocket(server);
+
+// Initialize WebSocket for MPC real-time updates
+initializeMPCSocket(uploadSocket);
 
 
 // Security middleware
@@ -117,8 +120,6 @@ let enhancedRateLimiter: any;
 // Initialize rate limiters after Redis is connected
 async function initializeRateLimiters() {
   const redisClient = getRedisClient();
-
-  const redisClient = getRedisClient() as any;
   
   // Create standard rate limiters
   rateLimiter = createRateLimiter(redisClient);
@@ -134,12 +135,15 @@ async function initializeRateLimiters() {
   rateLimitMonitor.registerRateLimiter('pql', pqlRateLimiter);
   rateLimitMonitor.registerRateLimiter('admin', adminRateLimiter);
 
-  logger.info('Enhanced rate limiters initialized with Redis and monitoring');
+  // Initialize cache service
+  initializeCacheService(redisClient);
+
+  logger.info('Enhanced rate limiters, cache service initialized with Redis and monitoring');
   
   // Update stellarAuth with redis client
   (stellarAuth as any).redis = redisClient;
 
-  logger.info('Enhanced rate limiters and Auth initialized with Redis and monitoring');
+  logger.info('Enhanced rate limiters, cache service and Auth initialized with Redis and monitoring');
 }
 
 // General middleware
@@ -265,19 +269,18 @@ apiRouter.use('/query', stellarAuth.authenticate, enhancedRateLimiter ? enhanced
   alertThreshold: 0.08
 }) : (req: any, res: any, next: any) => next(), queryRoutes);
 
-apiRouter.use('/data', stellarAuth.authenticate, dataRoutes);
-apiRouter.use('/privacy', stellarAuth.authenticate, privacyRoutes);
-apiRouter.use('/privacy/budget', stellarAuth.authenticate, privacyBudgetRoutes);
-apiRouter.use('/ipfs', stellarAuth.authenticate, ipfsRoutes);
-apiRouter.use('/hsm', stellarAuth.authenticate, hsmRoutes);
-apiRouter.use('/mpc', stellarAuth.authenticate, mpcRoutes);
-apiRouter.use('/audit', stellarAuth.authenticate, auditRoutes);
-apiRouter.use('/service-discovery', stellarAuth.authenticate, serviceDiscoveryRoutes);
-apiRouter.use('/training', stellarAuth.authenticate, trainingRoutes);
-apiRouter.use('/privacy/noise', stellarAuth.authenticate, privacyNoiseRoutes);
-apiRouter.use('/zkp', stellarAuth.authenticate, zkpRoutes);
-apiRouter.use('/risk-assessment', stellarAuth.authenticate, riskAssessmentRoutes);
-apiRouter.use('/help', helpRoutes); // Public help documentation
+apiRouter.use('/data', dataRoutes);
+apiRouter.use('/privacy', privacyRoutes);
+apiRouter.use('/privacy/budget', privacyBudgetRoutes);
+apiRouter.use('/ipfs', ipfsRoutes);
+apiRouter.use('/hsm', hsmRoutes);
+apiRouter.use('/mpc', mpcRoutes);
+apiRouter.use('/training', trainingRoutes);
+apiRouter.use('/privacy/noise', privacyNoiseRoutes);
+apiRouter.use('/zkp', zkpRoutes);
+apiRouter.use('/risk-assessment', riskAssessmentRoutes);
+apiRouter.use('/compliance-automation', complianceAutomationRoutes);
+
 
 app.use('/api/v1', apiRouter);
 
