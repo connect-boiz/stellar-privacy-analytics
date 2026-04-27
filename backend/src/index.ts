@@ -25,6 +25,7 @@ import { auditRoutes } from './routes/audit';
 import { privacyNoiseRoutes } from './routes/privacy-noise';
 import { zkpRoutes } from './routes/zkp';
 import { riskAssessmentRoutes } from './routes/risk-assessment';
+import { complianceAutomationRoutes } from './routes/compliance-automation';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -265,6 +266,7 @@ apiRouter.use('/training', trainingRoutes);
 apiRouter.use('/privacy/noise', privacyNoiseRoutes);
 apiRouter.use('/zkp', zkpRoutes);
 apiRouter.use('/risk-assessment', riskAssessmentRoutes);
+apiRouter.use('/compliance-automation', complianceAutomationRoutes);
 
 
 app.use('/api/v1', apiRouter);
