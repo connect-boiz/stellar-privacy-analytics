@@ -39,6 +39,8 @@ export class DeadLetterQueue extends EventEmitter {
   private isShuttingDown: boolean = false;
 
   constructor(queueName: string, retryPolicy?: Partial<RetryPolicy>) {
+    super(); // Call EventEmitter constructor
+    
     this.retryPolicy = {
       maxRetries: 3,
       retryDelay: 5000, // 5 seconds
@@ -49,7 +51,8 @@ export class DeadLetterQueue extends EventEmitter {
         'MEMORY_ERROR',
         'NETWORK_ERROR',
         'TEMPORARY_FAILURE',
-        'RATE_LIMIT_EXCEEDED'
+        'RATE_LIMIT_EXCEEDED',
+        'CONNECTION_ERROR',
       ],
       ...retryPolicy,
     };
@@ -160,7 +163,7 @@ export class DeadLetterQueue extends EventEmitter {
 
       logger.warn('Job added to Dead Letter Queue', {
         jobId: deadLetterJob.id,
-        originalJobId: jobData.originalJobId,
+        originalJobId: jobData.jobId,
         error: jobData.error,
         attempts: jobData.attempts,
       });
