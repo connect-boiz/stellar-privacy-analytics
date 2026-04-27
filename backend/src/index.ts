@@ -22,6 +22,7 @@ import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
 import { mpcRoutes, initializeMPCSocket } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
+import serviceDiscoveryRoutes, { initializeServiceDiscovery } from './routes/serviceDiscovery';
 import { privacyNoiseRoutes } from './routes/privacy-noise';
 import { zkpRoutes } from './routes/zkp';
 import { riskAssessmentRoutes } from './routes/risk-assessment';
@@ -33,6 +34,7 @@ import { privacyMiddleware } from './middleware/privacy';
 import { metricsMiddleware } from './middleware/metrics';
 import { corsMonitor, corsErrorHandler } from './middleware/corsMonitor';
 import { logger } from './utils/logger';
+import setupSwaggerDocumentation from './docs/swagger';
 
 // Import services
 import { getHSMIntegration } from './services/hsmIntegration';
@@ -48,6 +50,9 @@ import { DatabaseService } from './services/databaseService';
 import { PrivacyBudgetService } from './services/privacyBudgetService';
 import { PrivacyBudgetRepository } from './repositories/privacyBudgetRepository';
 import { StorageService } from './services/storageService';
+
+// Import Service Discovery
+import { ServiceDiscovery } from './services/ServiceDiscovery';
 
 // Load environment variables
 dotenv.config();
@@ -135,7 +140,7 @@ async function initializeRateLimiters() {
 
   logger.info('Enhanced rate limiters, cache service initialized with Redis and monitoring');
   
-  // Update stellarAuth with redis
+  // Update stellarAuth with redis client
   (stellarAuth as any).redis = redisClient;
 
   logger.info('Enhanced rate limiters, cache service and Auth initialized with Redis and monitoring');
@@ -146,6 +151,9 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+
+// Setup API documentation
+setupSwaggerDocumentation(app);
 
 // Custom middleware
 app.use(requestLogger);
@@ -238,10 +246,10 @@ app.get('/health', (req, res) => {
 const apiRouter = express.Router();
 
 // Apply specialized rate limiting to different route groups
-apiRouter.use('/auth', authRoutes); // Enhanced rate limiting applied above
+apiRouter.use('/auth', authRoutes); // No auth required for auth endpoints
 
-// Analytics and Query endpoints - Enhanced PQL rate limiting with stricter controls
-apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+// Protected routes - Apply authentication middleware
+apiRouter.use('/analytics', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -251,7 +259,7 @@ apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRa
   alertThreshold: 0.1
 }) : (req: any, res: any, next: any) => next(), analyticsRoutes);
 
-apiRouter.use('/query', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+apiRouter.use('/query', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -331,6 +339,42 @@ async function initializeServices() {
     // Initialize rate limiters
     await initializeRateLimiters();
 
+    // Initialize Service Discovery
+    const serviceDiscovery = new ServiceDiscovery({
+      redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+      autoRegister: true,
+      enableFailover: true,
+      enableMonitoring: true,
+      healthCheckInterval: 30000,
+      serviceMesh: {
+        requestTimeout: 30000,
+        retryAttempts: 3,
+        retryDelay: 1000,
+        enableLoadBalancing: true,
+        enableCircuitBreaker: true,
+        enableMetrics: true
+      }
+    });
+
+    // Initialize service discovery with current service info
+    await serviceDiscovery.initialize({
+      name: 'stellar-backend',
+      host: process.env.SERVICE_HOST || 'localhost',
+      port: parseInt(process.env.API_PORT || '3001'),
+      version: '1.0.0',
+      weight: 1,
+      tags: ['api', 'backend', 'privacy'],
+      metadata: {
+        environment: process.env.NODE_ENV || 'development',
+        region: process.env.AWS_REGION || 'us-east-1'
+      }
+    });
+
+    // Initialize service discovery routes
+    initializeServiceDiscovery(serviceDiscovery);
+
+    logger.info('Service Discovery initialized successfully');
+
     const hsmIntegration = getHSMIntegration({
       autoInitializeMasterKey: true,
       enableAutoRecovery: false,
@@ -380,12 +424,12 @@ async function initializeServices() {
     });
 
   } catch (error) {
-    logger.error('Failed to initialize HSM integration:', error);
+    logger.error('Failed to initialize services:', error);
     // Continue without HSM for development, but fail in production
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);
     } else {
-      logger.warn('Continuing without HSM integration in development mode');
+      logger.warn('Continuing with limited services in development mode');
     }
   }
 }
