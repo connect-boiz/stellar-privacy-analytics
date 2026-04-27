@@ -92,3 +92,31 @@ router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 export { router as dataRoutes };
+
+// Initialize WebSocket server for upload progress
+export function initializeUploadSocket(server: any): any {
+  const io = require('socket.io')(server, {
+    cors: {
+      origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:3001'],
+      credentials: true
+    }
+  });
+
+  io.on('connection', (socket: any) => {
+    console.log('Upload client connected:', socket.id);
+
+    socket.on('join-upload', (uploadId: string) => {
+      socket.join(`upload-${uploadId}`);
+      console.log(`Client ${socket.id} joined upload room: ${uploadId}`);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Upload client disconnected:', socket.id);
+    });
+  });
+
+  // Set the socket.io instance in the upload manager
+  uploadManager.setSocketIO(io);
+
+  return io;
+}

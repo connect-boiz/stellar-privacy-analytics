@@ -20,7 +20,7 @@ import { privacyRoutes } from './routes/privacy';
 import { queryRoutes } from './routes/query';
 import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
-import { mpcRoutes } from './routes/mpc';
+import { mpcRoutes, initializeMPCSocket } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
 import { privacyNoiseRoutes } from './routes/privacy-noise';
 import { zkpRoutes } from './routes/zkp';
@@ -36,6 +36,7 @@ import { logger } from './utils/logger';
 // Import services
 import { getHSMIntegration } from './services/hsmIntegration';
 import { MemoryMonitorService } from './services/memoryMonitorService';
+import { initializeCacheService } from './services/cacheService';
 
 // Import workers
 import { StellarTransactionWatcher } from './workers/StellarTransactionWatcher';
@@ -55,6 +56,9 @@ const server = createServer(app);
 
 // Initialize WebSocket for upload progress
 const uploadSocket = initializeUploadSocket(server);
+
+// Initialize WebSocket for MPC real-time updates
+initializeMPCSocket(uploadSocket);
 
 
 // Security middleware
@@ -110,8 +114,6 @@ let enhancedRateLimiter: any;
 // Initialize rate limiters after Redis is connected
 async function initializeRateLimiters() {
   const redisClient = getRedisClient();
-
-  const redisClient = getRedisClient() as any;
   
   // Create standard rate limiters
   rateLimiter = createRateLimiter(redisClient);
@@ -127,12 +129,15 @@ async function initializeRateLimiters() {
   rateLimitMonitor.registerRateLimiter('pql', pqlRateLimiter);
   rateLimitMonitor.registerRateLimiter('admin', adminRateLimiter);
 
-  logger.info('Enhanced rate limiters initialized with Redis and monitoring');
+  // Initialize cache service
+  initializeCacheService(redisClient);
+
+  logger.info('Enhanced rate limiters, cache service initialized with Redis and monitoring');
   
   // Update stellarAuth with redis
   (stellarAuth as any).redis = redisClient;
 
-  logger.info('Enhanced rate limiters and Auth initialized with Redis and monitoring');
+  logger.info('Enhanced rate limiters, cache service and Auth initialized with Redis and monitoring');
 }
 
 // General middleware
