@@ -35,6 +35,8 @@ import KeyManagementPage from './pages/KeyManagementPage';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { KeyboardShortcutsHelp } from './components/ui/KeyboardShortcutsHelp';
 
 // Styles
 import './index.css';
@@ -73,6 +75,17 @@ const queryClient = new QueryClient({
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  const shortcuts = [
+    { key: 'g', ctrl: true, description: 'Go to Dashboard', action: () => { window.location.href = '/dashboard'; } },
+    { key: 'a', ctrl: true, description: 'Go to Analytics', action: () => { window.location.href = '/analytics'; } },
+    { key: 'd', ctrl: true, description: 'Go to Data Management', action: () => { window.location.href = '/data'; } },
+    { key: 'p', ctrl: true, description: 'Go to Privacy Settings', action: () => { window.location.href = '/privacy'; } },
+    { key: 's', ctrl: true, description: 'Go to Search', action: () => { window.location.href = '/search'; } },
+    { key: '?', description: 'Show keyboard shortcuts', action: () => toggleHelp() },
+  ];
+
+  const { showHelp, toggleHelp, setShowHelp } = useKeyboardShortcuts(shortcuts, isAuthenticated);
+
   useEffect(() => {
     const savedLanguage = localStorage.getItem('preferred-language') || 'en';
     document.documentElement.dir = getDirection(savedLanguage);
@@ -97,6 +110,9 @@ function App() {
         <ErrorBoundary>
           <Router>
             <div className="min-h-screen bg-gray-50">
+              {showHelp && (
+                <KeyboardShortcutsHelp shortcuts={shortcuts} onClose={() => setShowHelp(false)} />
+              )}
               <Routes>
                 <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
                 <Route
