@@ -5,19 +5,14 @@ import {
   Save, 
   Share2, 
   Download, 
-  Upload, 
-  Plus, 
   Trash2, 
-  Settings,
   Eye,
-  CheckCircle,
   AlertCircle,
   Clock,
   Shield,
   Database,
   Filter,
   BarChart3,
-  Users,
   Target
 } from 'lucide-react';
 
@@ -139,17 +134,17 @@ export const WorkflowBuilder: React.FC = () => {
       errors.push('Workflow must contain at least one node');
     }
     
-    const hasDataSource = nodes.some(n => n.type === 'data-source');
+    const hasDataSource = nodes.some((n: WorkflowNode) => n.type === 'data-source');
     if (!hasDataSource) {
       errors.push('Workflow must include a data source');
     }
     
-    const hasOutput = nodes.some(n => n.type === 'visualization' || n.type === 'export');
+    const hasOutput = nodes.some((n: WorkflowNode) => n.type === 'visualization' || n.type === 'export');
     if (!hasOutput) {
       errors.push('Workflow must include an output node (visualization or export)');
     }
     
-    const dataSourceCount = nodes.filter(n => n.type === 'data-source').length;
+    const dataSourceCount = nodes.filter((n: WorkflowNode) => n.type === 'data-source').length;
     if (dataSourceCount > 1) {
       errors.push('Workflow can only have one data source');
     }
@@ -187,7 +182,7 @@ export const WorkflowBuilder: React.FC = () => {
       position: { x, y }
     };
     
-    setNodes(prev => [...prev, newNode]);
+    setNodes((prev: WorkflowNode[]) => [...prev, newNode]);
     setDraggedNodeType(null);
     validateWorkflow();
   };
@@ -207,14 +202,14 @@ export const WorkflowBuilder: React.FC = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    setNodes(prev => prev.map(node => 
+    setNodes((prev: WorkflowNode[]) => prev.map((node: WorkflowNode) => 
       node.id === nodeId ? { ...node, position: { x, y } } : node
     ));
   };
 
   const deleteNode = (nodeId: string) => {
-    setNodes(prev => prev.filter(n => n.id !== nodeId));
-    setConnections(prev => prev.filter(c => c.sourceId !== nodeId && c.targetId !== nodeId));
+    setNodes((prev: WorkflowNode[]) => prev.filter((n: WorkflowNode) => n.id !== nodeId));
+    setConnections((prev: WorkflowConnection[]) => prev.filter((c: WorkflowConnection) => c.sourceId !== nodeId && c.targetId !== nodeId));
     if (selectedNode === nodeId) {
       setSelectedNode(null);
     }
@@ -223,10 +218,10 @@ export const WorkflowBuilder: React.FC = () => {
 
   const loadTemplate = (template: typeof templates[0]) => {
     const newNodes: WorkflowNode[] = template.nodes.map((nodeData, index) => {
-      const nodeType = nodeTypes.find(nt => nt.type === nodeData.type);
+      const nodeType = nodeTypes.find((nt: typeof nodeTypes[0]) => nt.type === nodeData.type);
       return {
         id: `${nodeData.type}-${Date.now()}-${index}`,
-        type: nodeData.type,
+        type: nodeData.type as WorkflowNode['type'],
         name: nodeData.name,
         description: nodeType?.description || '',
         icon: nodeType?.icon || Database,
