@@ -1,0 +1,674 @@
+{
+	"info": {
+		"_postman_id": "stellar-sandbox-collection",
+		"name": "Stellar Sandbox API",
+		"description": "Postman collection for testing Stellar Sandbox Environment features",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Sandbox Management",
+			"item": [
+				{
+					"name": "Get Sandbox Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "status"]
+						},
+						"description": "Get current sandbox status and configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sandbox Configuration",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/config",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "config"]
+						},
+						"description": "Get detailed sandbox configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Enable Sandbox Mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/toggle",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "toggle"]
+						},
+						"description": "Enable sandbox mode for testing"
+					},
+					"response": []
+				},
+				{
+					"name": "Disable Sandbox Mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"enabled\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/toggle",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "toggle"]
+						},
+						"description": "Disable sandbox mode"
+					},
+					"response": []
+				},
+				{
+					"name": "Switch to Testnet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environment\": \"testnet\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/environment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "environment"]
+						},
+						"description": "Switch to Stellar testnet environment"
+					},
+					"response": []
+				},
+				{
+					"name": "Switch to Sandbox",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environment\": \"sandbox\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/environment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "environment"]
+						},
+						"description": "Switch to sandbox environment"
+					},
+					"response": []
+				},
+				{
+					"name": "Switch to Mainnet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"environment\": \"mainnet\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/environment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "environment"]
+						},
+						"description": "Switch to Stellar mainnet environment"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Mock Payments",
+			"item": [
+				{
+					"name": "Create Successful Mock Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"customerId\": \"456e7890-e89b-12d3-a456-426614174001\",\n    \"shouldFail\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-payment"]
+						},
+						"description": "Create a successful mock payment"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Failed Mock Payment (Insufficient Funds)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"customerId\": \"456e7890-e89b-12d3-a456-426614174001\",\n    \"shouldFail\": true,\n    \"failureType\": \"insufficient_funds\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-payment"]
+						},
+						"description": "Create a failed mock payment with insufficient funds"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Failed Mock Payment (Network Error)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"customerId\": \"456e7890-e89b-12d3-a456-426614174001\",\n    \"shouldFail\": true,\n    \"failureType\": \"network_error\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-payment"]
+						},
+						"description": "Create a failed mock payment with network error"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Zero-Value Token Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 0.00,\n    \"currency\": \"USD\",\n    \"customerId\": \"456e7890-e89b-12d3-a456-426614174001\",\n    \"shouldFail\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-payment"]
+						},
+						"description": "Create a zero-value token payment for testing"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Mock Payment History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-payments?limit=10&offset=0",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-payments"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Get mock payment history with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Mock Payments for Subscription",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-payments?subscriptionId=123e4567-e89b-12d3-a456-426614174000&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-payments"],
+							"query": [
+								{
+									"key": "subscriptionId",
+									"value": "123e4567-e89b-12d3-a456-426614174000"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get mock payments for a specific subscription"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Event Simulation",
+			"item": [
+				{
+					"name": "Simulate Subscription Billed Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"billingPeriodStart\": \"2024-01-01T00:00:00.000Z\",\n    \"billingPeriodEnd\": \"2024-01-31T23:59:59.999Z\",\n    \"paymentStatus\": \"success\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-subscription-billed",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-subscription-billed"]
+						},
+						"description": "Simulate a subscription billed event"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Failed Subscription Billed Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"billingPeriodStart\": \"2024-01-01T00:00:00.000Z\",\n    \"billingPeriodEnd\": \"2024-01-31T23:59:59.999Z\",\n    \"paymentStatus\": \"failed\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-subscription-billed",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-subscription-billed"]
+						},
+						"description": "Simulate a failed subscription billed event"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Grace Period",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"gracePeriodDays\": 7,\n    \"reason\": \"Payment failure - retry period\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-grace-period",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-grace-period"]
+						},
+						"description": "Simulate a grace period for a subscription"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Dunning Process (Level 1)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"dunningLevel\": 1,\n    \"contactMethod\": \"email\",\n    \"message\": \"Friendly reminder: Your subscription payment is due.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-dunning",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-dunning"]
+						},
+						"description": "Simulate level 1 dunning process (friendly reminder)"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Dunning Process (Level 3)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"dunningLevel\": 3,\n    \"contactMethod\": \"email\",\n    \"message\": \"Urgent: Your subscription will be suspended soon due to unpaid balance.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-dunning",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-dunning"]
+						},
+						"description": "Simulate level 3 dunning process (urgent warning)"
+					},
+					"response": []
+				},
+				{
+					"name": "Simulate Dunning Process (Final Notice)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"dunningLevel\": 5,\n    \"contactMethod\": \"email\",\n    \"message\": \"Final notice: Your subscription will be terminated within 24 hours.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/sandbox/mock-dunning",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "sandbox", "mock-dunning"]
+						},
+						"description": "Simulate final notice dunning process"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Test Workflows",
+			"item": [
+				{
+					"name": "Complete Payment Success Workflow",
+					"item": [
+						{
+							"name": "1. Enable Sandbox",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"enabled\": true\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/toggle",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "toggle"]
+								}
+							}
+						},
+						{
+							"name": "2. Switch to Testnet",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"environment\": \"testnet\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/environment",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "environment"]
+								}
+							}
+						},
+						{
+							"name": "3. Create Mock Payment",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"shouldFail\": false\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "mock-payment"]
+								}
+							}
+						},
+						{
+							"name": "4. Verify Payment History",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/mock-payments?subscriptionId=123e4567-e89b-12d3-a456-426614174000",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "mock-payments"],
+									"query": [
+										{
+											"key": "subscriptionId",
+											"value": "123e4567-e89b-12d3-a456-426614174000"
+										}
+									]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Payment Failure and Recovery Workflow",
+					"item": [
+						{
+							"name": "1. Create Failed Payment",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"shouldFail\": true,\n    \"failureType\": \"insufficient_funds\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "mock-payment"]
+								}
+							}
+						},
+						{
+							"name": "2. Simulate Grace Period",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"gracePeriodDays\": 7,\n    \"reason\": \"Payment failure - insufficient funds\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/mock-grace-period",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "mock-grace-period"]
+								}
+							}
+						},
+						{
+							"name": "3. Start Dunning Process",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"dunningLevel\": 1,\n    \"contactMethod\": \"email\",\n    \"message\": \"Payment failed - please update your payment method\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/mock-dunning",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "mock-dunning"]
+								}
+							}
+						},
+						{
+							"name": "4. Create Recovery Payment",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"subscriptionId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"amount\": 10.00,\n    \"currency\": \"USD\",\n    \"shouldFail\": false\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/sandbox/mock-payment",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "sandbox", "mock-payment"]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3001",
+			"type": "string"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Add timestamp for tracking",
+					"pm.globals.set(\"requestTimestamp\", new Date().toISOString());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Basic response validation",
+					"if (pm.response.code >= 200 && pm.response.code < 300) {",
+					"    pm.test(\"Status code is successful\", function () {",
+					"        pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+					"    });",
+					"    ",
+					"    pm.test(\"Response has success field\", function () {",
+					"        const responseJson = pm.response.json();",
+					"        pm.expect(responseJson).to.have.property('success');",
+					"    });",
+					"    ",
+					"    pm.test(\"Response has timestamp\", function () {",
+					"        const responseJson = pm.response.json();",
+					"        pm.expect(responseJson).to.have.property('timestamp');",
+					"    });",
+					"} else {",
+					"    pm.test(\"Error response handled\", function () {",
+					"        const responseJson = pm.response.json();",
+					"        pm.expect(responseJson).to.have.property('error');",
+					"    });",
+					"}"
+				]
+			}
+		}
+	]
+}

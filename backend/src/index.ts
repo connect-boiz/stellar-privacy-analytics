@@ -22,11 +22,7 @@ import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
 import { mpcRoutes, initializeMPCSocket } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
-import serviceDiscoveryRoutes, { initializeServiceDiscovery } from './routes/serviceDiscovery';
-import { privacyNoiseRoutes } from './routes/privacy-noise';
-import { zkpRoutes } from './routes/zkp';
-import { riskAssessmentRoutes } from './routes/risk-assessment';
-import { complianceAutomationRoutes } from './routes/compliance-automation';
+import { sandboxRoutes } from './routes/sandbox';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -281,6 +277,17 @@ apiRouter.use('/zkp', zkpRoutes);
 apiRouter.use('/risk-assessment', riskAssessmentRoutes);
 apiRouter.use('/compliance-automation', complianceAutomationRoutes);
 
+
+// Sandbox endpoints - Special rate limiting for development/testing
+apiRouter.use('/sandbox', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+  enableCollisionDetection: false, // Disabled for sandbox
+  enableBurstProtection: true,
+  enableAdaptiveLimiting: false,
+  maxRequests: 2000, // Very lenient for sandbox testing
+  burstLimit: 5000,
+  enableWhitelist: true,
+  whitelist: ['127.0.0.1', '::1', 'localhost'] // Localhost whitelist for sandbox
+}) : (req: any, res: any, next: any) => next(), sandboxRoutes);
 
 app.use('/api/v1', apiRouter);
 
