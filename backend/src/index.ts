@@ -3,8 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
+import './config/env';
 
 // Import rate limiting
 import { initializeRedis, getRedisClient } from './config/redis';
@@ -49,9 +49,6 @@ import { StorageService } from './services/storageService';
 
 // Import Service Discovery
 import { ServiceDiscovery } from './services/ServiceDiscovery';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const server = createServer(app);
