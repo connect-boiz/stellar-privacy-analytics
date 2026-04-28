@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Play, BarChart3, TrendingUp, Users, Target, Code, Settings } from 'lucide-react';
+import { SearchBar } from '../components/common';
 import { QueryConstructor } from '../components/QueryConstructor';
 import { WalletConnect } from '../components/WalletConnect';
 
 export const Analytics: React.FC = () => {
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'traditional' | 'nocode'>('nocode');
+  const [analysisSearchTerm, setAnalysisSearchTerm] = useState('');
+  const [recentSearchTerm, setRecentSearchTerm] = useState('');
 
   const analysisTypes = [
     {
@@ -77,6 +80,19 @@ export const Analytics: React.FC = () => {
     }
   ];
 
+  // Filter analysis types based on search term
+  const filteredAnalysisTypes = analysisTypes.filter(analysis =>
+    analysis.name.toLowerCase().includes(analysisSearchTerm.toLowerCase()) ||
+    analysis.description.toLowerCase().includes(analysisSearchTerm.toLowerCase())
+  );
+
+  // Filter recent analyses based on search term
+  const filteredRecentAnalyses = recentAnalyses.filter(analysis =>
+    analysis.name.toLowerCase().includes(recentSearchTerm.toLowerCase()) ||
+    analysis.type.toLowerCase().includes(recentSearchTerm.toLowerCase()) ||
+    analysis.privacyScore.toLowerCase().includes(recentSearchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -142,9 +158,17 @@ export const Analytics: React.FC = () => {
         <>
           {/* Analysis Types */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Start New Analysis</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Start New Analysis</h2>
+              <SearchBar
+                value={analysisSearchTerm}
+                onChange={setAnalysisSearchTerm}
+                placeholder="Search analysis types..."
+                size="md"
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {analysisTypes.map((analysis) => {
+              {filteredAnalysisTypes.map((analysis) => {
                 const Icon = analysis.icon;
                 return (
                   <motion.div
@@ -202,9 +226,17 @@ export const Analytics: React.FC = () => {
 
       {/* Recent Analyses */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Analyses</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Analyses</h2>
+          <SearchBar
+            value={recentSearchTerm}
+            onChange={setRecentSearchTerm}
+            placeholder="Search analyses..."
+            size="md"
+          />
+        </div>
         <div className="space-y-3">
-          {recentAnalyses.map((analysis) => (
+          {filteredRecentAnalyses.map((analysis) => (
             <motion.div
               key={analysis.id}
               initial={{ opacity: 0, x: -20 }}
