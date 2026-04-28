@@ -4,6 +4,7 @@
  * Starts the worker orchestrator for horizontal scaling
  */
 
+import '../config/env';
 import { WorkerOrchestrator } from './workerOrchestrator';
 import { getWorkerConfig, validateConfig } from '../config/workerConfig';
 import { logger } from '../utils/logger';

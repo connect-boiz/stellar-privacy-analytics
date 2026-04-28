@@ -4,6 +4,7 @@
  * Starts a single optimized anonymization worker
  */
 
+import '../config/env';
 import { OptimizedAnonymizationWorker } from './optimizedAnonymizationWorker';
 import { getWorkerConfig, validateConfig } from '../config/workerConfig';
 import { logger } from '../utils/logger';
