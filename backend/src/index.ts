@@ -22,6 +22,7 @@ import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
 import { mpcRoutes } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
+import { sandboxRoutes } from './routes/sandbox';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -226,6 +227,17 @@ apiRouter.use('/audit', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLi
   enableWhitelist: true,
   whitelist: ['127.0.0.1', '::1'] // Localhost whitelist
 }) : (req: any, res: any, next: any) => next(), auditRoutes);
+
+// Sandbox endpoints - Special rate limiting for development/testing
+apiRouter.use('/sandbox', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+  enableCollisionDetection: false, // Disabled for sandbox
+  enableBurstProtection: true,
+  enableAdaptiveLimiting: false,
+  maxRequests: 2000, // Very lenient for sandbox testing
+  burstLimit: 5000,
+  enableWhitelist: true,
+  whitelist: ['127.0.0.1', '::1', 'localhost'] // Localhost whitelist for sandbox
+}) : (req: any, res: any, next: any) => next(), sandboxRoutes);
 
 app.use('/api/v1', apiRouter);
 
