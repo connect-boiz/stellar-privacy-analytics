@@ -1,8 +1,15 @@
 import { Router } from 'express';
+import { body, query } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { AggregationType, AnalysisFilter } from '@stellar/shared/types/analytics';
+import { validateRequest } from '../middleware/validation';
 
 const router = Router();
+
+const queryPayloadRules = [
+  body('query').isObject().withMessage('query must be an object'),
+  body('query.steps').isArray({ min: 1, max: 500 }).withMessage('query.steps must be a non-empty array'),
+];
 
 // Mock data schema
 const dataSchema = [
@@ -22,7 +29,7 @@ router.get('/schema', asyncHandler(async (req, res) => {
 }));
 
 // Validate query structure
-router.post('/validate', asyncHandler(async (req, res) => {
+router.post('/validate', [...queryPayloadRules, validateRequest], asyncHandler(async (req, res) => {
   const { query } = req.body;
   
   if (!query || !query.steps || !Array.isArray(query.steps)) {
@@ -85,7 +92,7 @@ router.post('/validate', asyncHandler(async (req, res) => {
 }));
 
 // Calculate privacy cost for query
-router.post('/privacy-cost', asyncHandler(async (req, res) => {
+router.post('/privacy-cost', [...queryPayloadRules, validateRequest], asyncHandler(async (req, res) => {
   const { query } = req.body;
   
   if (!query || !query.steps || !Array.isArray(query.steps)) {
@@ -139,7 +146,11 @@ router.post('/privacy-cost', asyncHandler(async (req, res) => {
 }));
 
 // Execute privacy-preserved query
-router.post('/execute', asyncHandler(async (req, res) => {
+router.post('/execute', [
+  ...queryPayloadRules,
+  body('walletSignature').optional({ values: 'null' }).isString().isLength({ max: 8192 }),
+  validateRequest,
+], asyncHandler(async (req, res) => {
   const { query, walletSignature } = req.body;
   
   // Validate query first
@@ -331,15 +342,14 @@ function generateMockResults(query: any) {
 }
 
 // Save favorite query
-router.post('/favorites', asyncHandler(async (req, res) => {
+router.post('/favorites', [
+  body('name').trim().notEmpty().isLength({ max: 200 }),
+  body('description').optional({ values: 'null' }).trim().isLength({ max: 2000 }),
+  body('query').isObject(),
+  body('userId').optional({ values: 'null' }).trim().isLength({ max: 256 }),
+  validateRequest,
+], asyncHandler(async (req, res) => {
   const { name, description, query, userId } = req.body;
-  
-  if (!name || !query) {
-    return res.status(400).json({
-      success: false,
-      message: 'Name and query are required'
-    });
-  }
 
   // In a real implementation, this would save to a database
   const favorite = {
@@ -360,7 +370,10 @@ router.post('/favorites', asyncHandler(async (req, res) => {
 }));
 
 // Get favorite queries
-router.get('/favorites', asyncHandler(async (req, res) => {
+router.get('/favorites', [
+  query('userId').optional().trim().isLength({ max: 256 }),
+  validateRequest,
+], asyncHandler(async (req, res) => {
   const { userId } = req.query;
   
   // In a real implementation, this would fetch from database
