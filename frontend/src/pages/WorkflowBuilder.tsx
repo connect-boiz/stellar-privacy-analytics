@@ -272,7 +272,7 @@ export const WorkflowBuilder: React.FC = () => {
             <input
               type="text"
               value={workflowName}
-              onChange={(e) => setWorkflowName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWorkflowName(e.target.value)}
               className="text-xl font-semibold bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none px-2 py-1"
             />
             <div className="flex items-center space-x-2 text-sm text-gray-500">
