@@ -35,6 +35,10 @@ import KeyManagementPage from './pages/KeyManagementPage';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+
+// Components
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 
 // Styles
 import './index.css';
@@ -70,6 +74,54 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppRoutes({ isAuthenticated }: { isAuthenticated: boolean }) {
+  useKeyboardShortcuts();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <KeyboardShortcutsModal />
+      <Routes>
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
+        <Route
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<PrivacyHealthDashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/data" element={<DataManagement />} />
+          <Route path="/privacy" element={<PrivacySettings />} />
+          <Route path="/audit" element={<AuditExplorerPage />} />
+          <Route path="/upload" element={<EncryptedUploadPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/consent" element={<ConsentPage />} />
+          <Route path="/performance" element={<PerformancePage />} />
+          <Route path="/budget" element={<PrivacyBudgetPage />} />
+          <Route path="/training" element={<TrainingPage />} />
+          <Route path="/training/module/:moduleId" element={<TrainingModulePage />} />
+          <Route path="/training/admin" element={<TrainingAdminPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/network-test" element={<NetworkTestPage />} />
+          <Route path="/key-management" element={<KeyManagementPage />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+      </Routes>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+    </div>
+  );
+}
+
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -96,46 +148,7 @@ function App() {
       <ModalProvider>
         <ErrorBoundary>
           <Router>
-            <div className="min-h-screen bg-gray-50">
-              <Routes>
-                <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
-                <Route
-                  element={
-                    <ProtectedRoute isAuthenticated={isAuthenticated}>
-                      <Layout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/dashboard" element={<PrivacyHealthDashboard />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/data" element={<DataManagement />} />
-                  <Route path="/privacy" element={<PrivacySettings />} />
-                  <Route path="/audit" element={<AuditExplorerPage />} />
-                  <Route path="/upload" element={<EncryptedUploadPage />} />
-                  <Route path="/search" element={<SearchPage />} />
-                  <Route path="/consent" element={<ConsentPage />} />
-                  <Route path="/performance" element={<PerformancePage />} />
-                  <Route path="/budget" element={<PrivacyBudgetPage />} />
-                  <Route path="/training" element={<TrainingPage />} />
-                  <Route path="/training/module/:moduleId" element={<TrainingModulePage />} />
-                  <Route path="/training/admin" element={<TrainingAdminPage />} />
-                  <Route path="/onboarding" element={<OnboardingPage />} />
-                  <Route path="/network-test" element={<NetworkTestPage />} />
-                  <Route path="/key-management" element={<KeyManagementPage />} />
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                </Route>
-              </Routes>
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#363636',
-                    color: '#fff',
-                  },
-                }}
-              />
-            </div>
+            <AppRoutes isAuthenticated={isAuthenticated} />
           </Router>
         </ErrorBoundary>
       </ModalProvider>
