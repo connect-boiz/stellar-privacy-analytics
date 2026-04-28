@@ -67,7 +67,7 @@ router.put('/settings', asyncHandler(async (req, res) => {
 }));
 
 // Get privacy audit logs
-router.get('/audit', asyncHandler(async (req, res) => {
+router.get('/audit', asyncHandler(async (req: Request, res: Response) => {
   res.json({
     logs: [],
     message: 'Privacy audit logs retrieved successfully'

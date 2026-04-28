@@ -1,4 +1,5 @@
-import { Pool, PoolClient } from 'pg';
+import { DatabaseService } from '../services/databaseService';
+import { PoolClient } from 'pg';
 import { logger } from '../utils/logger';
 
 export interface SanitizedMetadata {
@@ -46,45 +47,13 @@ export interface MetadataIndex {
 }
 
 export class MetadataRepository {
-  private pool: Pool;
   private isReadReplica: boolean;
 
-  constructor(config: {
-    host: string;
-    port: number;
-    database: string;
-    username: string;
-    password: string;
-    ssl?: boolean;
-    maxConnections?: number;
-    idleTimeoutMillis?: number;
-    isReadReplica?: boolean;
-  }) {
-    this.isReadReplica = config.isReadReplica || false;
-    
-    this.pool = new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.username,
-      password: config.password,
-      ssl: config.ssl || false,
-      max: config.maxConnections || 10,
-      idleTimeoutMillis: config.idleTimeoutMillis || 30000,
-      connectionTimeoutMillis: 10000,
-      // Enable prepared statements for better performance
-      statement_timeout: 30000, // 30 seconds
-      query_timeout: 30000,
-    });
-
-    this.setupPoolEvents();
+  constructor(private db: DatabaseService, options: { isReadReplica?: boolean } = {}) {
+    this.isReadReplica = options.isReadReplica || false;
     
     logger.info('Metadata Repository initialized', {
-      host: config.host,
-      port: config.port,
-      database: config.database,
       isReadReplica: this.isReadReplica,
-      maxConnections: config.maxConnections,
     });
   }
 
@@ -138,9 +107,7 @@ export class MetadataRepository {
     processingTime: number,
     workerId?: string
   ): Promise<string> {
-    const client = await this.pool.connect();
-    
-    try {
+    return await this.db.transaction(async (client) => {
       const id = this.generateMetadataId();
       const now = new Date();
       
@@ -189,9 +156,7 @@ export class MetadataRepository {
       });
 
       return result.rows[0].id;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   /**
@@ -264,27 +229,21 @@ export class MetadataRepository {
    * Get sanitized metadata by ID
    */
   async getMetadata(id: string): Promise<SanitizedMetadata | null> {
-    const client = await this.pool.connect();
+    const query = `
+      SELECT id, dataset_id, original_metadata, sanitized_metadata, 
+             pii_detections, processing_time, processed_at, version, 
+             status, worker_id, retry_count
+      FROM sanitized_metadata
+      WHERE id = $1
+    `;
+
+    const rows = await this.db.query<any>(query, [id]);
     
-    try {
-      const query = `
-        SELECT id, dataset_id, original_metadata, sanitized_metadata, 
-               pii_detections, processing_time, processed_at, version, 
-               status, worker_id, retry_count
-        FROM sanitized_metadata
-        WHERE id = $1
-      `;
-
-      const result = await client.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return null;
-      }
-
-      return this.mapRowToMetadata(result.rows[0]);
-    } finally {
-      client.release();
+    if (rows.length === 0) {
+      return null;
     }
+
+    return this.mapRowToMetadata(rows[0]);
   }
 
   /**

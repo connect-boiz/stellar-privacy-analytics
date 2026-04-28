@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "Datenschutz-Maschinelles Lernen",
+      "subtitle": "Föderiertes Lernen, differentielle Privatsphäre und verschlüsselte Inferenz",
+      "badge": "Datenschutz Zuerst",
+      "tabs": {
+        "federated": "Föderiertes Lernen",
+        "privacy": "Differenzielle Privatsphäre",
+        "encryption": "Homomorphe Verschlüsselung"
+      },
+      "federated": {
+        "trainingStatus": "Trainingsstatus",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "connectedClients": "Verbundene Clients",
+        "currentRound": "Aktuelle Runde",
+        "startTraining": "Training Starten",
+        "stopTraining": "Training Stoppen",
+        "trainingProgress": "Trainingsfortschritt",
+        "round": "Runde",
+        "accuracy": "Genauigkeit",
+        "loss": "Verlust",
+        "clients": "Clients",
+        "connectedClientsTitle": "Verbundene Clients",
+        "client": "Client",
+        "samples": "Stichproben"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "Verbrauchtes Datenschutz-Budget",
+        "budgetRemaining": "Verbleibendes Budget",
+        "totalQueries": "Gesamtanfragen",
+        "initializePrivacyBudget": "Datenschutz-Budget Initialisieren",
+        "recentQueries": "Aktuelle Anfragen",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "Verschlüsselte Modelle",
+        "keyPairs": "Schlüsselpaare",
+        "encryptedInferences": "Verschlüsselte Inferenzen",
+        "generateEncryptionKeys": "Verschlüsselungsschlüssel Generieren",
+        "encryptionSchemes": "Verschlüsselungsschemata",
+        "models": "Modelle"
+      }
+    },
+    "settings": {
+      "title": "Datenschutzeinstellungen",
+      "subtitle": "Verwalten Sie Ihre Datenschutz- und Sicherheitseinstellungen",
+      "badge": "Datenschutz Geschützt",
+      "privacyLevel": "Datenschutzstufe",
+      "risk": "Risiko",
+      "dataManagement": "Datenverwaltung",
+      "dataRetentionPeriod": "Datenaufbewahrungszeitraum (Tage)",
+      "privacyBudget": "Datenschutz-Budget (ε Epsilon, 0–10)",
+      "notificationEmail": "Benachrichtigungs-E-Mail (optional)",
+      "allowDataExport": "Datenexport Erlauben",
+      "allowDataExportDesc": "Benutzern erlauben, Analyseergebnisse zu exportieren",
+      "allowDataSharing": "Datenfreigabe Erlauben",
+      "allowDataSharingDesc": "Anonymisierte Erkenntnisse mit Partnern teilen",
+      "saveSettings": "Einstellungen Speichern",
+      "settingsSaved": "Einstellungen gespeichert",
+      "fixErrors": "Fehler vor dem Speichern beheben",
+      "levels": {
+        "minimal": "Minimal",
+        "standard": "Standard",
+        "high": "Hoch",
+        "maximum": "Maximum"
+      },
+      "riskLevels": {
+        "veryLow": "Sehr Niedrig",
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      },
+      "features": {
+        "dataEncryption": "Datenverschlüsselung",
+        "basicAccessControl": "Grundlegende Zugriffskontrolle",
+        "accessControl": "Zugriffskontrolle",
+        "auditLogging": "Audit-Protokollierung",
+        "differentialPrivacy": "Differenzielle Privatsphäre",
+        "zeroKnowledgeProofs": "Null-Wissens-Beweise"
+      },
+      "validation": {
+        "validEmail": "Geben Sie eine gültige E-Mail-Adresse ein.",
+        "epsilonRange": "Epsilon muss eine Zahl zwischen 0 und 10 sein.",
+        "retentionMinDays": "Die Aufbewahrungszeit muss mindestens 1 Tag betragen."
+      }
+    },
+    "budget": {
+      "title": "Datenschutz-Budget-Monitor",
+      "backToDashboard": "Zurück zum Dashboard",
+      "datasets": {
+        "customerAnalytics": "Kundenanalyse-Datensatz",
+        "financialTransactions": "Finanztransaktions-Datensatz",
+        "healthcareRecords": "Gesundheitsakten-Datensatz"
+      }
+    },
+    "upload": {
+      "title": "Verschlüsselten Daten-Upload",
+      "steps": {
+        "select": "Dateien Auswählen",
+        "metadata": "Metadaten Konfigurieren",
+        "encrypt": "Daten Verschlüsseln",
+        "upload": "In Sicheren Speicher Hochladen"
+      },
+      "fileTypes": {
+        "csv": "CSV-Dateien",
+        "json": "JSON-Dateien",
+        "excel": "Excel-Dateien",
+        "parquet": "Parquet-Dateien"
+      },
+      "encryption": {
+        "standard": "Standard-Verschlüsselung",
+        "advanced": "Erweiterte Verschlüsselung",
+        "quantum": "Quantenresistente Verschlüsselung"
+      },
+      "privacyLevel": "Datenschutzstufe",
+      "department": "Abteilung",
+      "dateRange": "Datumsbereich",
+      "tags": "Tags",
+      "start": "Start",
+      "end": "Ende",
+      "encryptData": "Daten Verschlüsseln",
+      "uploadComplete": "Upload Abgeschlossen",
+      "uploadFailed": "Upload Fehlgeschlagen"
+    },
+    "education": {
+      "title": "Datenschutzbildung",
+      "subtitle": "Erfahren Sie mehr über datenschützende Technologien",
+      "modules": {
+        "differentialPrivacy": "Differenzielle Privatsphäre",
+        "federatedLearning": "Föderiertes Lernen",
+        "homomorphicEncryption": "Homomorphe Verschlüsselung",
+        "zeroKnowledgeProofs": "Null-Wissens-Beweise"
+      }
+    },
+    "monitoring": {
+      "title": "Datenschutz-Überwachung",
+      "subtitle": "Echtzeit-Datenschutz-Metriken und Warnungen",
+      "metrics": {
+        "privacyBudget": "Datenschutz-Budget",
+        "dataAccess": "Datenzugriff",
+        "encryptionStatus": "Verschlüsselungsstatus",
+        "complianceScore": "Compliance-Score"
+      },
+      "alerts": {
+        "budgetWarning": "Datenschutz-Budget-Warnung",
+        "unauthorizedAccess": "Unautorisierter Zugriffsversuch",
+        "encryptionFailure": "Verschlüsselungsfehler"
+      }
+    },
+    "health": {
+      "title": "Datenschutz-Gesundheits-Dashboard",
+      "subtitle": "Überwachen Sie die Datenschutz-Haltung Ihrer Organisation",
+      "score": "Datenschutz-Score",
+      "excellent": "Ausgezeichnet",
+      "good": "Gut",
+      "fair": "Ausreichend",
+      "poor": "Schlecht",
+      "recommendations": "Empfehlungen",
+      "lastUpdated": "Zuletzt Aktualisiert"
+    },
+    "common": {
+      "privacy": "Datenschutz",
+      "security": "Sicherheit",
+      "encryption": "Verschlüsselung",
+      "decryption": "Entschlüsselung",
+      "data": "Daten",
+      "access": "Zugriff",
+      "control": "Kontrolle",
+      "audit": "Audit",
+      "compliance": "Compliance",
+      "risk": "Risiko",
+      "protection": "Schutz",
+      "anonymization": "Anonymisierung",
+      "pseudonymization": "Pseudonymisierung",
+      "consent": "Zustimmung",
+      "notification": "Benachrichtigung",
+      "alert": "Warnung",
+      "warning": "Warnung",
+      "error": "Fehler",
+      "success": "Erfolg",
+      "loading": "Laden",
+      "processing": "Verarbeitung",
+      "complete": "Abgeschlossen",
+      "failed": "Fehlgeschlagen",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen",
+      "save": "Speichern",
+      "delete": "Löschen",
+      "edit": "Bearbeiten",
+      "view": "Anzeigen",
+      "download": "Herunterladen",
+      "upload": "Hochladen",
+      "export": "Exportieren",
+      "import": "Importieren",
+      "share": "Teilen",
+      "copy": "Kopieren",
+      "move": "Verschieben",
+      "search": "Suchen",
+      "filter": "Filtern",
+      "sort": "Sortieren",
+      "refresh": "Aktualisieren",
+      "settings": "Einstellungen",
+      "configuration": "Konfiguration",
+      "administration": "Administration"
+    }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "privacy": "Datenschutz",
+    "analytics": "Analytik",
+    "data": "Daten",
+    "settings": "Einstellungen",
+    "help": "Hilfe",
+    "logout": "Abmelden"
+  },
+  "language": {
+    "select": "Sprache Auswählen",
+    "english": "Englisch",
+    "spanish": "Spanisch",
+    "french": "Französisch",
+    "german": "Deutsch",
+    "chinese": "Chinesisch",
+    "arabic": "Arabisch",
+    "japanese": "Japanisch",
+    "hindi": "Hindi",
+    "portuguese": "Portugiesisch",
+    "russian": "Russisch"
+  },
+  "formats": {
+    "date": "DD.MM.YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD.MM.YYYY HH:mm",
+    "currency": "€",
+    "number": "#.##0,##",
+    "percentage": "#.##0,##%"
+  }
+}

@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrivacyLevel } from '@stellar/shared';
+
+export enum PrivacyLevel {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  MAXIMUM = 'maximum'
+}
 
 export interface PrivacyRequest extends Request {
   privacyLevel?: PrivacyLevel;

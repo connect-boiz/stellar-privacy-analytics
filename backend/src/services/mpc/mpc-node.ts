@@ -14,6 +14,8 @@ export class MPCNode extends EventEmitter {
   private connectedNodes: Set<string> = new Set();
   private heartbeatIntervals: Map<string, NodeJS.Timeout> = new Map();
   private participantTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private sessionTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private readonly SESSION_TIMEOUT_MS = 3600000; // 1 hour
 
   constructor(nodeId: string, threshold: number = 2, totalShares: number = 3) {
     super();
@@ -47,10 +49,61 @@ export class MPCNode extends EventEmitter {
     };
 
     this.sessions.set(sessionId, session);
+    
+    // Set session timeout
+    this.setSessionTimeout(sessionId);
+    
     this.emit('sessionInitialized', session);
     
     logger.info(`MPC Session ${sessionId} initialized with ${participants.length} participants`);
     return session;
+  }
+
+  /**
+   * Set session timeout to prevent memory leaks
+   */
+  private setSessionTimeout(sessionId: string): void {
+    if (this.sessionTimeouts.has(sessionId)) {
+      clearTimeout(this.sessionTimeouts.get(sessionId)!);
+    }
+
+    const timeout = setTimeout(() => {
+      this.handleSessionTimeout(sessionId);
+    }, this.SESSION_TIMEOUT_MS);
+
+    this.sessionTimeouts.set(sessionId, timeout);
+  }
+
+  /**
+   * Handle session timeout
+   */
+  private handleSessionTimeout(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      logger.warn(`MPC Session ${sessionId} timed out and will be removed`);
+      this.emit('sessionTimeout', sessionId);
+      this.closeSession(sessionId);
+    }
+  }
+
+  /**
+   * Close and cleanup a session
+   */
+  public closeSession(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      // Clear any session-specific data
+      session.shares.clear();
+      this.sessions.delete(sessionId);
+      
+      const timeout = this.sessionTimeouts.get(sessionId);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.sessionTimeouts.delete(sessionId);
+      }
+      
+      logger.info(`MPC Session ${sessionId} closed and resources released`);
+    }
   }
 
   /**
@@ -182,6 +235,19 @@ export class MPCNode extends EventEmitter {
   private async performComputation(session: MPCSession): Promise<string> {
     const shares = Array.from(session.shares.values());
     
+    // Simulate computation progress
+    const totalSteps = 10;
+    for (let step = 1; step <= totalSteps; step++) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate processing time
+      
+      this.emit('computationProgress', session.id, {
+        step,
+        totalSteps,
+        percentage: (step / totalSteps) * 100,
+        message: `Processing step ${step}/${totalSteps}`
+      });
+    }
+    
     switch (session.operation) {
       case MPCOperation.SUM:
         return this.performSum(shares);
@@ -238,6 +304,9 @@ export class MPCNode extends EventEmitter {
     this.emit('sessionCompleted', sessionId, session.result);
     
     logger.info(`Session ${sessionId} completed with result: ${session.result}`);
+    
+    // Auto-close session after completion with a short delay to allow retrieval
+    setTimeout(() => this.closeSession(sessionId), 60000); // 1 minute
   }
 
   /**
@@ -345,7 +414,16 @@ export class MPCNode extends EventEmitter {
     }
     this.participantTimeouts.clear();
 
-    // Clear sessions
+    // Clear session timeouts
+    for (const timeout of this.sessionTimeouts.values()) {
+      clearTimeout(timeout);
+    }
+    this.sessionTimeouts.clear();
+
+    // Clear sessions and their shares
+    for (const session of this.sessions.values()) {
+      session.shares.clear();
+    }
     this.sessions.clear();
     this.connectedNodes.clear();
 

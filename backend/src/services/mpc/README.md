@@ -19,8 +19,9 @@ The MPC system consists of several key components:
    - Handles message routing and connection management
 
 3. **MPC Node** (`mpc-node.ts`)
-   - Main MPC node implementation
-   - Manages sessions, participants, and computation phases
+   - Main MPC node implementation for secure computations.
+   - `Orchestrator.ts`: SMPC Orchestrator for coordinating multi-party sessions and protocol selection.
+   - `secure-transport.ts`: E2EE communication channels between participants.
    - Handles share distribution and reconstruction
 
 4. **Synchronization Worker** (`sync-worker.ts`)
