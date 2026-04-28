@@ -18,6 +18,8 @@
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
     "lint:frontend": "cd frontend && npm run lint",
+    "type-check": "cd frontend && npm run type-check",
+    "format:check": "cd frontend && npx prettier --check src || true",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
