@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { Modal, ConfirmDialog } from '../components/ui/Modal';
+import { TrainingAdminSkeleton } from '@/components/skeletons';
 
 interface TrainingModule {
   id: string;
@@ -476,15 +477,7 @@ export function TrainingAdminPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <TrainingAdminSkeleton />;
   }
 
   return (

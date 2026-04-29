@@ -16,6 +16,7 @@ import {
   FileText,
   Settings
 } from 'lucide-react';
+import { RiskAssessmentSkeleton } from '@/components/skeletons';
 
 interface RiskAssessment {
   id: string;
@@ -108,11 +109,7 @@ const RiskAssessmentDashboard: React.FC = () => {
   const riskPercentage = totalWorkflows > 0 ? (highRiskWorkflows / totalWorkflows) * 100 : 0;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <RiskAssessmentSkeleton />;
   }
 
   return (
