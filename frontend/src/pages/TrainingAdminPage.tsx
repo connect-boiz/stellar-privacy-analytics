@@ -18,6 +18,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import axios from 'axios';
+import { Button } from '../components/ui/button';
 import { Modal, ConfirmDialog } from '../components/ui/Modal';
 
 interface TrainingModule {
@@ -787,9 +788,9 @@ export function TrainingAdminPage() {
             </div>
 
             <div className="pt-4">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <Button>
                 Save Settings
-              </button>
+              </Button>
             </div>
           </div>
         </div>

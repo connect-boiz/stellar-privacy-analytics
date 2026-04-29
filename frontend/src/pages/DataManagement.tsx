@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Database, Upload, Lock, Eye, Download, Trash2, Search } from 'lucide-react';
+import { Button } from '../components/ui/button';
 import { SecureDataUpload } from '../components/SecureDataUpload';
 import { UploadReceipt } from '../lib/stellarWallet';
 import { toast } from 'react-hot-toast';
@@ -140,9 +141,9 @@ export const DataManagement: React.FC = () => {
               />
             </div>
             {selectedDatasets.length > 0 && (
-              <button className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200">
+              <Button variant="destructive" size="sm">
                 Delete Selected ({selectedDatasets.length})
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -195,15 +196,15 @@ export const DataManagement: React.FC = () => {
                     </div>
                   ) : (
                     <>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                      <Button variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                      </Button>
+                      <Button variant="ghost" size="icon">
                         <Download className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                      </Button>
+                      <Button variant="ghost" size="icon" className="hover:text-red-600">
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>

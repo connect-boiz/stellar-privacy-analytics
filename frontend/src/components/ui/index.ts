@@ -6,6 +6,5 @@ export { BlurOverlay } from './BlurOverlay';
 export { PrivacyBadge } from './PrivacyBadge';
 export { PrivacyGaugeChart } from './PrivacyGaugeChart';
 export { ScanningEffect } from './ScanningEffect';
-export { SimpleButton } from './simple-button';
 export { Tooltip, TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from './enhanced-tooltip';
 export { default as TooltipDemo } from './tooltip-demo';
