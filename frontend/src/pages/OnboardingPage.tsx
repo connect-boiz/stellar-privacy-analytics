@@ -19,6 +19,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import axios from 'axios';
+import { OnboardingSkeleton } from '@/components/skeletons';
 
 interface OnboardingStep {
   id: string;
@@ -323,13 +324,7 @@ export function OnboardingPage() {
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"
-                />
-              </div>
+              <OnboardingSkeleton />
             ) : (
               <>
                 <div className="space-y-4 mb-6">
