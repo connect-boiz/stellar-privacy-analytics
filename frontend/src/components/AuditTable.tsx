@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FixedSizeList as List } from 'react-window';
+import EmptyState from './ui/EmptyState';
 import { 
   Search, 
   Filter, 
@@ -275,10 +276,16 @@ export const AuditTable: React.FC = () => {
             {Row}
           </List>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-gray-500">
-            <Search size={48} className="mb-4 opacity-20" />
-            <p>No audit logs found matching your filters</p>
-          </div>
+          <EmptyState
+            variant={filters.search || filters.category || filters.riskLevel ? 'no-search-results' : 'no-audit-logs'}
+            title={filters.search || filters.category || filters.riskLevel ? 'No matching audit logs' : 'No audit logs yet'}
+            description={
+              filters.search || filters.category || filters.riskLevel
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Audit events will appear here as activity is recorded.'
+            }
+            className="h-full py-20"
+          />
         )}
       </div>
       

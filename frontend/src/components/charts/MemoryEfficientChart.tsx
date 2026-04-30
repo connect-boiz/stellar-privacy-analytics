@@ -4,6 +4,7 @@ import { AlertCircle, Loader2, RefreshCw, Zap, Activity, BarChart3, Memory, Tren
 import { toast } from 'react-hot-toast';
 import MemoryMonitor from '../utils/memoryMonitor';
 import { DataPoint, memoryAwareSampling, progressiveDataLoader, validateDataQuality } from '../utils/dataSampling';
+import EmptyState from '../ui/EmptyState';
 
 interface MemoryEfficientChartProps {
   data?: DataPoint[];
@@ -287,11 +288,13 @@ const MemoryEfficientChart: React.FC<MemoryEfficientChartProps> = ({
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6" style={{ height }}>
-        <div className="flex flex-col items-center justify-center h-full">
-          <BarChart3 className="h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600">No data available</p>
-        </div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ height }}>
+        <EmptyState
+          variant="no-chart-data"
+          title="No chart data available"
+          description="Data will appear here once metrics are collected."
+          className="h-full"
+        />
       </div>
     );
   }
