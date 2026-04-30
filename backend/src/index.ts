@@ -3,8 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { createServer } from 'http';
+import './config/env';
 
 // Import rate limiting
 import { initializeRedis, getRedisClient } from './config/redis';
@@ -20,10 +20,9 @@ import { privacyRoutes } from './routes/privacy';
 import { queryRoutes } from './routes/query';
 import ipfsRoutes from './routes/ipfs';
 import hsmRoutes from './routes/hsm';
-import { mpcRoutes } from './routes/mpc';
+import { mpcRoutes, initializeMPCSocket } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
-import { privacyNoiseRoutes } from './routes/privacy-noise';
-import { zkpRoutes } from './routes/zkp';
+import { sandboxRoutes } from './routes/sandbox';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -31,25 +30,34 @@ import { privacyMiddleware } from './middleware/privacy';
 import { metricsMiddleware } from './middleware/metrics';
 import { corsMonitor, corsErrorHandler } from './middleware/corsMonitor';
 import { logger } from './utils/logger';
+import setupSwaggerDocumentation from './docs/swagger';
 
 // Import services
 import { getHSMIntegration } from './services/hsmIntegration';
 import { MemoryMonitorService } from './services/memoryMonitorService';
+import { initializeCacheService } from './services/cacheService';
 
 // Import workers
 import { StellarTransactionWatcher } from './workers/StellarTransactionWatcher';
 import { privacyBudgetRoutes } from './routes/privacy-budget';
-import { gatewayRoutes } from './routes/gateway';
 import { createGateway, startGateway } from './gateway';
+import { trainingRoutes } from './routes/training';
+import { DatabaseService } from './services/databaseService';
+import { PrivacyBudgetService } from './services/privacyBudgetService';
+import { PrivacyBudgetRepository } from './repositories/privacyBudgetRepository';
+import { StorageService } from './services/storageService';
 
-// Load environment variables
-dotenv.config();
+// Import Service Discovery
+import { ServiceDiscovery } from './services/ServiceDiscovery';
 
 const app = express();
 const server = createServer(app);
 
 // Initialize WebSocket for upload progress
 const uploadSocket = initializeUploadSocket(server);
+
+// Initialize WebSocket for MPC real-time updates
+initializeMPCSocket(uploadSocket);
 
 
 // Security middleware
@@ -110,17 +118,25 @@ async function initializeRateLimiters() {
   rateLimiter = createRateLimiter(redisClient);
   pqlRateLimiter = createPQLRateLimiter(redisClient);
   adminRateLimiter = createAdminRateLimiter(redisClient);
-  
+
   // Create enhanced rate limiter with advanced features
   enhancedRateLimiter = createEnhancedRateLimiter(redisClient);
-  
+
   // Register rate limiters with monitoring
   rateLimitMonitor.registerRateLimiter('standard', rateLimiter);
   rateLimitMonitor.registerRateLimiter('enhanced', enhancedRateLimiter);
   rateLimitMonitor.registerRateLimiter('pql', pqlRateLimiter);
   rateLimitMonitor.registerRateLimiter('admin', adminRateLimiter);
+
+  // Initialize cache service
+  initializeCacheService(redisClient);
+
+  logger.info('Enhanced rate limiters, cache service initialized with Redis and monitoring');
   
-  logger.info('Enhanced rate limiters initialized with Redis and monitoring');
+  // Update stellarAuth with redis client
+  (stellarAuth as any).redis = redisClient;
+
+  logger.info('Enhanced rate limiters, cache service and Auth initialized with Redis and monitoring');
 }
 
 // General middleware
@@ -128,6 +144,9 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+
+// Setup API documentation
+setupSwaggerDocumentation(app);
 
 // Custom middleware
 app.use(requestLogger);
@@ -156,7 +175,7 @@ app.get('/api/v1/admin/rate-limit/metrics', (req, res) => {
   if (process.env.NODE_ENV === 'production' && !req.user?.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
-  
+
   const metrics = rateLimitMonitor.getMetricsSummary();
   res.json({
     metrics,
@@ -170,7 +189,7 @@ app.get('/api/v1/admin/rate-limit/config', (req, res) => {
   if (process.env.NODE_ENV === 'production' && !req.user?.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
-  
+
   res.json({
     config: {
       standard: {
@@ -198,7 +217,7 @@ app.get('/api/v1/admin/rate-limit/config', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
   const metrics = rateLimitMonitor.getMetricsSummary();
-  
+
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -220,10 +239,10 @@ app.get('/health', (req, res) => {
 const apiRouter = express.Router();
 
 // Apply specialized rate limiting to different route groups
-apiRouter.use('/auth', authRoutes); // Enhanced rate limiting applied above
+apiRouter.use('/auth', authRoutes); // No auth required for auth endpoints
 
-// Analytics and Query endpoints - Enhanced PQL rate limiting with stricter controls
-apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+// Protected routes - Apply authentication middleware
+apiRouter.use('/analytics', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -233,7 +252,7 @@ apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRa
   alertThreshold: 0.1
 }) : (req: any, res: any, next: any) => next(), analyticsRoutes);
 
-apiRouter.use('/query', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+apiRouter.use('/query', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -249,9 +268,23 @@ apiRouter.use('/privacy/budget', privacyBudgetRoutes);
 apiRouter.use('/ipfs', ipfsRoutes);
 apiRouter.use('/hsm', hsmRoutes);
 apiRouter.use('/mpc', mpcRoutes);
+apiRouter.use('/training', trainingRoutes);
 apiRouter.use('/privacy/noise', privacyNoiseRoutes);
 apiRouter.use('/zkp', zkpRoutes);
+apiRouter.use('/risk-assessment', riskAssessmentRoutes);
+apiRouter.use('/compliance-automation', complianceAutomationRoutes);
 
+
+// Sandbox endpoints - Special rate limiting for development/testing
+apiRouter.use('/sandbox', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+  enableCollisionDetection: false, // Disabled for sandbox
+  enableBurstProtection: true,
+  enableAdaptiveLimiting: false,
+  maxRequests: 2000, // Very lenient for sandbox testing
+  burstLimit: 5000,
+  enableWhitelist: true,
+  whitelist: ['127.0.0.1', '::1', 'localhost'] // Localhost whitelist for sandbox
+}) : (req: any, res: any, next: any) => next(), sandboxRoutes);
 
 app.use('/api/v1', apiRouter);
 
@@ -306,10 +339,46 @@ async function initializeServices() {
   try {
     // Initialize Redis first
     await initializeRedis();
-    
+
     // Initialize rate limiters
     await initializeRateLimiters();
-    
+
+    // Initialize Service Discovery
+    const serviceDiscovery = new ServiceDiscovery({
+      redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+      autoRegister: true,
+      enableFailover: true,
+      enableMonitoring: true,
+      healthCheckInterval: 30000,
+      serviceMesh: {
+        requestTimeout: 30000,
+        retryAttempts: 3,
+        retryDelay: 1000,
+        enableLoadBalancing: true,
+        enableCircuitBreaker: true,
+        enableMetrics: true
+      }
+    });
+
+    // Initialize service discovery with current service info
+    await serviceDiscovery.initialize({
+      name: 'stellar-backend',
+      host: process.env.SERVICE_HOST || 'localhost',
+      port: parseInt(process.env.API_PORT || '3001'),
+      version: '1.0.0',
+      weight: 1,
+      tags: ['api', 'backend', 'privacy'],
+      metadata: {
+        environment: process.env.NODE_ENV || 'development',
+        region: process.env.AWS_REGION || 'us-east-1'
+      }
+    });
+
+    // Initialize service discovery routes
+    initializeServiceDiscovery(serviceDiscovery);
+
+    logger.info('Service Discovery initialized successfully');
+
     const hsmIntegration = getHSMIntegration({
       autoInitializeMasterKey: true,
       enableAutoRecovery: false,
@@ -319,6 +388,27 @@ async function initializeServices() {
     await hsmIntegration.initialize();
     logger.info('HSM integration initialized successfully');
 
+    // Initialize Database Service
+    const dbService = new DatabaseService({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'stellar_privacy',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      max: 100, // High concurrency
+    });
+    await dbService.healthCheck();
+    logger.info('Database Service initialized');
+
+    // Initialize Privacy Budget Service
+    const budgetRepo = new PrivacyBudgetRepository(dbService);
+    const budgetService = new PrivacyBudgetService(budgetRepo);
+    app.set('budgetService', budgetService);
+
+    // Initialize Storage Service
+    const storageService = new StorageService(process.env.STORAGE_MASTER_KEY || 'default-master-key-32-chars-long!!!');
+    app.set('storageService', storageService);
+
     // Start Stellar Transaction Watcher
     const stellarWatcher = new StellarTransactionWatcher(
       process.env.STELLAR_RPC_URL || 'https://soroban-testnet.stellar.org',
@@ -326,6 +416,7 @@ async function initializeServices() {
       process.env.SOROBAN_CONTRACT_ID || 'CC...DEFAULT_CONTRACT_ID',
       process.env.WEBHOOK_URLS ? process.env.WEBHOOK_URLS.split(',') : []
     );
+
     
     // Start memory monitoring
     const memoryMonitor = new MemoryMonitorService();
@@ -337,12 +428,12 @@ async function initializeServices() {
     });
 
   } catch (error) {
-    logger.error('Failed to initialize HSM integration:', error);
+    logger.error('Failed to initialize services:', error);
     // Continue without HSM for development, but fail in production
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);
     } else {
-      logger.warn('Continuing without HSM integration in development mode');
+      logger.warn('Continuing with limited services in development mode');
     }
   }
 }
@@ -355,7 +446,7 @@ initializeServices().then(async () => {
     logger.info(`📊 Metrics available on port ${process.env.METRICS_PORT || 9090}`);
     logger.info(`🔒 Privacy-first mode: ${process.env.PRIVACY_MODE || 'enabled'}`);
     logger.info(`🔐 HSM integration: ${getHSMIntegration().isInitialized() ? 'enabled' : 'disabled'}`);
-    
+
     // Start Privacy API Gateway if enabled
     if (process.env.GATEWAY_ENABLED !== 'false') {
       const gatewayPort = parseInt(process.env.GATEWAY_PORT || '8080');

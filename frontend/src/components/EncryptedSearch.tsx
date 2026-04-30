@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, FileText, Calendar, Filter, Download, X, Loader2, AlertCircle, Hash, EyeOff, Shield, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import EmptyState from './ui/EmptyState';
 
 export interface EncryptedDataset {
   id: string;
@@ -496,32 +497,34 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
       )}
 
       {hasSearched && results.length === 0 && !isSearching && (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
-          <p className="text-gray-600 mb-4">
-            Try adjusting your search query or filters
-          </p>
-          <div className="flex justify-center space-x-2">
-            <button
-              onClick={() => handleQuickSearch('customer')}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              customer
-            </button>
-            <button
-              onClick={() => handleQuickSearch('sales')}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              sales
-            </button>
-            <button
-              onClick={() => handleQuickSearch('analytics')}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              analytics
-            </button>
-          </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <EmptyState
+            variant="no-search-results"
+            title="No results found"
+            description="Try adjusting your search query or filters."
+            action={
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => handleQuickSearch('customer')}
+                  className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  customer
+                </button>
+                <button
+                  onClick={() => handleQuickSearch('sales')}
+                  className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  sales
+                </button>
+                <button
+                  onClick={() => handleQuickSearch('analytics')}
+                  className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  analytics
+                </button>
+              </div>
+            }
+          />
         </div>
       )}
 

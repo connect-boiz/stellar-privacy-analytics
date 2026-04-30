@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { 
   Brain, 
   Shield, 
@@ -11,9 +12,12 @@ import {
   Users,
   Key,
   Eye,
-  Activity
+  Activity,
+  Wifi,
+  WifiOff,
+  RefreshCw
 } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
+import { useSocketIO } from '../hooks/useSocketIO';
 
 interface FederatedLearningStatus {
   isTraining: boolean;
@@ -57,39 +61,57 @@ interface EncryptionStatus {
 }
 
 export const PrivacyMLDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'federated' | 'privacy' | 'encryption'>('federated');
   const [federatedStatus, setFederatedStatus] = useState<FederatedLearningStatus | null>(null);
   const [privacyMetrics, setPrivacyMetrics] = useState<PrivacyMetrics | null>(null);
   const [encryptionStatus, setEncryptionStatus] = useState<EncryptionStatus | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const { socket, connectionState, reconnect, isOnline, reconnectAttempts, lastError } = useSocketIO({
+    enableOfflineQueue: true,
+    maxReconnectAttempts: 10,
+    enableHeartbeat: true
+  });
+
   useEffect(() => {
-    // Initialize WebSocket connection
-    const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:3001');
-    setSocket(newSocket);
+    if (socket) {
+      // Listen for federated learning updates
+      socket.on('training-status', (status: FederatedLearningStatus) => {
+        setFederatedStatus(status);
+      });
 
-    // Listen for federated learning updates
-    newSocket.on('training-status', (status: FederatedLearningStatus) => {
-      setFederatedStatus(status);
-    });
+      socket.on('round-completed', (metrics: any) => {
+        if (federatedStatus) {
+          setFederatedStatus(prev => prev ? {
+            ...prev,
+            metrics: [...prev.metrics, metrics]
+          } : null);
+        }
+      });
 
-    newSocket.on('round-completed', (metrics: any) => {
-      if (federatedStatus) {
-        setFederatedStatus(prev => prev ? {
-          ...prev,
-          metrics: [...prev.metrics, metrics]
-        } : null);
-      }
-    });
+      // Listen for connection issues
+      socket.on('connect_error', () => {
+        console.error('Federated learning connection error');
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Federated learning disconnected');
+      });
+    }
 
     // Fetch initial data
     fetchInitialData();
 
     return () => {
-      newSocket.disconnect();
+      if (socket) {
+        socket.off('training-status');
+        socket.off('round-completed');
+        socket.off('connect_error');
+        socket.off('disconnect');
+      }
     };
-  }, []);
+  }, [socket]);
 
   const fetchInitialData = async () => {
     try {
@@ -202,14 +224,80 @@ export const PrivacyMLDashboard: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Privacy-Preserving ML</h1>
-            <p className="text-gray-600 mt-1">Federated learning, differential privacy, and encrypted inference</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('privacy.dashboard.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('privacy.dashboard.subtitle')}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Shield className="h-5 w-5 text-green-500" />
-            <span className="text-sm font-medium text-green-600">Privacy-First</span>
+          <div className="flex items-center space-x-4">
+            {/* Connection Status */}
+            <div className="flex items-center space-x-2">
+              {connectionState === 'connected' && (
+                <div className="flex items-center space-x-1 text-green-600">
+                  <Wifi className="h-4 w-4" />
+                  <span className="text-sm">Live</span>
+                </div>
+              )}
+              {connectionState === 'reconnecting' && (
+                <div className="flex items-center space-x-1 text-yellow-600">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Reconnecting</span>
+                </div>
+              )}
+              {(connectionState === 'disconnected' || connectionState === 'failed') && (
+                <div className="flex items-center space-x-1 text-red-600">
+                  <WifiOff className="h-4 w-4" />
+                  <span className="text-sm">Offline</span>
+                  <button
+                    onClick={reconnect}
+                    className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Reconnect"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {connectionState === 'connecting' && (
+                <div className="flex items-center space-x-1 text-gray-600">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+                  <span className="text-sm">Connecting</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              <span className="text-sm font-medium text-green-600">{t('privacy.dashboard.badge')}</span>
+            </div>
           </div>
         </div>
+        
+        {/* Connection Diagnostics */}
+        {(connectionState !== 'connected' || reconnectAttempts > 0 || lastError) && (
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600">Real-time updates:</span>
+                <span className={`font-medium capitalize ${
+                  connectionState === 'connected' ? 'text-green-600' :
+                  connectionState === 'reconnecting' ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {connectionState}
+                </span>
+                {reconnectAttempts > 0 && (
+                  <span className="text-gray-500">
+                    (Attempt {reconnectAttempts})
+                  </span>
+                )}
+              </div>
+              {!isOnline && (
+                <span className="text-red-600 font-medium">Network offline</span>
+              )}
+            </div>
+            {lastError && (
+              <p className="text-sm text-red-600 mt-1">{lastError}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}
@@ -217,9 +305,9 @@ export const PrivacyMLDashboard: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: 'federated', name: 'Federated Learning', icon: Network },
-              { id: 'privacy', name: 'Differential Privacy', icon: Shield },
-              { id: 'encryption', name: 'Homomorphic Encryption', icon: Lock }
+              { id: 'federated', name: t('privacy.dashboard.tabs.federated'), icon: Network },
+              { id: 'privacy', name: t('privacy.dashboard.tabs.privacy'), icon: Shield },
+              { id: 'encryption', name: t('privacy.dashboard.tabs.encryption'), icon: Lock }
             ].map((tab) => (
               <button
                 key={tab.id}

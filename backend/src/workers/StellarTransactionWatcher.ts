@@ -1,6 +1,7 @@
 import { Server, xdr, rpc } from '@stellar/stellar-sdk';
 import { logger } from '../utils/logger';
 import { getRedisClient, connectRedis } from '../utils/redis';
+import { sandboxConfig } from '../config/sandboxConfig';
 import axios from 'axios';
 
 // Types
@@ -15,6 +16,10 @@ interface PermissionEvent {
 export class StellarTransactionWatcher {
   private rpcServer: Server; 
   private redisClient: any;
+  private rpcUrl: string;
+  private redisUrl: string;
+  private contractId: string;
+  private webhookUrls: string[];
   private cursorKey = 'stellar:watcher:cursor';
   private permissionCacheKey = 'permissions:dataset:';
   private isRunning = false;
@@ -22,14 +27,30 @@ export class StellarTransactionWatcher {
   private maxReconnectTimeout = 30000;
 
   constructor(
-    private rpcUrl: string,
-    private redisUrl: string,
-    private contractId: string,
-    private webhookUrls: string[] = []
+    rpcUrl?: string,
+    redisUrl?: string,
+    contractId?: string,
+    webhookUrls: string[] = []
   ) {
-    this.rpcServer = new Server(rpcUrl);
+    // Use sandbox configuration if available, otherwise fall back to parameters
+    const stellarConfig = sandboxConfig.getStellarConfig();
+    this.rpcServer = new Server(rpcUrl || stellarConfig.rpcUrl);
+    
     // Use the central Redis client
     this.redisClient = getRedisClient();
+    
+    // Store configuration
+    this.rpcUrl = rpcUrl || stellarConfig.rpcUrl;
+    this.redisUrl = redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
+    this.contractId = contractId || process.env.SOROBAN_CONTRACT_ID || 'DEFAULT_CONTRACT_ID';
+    this.webhookUrls = webhookUrls;
+    
+    logger.info('StellarTransactionWatcher initialized', {
+      rpcUrl: this.rpcUrl,
+      contractId: this.contractId,
+      environment: sandboxConfig.getConfig().environment,
+      sandboxMode: sandboxConfig.isSandboxMode()
+    });
   }
 
   async start() {

@@ -1,35 +1,43 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
-  Database, 
-  Shield, 
-  Settings, 
-  Menu, 
-  X, 
+import {
+  BarChart3,
+  Database,
+  Shield,
+  Settings,
+  Menu,
+  X,
   Lock,
   Eye,
   Activity,
   Search,
   Users,
   Sliders,
-  Target
+  GraduationCap,
+  Target,
+  Key
 } from 'lucide-react';
+import { NetworkStatusIndicator } from './NetworkStatusIndicator';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: t('navigation.dashboard'), href: '/dashboard', icon: BarChart3 },
     { name: 'X-Ray Analytics', href: '/analytics', icon: Activity },
     { name: 'Workflow Builder', href: '/workflow', icon: Target },
-    { name: 'Data Management', href: '/data', icon: Database },
-    { name: 'Privacy Settings', href: '/privacy', icon: Shield },
+    { name: t('navigation.data'), href: '/data', icon: Database },
+    { name: t('navigation.privacy'), href: '/privacy', icon: Shield },
+    { name: 'Key Management', href: '/key-management', icon: Key },
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Consent', href: '/consent', icon: Users },
     { name: 'Performance', href: '/performance', icon: Sliders },
+    { name: 'Training', href: '/training', icon: GraduationCap },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -61,11 +69,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      isActive(item.href)
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${isActive(item.href)
+                      ? 'bg-blue-100 text-blue-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      } touch-target`}
                     onClick={() => setSidebarOpen(false)}
                   >
                     <Icon className="mr-3 h-5 w-5" />
@@ -95,11 +102,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                        isActive(item.href)
-                          ? 'bg-blue-100 text-blue-900'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                      className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${isActive(item.href)
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        } touch-target`}
                     >
                       <Icon className="mr-3 h-5 w-5" />
                       {item.name}
@@ -117,6 +123,9 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <p className="text-sm font-medium text-gray-700">Privacy Mode</p>
                   <p className="text-xs text-gray-500">Maximum Protection</p>
                 </div>
+              </div>
+              <div className="mt-3">
+                <NetworkStatusIndicator className="w-full" />
               </div>
             </div>
           </div>
@@ -137,6 +146,9 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
             <div className="flex items-center">
               <Lock className="h-6 w-6 text-blue-600" />
               <span className="ml-2 text-lg font-semibold text-gray-900">Stellar</span>
+            </div>
+            <div className="flex items-center">
+              <LanguageSwitcher />
             </div>
           </div>
         </div>

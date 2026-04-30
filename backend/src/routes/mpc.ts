@@ -8,6 +8,7 @@ import { TimeoutPolicy } from '../services/mpc/timeout-policy';
 import { StellarLogger } from '../services/mpc/stellar-logger';
 import { MPCOperation, MPCSessionStatus } from '../services/mpc/shamir-secret-sharing';
 import { logger } from '../utils/logger';
+import { Server as SocketIOServer } from 'socket.io';
 
 const router = Router();
 
@@ -494,3 +495,69 @@ router.post('/cleanup', async (req: Request, res: Response) => {
 });
 
 export { router as mpcRoutes };
+
+// Initialize WebSocket namespace for MPC real-time updates
+export function initializeMPCSocket(io: SocketIOServer): void {
+  const mpcNamespace = io.of('/mpc');
+
+  mpcNamespace.on('connection', (socket) => {
+    console.log('MPC client connected:', socket.id);
+
+    socket.on('join-session', (sessionId: string) => {
+      socket.join(`session-${sessionId}`);
+      console.log(`Client ${socket.id} joined MPC session room: ${sessionId}`);
+    });
+
+    socket.on('leave-session', (sessionId: string) => {
+      socket.leave(`session-${sessionId}`);
+      console.log(`Client ${socket.id} left MPC session room: ${sessionId}`);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('MPC client disconnected:', socket.id);
+    });
+  });
+
+  // Set up event forwarding from MPC services to WebSocket
+  if (mpcNode) {
+    mpcNode.on('sessionInitialized', (session) => {
+      mpcNamespace.to(`session-${session.id}`).emit('session-update', {
+        type: 'initialized',
+        session: {
+          id: session.id,
+          status: session.status,
+          participants: session.participants,
+          operation: session.operation
+        }
+      });
+    });
+
+    mpcNode.on('computationProgress', (sessionId, progress) => {
+      mpcNamespace.to(`session-${sessionId}`).emit('computation-progress', progress);
+    });
+
+    mpcNode.on('computationComplete', (sessionId, result) => {
+      mpcNamespace.to(`session-${sessionId}`).emit('computation-complete', result);
+    });
+
+    mpcNode.on('sessionError', (sessionId, error) => {
+      mpcNamespace.to(`session-${sessionId}`).emit('session-error', error);
+    });
+  }
+
+  if (transport) {
+    transport.on('nodeConnected', (nodeId) => {
+      mpcNamespace.emit('node-status', { nodeId, status: 'connected' });
+    });
+
+    transport.on('nodeDisconnected', (nodeId) => {
+      mpcNamespace.emit('node-status', { nodeId, status: 'disconnected' });
+    });
+  }
+
+  if (heartbeatMonitor) {
+    heartbeatMonitor.on('heartbeatReceived', (nodeId, latency) => {
+      mpcNamespace.emit('heartbeat-update', { nodeId, latency });
+    });
+  }
+}

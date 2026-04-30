@@ -1,0 +1,239 @@
+{
+  "privacy": {
+    "dashboard": {
+      "title": "ML Préservant la Vie Privée",
+      "subtitle": "Apprentissage fédéré, confidentialité différentielle et inférence chiffrée",
+      "badge": "Vie Privée D'Abord",
+      "tabs": {
+        "federated": "Apprentissage Fédéré",
+        "privacy": "Confidentialité Différentielle",
+        "encryption": "Chiffrement Homomorphe"
+      },
+      "federated": {
+        "trainingStatus": "Statut d'Entraînement",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "connectedClients": "Clients Connectés",
+        "currentRound": "Tour Actuel",
+        "startTraining": "Démarrer l'Entraînement",
+        "stopTraining": "Arrêter l'Entraînement",
+        "trainingProgress": "Progrès de l'Entraînement",
+        "round": "Tour",
+        "accuracy": "Précision",
+        "loss": "Perte",
+        "clients": "clients",
+        "connectedClientsTitle": "Clients Connectés",
+        "client": "Client",
+        "samples": "échantillons"
+      },
+      "privacy": {
+        "privacyBudgetUsed": "Budget de Vie Privée Utilisé",
+        "budgetRemaining": "Budget Restant",
+        "totalQueries": "Requêtes Totales",
+        "initializePrivacyBudget": "Initialiser le Budget de Vie Privée",
+        "recentQueries": "Requêtes Récentes",
+        "epsilon": "ε"
+      },
+      "encryption": {
+        "encryptedModels": "Modèles Chiffrés",
+        "keyPairs": "Paires de Clés",
+        "encryptedInferences": "Inférences Chiffrées",
+        "generateEncryptionKeys": "Générer les Clés de Chiffrement",
+        "encryptionSchemes": "Schémas de Chiffrement",
+        "models": "modèles"
+      }
+    },
+    "settings": {
+      "title": "Paramètres de Vie Privée",
+      "subtitle": "Gérez vos préférences de vie privée et de sécurité",
+      "badge": "Vie Privée Protégée",
+      "privacyLevel": "Niveau de Vie Privée",
+      "risk": "Risque",
+      "dataManagement": "Gestion des Données",
+      "dataRetentionPeriod": "Période de Rétention des Données (jours)",
+      "privacyBudget": "Budget de Vie Privée (ε epsilon, 0–10)",
+      "notificationEmail": "Email de Notification (optionnel)",
+      "allowDataExport": "Autoriser l'Exportation de Données",
+      "allowDataExportDesc": "Permettre aux utilisateurs d'exporter les résultats d'analyse",
+      "allowDataSharing": "Autoriser le Partage de Données",
+      "allowDataSharingDesc": "Partager des informations anonymisées avec des partenaires",
+      "saveSettings": "Sauvegarder les Paramètres",
+      "settingsSaved": "Paramètres sauvegardés",
+      "fixErrors": "Corriger les erreurs avant de sauvegarder",
+      "levels": {
+        "minimal": "Minimal",
+        "standard": "Standard",
+        "high": "Élevé",
+        "maximum": "Maximum"
+      },
+      "riskLevels": {
+        "veryLow": "Très Faible",
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      },
+      "features": {
+        "dataEncryption": "Chiffrement des données",
+        "basicAccessControl": "Contrôle d'accès de base",
+        "accessControl": "Contrôle d'accès",
+        "auditLogging": "Journalisation d'audit",
+        "differentialPrivacy": "Confidentialité différentielle",
+        "zeroKnowledgeProofs": "Preuves à connaissance nulle"
+      },
+      "validation": {
+        "validEmail": "Entrez une adresse email valide.",
+        "epsilonRange": "Epsilon doit être un nombre entre 0 et 10.",
+        "retentionMinDays": "La période de rétention doit être d'au moins 1 jour."
+      }
+    },
+    "budget": {
+      "title": "Moniteur de Budget de Vie Privée",
+      "backToDashboard": "Retour au Tableau de Bord",
+      "datasets": {
+        "customerAnalytics": "Jeu de Données d'Analyse Client",
+        "financialTransactions": "Jeu de Données de Transactions Financières",
+        "healthcareRecords": "Jeu de Données de Dossiers Médicaux"
+      }
+    },
+    "upload": {
+      "title": "Téléchargement de Données Chiffrées",
+      "steps": {
+        "select": "Sélectionner des Fichiers",
+        "metadata": "Configurer les Métadonnées",
+        "encrypt": "Chiffrer les Données",
+        "upload": "Télécharger vers le Stockage Sécurisé"
+      },
+      "fileTypes": {
+        "csv": "Fichiers CSV",
+        "json": "Fichiers JSON",
+        "excel": "Fichiers Excel",
+        "parquet": "Fichiers Parquet"
+      },
+      "encryption": {
+        "standard": "Chiffrement Standard",
+        "advanced": "Chiffrement Avancé",
+        "quantum": "Chiffrement Résistant aux Quantiques"
+      },
+      "privacyLevel": "Niveau de Vie Privée",
+      "department": "Département",
+      "dateRange": "Plage de Dates",
+      "tags": "Étiquettes",
+      "start": "Début",
+      "end": "Fin",
+      "encryptData": "Chiffrer les Données",
+      "uploadComplete": "Téléchargement Terminé",
+      "uploadFailed": "Échec du Téléchargement"
+    },
+    "education": {
+      "title": "Éducation sur la Vie Privée",
+      "subtitle": "Apprenez sur les technologies de préservation de la vie privée",
+      "modules": {
+        "differentialPrivacy": "Confidentialité Différentielle",
+        "federatedLearning": "Apprentissage Fédéré",
+        "homomorphicEncryption": "Chiffrement Homomorphe",
+        "zeroKnowledgeProofs": "Preuves à Connaissance Nulle"
+      }
+    },
+    "monitoring": {
+      "title": "Surveillance de la Vie Privée",
+      "subtitle": "Métriques et alertes de vie privée en temps réel",
+      "metrics": {
+        "privacyBudget": "Budget de Vie Privée",
+        "dataAccess": "Accès aux Données",
+        "encryptionStatus": "État du Chiffrement",
+        "complianceScore": "Score de Conformité"
+      },
+      "alerts": {
+        "budgetWarning": "Avertissement de Budget de Vie Privée",
+        "unauthorizedAccess": "Tentative d'Accès Non Autorisé",
+        "encryptionFailure": "Échec du Chiffrement"
+      }
+    },
+    "health": {
+      "title": "Tableau de Bord de Santé de la Vie Privée",
+      "subtitle": "Surveillez la posture de vie privée de votre organisation",
+      "score": "Score de Vie Privée",
+      "excellent": "Excellent",
+      "good": "Bon",
+      "fair": "Correct",
+      "poor": "Mauvais",
+      "recommendations": "Recommandations",
+      "lastUpdated": "Dernière Mise à Jour"
+    },
+    "common": {
+      "privacy": "Vie Privée",
+      "security": "Sécurité",
+      "encryption": "Chiffrement",
+      "decryption": "Déchiffrement",
+      "data": "Données",
+      "access": "Accès",
+      "control": "Contrôle",
+      "audit": "Audit",
+      "compliance": "Conformité",
+      "risk": "Risque",
+      "protection": "Protection",
+      "anonymization": "Anonymisation",
+      "pseudonymization": "Pseudonymisation",
+      "consent": "Consentement",
+      "notification": "Notification",
+      "alert": "Alerte",
+      "warning": "Avertissement",
+      "error": "Erreur",
+      "success": "Succès",
+      "loading": "Chargement",
+      "processing": "Traitement",
+      "complete": "Terminé",
+      "failed": "Échoué",
+      "cancel": "Annuler",
+      "confirm": "Confirmer",
+      "save": "Sauvegarder",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "view": "Voir",
+      "download": "Télécharger",
+      "upload": "Télécharger",
+      "export": "Exporter",
+      "import": "Importer",
+      "share": "Partager",
+      "copy": "Copier",
+      "move": "Déplacer",
+      "search": "Rechercher",
+      "filter": "Filtrer",
+      "sort": "Trier",
+      "refresh": "Actualiser",
+      "settings": "Paramètres",
+      "configuration": "Configuration",
+      "administration": "Administration"
+    }
+  },
+  "navigation": {
+    "dashboard": "Tableau de Bord",
+    "privacy": "Vie Privée",
+    "analytics": "Analytique",
+    "data": "Données",
+    "settings": "Paramètres",
+    "help": "Aide",
+    "logout": "Déconnexion"
+  },
+  "language": {
+    "select": "Sélectionner la Langue",
+    "english": "Anglais",
+    "spanish": "Espagnol",
+    "french": "Français",
+    "german": "Allemand",
+    "chinese": "Chinois",
+    "arabic": "Arabe",
+    "japanese": "Japonais",
+    "hindi": "Hindi",
+    "portuguese": "Portugais",
+    "russian": "Russe"
+  },
+  "formats": {
+    "date": "DD/MM/YYYY",
+    "time": "HH:mm",
+    "dateTime": "DD/MM/YYYY HH:mm",
+    "currency": "€",
+    "number": "# ##0,##",
+    "percentage": "# ##0,##%"
+  }
+}
