@@ -44,6 +44,7 @@ import { BadgeDisplay } from '../components/certification/BadgeDisplay';
 import { ComplianceChecker } from '../components/certification/ComplianceChecker';
 import { PublicVerificationPortal } from '../components/certification/PublicVerificationPortal';
 import { CertificationHistory } from '../components/certification/CertificationHistory';
+import { CertificationDashboardSkeleton } from '@/components/skeletons';
 
 const CertificationDashboard: React.FC = () => {
   const [certifications, setCertifications] = useState<Certification[]>([]);
@@ -265,15 +266,7 @@ const CertificationDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <CertificationDashboardSkeleton />;
   }
 
   return (

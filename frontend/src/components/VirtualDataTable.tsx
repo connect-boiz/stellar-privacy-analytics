@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { Search, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import EmptyState from './ui/EmptyState';
 
 export interface Column<T> {
   key: keyof T;
@@ -168,9 +169,16 @@ function VirtualDataTable<T extends { id: string | number }>({
 
       {/* Virtual List */}
       {filtered.length === 0 ? (
-        <div className="flex items-center justify-center text-gray-400 text-sm" style={{ height }}>
-          No results found.
-        </div>
+        <EmptyState
+          variant={search ? 'no-search-results' : 'no-data'}
+          title={search ? 'No results found' : 'No data available'}
+          description={
+            search
+              ? 'Try adjusting your search term or clearing the filter.'
+              : 'Data will appear here once records are loaded.'
+          }
+          className="py-16"
+        />
       ) : (
         <List ref={listRef} height={height} itemCount={filtered.length} itemSize={rowHeight} width="100%">
           {Row}

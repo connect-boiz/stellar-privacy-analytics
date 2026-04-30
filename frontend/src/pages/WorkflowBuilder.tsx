@@ -5,22 +5,17 @@ import {
   Save, 
   Share2, 
   Download, 
-  Upload, 
-  Plus, 
   Trash2, 
-  Settings,
   Eye,
-  CheckCircle,
   AlertCircle,
   Clock,
   Shield,
   Database,
   Filter,
   BarChart3,
-  Users,
   Target
 } from 'lucide-react';
-
+import { Button } from '../components/ui/button';
 import { CollaborationPanel } from '../components/workflow/CollaborationPanel';
 
 interface WorkflowNode {
@@ -139,17 +134,17 @@ export const WorkflowBuilder: React.FC = () => {
       errors.push('Workflow must contain at least one node');
     }
     
-    const hasDataSource = nodes.some(n => n.type === 'data-source');
+    const hasDataSource = nodes.some((n: WorkflowNode) => n.type === 'data-source');
     if (!hasDataSource) {
       errors.push('Workflow must include a data source');
     }
     
-    const hasOutput = nodes.some(n => n.type === 'visualization' || n.type === 'export');
+    const hasOutput = nodes.some((n: WorkflowNode) => n.type === 'visualization' || n.type === 'export');
     if (!hasOutput) {
       errors.push('Workflow must include an output node (visualization or export)');
     }
     
-    const dataSourceCount = nodes.filter(n => n.type === 'data-source').length;
+    const dataSourceCount = nodes.filter((n: WorkflowNode) => n.type === 'data-source').length;
     if (dataSourceCount > 1) {
       errors.push('Workflow can only have one data source');
     }
@@ -187,7 +182,7 @@ export const WorkflowBuilder: React.FC = () => {
       position: { x, y }
     };
     
-    setNodes(prev => [...prev, newNode]);
+    setNodes((prev: WorkflowNode[]) => [...prev, newNode]);
     setDraggedNodeType(null);
     validateWorkflow();
   };
@@ -207,14 +202,14 @@ export const WorkflowBuilder: React.FC = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    setNodes(prev => prev.map(node => 
+    setNodes((prev: WorkflowNode[]) => prev.map((node: WorkflowNode) => 
       node.id === nodeId ? { ...node, position: { x, y } } : node
     ));
   };
 
   const deleteNode = (nodeId: string) => {
-    setNodes(prev => prev.filter(n => n.id !== nodeId));
-    setConnections(prev => prev.filter(c => c.sourceId !== nodeId && c.targetId !== nodeId));
+    setNodes((prev: WorkflowNode[]) => prev.filter((n: WorkflowNode) => n.id !== nodeId));
+    setConnections((prev: WorkflowConnection[]) => prev.filter((c: WorkflowConnection) => c.sourceId !== nodeId && c.targetId !== nodeId));
     if (selectedNode === nodeId) {
       setSelectedNode(null);
     }
@@ -223,10 +218,10 @@ export const WorkflowBuilder: React.FC = () => {
 
   const loadTemplate = (template: typeof templates[0]) => {
     const newNodes: WorkflowNode[] = template.nodes.map((nodeData, index) => {
-      const nodeType = nodeTypes.find(nt => nt.type === nodeData.type);
+      const nodeType = nodeTypes.find((nt: typeof nodeTypes[0]) => nt.type === nodeData.type);
       return {
         id: `${nodeData.type}-${Date.now()}-${index}`,
-        type: nodeData.type,
+        type: nodeData.type as WorkflowNode['type'],
         name: nodeData.name,
         description: nodeType?.description || '',
         icon: nodeType?.icon || Database,
@@ -277,7 +272,7 @@ export const WorkflowBuilder: React.FC = () => {
             <input
               type="text"
               value={workflowName}
-              onChange={(e) => setWorkflowName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWorkflowName(e.target.value)}
               className="text-xl font-semibold bg-transparent border-b border-gray-300 focus:border-blue-500 outline-none px-2 py-1"
             />
             <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -317,30 +312,30 @@ export const WorkflowBuilder: React.FC = () => {
               )}
             </button>
             
-            <button className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">
+            <Button variant="secondary" size="sm" className="flex items-center">
               <Save className="h-4 w-4 mr-2" />
               Save
-            </button>
+            </Button>
             
-            <button 
+            <Button 
               onClick={() => setShowCollaboration(!showCollaboration)}
-              className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                showCollaboration 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              variant={showCollaboration ? "default" : "secondary"}
+              size="sm"
+              className="flex items-center"
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share
-            </button>
+            </Button>
             
-            <button
+            <Button
               onClick={exportWorkflow}
-              className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+              variant="secondary"
+              size="sm"
+              className="flex items-center"
             >
               <Download className="h-4 w-4 mr-2" />
               Export
-            </button>
+            </Button>
           </div>
         </div>
       </div>
