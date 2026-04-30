@@ -307,7 +307,7 @@ export const DataManagement: React.FC = () => {
                     </div>
                   ) : (
                     <>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                      <Button variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
@@ -316,10 +316,10 @@ export const DataManagement: React.FC = () => {
                         title="Download dataset"
                       >
                         <Download className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                      </Button>
+                      <Button variant="ghost" size="icon" className="hover:text-red-600">
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>

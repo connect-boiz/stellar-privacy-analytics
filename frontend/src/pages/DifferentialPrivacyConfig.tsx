@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { Button } from '../components/ui/button';
 import { secureSettingsStorage } from '../services/secureSettingsStorage';
 import { settingsSyncService } from '../services/settingsSync';
 import { DifferentialPrivacySchema, validateSettings } from '../services/settingsValidation';
@@ -417,24 +418,34 @@ const DifferentialPrivacyConfig: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button
+            <Button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              variant="outline"
+              className="flex items-center space-x-2"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 w-4" />
               <span>{showAdvanced ? 'Simple' : 'Advanced'}</span>
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={syncSettings}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              variant="outline"
+              className="flex items-center space-x-2"
               title="Sync with backend"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Sync</span>
-            </button>
-            <label className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-              <Upload className="w-4 h-4" />
-              <span>Import</span>
+            </Button>
+            <label className="inline-flex">
+              <Button
+                variant="outline"
+                className="flex items-center space-x-2 cursor-pointer"
+                asChild
+              >
+                <span>
+                  <Upload className="w-4 h-4" />
+                  <span>Import</span>
+                </span>
+              </Button>
               <input
                 type="file"
                 accept=".json"
@@ -442,13 +453,13 @@ const DifferentialPrivacyConfig: React.FC = () => {
                 className="hidden"
               />
             </label>
-            <button
+            <Button
               onClick={exportConfiguration}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center space-x-2"
             >
               <Download className="w-4 h-4" />
               <span>Export</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

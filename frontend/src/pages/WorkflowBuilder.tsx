@@ -20,7 +20,7 @@ import {
   Users,
   Target
 } from 'lucide-react';
-
+import { Button } from '../components/ui/button';
 import { CollaborationPanel } from '../components/workflow/CollaborationPanel';
 
 interface WorkflowNode {
@@ -317,30 +317,30 @@ export const WorkflowBuilder: React.FC = () => {
               )}
             </button>
             
-            <button className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium">
+            <Button variant="secondary" size="sm" className="flex items-center">
               <Save className="h-4 w-4 mr-2" />
               Save
-            </button>
+            </Button>
             
-            <button 
+            <Button 
               onClick={() => setShowCollaboration(!showCollaboration)}
-              className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                showCollaboration 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              variant={showCollaboration ? "default" : "secondary"}
+              size="sm"
+              className="flex items-center"
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share
-            </button>
+            </Button>
             
-            <button
+            <Button
               onClick={exportWorkflow}
-              className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+              variant="secondary"
+              size="sm"
+              className="flex items-center"
             >
               <Download className="h-4 w-4 mr-2" />
               Export
-            </button>
+            </Button>
           </div>
         </div>
       </div>
