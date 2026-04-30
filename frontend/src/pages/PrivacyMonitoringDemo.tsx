@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { Button } from '../components/ui/button';
 import PrivacyDashboard from '../components/dashboard/PrivacyDashboard';
 import PrivacyDataService from '../services/privacyDataService';
 import AnomalyDetectionEngine from '../services/anomalyDetectionEngine';
@@ -436,12 +437,12 @@ const IntegrationsTab: React.FC = () => {
             </div>
             
             <div className="mt-4 flex space-x-2">
-              <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200">
+              <Button variant="secondary" size="sm">
                 Configure
-              </button>
-              <button className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200">
+              </Button>
+              <Button variant="ghost" size="sm">
                 Test
-              </button>
+              </Button>
             </div>
           </div>
         ))}

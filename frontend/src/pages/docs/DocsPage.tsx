@@ -148,8 +148,8 @@ console.log('Transaction proof generated:', tx.proof);`}
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-slate-500">
             Was this page helpful? 
-            <button className="ml-4 px-3 py-1 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors">Yes</button>
-            <button className="ml-2 px-3 py-1 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors">No</button>
+            <Button variant="outline" size="sm" className="ml-4">Yes</Button>
+            <Button variant="outline" size="sm" className="ml-2">No</Button>
           </p>
           <div className="flex gap-6">
             <a href="#" className="text-sm text-slate-500 hover:text-blue-600">Privacy Policy</a>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SimplePrivacyDashboardSkeleton } from '@/components/skeletons';
+import { Button } from '../components/ui/button';
 
 interface PrivacyMetrics {
   epsilonUsed: number;
@@ -143,12 +143,12 @@ const PrivacyHealthDashboard: React.FC = () => {
               </svg>
               <span>Refresh</span>
             </button>
-            <button onClick={handleTopUp} className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <Button onClick={handleTopUp} className="flex items-center space-x-2">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <span>Top Up Budget</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -360,12 +360,12 @@ const PrivacyHealthDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                      <Button variant="outline" size="sm">
                         View
-                      </button>
-                      <button className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                      </Button>
+                      <Button variant="outline" size="sm">
                         Manage
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
