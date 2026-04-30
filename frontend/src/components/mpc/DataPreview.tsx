@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Eye, EyeOff, Download, RefreshCw, Database, Shield } from 'lucide-react';
+import { SearchBar } from '../common';
 
 interface DataPreviewProps {
   data: any[];
@@ -18,6 +19,20 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
   onRefresh,
   onDownload
 }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter data based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return data.filter(row => {
+      return Object.values(row).some(value => 
+        String(value).toLowerCase().includes(lowerSearchTerm)
+      );
+    });
+  }, [data, searchTerm]);
+
   if (!data || data.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500">
@@ -29,7 +44,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
   }
 
   const columns = Object.keys(data[0] || {});
-  const sampleData = data.slice(0, 10); // Show only first 10 rows
+  const sampleData = filteredData.slice(0, 10); // Show only first 10 rows of filtered data
 
   const getCellValue = (value: any, isAnonymized: boolean) => {
     if (value === null || value === undefined) return '—';
@@ -56,11 +71,19 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
           <Database className="w-4 h-4 text-gray-400" />
           <span className="text-sm font-medium text-gray-700">Data Preview</span>
           <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-            {data.length} rows
+            {filteredData.length} of {data.length} rows
           </span>
         </div>
         
         <div className="flex items-center space-x-2">
+          {/* Search */}
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search data..."
+            size="sm"
+            className="w-48 mr-2"
+          />
           {/* Anonymization Toggle */}
           <button
             onClick={onToggleAnonymization}
@@ -140,14 +163,25 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
             </table>
 
             {/* Show more indicator */}
-            {data.length > 10 && (
+            {filteredData.length > 10 && (
               <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
                 <div className="flex items-center justify-center text-sm text-gray-500">
-                  <span>Showing 10 of {data.length} rows</span>
+                  <span>Showing 10 of {filteredData.length} filtered rows</span>
                   <button className="ml-2 text-blue-600 hover:text-blue-800">
                     Download full dataset
                   </button>
                 </div>
+              </div>
+            )}
+            {filteredData.length === 0 && searchTerm && (
+              <div className="px-4 py-8 text-center">
+                <p className="text-gray-500">No data matches your search</p>
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Clear search
+                </button>
               </div>
             )}
           </div>
