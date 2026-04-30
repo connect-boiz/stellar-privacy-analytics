@@ -1,15 +1,38 @@
 import { Router, Request, Response } from 'express';
+import { body, param, query } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler';
-import TrainingService, { UserRole, TrainingModule } from '../services/trainingService';
+import TrainingService, { UserRole } from '../services/trainingService';
+import { validateRequest } from '../middleware/validation';
 
 const router = Router();
+
+const TRAINING_ROLES: UserRole[] = [
+  'admin',
+  'analyst',
+  'developer',
+  'data_steward',
+  'compliance_officer',
+  'end_user',
+];
+
+const moduleIdParam = () =>
+  param('moduleId').trim().matches(/^[a-zA-Z0-9_-]{1,128}$/).withMessage('Invalid moduleId');
+const certificateIdParam = () =>
+  param('certificateId').trim().matches(/^[a-zA-Z0-9_-]{1,128}$/).withMessage('Invalid certificateId');
+const verificationCodeParam = () =>
+  param('verificationCode').trim().matches(/^[a-zA-Z0-9_-]{1,128}$/).withMessage('Invalid verificationCode');
 
 // ============================================
 // Module Management Routes
 // ============================================
 
 // Get all training modules
-router.get('/modules', asyncHandler(async (req: Request, res: Response) => {
+router.get('/modules', [
+  query('role').optional().isIn(TRAINING_ROLES),
+  query('category').optional().trim().isLength({ max: 128 }),
+  query('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { role, category, difficulty } = req.query;
   
   let modules = TrainingService.getAllModules();
@@ -46,7 +69,10 @@ router.get('/modules', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Get single module with full details
-router.get('/modules/:moduleId', asyncHandler(async (req: Request, res: Response) => {
+router.get('/modules/:moduleId', [
+  moduleIdParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { moduleId } = req.params;
   const module = TrainingService.getModuleById(moduleId);
   
@@ -64,7 +90,16 @@ router.get('/modules/:moduleId', asyncHandler(async (req: Request, res: Response
 }));
 
 // Create new module (admin only)
-router.post('/modules', asyncHandler(async (req: Request, res: Response) => {
+router.post('/modules', [
+  body('title').optional().trim().isLength({ max: 500 }),
+  body('description').optional().trim().isLength({ max: 10000 }),
+  body('category').optional().trim().isLength({ max: 200 }),
+  body('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']),
+  body('estimatedDuration').optional().isInt({ min: 1, max: 10080 }),
+  body('passingScore').optional().isInt({ min: 0, max: 100 }),
+  body('maxAttempts').optional().isInt({ min: 1, max: 100 }),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'system';
   const module = TrainingService.createModule(req.body, userId);
   
@@ -76,7 +111,15 @@ router.post('/modules', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Update module (admin only)
-router.put('/modules/:moduleId', asyncHandler(async (req: Request, res: Response) => {
+router.put('/modules/:moduleId', [
+  moduleIdParam(),
+  body('title').optional().trim().isLength({ max: 500 }),
+  body('description').optional().trim().isLength({ max: 10000 }),
+  body('category').optional().trim().isLength({ max: 200 }),
+  body('difficulty').optional().isIn(['beginner', 'intermediate', 'advanced']),
+  body('estimatedDuration').optional().isInt({ min: 1, max: 10080 }),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { moduleId } = req.params;
   const module = TrainingService.updateModule(moduleId, req.body);
   
@@ -95,7 +138,10 @@ router.put('/modules/:moduleId', asyncHandler(async (req: Request, res: Response
 }));
 
 // Delete module (admin only)
-router.delete('/modules/:moduleId', asyncHandler(async (req: Request, res: Response) => {
+router.delete('/modules/:moduleId', [
+  moduleIdParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { moduleId } = req.params;
   const deleted = TrainingService.deleteModule(moduleId);
   
@@ -117,7 +163,10 @@ router.delete('/modules/:moduleId', asyncHandler(async (req: Request, res: Respo
 // ============================================
 
 // Get user's training progress
-router.get('/progress', asyncHandler(async (req: Request, res: Response) => {
+router.get('/progress', [
+  query('moduleId').optional({ checkFalsy: true }).trim().matches(/^[a-zA-Z0-9_-]{1,128}$/),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { moduleId } = req.query;
   
@@ -133,7 +182,10 @@ router.get('/progress', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Start a training module
-router.post('/progress/start', asyncHandler(async (req: Request, res: Response) => {
+router.post('/progress/start', [
+  body('moduleId').trim().notEmpty().matches(/^[a-zA-Z0-9_-]{1,128}$/),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { moduleId } = req.body;
   
@@ -157,7 +209,12 @@ router.post('/progress/start', asyncHandler(async (req: Request, res: Response) 
 }));
 
 // Update progress (content viewing, time tracking)
-router.put('/progress/:moduleId', asyncHandler(async (req: Request, res: Response) => {
+router.put('/progress/:moduleId', [
+  moduleIdParam(),
+  body('contentIndex').optional().isInt({ min: 0, max: 1_000_000 }),
+  body('timeSpent').optional().isInt({ min: 0, max: 1_000_000_000 }),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { moduleId } = req.params;
   const { contentIndex, timeSpent } = req.body;
@@ -188,7 +245,10 @@ router.put('/progress/:moduleId', asyncHandler(async (req: Request, res: Respons
 // ============================================
 
 // Get exercises for a module
-router.get('/modules/:moduleId/exercises', asyncHandler(async (req: Request, res: Response) => {
+router.get('/modules/:moduleId/exercises', [
+  moduleIdParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { moduleId } = req.params;
   const module = TrainingService.getModuleById(moduleId);
   
@@ -218,7 +278,12 @@ router.get('/modules/:moduleId/exercises', asyncHandler(async (req: Request, res
 }));
 
 // Submit exercise answer
-router.post('/exercises/submit', asyncHandler(async (req: Request, res: Response) => {
+router.post('/exercises/submit', [
+  body('moduleId').trim().notEmpty().matches(/^[a-zA-Z0-9_-]{1,128}$/),
+  body('exerciseId').trim().notEmpty().isLength({ max: 128 }),
+  body('answers').isObject(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { moduleId, exerciseId, answers } = req.body;
   
@@ -243,7 +308,10 @@ router.post('/exercises/submit', asyncHandler(async (req: Request, res: Response
 // ============================================
 
 // Get assessment for a module
-router.get('/modules/:moduleId/assessment', asyncHandler(async (req: Request, res: Response) => {
+router.get('/modules/:moduleId/assessment', [
+  moduleIdParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { moduleId } = req.params;
   const module = TrainingService.getModuleById(moduleId);
   
@@ -272,7 +340,10 @@ router.get('/modules/:moduleId/assessment', asyncHandler(async (req: Request, re
 }));
 
 // Start assessment
-router.post('/assessment/start', asyncHandler(async (req: Request, res: Response) => {
+router.post('/assessment/start', [
+  body('moduleId').trim().notEmpty().matches(/^[a-zA-Z0-9_-]{1,128}$/),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { moduleId } = req.body;
   
@@ -323,7 +394,13 @@ router.post('/assessment/start', asyncHandler(async (req: Request, res: Response
 }));
 
 // Submit assessment
-router.post('/assessment/submit', asyncHandler(async (req: Request, res: Response) => {
+router.post('/assessment/submit', [
+  body('moduleId').trim().notEmpty().matches(/^[a-zA-Z0-9_-]{1,128}$/),
+  body('attemptId').trim().notEmpty().isLength({ max: 128 }),
+  body('answers').isObject(),
+  body('timeSpent').optional().isInt({ min: 0, max: 1_000_000_000 }),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { moduleId, attemptId, answers, timeSpent } = req.body;
   
@@ -374,7 +451,10 @@ router.get('/certificates', asyncHandler(async (req: Request, res: Response) => 
 }));
 
 // Get specific certificate
-router.get('/certificates/:certificateId', asyncHandler(async (req: Request, res: Response) => {
+router.get('/certificates/:certificateId', [
+  certificateIdParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { certificateId } = req.params;
   
   const certificate = TrainingService.getCertificate(certificateId);
@@ -393,7 +473,10 @@ router.get('/certificates/:certificateId', asyncHandler(async (req: Request, res
 }));
 
 // Verify certificate by code
-router.get('/certificates/verify/:verificationCode', asyncHandler(async (req: Request, res: Response) => {
+router.get('/certificates/verify/:verificationCode', [
+  verificationCodeParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { verificationCode } = req.params;
   
   const certificate = TrainingService.verifyCertificate(verificationCode);
@@ -422,7 +505,10 @@ router.get('/certificates/verify/:verificationCode', asyncHandler(async (req: Re
 // ============================================
 
 // Get module analytics
-router.get('/analytics/modules/:moduleId', asyncHandler(async (req: Request, res: Response) => {
+router.get('/analytics/modules/:moduleId', [
+  moduleIdParam(),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { moduleId } = req.params;
   
   const analytics = TrainingService.getModuleAnalytics(moduleId);
@@ -455,7 +541,10 @@ router.get('/analytics/overview', asyncHandler(async (req: Request, res: Respons
 // ============================================
 
 // Get recommended training for onboarding
-router.get('/onboarding/:role', asyncHandler(async (req: Request, res: Response) => {
+router.get('/onboarding/:role', [
+  param('role').isIn(TRAINING_ROLES),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const { role } = req.params;
   
   const modules = TrainingService.getOnboardingTraining(role as UserRole);
@@ -473,7 +562,10 @@ router.get('/onboarding/:role', asyncHandler(async (req: Request, res: Response)
 }));
 
 // Assign required training to user
-router.post('/onboarding/assign', asyncHandler(async (req: Request, res: Response) => {
+router.post('/onboarding/assign', [
+  body('role').isIn(TRAINING_ROLES),
+  validateRequest,
+], asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || 'demo-user';
   const { role } = req.body;
   
