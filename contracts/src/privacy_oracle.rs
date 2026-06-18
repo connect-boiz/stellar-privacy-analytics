@@ -9,6 +9,8 @@ use soroban_sdk::symbol_short;
 use soroban_sdk::Map;
 use soroban_sdk::BytesN;
 use soroban_sdk::xdr::ScVal;
+use soroban_sdk::token;
+use soroban_sdk::crypto::sha256;
 
 #[cfg(any(test, feature = "clientgen"))]
 pub type PrivacyOracleClient = ();
@@ -21,6 +23,7 @@ const DATA_SOURCE_FEES_KEY: &str = "DATA_SOURCE_FEES";
 const USER_DEPOSITS_KEY: &str = "USER_DEPOSITS";
 const PENDING_REQUESTS_KEY: &str = "PENDING_REQUESTS";
 const ACTIVE_ORACLE_NODES_KEY: &str = "ACTIVE_ORACLE_NODES";
+const TOKEN_KEY: &str = "TOKEN";
 
 // Constants
 const MIN_FEE: i128 = 10000000; // 0.01 XLM (10^7 stroops)
@@ -79,6 +82,7 @@ pub enum PrivacyOracleError {
     OracleNotFound = 8,
     OracleAlreadyExists = 9,
     Unauthorized = 10,
+    TokenNotSet = 11,
 }
 
 pub struct PrivacyOracle;
@@ -86,13 +90,16 @@ pub struct PrivacyOracle;
 #[contractimpl]
 impl PrivacyOracle {
     /// Initialize the contract with default data source fees
-    pub fn initialize(env: Env, admin: Address) {
+    pub fn initialize(env: Env, admin: Address, token: Address) {
         if env.storage().instance().has(&symbol!("initialized")) {
             return; // Already initialized
         }
 
         // Set admin
         env.storage().instance().set(&symbol!("admin"), &admin);
+        
+        // Set token contract address
+        env.storage().instance().set(&symbol!("token"), &token);
 
         // Initialize default data source fees
         // Keys are String (not SymbolShort) to align with consumer's
@@ -453,15 +460,24 @@ impl PrivacyOracle {
     }
 
     /// Add deposit to user account
-    pub fn add_deposit(env: Env, amount: i128) -> Result<(), PrivacyOracleError> {
-        let user = env.current_contract_address(); // In real implementation, get from auth
+    pub fn add_deposit(env: Env, user: Address, amount: i128) -> Result<(), PrivacyOracleError> {
+        user.require_auth();
 
         if amount <= 0 {
             return Err(PrivacyOracleError::InvalidFee);
         }
 
+        let token: Address = env
+            .storage()
+            .instance()
+            .get(&symbol!("token"))
+            .ok_or(PrivacyOracleError::TokenNotSet)?;
+        
+        let token_client = token::Client::new(&env, &token);
+        token_client.transfer(&user, &env.current_contract_address(), &amount);
+
         let current_deposit = Self::get_user_deposit(env.clone(), user.clone());
-        Self::set_user_deposit(env, user, current_deposit + amount);
+        Self::set_user_deposit(env.clone(), user.clone(), current_deposit + amount);
 
         // Emit event
         env.events()
@@ -471,8 +487,8 @@ impl PrivacyOracle {
     }
 
     /// Withdraw deposit
-    pub fn withdraw(env: Env, amount: i128) -> Result<(), PrivacyOracleError> {
-        let user = env.current_contract_address(); // In real implementation, get from auth
+    pub fn withdraw(env: Env, user: Address, amount: i128) -> Result<(), PrivacyOracleError> {
+        user.require_auth();
 
         if amount <= 0 {
             return Err(PrivacyOracleError::InvalidFee);
@@ -483,7 +499,16 @@ impl PrivacyOracle {
             return Err(PrivacyOracleError::InsufficientDeposit);
         }
 
-        Self::set_user_deposit(env, user.clone(), current_deposit - amount);
+        let token: Address = env
+            .storage()
+            .instance()
+            .get(&symbol!("token"))
+            .ok_or(PrivacyOracleError::TokenNotSet)?;
+        
+        let token_client = token::Client::new(&env, &token);
+        token_client.transfer(&env.current_contract_address(), &user, &amount);
+
+        Self::set_user_deposit(env.clone(), user.clone(), current_deposit - amount);
 
         // Emit event
         env.events()
