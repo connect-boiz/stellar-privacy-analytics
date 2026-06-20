@@ -14,6 +14,8 @@ pub enum DpError {
     AlreadyInitialized = 13,
     /// Privacy parameters must be positive.
     InvalidParameter = 14,
+    /// Arithmetic overflow while calculating budget usage or noise.
+    ArithmeticOverflow = 15,
 }
 
 #[contracttype]
@@ -32,18 +34,38 @@ impl FixedPointMath {
 
     /// Approximates ln(1 - x) using Taylor series for x in [0, 1)
     /// x is expected to be scaled by SCALE.
-    pub fn ln_1_minus_x(x: i128) -> i128 {
-        let x2 = (x * x) / Self::SCALE;
-        let x3 = (x2 * x) / Self::SCALE;
-        // ln(1-x) ≈ -x - x^2/2 - x^3/3
-        -x - (x2 / 2) - (x3 / 3)
+    pub fn ln_1_minus_x(x: i128) -> Result<i128, DpError> {
+        let x2 = x
+            .checked_mul(x)
+            .ok_or(DpError::ArithmeticOverflow)?
+            .checked_div(Self::SCALE)
+            .ok_or(DpError::ArithmeticOverflow)?;
+        let x3 = x2
+            .checked_mul(x)
+            .ok_or(DpError::ArithmeticOverflow)?
+            .checked_div(Self::SCALE)
+            .ok_or(DpError::ArithmeticOverflow)?;
+        // ln(1-x) ~= -x - x^2/2 - x^3/3
+        x.checked_neg()
+            .and_then(|v| v.checked_sub(x2 / 2))
+            .and_then(|v| v.checked_sub(x3 / 3))
+            .ok_or(DpError::ArithmeticOverflow)
     }
 
     /// Generates deterministic Laplace noise using a pseudo-random mechanism
     /// scaled by `sensitivity / epsilon`.
-    pub fn laplace_noise(env: &Env, epsilon: i128, sensitivity: i128, seed: Bytes) -> i128 {
+    pub fn laplace_noise(
+        env: &Env,
+        epsilon: i128,
+        sensitivity: i128,
+        seed: Bytes,
+    ) -> Result<i128, DpError> {
         // b = sensitivity / epsilon
-        let b = (sensitivity * Self::SCALE) / epsilon;
+        let b = sensitivity
+            .checked_mul(Self::SCALE)
+            .ok_or(DpError::ArithmeticOverflow)?
+            .checked_div(epsilon)
+            .ok_or(DpError::InvalidParameter)?;
 
         // Generate a uniform random value U in [-0.5, 0.5)
         // We use SHA256 of the seed to ensure determinism and resilience against reconstruction
@@ -62,10 +84,14 @@ impl FixedPointMath {
         let two_abs_u = 2 * abs_u;
 
         // ln(1 - 2|U|)
-        let ln_val = Self::ln_1_minus_x(two_abs_u);
+        let ln_val = Self::ln_1_minus_x(two_abs_u)?;
 
         // -b * sgn(U) * ln(...)
-        (-b * sign * ln_val) / Self::SCALE
+        b.checked_neg()
+            .and_then(|v| v.checked_mul(sign))
+            .and_then(|v| v.checked_mul(ln_val))
+            .and_then(|v| v.checked_div(Self::SCALE))
+            .ok_or(DpError::ArithmeticOverflow)
     }
 }
 
@@ -127,17 +153,28 @@ impl DpAnalyticsContract {
     /// Applies Laplace noise to an exact value based on the given privacy budget and sensitivity.
     pub fn apply_noise(
         env: Env,
+        caller: Address,
         exact_value: i128,
         query_epsilon: i128,
         sensitivity: i128,
         query_seed: Bytes,
     ) -> Result<i128, DpError> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DpDataKey::Admin)
+            .ok_or(DpError::NotInitialized)?;
+        caller.require_auth();
+        if caller != admin {
+            return Err(DpError::Unauthorized);
+        }
+
         let max_eps: i128 = env
             .storage()
             .instance()
             .get(&DpDataKey::MaxEpsilon)
             .ok_or(DpError::NotInitialized)?;
-        let mut used_eps: i128 = env
+        let used_eps: i128 = env
             .storage()
             .instance()
             .get(&DpDataKey::UsedEpsilon)
@@ -147,20 +184,24 @@ impl DpAnalyticsContract {
             return Err(DpError::InvalidParameter);
         }
 
-        if used_eps + query_epsilon > max_eps {
+        let new_used_eps = used_eps
+            .checked_add(query_epsilon)
+            .ok_or(DpError::ArithmeticOverflow)?;
+        if new_used_eps > max_eps {
             return Err(DpError::BudgetExceeded);
         }
 
+        let noise = FixedPointMath::laplace_noise(&env, query_epsilon, sensitivity, query_seed)?;
+        let noisy_value = exact_value
+            .checked_add(noise)
+            .ok_or(DpError::ArithmeticOverflow)?;
+
         // Update persistent storage with new budget usage
-        used_eps += query_epsilon;
         env.storage()
             .instance()
-            .set(&DpDataKey::UsedEpsilon, &used_eps);
+            .set(&DpDataKey::UsedEpsilon, &new_used_eps);
 
-        // Generate resilient noise
-        let noise = FixedPointMath::laplace_noise(&env, query_epsilon, sensitivity, query_seed);
-
-        Ok(exact_value + noise)
+        Ok(noisy_value)
     }
 }
 
@@ -194,12 +235,12 @@ mod test {
 
         let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
         // Apply noise with query epsilon of 0.1 (1000)
-        let _noisy_val = client.apply_noise(&1_000_000, &1000, &10000, &seed);
+        let _noisy_val = client.apply_noise(&admin, &1_000_000, &1000, &10000, &seed);
 
         assert_eq!(client.get_privacy_loss(), 1000);
 
         // Try to exceed the budget of 1.0 (10000) with a 0.9001 (9001) epsilon request
-        let res = client.try_apply_noise(&1_000_000, &9001, &10000, &seed);
+        let res = client.try_apply_noise(&admin, &1_000_000, &9001, &10000, &seed);
         assert!(res.is_err());
 
         // Refresh budget as admin
@@ -222,7 +263,7 @@ mod test {
         assert!(result.is_err());
         let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
         assert_contract_error(
-            client.try_apply_noise(&1_000_000, &1000, &10000, &seed),
+            client.try_apply_noise(&admin, &1_000_000, &1000, &10000, &seed),
             DpError::NotInitialized,
         );
         assert_eq!(client.get_privacy_loss(), 0);
@@ -272,7 +313,7 @@ mod test {
 
         let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
         assert!(client
-            .try_apply_noise(&1_000_000, &1000, &10000, &seed)
+            .try_apply_noise(&admin, &1_000_000, &1000, &10000, &seed)
             .is_ok());
         assert_eq!(client.get_privacy_loss(), 1000);
     }
@@ -290,23 +331,86 @@ mod test {
 
         let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
         assert_contract_error(
-            client.try_apply_noise(&1_000_000, &0, &10_000, &seed),
+            client.try_apply_noise(&admin, &1_000_000, &0, &10_000, &seed),
             DpError::InvalidParameter,
         );
         assert_contract_error(
-            client.try_apply_noise(&1_000_000, &-1, &10_000, &seed),
+            client.try_apply_noise(&admin, &1_000_000, &-1, &10_000, &seed),
             DpError::InvalidParameter,
         );
         assert_contract_error(
-            client.try_apply_noise(&1_000_000, &1000, &0, &seed),
+            client.try_apply_noise(&admin, &1_000_000, &1000, &0, &seed),
             DpError::InvalidParameter,
         );
 
         assert_eq!(client.get_privacy_loss(), 0);
         assert!(client
-            .try_apply_noise(&1_000_000, &1000, &10_000, &seed)
+            .try_apply_noise(&admin, &1_000_000, &1000, &10_000, &seed)
             .is_ok());
         assert_eq!(client.get_privacy_loss(), 1000);
+    }
+
+    #[test]
+    fn test_apply_noise_requires_stored_admin_auth_without_consuming_budget() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, DpAnalyticsContract);
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let attacker = Address::generate(&env);
+        client.init(&admin, &10_000);
+
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+        assert_contract_error(
+            client.try_apply_noise(&attacker, &1_000_000, &1000, &10_000, &seed),
+            DpError::Unauthorized,
+        );
+        assert_eq!(client.get_privacy_loss(), 0);
+    }
+
+    #[test]
+    fn test_apply_noise_rejects_budget_addition_overflow_without_consuming_budget() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, DpAnalyticsContract);
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        client.init(&admin, &i128::MAX);
+        env.as_contract(&contract_id, || {
+            env.storage()
+                .instance()
+                .set(&DpDataKey::UsedEpsilon, &i128::MAX);
+        });
+
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+        assert_contract_error(
+            client.try_apply_noise(&admin, &1_000_000, &1, &10_000, &seed),
+            DpError::ArithmeticOverflow,
+        );
+        assert_eq!(client.get_privacy_loss(), i128::MAX);
+    }
+
+    #[test]
+    fn test_apply_noise_rejects_noise_scaling_overflow_without_consuming_budget() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, DpAnalyticsContract);
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        client.init(&admin, &10_000);
+
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+        assert_contract_error(
+            client.try_apply_noise(&admin, &1_000_000, &1, &i128::MAX, &seed),
+            DpError::ArithmeticOverflow,
+        );
+        assert_eq!(client.get_privacy_loss(), 0);
     }
 
     #[test]
