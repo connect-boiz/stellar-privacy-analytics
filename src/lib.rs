@@ -53,13 +53,11 @@ impl ZkVerificationContract {
         Ok(())
     }
 
-    pub fn get_verification(
-        env: Env,
-        user_id: Address,
-        circuit_id: Symbol,
-    ) -> Option<Vec<i128>> {
-        if let Some(user_verifications) =
-            env.storage().instance().get::<_, Map<Symbol, Vec<i128>>>(&user_id)
+    pub fn get_verification(env: Env, user_id: Address, circuit_id: Symbol) -> Option<Vec<i128>> {
+        if let Some(user_verifications) = env
+            .storage()
+            .instance()
+            .get::<_, Map<Symbol, Vec<i128>>>(&user_id)
         {
             user_verifications.get(circuit_id)
         } else {
@@ -110,7 +108,13 @@ mod test {
         let public_inputs = vec![&env, 18];
         let forged_proof = BytesN::random(&env);
 
-        client.verify_proof(&provider, &user_id, &circuit_id, &public_inputs, &forged_proof);
+        client.verify_proof(
+            &provider,
+            &user_id,
+            &circuit_id,
+            &public_inputs,
+            &forged_proof,
+        );
     }
 
     #[test]
@@ -131,7 +135,13 @@ mod test {
         let proof_data = (circuit_id.clone(), public_inputs_for_proof.clone());
         let proof = env.crypto().sha256(&proof_data.into_val(&env));
 
-        client.verify_proof(&provider, &user_id, &circuit_id, &public_inputs_for_call, &proof);
+        client.verify_proof(
+            &provider,
+            &user_id,
+            &circuit_id,
+            &public_inputs_for_call,
+            &proof,
+        );
     }
 
     #[test]
