@@ -25,6 +25,17 @@ pub struct FixedPointMath;
 impl FixedPointMath {
     pub const SCALE: i128 = 10_000;
 
+    fn safe_scale_ratio(numerator: i128, denominator: i128) -> i128 {
+        if denominator == 0 {
+            return i128::MAX;
+        }
+
+        numerator
+            .saturating_mul(Self::SCALE)
+            .checked_div(denominator)
+            .unwrap_or(i128::MAX)
+    }
+
     /// Approximates ln(1 - x) using Taylor series for x in [0, 1)
     /// x is expected to be scaled by SCALE.
     pub fn ln_1_minus_x(x: i128) -> i128 {
@@ -38,7 +49,7 @@ impl FixedPointMath {
     /// scaled by `sensitivity / epsilon`.
     pub fn laplace_noise(env: &Env, epsilon: i128, sensitivity: i128, seed: Bytes) -> i128 {
         // b = sensitivity / epsilon
-        let b = (sensitivity * Self::SCALE) / epsilon;
+        let b = Self::safe_scale_ratio(sensitivity, epsilon);
         
         // Generate a uniform random value U in [-0.5, 0.5)
         // We use SHA256 of the seed to ensure determinism and resilience against reconstruction
@@ -60,7 +71,11 @@ impl FixedPointMath {
         let ln_val = Self::ln_1_minus_x(two_abs_u);
         
         // -b * sgn(U) * ln(...)
-        (-b * sign * ln_val) / Self::SCALE
+        b.saturating_neg()
+            .saturating_mul(sign)
+            .saturating_mul(ln_val)
+            .checked_div(Self::SCALE)
+            .unwrap_or(i128::MAX)
     }
 }
 
@@ -148,5 +163,21 @@ mod test {
         
         // Privacy loss is reset
         assert_eq!(client.get_privacy_loss(), 0);
+    }
+
+    #[test]
+    fn test_laplace_noise_clamps_extreme_values() {
+        let env = Env::default();
+        let seed = Bytes::from_slice(&env, &[9, 8, 7, 6]);
+
+        let noise = FixedPointMath::laplace_noise(&env, 1, i128::MAX, seed.clone());
+        let repeated_noise = FixedPointMath::laplace_noise(&env, 1, i128::MAX, seed.clone());
+        assert_eq!(noise, repeated_noise);
+
+        let zero_epsilon_noise = FixedPointMath::laplace_noise(&env, 0, i128::MAX, seed.clone());
+        let repeated_zero_epsilon_noise = FixedPointMath::laplace_noise(&env, 0, i128::MAX, seed);
+        assert_eq!(zero_epsilon_noise, repeated_zero_epsilon_noise);
+        assert_eq!(FixedPointMath::safe_scale_ratio(i128::MAX, 1), i128::MAX);
+        assert_eq!(FixedPointMath::safe_scale_ratio(1, 0), i128::MAX);
     }
 }
