@@ -12,6 +12,8 @@ pub enum DpError {
     NotInitialized = 12,
     /// Contract has already been initialized.
     AlreadyInitialized = 13,
+    /// Privacy parameters must be positive.
+    InvalidParameter = 14,
 }
 
 #[contracttype]
@@ -77,6 +79,10 @@ impl DpAnalyticsContract {
     pub fn init(env: Env, admin: Address, max_epsilon: i128) -> Result<(), DpError> {
         admin.require_auth();
 
+        if max_epsilon <= 0 {
+            return Err(DpError::InvalidParameter);
+        }
+
         if env.storage().instance().has(&DpDataKey::Initialized)
             || env.storage().instance().has(&DpDataKey::Admin)
             || env.storage().instance().has(&DpDataKey::MaxEpsilon)
@@ -136,6 +142,10 @@ impl DpAnalyticsContract {
             .instance()
             .get(&DpDataKey::UsedEpsilon)
             .unwrap_or(0);
+
+        if max_eps <= 0 || query_epsilon <= 0 || sensitivity <= 0 {
+            return Err(DpError::InvalidParameter);
+        }
 
         if used_eps + query_epsilon > max_eps {
             return Err(DpError::BudgetExceeded);
@@ -219,6 +229,22 @@ mod test {
     }
 
     #[test]
+    fn test_init_rejects_non_positive_max_epsilon() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, DpAnalyticsContract);
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        assert_contract_error(client.try_init(&admin, &0), DpError::InvalidParameter);
+        assert_contract_error(client.try_init(&admin, &-1), DpError::InvalidParameter);
+
+        assert_contract_error(client.try_refresh_budget(), DpError::NotInitialized);
+        assert_eq!(client.get_privacy_loss(), 0);
+    }
+
+    #[test]
     fn test_init_rejects_reinitialization() {
         let env = Env::default();
         env.mock_all_auths();
@@ -247,6 +273,38 @@ mod test {
         let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
         assert!(client
             .try_apply_noise(&1_000_000, &1000, &10000, &seed)
+            .is_ok());
+        assert_eq!(client.get_privacy_loss(), 1000);
+    }
+
+    #[test]
+    fn test_apply_noise_rejects_non_positive_budget_parameters_without_consuming_budget() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, DpAnalyticsContract);
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        client.init(&admin, &10_000);
+
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+        assert_contract_error(
+            client.try_apply_noise(&1_000_000, &0, &10_000, &seed),
+            DpError::InvalidParameter,
+        );
+        assert_contract_error(
+            client.try_apply_noise(&1_000_000, &-1, &10_000, &seed),
+            DpError::InvalidParameter,
+        );
+        assert_contract_error(
+            client.try_apply_noise(&1_000_000, &1000, &0, &seed),
+            DpError::InvalidParameter,
+        );
+
+        assert_eq!(client.get_privacy_loss(), 0);
+        assert!(client
+            .try_apply_noise(&1_000_000, &1000, &10_000, &seed)
             .is_ok());
         assert_eq!(client.get_privacy_loss(), 1000);
     }
