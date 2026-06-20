@@ -331,8 +331,8 @@ export class ABACService {
     switch (expression.operator) {
       case "and":
         const andResults = expression.operands.map((operand) => {
-          if ("attribute" in operand) {
-            const cond = operand as AttributeCondition;
+          if (this.isAttributeCondition(operand)) {
+            const cond = operand;
             const result = this.evaluateAttributeCondition(cond, {
               ...userAttributes,
               ...resource,
@@ -342,13 +342,14 @@ export class ABACService {
                 `${cond.attribute} ${cond.operator} ${cond.value}`,
               );
             return result;
-          } else {
+          } else if (this.isLogicalExpression(operand)) {
             return this.evaluateLogicalExpression(
-              operand as LogicalExpression,
+              operand,
               userAttributes,
               resource,
             ).result;
           }
+          return false;
         });
 
         return {
@@ -359,8 +360,8 @@ export class ABACService {
 
       case "or":
         const orResults = expression.operands.map((operand) => {
-          if ("attribute" in operand) {
-            const cond = operand as AttributeCondition;
+          if (this.isAttributeCondition(operand)) {
+            const cond = operand;
             const result = this.evaluateAttributeCondition(cond, {
               ...userAttributes,
               ...resource,
@@ -370,13 +371,14 @@ export class ABACService {
                 `${cond.attribute} ${cond.operator} ${cond.value}`,
               );
             return result;
-          } else {
+          } else if (this.isLogicalExpression(operand)) {
             return this.evaluateLogicalExpression(
-              operand as LogicalExpression,
+              operand,
               userAttributes,
               resource,
             ).result;
           }
+          return false;
         });
 
         return {
@@ -387,8 +389,8 @@ export class ABACService {
 
       case "not":
         const operandResult = expression.operands[0];
-        if ("attribute" in operandResult) {
-          const cond = operandResult as AttributeCondition;
+        if (this.isAttributeCondition(operandResult)) {
+          const cond = operandResult;
           const result = this.evaluateAttributeCondition(cond, {
             ...userAttributes,
             ...resource,
@@ -402,9 +404,9 @@ export class ABACService {
             explanation: `Negated condition: NOT (${cond.attribute} ${cond.operator} ${cond.value})`,
             matchedRules,
           };
-        } else {
+        } else if (this.isLogicalExpression(operandResult)) {
           const innerResult = this.evaluateLogicalExpression(
-            operandResult as LogicalExpression,
+            operandResult,
             userAttributes,
             resource,
           );
@@ -414,6 +416,11 @@ export class ABACService {
             matchedRules,
           };
         }
+        return {
+          result: false,
+          explanation: "Missing NOT operand",
+          matchedRules,
+        };
 
       default:
         return {
@@ -422,6 +429,18 @@ export class ABACService {
           matchedRules,
         };
     }
+  }
+
+  private isAttributeCondition(
+    operand: LogicalExpression | AttributeCondition | undefined,
+  ): operand is AttributeCondition {
+    return !!operand && "attribute" in operand;
+  }
+
+  private isLogicalExpression(
+    operand: LogicalExpression | AttributeCondition | undefined,
+  ): operand is LogicalExpression {
+    return !!operand && "operands" in operand;
   }
 
   private evaluateAttributeCondition(
@@ -711,7 +730,7 @@ export class AttributeResolver {
   async resolveJurisdiction(ipAddress: string): Promise<string> {
     if (!ipAddress || ipAddress.trim() === "") {
       logger.warn(
-        'resolveJurisdiction called with empty IP address — returning "unknown"',
+        'resolveJurisdiction called with empty IP address - returning "unknown"',
       );
       return "unknown";
     }
@@ -721,7 +740,7 @@ export class AttributeResolver {
 
       if (!geo || !geo.country) {
         logger.warn(
-          `GeoIP lookup returned no result for IP ${ipAddress} — returning "unknown"`,
+          `GeoIP lookup returned no result for IP ${ipAddress} - returning "unknown"`,
         );
         return "unknown";
       }

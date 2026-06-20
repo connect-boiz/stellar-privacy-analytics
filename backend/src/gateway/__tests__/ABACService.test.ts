@@ -1,5 +1,7 @@
+/// <reference types="jest" />
+
 /**
- * Unit tests for ABACService – focusing on the jurisdiction resolution fix.
+ * Unit tests for ABACService - focusing on the jurisdiction resolution fix.
  *
  * The SummaryAttributeResolver (AttributeResolver) previously contained a stub
  * that silently returned "US" for every IP address, making geo-based ABAC
@@ -16,7 +18,13 @@
  */
 
 import * as geoip from "geoip-lite";
-import { AttributeResolver, ABACService, UserAttributes } from "../ABACService";
+import {
+  ABACPolicy,
+  AttributeResolver,
+  ABACService,
+  Resource,
+  UserAttributes,
+} from "../ABACService";
 
 // ---------------------------------------------------------------------------
 // Mock geoip-lite so we do not need the actual MaxMind database in CI.
@@ -26,7 +34,7 @@ jest.mock("geoip-lite");
 const mockLookup = geoip.lookup as jest.MockedFunction<typeof geoip.lookup>;
 
 // ---------------------------------------------------------------------------
-// Helper – minimal valid geoip.Lookup result
+// Helper - minimal valid geoip.Lookup result
 // ---------------------------------------------------------------------------
 function makeGeoResult(country: string): geoip.Lookup {
   return {
@@ -43,7 +51,7 @@ function makeGeoResult(country: string): geoip.Lookup {
 }
 
 // ---------------------------------------------------------------------------
-// AttributeResolver – resolveJurisdiction
+// AttributeResolver - resolveJurisdiction
 // ---------------------------------------------------------------------------
 describe("AttributeResolver.resolveJurisdiction", () => {
   let resolver: AttributeResolver;
@@ -62,7 +70,7 @@ describe("AttributeResolver.resolveJurisdiction", () => {
     expect(result).toBe("DE");
   });
 
-  it('returns "unknown" — not "US" — when geoip-lite has no record for the IP', async () => {
+  it('returns "unknown" - not "US" - when geoip-lite has no record for the IP', async () => {
     mockLookup.mockReturnValue(null);
 
     const result = await resolver.resolveJurisdiction("192.0.2.1");
@@ -122,9 +130,157 @@ describe("AttributeResolver.resolveJurisdiction", () => {
 });
 
 // ---------------------------------------------------------------------------
-// AttributeResolver.resolve() – jurisdiction propagation into UserAttributes
+// ABACService.evaluateAccess - nested logical expressions
 // ---------------------------------------------------------------------------
-describe("AttributeResolver.resolve – jurisdiction propagation", () => {
+describe("ABACService.evaluateAccess - nested logical expressions", () => {
+  let service: ABACService;
+
+  const resource: Resource = {
+    path: "/analytics/nested",
+    method: "GET",
+    service: "analytics",
+    dataClassification: "internal",
+  };
+
+  const nestedPolicy: ABACPolicy = {
+    id: "nested-logical-policy",
+    name: "Nested Logical Policy",
+    description: "Exercises nested AND/OR/NOT expression evaluation",
+    effect: "allow",
+    priority: 500,
+    enabled: true,
+    target: {
+      resources: [
+        { attribute: "service", operator: "equals", value: "analytics" },
+      ],
+    },
+    condition: {
+      operator: "and",
+      operands: [
+        { attribute: "roles", operator: "contains", value: "analyst" },
+        {
+          operator: "or",
+          operands: [
+            { attribute: "department", operator: "equals", value: "research" },
+            {
+              operator: "and",
+              operands: [
+                {
+                  operator: "not",
+                  operands: [
+                    {
+                      attribute: "jurisdiction",
+                      operator: "equals",
+                      value: "blocked",
+                    },
+                  ],
+                },
+                {
+                  attribute: "dataClassification",
+                  operator: "equals",
+                  value: "internal",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  beforeEach(() => {
+    service = new ABACService();
+    service.deletePolicy("analyst-access");
+    service.deletePolicy("sensitive-data-protection");
+    service.deletePolicy("consent-requirement");
+    service.addPolicy(nestedPolicy);
+    mockLookup.mockReset();
+  });
+
+  it("allows access when a three-level AND/OR/NOT expression is satisfied", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        department: "data-analytics",
+        jurisdiction: "US",
+      },
+      resource,
+    );
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.policy).toBe("nested-logical-policy");
+  });
+
+  it("denies access when the nested NOT expression fails", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        department: "data-analytics",
+        jurisdiction: "blocked",
+      },
+      resource,
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toContain("No applicable policies found");
+  });
+});
+
+describe("ABACService.evaluateAccess - default policy decisions", () => {
+  let service: ABACService;
+
+  beforeEach(() => {
+    service = new ABACService();
+    mockLookup.mockReset();
+  });
+
+  it("allows analysts to access internal analytics data with consent", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        department: "data-analytics",
+        jurisdiction: "US",
+      },
+      {
+        path: "/analytics",
+        method: "GET",
+        service: "analytics",
+        dataClassification: "internal",
+      },
+    );
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.policy).toBe("analyst-access");
+  });
+
+  it("denies sensitive data access without high clearance", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        clearanceLevel: "low",
+        jurisdiction: "US",
+      },
+      {
+        path: "/analytics/sensitive",
+        method: "GET",
+        service: "analytics",
+        dataClassification: "sensitive",
+      },
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.policy).toBe("sensitive-data-protection");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AttributeResolver.resolve() - jurisdiction propagation into UserAttributes
+// ---------------------------------------------------------------------------
+describe("AttributeResolver.resolve - jurisdiction propagation", () => {
   let resolver: AttributeResolver;
 
   const baseResource = {
@@ -198,9 +354,9 @@ describe("AttributeResolver.resolve – jurisdiction propagation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// ABACService.evaluateAccess() – geo-based ABAC policy decisions
+// ABACService.evaluateAccess() - geo-based ABAC policy decisions
 // ---------------------------------------------------------------------------
-describe("ABACService.evaluateAccess – geo-based policy decisions", () => {
+describe("ABACService.evaluateAccess - geo-based policy decisions", () => {
   let service: ABACService;
 
   const resource = {
@@ -231,7 +387,7 @@ describe("ABACService.evaluateAccess – geo-based policy decisions", () => {
     expect(decision.context.userAttributes.jurisdiction).toBe("DE");
   });
 
-  it('resolves an unknown IP to "unknown" — never "US" by default', async () => {
+  it('resolves an unknown IP to "unknown" - never "US" by default', async () => {
     mockLookup.mockReturnValue(null);
 
     const userAttrs: UserAttributes = {
