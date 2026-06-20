@@ -77,7 +77,10 @@ impl DpAnalyticsContract {
     pub fn init(env: Env, admin: Address, max_epsilon: i128) -> Result<(), DpError> {
         admin.require_auth();
 
-        if env.storage().instance().has(&DpDataKey::Initialized) {
+        if env.storage().instance().has(&DpDataKey::Initialized)
+            || env.storage().instance().has(&DpDataKey::Admin)
+            || env.storage().instance().has(&DpDataKey::MaxEpsilon)
+        {
             return Err(DpError::AlreadyInitialized);
         }
 
@@ -246,5 +249,43 @@ mod test {
             .try_apply_noise(&1_000_000, &1000, &10000, &seed)
             .is_ok());
         assert_eq!(client.get_privacy_loss(), 1000);
+    }
+
+    #[test]
+    fn test_init_rejects_legacy_initialized_storage_without_sentinel() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, DpAnalyticsContract);
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let legacy_admin = Address::generate(&env);
+        env.as_contract(&contract_id, || {
+            env.storage()
+                .instance()
+                .set(&DpDataKey::Admin, &legacy_admin);
+            env.storage()
+                .instance()
+                .set(&DpDataKey::MaxEpsilon, &10_000i128);
+            env.storage()
+                .instance()
+                .set(&DpDataKey::UsedEpsilon, &0i128);
+        });
+
+        let attacker = Address::generate(&env);
+        assert_contract_error(client.try_init(&attacker, &1), DpError::AlreadyInitialized);
+
+        let stored_admin: Address = env.as_contract(&contract_id, || {
+            env.storage().instance().get(&DpDataKey::Admin).unwrap()
+        });
+        let stored_max_epsilon: i128 = env.as_contract(&contract_id, || {
+            env.storage()
+                .instance()
+                .get(&DpDataKey::MaxEpsilon)
+                .unwrap()
+        });
+
+        assert_eq!(stored_admin, legacy_admin);
+        assert_eq!(stored_max_epsilon, 10_000);
     }
 }
