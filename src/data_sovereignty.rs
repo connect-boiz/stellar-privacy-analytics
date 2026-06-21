@@ -166,6 +166,6 @@ mod test {
         let owner = Address::generate(&env);
         let cid = String::from_str(&env, "QmHash123...");
 
-        assert!(client.register_data(&owner, &cid).is_ok());
+        client.register_data(&owner, &cid);
     }
 }

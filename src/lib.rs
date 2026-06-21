@@ -50,7 +50,7 @@ impl ZkVerificationContract {
             .get(&user_id)
             .unwrap_or_else(|| Map::new(&env));
 
-        if user_verifications.has(circuit_id.clone()) {
+        if user_verifications.contains_key(circuit_id.clone()) {
             return Err(Error::AlreadyVerified);
         }
 
