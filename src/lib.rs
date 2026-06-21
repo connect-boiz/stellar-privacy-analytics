@@ -2,7 +2,7 @@ pub mod data_sovereignty;
 pub mod laplace_noise;
 
 use soroban_sdk::{
-    contracterror, contractimpl, vec, Address, BytesN, Env, IntoVal, Map, Symbol, Vec,
+    contract, contracterror, contractimpl, Address, Bytes, BytesN, Env, Map, Symbol, Vec,
 };
 
 #[contracterror]
@@ -15,7 +15,16 @@ pub enum Error {
     UnknownCircuit = 4,
 }
 
+#[contract]
 pub struct ZkVerificationContract;
+
+fn proof_payload(env: &Env, public_inputs: &Vec<i128>) -> Bytes {
+    let mut payload = Bytes::new(env);
+    for input in public_inputs.iter() {
+        payload.append(&Bytes::from_slice(env, &input.to_be_bytes()));
+    }
+    payload
+}
 
 #[contractimpl]
 impl ZkVerificationContract {
@@ -29,8 +38,7 @@ impl ZkVerificationContract {
     ) -> Result<(), Error> {
         provider.require_auth();
 
-        let expected_proof_data = (circuit_id.clone(), public_inputs.clone());
-        let expected_proof = env.crypto().sha256(&expected_proof_data.into_val(&env));
+        let expected_proof = env.crypto().sha256(&proof_payload(&env, &public_inputs));
 
         if expected_proof != proof {
             return Err(Error::InvalidProof);
@@ -70,6 +78,7 @@ impl ZkVerificationContract {
 mod test {
     use super::*;
     use soroban_sdk::testutils::{Address as _, BytesN as _};
+    use soroban_sdk::vec;
 
     #[test]
     fn test_valid_proof_verification() {
@@ -84,8 +93,7 @@ mod test {
         let circuit_id = Symbol::new(&env, "age_gt_18");
         let public_inputs = vec![&env, 18];
 
-        let proof_data = (circuit_id.clone(), public_inputs.clone());
-        let proof = env.crypto().sha256(&proof_data.into_val(&env));
+        let proof = env.crypto().sha256(&proof_payload(&env, &public_inputs));
 
         client.verify_proof(&provider, &user_id, &circuit_id, &public_inputs, &proof);
 
@@ -132,8 +140,9 @@ mod test {
         let public_inputs_for_proof = vec![&env, 18];
         let public_inputs_for_call = vec![&env, 21];
 
-        let proof_data = (circuit_id.clone(), public_inputs_for_proof.clone());
-        let proof = env.crypto().sha256(&proof_data.into_val(&env));
+        let proof = env
+            .crypto()
+            .sha256(&proof_payload(&env, &public_inputs_for_proof));
 
         client.verify_proof(
             &provider,
@@ -158,8 +167,7 @@ mod test {
         let circuit_id = Symbol::new(&env, "age_gt_18");
         let public_inputs = vec![&env, 18];
 
-        let proof_data = (circuit_id.clone(), public_inputs.clone());
-        let proof = env.crypto().sha256(&proof_data.into_val(&env));
+        let proof = env.crypto().sha256(&proof_payload(&env, &public_inputs));
 
         client.verify_proof(&provider, &user_id, &circuit_id, &public_inputs, &proof);
         client.verify_proof(&provider, &user_id, &circuit_id, &public_inputs, &proof);

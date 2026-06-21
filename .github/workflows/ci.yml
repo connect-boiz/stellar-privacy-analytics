@@ -49,9 +49,6 @@ jobs:
               - 'package.json'
             contracts:
               - 'contracts/**'
-              - 'Cargo.toml'
-              - '**/Cargo.toml'
-              - '**/*.rs'
             service-discovery:
               - 'service-discovery-dashboard/**'
               - 'package.json'
@@ -179,8 +176,6 @@ jobs:
       always() &&
       !cancelled() &&
       (needs.changes.outputs.contracts == 'true' ||
-       needs.changes.outputs.rust == 'true' ||
-       needs.changes.outputs.ci == 'true' ||
        (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
