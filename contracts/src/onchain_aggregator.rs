@@ -227,6 +227,12 @@ impl OnChainAggregator {
             }
         }
 
+        // TOCTOU fix: Verify all expected data points were found
+        let expected_count = request.data_points.len() as u32;
+        if participants_count != expected_count {
+            return Err(AggregatorError::DataPointNotFound);
+        }
+
         // Perform aggregation based on operation
         let encrypted_result = match request.operation {
             AggregationOperation::Sum => Self::perform_sum(&env, &encrypted_values)?,
