@@ -21,6 +21,7 @@ hmac = "0.12"
 rand = { version = "0.8", features = ["std_rng"] }
 
 [dev-dependencies]
+derive_arbitrary = "=1.3.2"
 soroban-sdk = { version = "20.0.0", features = ["testutils"] }
 
 [profile.release]
