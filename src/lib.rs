@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), no_std)]
+
 pub mod data_sovereignty;
 pub mod laplace_noise;
 
