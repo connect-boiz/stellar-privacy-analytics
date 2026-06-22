@@ -552,7 +552,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                         <button
                           onClick={() => removeFile(uploadFile.id)}
                           className="p-1 text-gray-400 hover:text-red-600 transition-colors"
@@ -565,9 +565,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 )}
               </div>
             ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

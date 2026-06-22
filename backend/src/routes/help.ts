@@ -1058,8 +1058,8 @@ router.get('/quickstart', asyncHandler(async (req: Request, res: Response) => {
         action: 'POST /auth/register',
         example: {
           email: 'user@example.com',
-          password: 'SecurePass123!',
-          confirmPassword: 'SecurePass123!'
+          password: 'your-password',
+          confirmPassword: 'your-password'
         }
       },
       {
@@ -1069,7 +1069,7 @@ router.get('/quickstart', asyncHandler(async (req: Request, res: Response) => {
         action: 'POST /auth/login',
         example: {
           email: 'user@example.com',
-          password: 'SecurePass123!'
+          password: 'your-password'
         }
       },
       {

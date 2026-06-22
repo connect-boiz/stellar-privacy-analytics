@@ -93,17 +93,20 @@ export const FieldControls: React.FC<FieldControlsProps> = ({
             <input
               type="number"
               value={field.constraints.max || ''}
-              onChange={(e) => onUpdate({ 
-                constraints: { 
-                  ...field.constraints, 
-                  max: e.target.value ? parseInt(e.target.value) : undefined 
-                }
+              onChange={(e) => {
+                const value = e.target.value ? parseInt(e.target.value) : undefined;
+                onUpdate({ 
+                  constraints: { 
+                    ...field.constraints, 
+                    max: value 
+                  }
+                });
               }}
               className="w-full px-2 py-1 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Maximum value"
             />
           </div>
-        </>
+        </div>
       )}
       
       {field.type === 'boolean' && (
@@ -116,8 +119,8 @@ export const FieldControls: React.FC<FieldControlsProps> = ({
               className="w-4 h-4"
             />
             <span className="text-sm text-gray-600">Required</span>
-          </div>
-        </>
+          </label>
+        </div>
       )}
       
       {field.type === 'string' && (

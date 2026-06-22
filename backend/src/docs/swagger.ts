@@ -193,8 +193,8 @@ export const setupSwaggerDocumentation = (app: Express): void => {
                     mode: 'raw',
                     raw: JSON.stringify({
                       email: 'user@example.com',
-                      password: 'SecurePass123!',
-                      confirmPassword: 'SecurePass123!'
+                      password: 'your-password',
+                      confirmPassword: 'your-password'
                     }, null, 2)
                   },
                   url: {
@@ -218,7 +218,7 @@ export const setupSwaggerDocumentation = (app: Express): void => {
                     mode: 'raw',
                     raw: JSON.stringify({
                       email: 'user@example.com',
-                      password: 'SecurePass123!'
+                      password: 'your-password'
                     }, null, 2)
                   },
                   url: {

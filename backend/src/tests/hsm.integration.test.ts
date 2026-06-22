@@ -160,8 +160,8 @@ describe('HSM Integration Tests', () => {
     // Create HSM service with mock HTTP client
     const config: HSMConfig = {
       endpoint: 'https://mock-hsm:8443',
-      apiKey: 'test-key',
-      apiSecret: 'test-secret',
+      apiKey: 'test-api-key',
+      apiSecret: 'test-api-secret',
       clientId: 'test-client'
     };
 

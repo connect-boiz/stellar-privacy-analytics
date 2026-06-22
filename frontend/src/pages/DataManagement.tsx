@@ -309,8 +309,8 @@ export const DataManagement: React.FC = () => {
                     <>
                       <Button variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => exportDatasets([dataset], "json")}
                         className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                         title="Download dataset"

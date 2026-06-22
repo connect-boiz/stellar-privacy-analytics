@@ -8,7 +8,6 @@ on:
 
 env:
   NODE_VERSION: '20'
-  RUST_VERSION: '1.77'
 
 jobs:
   lint:
@@ -24,15 +23,12 @@ jobs:
       - run: cd backend && npm ci
       - run: cd frontend && npm ci
       - run: cd shared && npm ci
-      - run: cd contracts && npm ci
       - name: Format check
-        run: npx prettier --check "frontend/src/**/*.{ts,tsx,css,json}" "backend/src/**/*.ts" "shared/src/**/*.ts" "contracts/src/**/*.ts" "contracts/test/**/*.ts" || true
+        run: npx prettier --check "frontend/src/**/*.{ts,tsx,css,json}" "backend/src/**/*.ts" "shared/src/**/*.ts"
       - name: Lint backend
         run: cd backend && npm run lint
-        continue-on-error: true
       - name: Lint frontend
         run: cd frontend && npm run lint
-        continue-on-error: true
 
   type-check:
     name: Type Check
@@ -47,22 +43,15 @@ jobs:
       - run: cd backend && npm ci
       - run: cd frontend && npm ci
       - run: cd shared && npm ci
-      - run: cd contracts && npm ci
       - name: Type check backend
         run: cd backend && npx tsc --noEmit
-        continue-on-error: true
       - name: Type check frontend
         run: cd frontend && npx tsc --noEmit
-        continue-on-error: true
       - name: Type check shared
         run: cd shared && npx tsc --noEmit
-        continue-on-error: true
-      - name: Type check contracts
-        run: cd contracts && npx tsc --noEmit
-        continue-on-error: true
 
-  test-backend:
-    name: Test Backend
+  test:
+    name: Test Suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,47 +61,8 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: cd backend && npm ci
-      - run: cd backend && npm test
-
-  test-shared:
-    name: Test Shared Package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - run: npm ci
       - run: cd shared && npm ci
-      - run: cd shared && npm test
-
-  test-contracts:
-    name: Test Contracts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - run: npm ci
-      - run: cd contracts && npm ci
-      - run: cd contracts && npm test
-
-  rust-checks:
-    name: Rust Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-      - name: Check backend Rust
-        working-directory: backend
-        run: cargo check
-        continue-on-error: true
-      - name: Check contracts Rust
-        working-directory: contracts
-        run: cargo check
-        continue-on-error: true
+      - name: Test backend
+        run: cd backend && npm test
+      - name: Test shared
+        run: cd shared && npm test

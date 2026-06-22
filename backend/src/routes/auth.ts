@@ -23,7 +23,7 @@ router.post('/login', [
   validateRequest,
 ], asyncHandler(async (_req: Request, res: Response) => {
   res.json({
-    token: 'temp-jwt-token',
+    token: 'placeholder-token',
     user: { id: 'temp-user-id', email: 'user@example.com' },
   });
 }));

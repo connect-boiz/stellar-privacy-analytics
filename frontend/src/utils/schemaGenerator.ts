@@ -730,7 +730,7 @@ fn main() {
 }
       `,
       'tests/integration_tests.rs': this.generateRustTests(schema),
-      'README.md`: `
+      'README.md': `
 # ${schema.name} ZK Schema Validator
 
 Zero-knowledge schema validation for ${schema.description || 'data privacy applications'}.

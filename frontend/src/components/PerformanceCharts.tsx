@@ -363,7 +363,7 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
           <div className="flex items-center justify-between">
             <span>
               Showing {sampledData.length.toLocaleString()} of {data.length.toLocaleString()} points
-              (sampled {data.length / sampledData.length:.1f}x)
+              (sampled {(data.length / sampledData.length).toFixed(1)}x)
             </span>
             <label className="flex items-center space-x-1">
               <input

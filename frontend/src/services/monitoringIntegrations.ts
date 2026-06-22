@@ -666,7 +666,7 @@ export class MonitoringIntegrations {
       },
       body: new URLSearchParams({
         username: 'admin',
-        password: 'changeme'
+        password: process.env.MONITORING_PASSWORD || ''
       })
     });
     

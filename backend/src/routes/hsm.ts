@@ -335,14 +335,14 @@ router.get('/audit/integrity', async (req: Request, res: Response) => {
       success: true,
       data: integrity
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Failed to verify audit integrity:', error);
     res.status(500).json({
       error: 'Failed to verify audit integrity',
       message: error.message
     });
   }
-);
+});
 
 // Export audit log (CSV/JSON)
 router.get('/audit/export',
@@ -441,7 +441,7 @@ router.get('/master-key/status', async (req: Request, res: Response) => {
       message: error.message
     });
   }
-);
+});
 
 // List all master keys
 router.get('/master-keys', async (req: Request, res: Response) => {
@@ -461,7 +461,7 @@ router.get('/master-keys', async (req: Request, res: Response) => {
       message: error.message
     });
   }
-);
+});
 
 // Clear data key cache
 router.post('/cache/clear', async (req: Request, res: Response) => {
@@ -487,6 +487,6 @@ router.post('/cache/clear', async (req: Request, res: Response) => {
       message: error.message
     });
   }
-);
+});
 
 export default router;

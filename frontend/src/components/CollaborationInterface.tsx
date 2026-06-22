@@ -79,7 +79,7 @@ const INITIAL_STATE: CollabState = {
   ],
   messages: [
     { id: 'm1', userId: 'u1', name: 'Alice', text: 'Starting the privacy analysis.', timestamp: Date.now() - 60000 },
-    { id: 'm2', userId: 'u2', name: 'Bob', text: 'I'll handle the encryption dimension.', timestamp: Date.now() - 30000 },
+    { id: 'm2', userId: 'u2', name: 'Bob', text: "I'll handle the encryption dimension.", timestamp: Date.now() - 30000 },
   ],
   history: [
     { id: 'h1', userId: 'u1', name: 'Alice', description: 'Updated privacy level to High', timestamp: Date.now() - 120000 },
