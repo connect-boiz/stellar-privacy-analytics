@@ -69,6 +69,7 @@ describe('DistributedCacheManager', () => {
   });
 
   afterEach(async () => {
+    await cacheManager.clear();
     await cacheManager.shutdown();
   });
 

@@ -1,6 +1,7 @@
 import { Pool, PoolClient, PoolConfig } from 'pg';
 import { logger } from '../utils/logger';
 import { Counter, Gauge, Histogram } from 'prom-client';
+import { getErrorMessage } from '../utils/errorHandler';
 
 // Performance metrics
 const dbQueryDuration = new Histogram({
@@ -154,7 +155,7 @@ export class DatabaseService {
       dbErrorsTotal.inc({ error_type: 'query' });
       
       logger.error('Database query error', { 
-        error: error.message, 
+        error: getErrorMessage(error),
         query: text.substring(0, 100),
         traceId 
       });
@@ -191,7 +192,7 @@ export class DatabaseService {
       dbErrorsTotal.inc({ error_type: 'transaction' });
       
       logger.error('Database transaction error', { 
-        error: error.message, 
+        error: getErrorMessage(error),
         traceId 
       });
       

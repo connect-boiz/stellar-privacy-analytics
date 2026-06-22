@@ -47,7 +47,7 @@ describe('Privacy API Endpoints', () => {
         .put('/api/privacy/settings')
         .send({ dataRetentionDays: 9999 });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
     });
   });
 });

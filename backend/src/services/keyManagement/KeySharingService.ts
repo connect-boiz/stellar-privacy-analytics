@@ -335,7 +335,7 @@ export class KeySharingService extends EventEmitter {
       const sharesToReconstruct = activeShares.slice(0, threshold).map(d => ({
         shareId: d.shareId,
         holder: d.holder,
-        share: d.encryptedShare
+        encryptedShare: d.encryptedShare
       }));
 
       // Reconstruct the key

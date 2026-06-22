@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { 
   AESEncryption, 
   StreamingDecryption, 
@@ -253,10 +254,28 @@ describe('Encrypted Blob Storage', () => {
     test('should complete full encryption and storage flow', async () => {
       // Mock IPFS upload/download for testing
       const mockCid = 'QmMock123456';
+      let storedCiphertext: Buffer | null = null;
+      let storedIv: Buffer | null = null;
+      let storedAuthTag: Buffer | null = null;
+      const origEncrypt = AESEncryption.encrypt;
+      AESEncryption.encrypt = (data: Buffer, key: Buffer, keyId?: string) => {
+        const result = origEncrypt.call(AESEncryption, data, key, keyId);
+        storedIv = result.iv;
+        storedAuthTag = result.authTag;
+        return result;
+      };
       const mockUpload = jest.spyOn(storageAdapter as any, 'uploadToIPFS')
-        .mockResolvedValue(mockCid);
+        .mockImplementation(async (...args: unknown[]) => {
+          storedCiphertext = args[0] as Buffer;
+          return mockCid;
+        });
       const mockDownload = jest.spyOn(storageAdapter as any, 'downloadFromIPFS')
-        .mockResolvedValue(Buffer.from('mock encrypted data'));
+        .mockImplementation(async () => {
+          if (!storedCiphertext || !storedIv || !storedAuthTag) {
+            return Buffer.alloc(0);
+          }
+          return Buffer.concat([storedIv, storedAuthTag, storedCiphertext]);
+        });
       
       const testData = Buffer.from('End-to-end test data');
       const datasetId = 'test-dataset-e2e';
@@ -278,6 +297,7 @@ describe('Encrypted Blob Storage', () => {
       
       expect(downloadResult.integrity.verified).toBe(true);
       
+      AESEncryption.encrypt = origEncrypt;
       mockUpload.mockRestore();
       mockDownload.mockRestore();
     });

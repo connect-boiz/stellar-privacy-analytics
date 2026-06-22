@@ -141,7 +141,7 @@ export class KeyBackupService extends EventEmitter {
       const serialized = JSON.stringify(keyData);
 
       // Compress if enabled
-      let data = Buffer.from(serialized);
+      let data: Buffer = Buffer.from(serialized);
       if (this.config.compressionEnabled) {
         data = await this.compress(data);
       }

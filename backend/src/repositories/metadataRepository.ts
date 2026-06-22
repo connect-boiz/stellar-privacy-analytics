@@ -11,7 +11,7 @@ export interface SanitizedMetadata {
   processingTime: number;
   processedAt: Date;
   version: number;
-  status: 'processed' | 'failed' | 'pending';
+  status: 'processed' | 'failed' | 'pending' | 'deleted' | 'expired';
   workerId?: string;
   retryCount: number;
 }

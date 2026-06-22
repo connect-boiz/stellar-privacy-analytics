@@ -38,7 +38,7 @@ export class AESEncryption {
    */
   static encrypt(data: Buffer, key: Buffer, keyId?: string): EncryptionResult {
     const iv = crypto.randomBytes(this.IV_LENGTH);
-    const cipher = crypto.createCipher(this.ALGORITHM, key);
+    const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
     cipher.setAAD(Buffer.from(keyId || ''));
     
     const encryptedData = Buffer.concat([
@@ -66,7 +66,7 @@ export class AESEncryption {
     authTag: Buffer, 
     keyId?: string
   ): DecryptionResult {
-    const decipher = crypto.createDecipher(this.ALGORITHM, key);
+    const decipher = crypto.createDecipheriv(this.ALGORITHM, key, iv);
     decipher.setAAD(Buffer.from(keyId || ''));
     decipher.setAuthTag(authTag);
     
@@ -140,7 +140,7 @@ export class StreamingDecryption {
   private chunks: Buffer[] = [];
   
   constructor(key: Buffer, iv: Buffer, authTag: Buffer, keyId?: string) {
-    this.cipher = crypto.createDecipher('aes-256-gcm', key);
+    this.cipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     this.cipher.setAAD(Buffer.from(keyId || ''));
     this.cipher.setAuthTag(authTag);
   }

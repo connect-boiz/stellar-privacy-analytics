@@ -282,7 +282,7 @@ export class AuditService extends EventEmitter {
     
     try {
       const logContent = require('fs').readFileSync(this.auditLogPath, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const lines = logContent.split('\n').filter((line: string) => line.trim());
 
       for (const line of lines) {
         try {
@@ -372,7 +372,7 @@ export class AuditService extends EventEmitter {
 
     try {
       const logContent = require('fs').readFileSync(this.auditLogPath, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const lines = logContent.split('\n').filter((line: string) => line.trim());
 
       for (const line of lines) {
         totalRecords++;
@@ -398,12 +398,12 @@ export class AuditService extends EventEmitter {
         invalidRecords,
         errors
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         valid: false,
         totalRecords: 0,
         invalidRecords: 0,
-        errors: [`Failed to read audit log: ${error.message}`]
+        errors: [`Failed to read audit log: ${(error as Error).message}`]
       };
     }
   }
