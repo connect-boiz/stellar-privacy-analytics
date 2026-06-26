@@ -377,10 +377,7 @@ impl DataSovereigntyAccessControl {
             .set(&Symbol::new(&env, ACCESS_KEYS_KEY), &access_keys);
 
         env.events().publish(
-            (
-                Symbol::new(&env, "access_key_created"),
-                resource_id.clone(),
-            ),
+            (Symbol::new(&env, "access_key_created"), resource_id.clone()),
             (key_id.clone(), holder.clone(), expires_at),
         );
 

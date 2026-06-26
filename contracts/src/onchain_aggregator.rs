@@ -92,6 +92,8 @@ pub struct BatchProcessing {
     pub status: String,
     pub created_at: u64,
     pub completed_at: Option<u64>,
+    pub succeeded_requests: Vec<BytesN<32>>,
+    pub failed_requests: Vec<BytesN<32>>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -292,6 +294,10 @@ impl OnChainAggregator {
     }
 
     /// Batch process multiple aggregation requests
+    /// Tracks succeeded and failed requests individually.
+    /// Failed requests are set to "failed" status so they are not left in "processing".
+    /// Batch status is set to "completed" only if all requests succeed;
+    /// otherwise it is set to "partial".
     pub fn batch_process(
         env: Env,
         request_ids: Vec<BytesN<32>>,
@@ -321,25 +327,46 @@ impl OnChainAggregator {
             status: String::from_str(&env, "processing"),
             created_at: env.ledger().timestamp(),
             completed_at: None,
+            succeeded_requests: Vec::new(&env),
+            failed_requests: Vec::new(&env),
         };
 
-        // Store batch
+        // Store initial batch
         env.storage().persistent().set(&batch_id, &batch);
 
-        // Process each request
+        // Process each request, tracking successes and failures
         let mut certificate_ids = Vec::new(&env);
+        let mut succeeded = Vec::new(&env);
+        let mut failed = Vec::new(&env);
+
         for request_id in request_ids.iter() {
-            if let Ok(certificate_id) =
-                Self::process_aggregation(env.clone(), request_id.clone(), processor.clone())
-            {
-                certificate_ids.push_back(certificate_id);
+            match Self::process_aggregation(env.clone(), request_id.clone(), processor.clone()) {
+                Ok(certificate_id) => {
+                    certificate_ids.push_back(certificate_id);
+                    succeeded.push_back(request_id);
+                }
+                Err(_) => {
+                    // Mark the individual request as "failed" so it is not left in
+                    // "processing" status permanently.
+                    if let Some(mut request) = Self::get_aggregation_request(&env, &request_id) {
+                        request.status = String::from_str(&env, "failed");
+                        env.storage().persistent().set(&request_id, &request);
+                    }
+                    failed.push_back(request_id);
+                }
             }
         }
 
-        // Update batch status
+        // Update batch status and store final result
         let mut updated_batch = batch;
-        updated_batch.status = String::from_str(&env, "completed");
+        if failed.is_empty() {
+            updated_batch.status = String::from_str(&env, "completed");
+        } else {
+            updated_batch.status = String::from_str(&env, "partial");
+        }
         updated_batch.completed_at = Some(env.ledger().timestamp());
+        updated_batch.succeeded_requests = succeeded;
+        updated_batch.failed_requests = failed;
         env.storage().persistent().set(&batch_id, &updated_batch);
 
         Ok(batch_id)

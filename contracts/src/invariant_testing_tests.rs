@@ -1,10 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use soroban_sdk::{
-        testutils::Address as _,
-        Env, Vec,
-    };
     use crate::invariant_testing::InvariantTesting;
+    use soroban_sdk::{testutils::Address as _, Env, Vec};
 
     #[test]
     fn test_noise_invariant_positive() {

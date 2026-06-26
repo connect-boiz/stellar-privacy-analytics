@@ -21,7 +21,7 @@
 use super::upgradeable_proxy::{
     ProxyError, UpgradeableProxy, UpgradeableProxyClient, MIN_UPGRADE_DELAY,
 };
-use soroban_sdk::testutils::Address as _;
+use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{Address, BytesN, Env};
 
 fn new_env() -> Env {
@@ -96,7 +96,9 @@ fn initiate_upgrade_admin_succeeds_and_records_pending() {
     let new_impl = BytesN::from_array(&env, &[1u8; 32]);
     client.initiate_upgrade(&new_impl, &admin);
 
-    let pending = client.pending_upgrade().expect("pending upgrade must exist");
+    let pending = client
+        .pending_upgrade()
+        .expect("pending upgrade must exist");
     assert_eq!(pending.new_implementation, new_impl);
     assert_eq!(pending.old_implementation, impl_addr);
     assert_eq!(pending.initiated_at, env.ledger().timestamp());
@@ -150,7 +152,8 @@ fn complete_upgrade_before_delay_rejected() {
 
     // Advance less than the current upgrade delay.
     let delay = client.upgrade_delay();
-    env.ledger().set_timestamp(env.ledger().timestamp() + delay.saturating_sub(1));
+    env.ledger()
+        .set_timestamp(env.ledger().timestamp() + delay.saturating_sub(1));
 
     let res = client.try_complete_upgrade(&admin);
     assert_eq!(res, Err(Ok(ProxyError::UpgradeNotReady)));
@@ -165,7 +168,8 @@ fn complete_upgrade_after_delay_succeeds_and_clears_pending() {
     client.initiate_upgrade(&new_impl, &admin);
 
     let delay = client.upgrade_delay();
-    env.ledger().set_timestamp(env.ledger().timestamp() + delay + 1);
+    env.ledger()
+        .set_timestamp(env.ledger().timestamp() + delay + 1);
 
     client.complete_upgrade(&admin);
 
@@ -185,7 +189,8 @@ fn complete_upgrade_non_admin_rejected() {
     client.initiate_upgrade(&new_impl, &admin);
 
     let delay = client.upgrade_delay();
-    env.ledger().set_timestamp(env.ledger().timestamp() + delay + 1);
+    env.ledger()
+        .set_timestamp(env.ledger().timestamp() + delay + 1);
 
     let attacker = Address::generate(&env);
     let res = client.try_complete_upgrade(&attacker);
@@ -283,7 +288,7 @@ fn transfer_admin_old_admin_loses_power_new_admin_gains_it() {
 
     // New admin can now initiate an upgrade.
     let new_attempt = client.try_initiate_upgrade(&new_impl, &new_admin);
-    assert_eq!(new_attempt, Ok(()));
+    assert_eq!(new_attempt, Ok(Ok(())));
     assert!(client.pending_upgrade().is_some());
 }
 
@@ -340,10 +345,13 @@ fn view_functions_reject_uninitialized_contract() {
     let contract_id = env.register(UpgradeableProxy, ());
     let client = UpgradeableProxyClient::new(&env, &contract_id);
 
-    assert_eq!(client.try_implementation(), Err(Ok(ProxyError::NotInitialized)));
+    assert_eq!(
+        client.try_implementation(),
+        Err(Ok(ProxyError::NotInitialized))
+    );
     assert_eq!(client.try_admin(), Err(Ok(ProxyError::NotInitialized)));
     // upgrade_delay has a default fallback so it must succeed even pre-init.
     assert!(client.upgrade_delay() >= MIN_UPGRADE_DELAY);
     // pending_upgrade returns Ok(None) when there is nothing pending.
-    assert_eq!(client.pending_upgrade(), Ok(None));
+    assert_eq!(client.pending_upgrade(), None);
 }
