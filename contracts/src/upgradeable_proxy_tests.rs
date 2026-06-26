@@ -405,7 +405,7 @@ fn host_rejects_every_admin_action_without_signature() {
         address: &admin,
         invoke: &MockAuthInvoke {
             contract: &contract_id,
-            fn_name: &Symbol::new(&env, "initialize"),
+            fn_name: "initialize",
             args: (impl_addr.clone(), admin.clone()).into_val(&env),
             sub_invokes: &[],
         },
@@ -476,7 +476,7 @@ fn selective_auths_allow_admin_path_and_block_attacker_path() {
             address: &admin,
             invoke: &MockAuthInvoke {
                 contract: &contract_id,
-                fn_name: &Symbol::new(&env, "initialize"),
+                fn_name: "initialize",
                 args: (impl_initial.clone(), admin.clone()).into_val(&env),
                 sub_invokes: &[],
             },
@@ -485,7 +485,7 @@ fn selective_auths_allow_admin_path_and_block_attacker_path() {
             address: &admin,
             invoke: &MockAuthInvoke {
                 contract: &contract_id,
-                fn_name: &Symbol::new(&env, "initiate_upgrade"),
+                fn_name: "initiate_upgrade",
                 args: (impl_target.clone(), admin.clone()).into_val(&env),
                 sub_invokes: &[],
             },

@@ -1,11 +1,13 @@
 #[cfg(test)]
 mod tests {
+    use crate::access_control::{
+        DataSovereigntyAccessControl, DataSovereigntyAccessControlClient, PermissionType,
+    };
     use soroban_sdk::{
         contract, contractimpl,
-        testutils::{Address as _, BytesN as _, Ledger},
-        Address, BytesN, Env, Symbol, Vec,
+        testutils::{Address as _, BytesN as _, Ledger, MockAuth, MockAuthInvoke},
+        Address, BytesN, Env, IntoVal, Symbol, Vec,
     };
-    use crate::access_control::{DataSovereigntyAccessControl, PermissionType};
 
     // --------------------------------------------------------------
     // Helper contract used by `test_check_access_is_callable_from_a_different_contract`
@@ -25,7 +27,13 @@ mod tests {
         /// and abort before any contract logic runs. Conversely, this
         /// test confirms current behavior: a contract is free to invoke
         /// `check_access` without having to satisfy the user signature.
-        fn check(
+        ///
+        /// Visibility: `pub` so the generated `AccessVerifierClient`
+        /// exposes it. (PR #320 originally wrote `fn check`, which the
+        /// `#[contractimpl]` macro skipped when generating the client —
+        /// the resulting `AccessVerifierClient` therefore had no public
+        /// `check` method, breaking every cross-contract test.)
+        pub fn check(
             env: Env,
             target: Address,
             user: Address,
@@ -34,7 +42,11 @@ mod tests {
         ) -> bool {
             let client =
                 crate::access_control::DataSovereigntyAccessControlClient::new(&env, &target);
-            client.check_access(&user, &resource_id, &required_permission) == Ok(true)
+            // The generated client unwraps `Result<bool, AccessControlError>`
+            // and returns `bool` directly. Comparing it to `Ok(true)` is a
+            // type error (and the SDK panics on contract errors rather
+            // than surfacing them as `Err`). Return the bool result as-is.
+            client.check_access(&user, &resource_id, &required_permission)
         }
     }
 
@@ -56,6 +68,7 @@ mod tests {
     #[test]
     fn test_register_resource() {
         let env = Env::default();
+        env.mock_all_auths();
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let resource_id = BytesN::<32>::random(&env);
@@ -77,6 +90,7 @@ mod tests {
     #[test]
     fn test_grant_and_revoke_access() {
         let env = Env::default();
+        env.mock_all_auths();
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let user = Address::generate(&env);
@@ -121,6 +135,7 @@ mod tests {
     #[test]
     fn test_access_key_creation() {
         let env = Env::default();
+        env.mock_all_auths();
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let holder = Address::generate(&env);
@@ -154,6 +169,7 @@ mod tests {
     #[test]
     fn test_permission_hierarchy() {
         let env = Env::default();
+        env.mock_all_auths();
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let user = Address::generate(&env);
@@ -223,20 +239,32 @@ mod tests {
     // The function MUST NOT call `*.require_auth()` because a composing
     // contract cannot satisfy the user's Stellar signature context.
     //
-    // Two complementary invariants are locked in below:
-    //   (a) `check_access` itself completes successfully in an auth-free
-    //       env (proves the function does not call require_auth).
-    //   (b) A separate contract invoking `check_access` from contract code
-    //       also completes successfully in an auth-free env (proves the
-    //       call is reachable cross-contract, not just directly).
+    // Three complementary invariants are locked in below:
+    //   (a) `check_access` itself completes successfully when caller-side
+    //       auth is not mocked (proves the function does not call
+    //       require_auth for the supplied user/account).
+    //   (b) The owner short-circuit branch of `check_access` is reachable
+    //       without caller-side auth.
+    //   (c) A separate contract invoking `check_access` from contract
+    //       code also completes successfully when caller-side auth is
+    //       not mocked (proves the call is reachable cross-contract,
+    //       not just directly).
     //
-    // If a future refactor reintroduces `require_auth()` on the
-    // `check_access` path, both tests fail at the host boundary before the
-    // contract logic runs, signaling the regression immediately.
+    // After `register_resource` / `grant_access` gained host-level
+    // `require_auth()`, the setup phase for tests (a) and (b) authorizes
+    // ONLY those mutating calls via `mock_auths`. The final `check_access`
+    // call has NO matching entry, so if a future refactor reintroduced
+    // `require_auth()` on `check_access`, the host boundary would reject
+    // the call before contract logic runs — signaling the regression
+    // immediately.
 
     #[test]
     fn test_check_access_succeeds_without_caller_signatures() {
-        // Deliberately NO `env.mock_all_auths()`.
+        // Setup mutates state, so the on-chain owner authenticate each
+        // step at the host boundary. We authorize ONLY the setup calls
+        // via `mock_auths`; the final `check_access` invocation below
+        // has NO matching entry. Its success proves check_access does
+        // not impose require_auth() on the caller.
         let env = Env::default();
 
         let admin = Address::generate(&env);
@@ -244,76 +272,150 @@ mod tests {
         let user = Address::generate(&env);
         let resource_id = BytesN::<32>::random(&env);
 
-        DataSovereigntyAccessControl::initialize(env.clone(), admin);
-        DataSovereigntyAccessControl::register_resource(
-            env.clone(),
-            resource_id.clone(),
-            owner,
-            false,
-            1,
-            Vec::new(&env),
-        )
-        .unwrap();
-        DataSovereigntyAccessControl::grant_access(
-            env.clone(),
-            resource_id.clone(),
-            user.clone(),
-            PermissionType::Read,
-            None,
-        )
-        .unwrap();
+        // Register the contract first so storage writes from setup
+        // land on the registered instance (direct-method calls would
+        // otherwise write to the env's placeholder contract-id
+        // storage, which is not visible to subsequent client calls).
+        let access_control_id = env.register(DataSovereigntyAccessControl, ());
+        let access_control_client =
+            DataSovereigntyAccessControlClient::new(&env, &access_control_id);
 
-        // No auth mocked. If require_auth() were ever reintroduced on the
-        // check_access path, the host short-circuits this call.
-        let has_access = DataSovereigntyAccessControl::check_access(
-            env.clone(),
-            user,
-            resource_id,
-            PermissionType::Read,
-        )
-        .unwrap();
+        // Authorize ONLY the data-setup calls. The `check_access`
+        // invocation below intentionally has no matching MockAuth entry
+        // — owner.require_auth() (in the mutators) is satisfied by
+        // these entries; check_access has no require_auth and so needs
+        // no entry.
+        env.mock_auths(&[
+            MockAuth {
+                address: &owner,
+                invoke: &MockAuthInvoke {
+                    contract: &access_control_id,
+                    fn_name: "register_resource",
+                    args: (
+                        resource_id.clone(),
+                        owner.clone(),
+                        false,
+                        1u32,
+                        Vec::<Address>::new(&env),
+                    )
+                        .into_val(&env),
+                    sub_invokes: &[],
+                },
+            },
+            MockAuth {
+                address: &owner,
+                invoke: &MockAuthInvoke {
+                    contract: &access_control_id,
+                    fn_name: "grant_access",
+                    args: (
+                        resource_id.clone(),
+                        user.clone(),
+                        PermissionType::Read,
+                        None::<u64>,
+                    )
+                        .into_val(&env),
+                    sub_invokes: &[],
+                },
+            },
+        ]);
+
+        access_control_client.initialize(&admin);
+        access_control_client.register_resource(
+            &resource_id,
+            &owner,
+            &false,
+            &1u32,
+            &Vec::new(&env),
+        );
+        access_control_client.grant_access(
+            &resource_id,
+            &user,
+            &PermissionType::Read,
+            &None::<u64>,
+        );
+
+        // No auth mocked for this call. If `require_auth()` were ever
+        // reintroduced on the `check_access` path, the host
+        // short-circuits this call before contract logic runs.
+        let has_access =
+            access_control_client.check_access(&user, &resource_id, &PermissionType::Read);
         assert!(has_access);
     }
 
     #[test]
     fn test_check_access_owner_path_succeeds_without_caller_signatures() {
-        // Exercises the owner short-circuit branch of `check_access`: when
-        // `user == resource_owner.owner` the function returns `Ok(true)`
-        // before consulting permission storage.
-        let env = Env::default(); // NO mock_all_auths().
+        // Exercises the owner short-circuit branch of `check_access`:
+        // when `user == resource_owner.owner` the function returns
+        // `Ok(true)` before consulting permission storage. We
+        // authorize only the `register_resource` setup call; the
+        // `check_access` call below has no matching entry, which
+        // proves `check_access` itself does not impose require_auth().
+        let env = Env::default();
 
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let resource_id = BytesN::<32>::random(&env);
 
-        DataSovereigntyAccessControl::initialize(env.clone(), admin);
-        DataSovereigntyAccessControl::register_resource(
-            env.clone(),
-            resource_id.clone(),
-            owner.clone(),
-            false,
-            1,
-            Vec::new(&env),
-        )
-        .unwrap();
+        // Register and route setup via the client so storage writes
+        // hit the registered instance.
+        let access_control_id = env.register(DataSovereigntyAccessControl, ());
+        let access_control_client =
+            DataSovereigntyAccessControlClient::new(&env, &access_control_id);
 
-        let allowed = DataSovereigntyAccessControl::check_access(
-            env.clone(),
-            owner,
-            resource_id,
-            PermissionType::Admin,
-        )
-        .unwrap();
+        env.mock_auths(&[MockAuth {
+            address: &owner,
+            invoke: &MockAuthInvoke {
+                contract: &access_control_id,
+                fn_name: "register_resource",
+                args: (
+                    resource_id.clone(),
+                    owner.clone(),
+                    false,
+                    1u32,
+                    Vec::<Address>::new(&env),
+                )
+                    .into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+
+        access_control_client.initialize(&admin);
+        access_control_client.register_resource(
+            &resource_id,
+            &owner,
+            &false,
+            &1u32,
+            &Vec::new(&env),
+        );
+
+        // No auth mocked for this call. The owner-short-circuit path
+        // succeeds only if `check_access` is auth-free.
+        let allowed =
+            access_control_client.check_access(&owner, &resource_id, &PermissionType::Admin);
         assert!(allowed);
     }
 
     #[test]
     fn test_check_access_is_callable_from_a_different_contract() {
-        // True cross-contract regression: define a tiny verifier contract,
-        // register it, and have IT call `check_access` on the access
-        // control contract. Runs without mock_all_auths() to prove
-        // `check_access` remains reachable from contract code without
-        // imposing any auth requirement on the caller (issue #294).
+        // True cross-contract regression: define a tiny verifier
+        // contract, register it, and have IT call `check_access` on
+        // the access-control contract. The setup phase uses
+        // selective `mock_auths()` entries to authorize only the
+        // data-preparation calls; the verification call through
+        // `verifier` has NO authorization entries, so it succeeds
+        // solely because `check_access` does not invoke
+        // `require_auth()` (issue #294). If `require_auth()` were
+        // ever reintroduced on `check_access`, the host boundary
+        // would reject the verifier's invocation before any contract
+        // logic runs — signaling the regression immediately.
+        //
+        // Storage isolation: setup MUST target the registered
+        // access-control contract's instance storage. Direct method
+        // calls (`Type::method(env, ...)`) write to the env's
+        // placeholder contract-id instance storage, which is NOT
+        // shared with the registered contract's storage. Registering
+        // contracts first and routing setup through the generated
+        // client keeps all writes against the same instance.
         let env = Env::default();
 
         let admin = Address::generate(&env);
@@ -321,29 +423,76 @@ mod tests {
         let user = Address::generate(&env);
         let resource_id = BytesN::<32>::random(&env);
 
-        DataSovereigntyAccessControl::initialize(env.clone(), admin);
-        DataSovereigntyAccessControl::register_resource(
-            env.clone(),
-            resource_id.clone(),
-            owner,
-            false,
-            1,
-            Vec::new(&env),
-        )
-        .unwrap();
-        DataSovereigntyAccessControl::grant_access(
-            env.clone(),
-            resource_id.clone(),
-            user.clone(),
-            PermissionType::Read,
-            None,
-        )
-        .unwrap();
-
+        // Register BOTH contracts so the cross-contract call below
+        // targets a real instance, not the placeholder key used by
+        // direct calls.
         let access_control_id = env.register(DataSovereigntyAccessControl, ());
         let verifier_id = env.register(AccessVerifier, ());
+
+        let access_control_client =
+            DataSovereigntyAccessControlClient::new(&env, &access_control_id);
         let verifier = AccessVerifierClient::new(&env, &verifier_id);
 
+        // Authorize ONLY the data-setup calls. The verifier.check
+        // call below is intentionally unauthorized so that it
+        // succeeds only because `check_access` itself does not
+        // enforce auth. The auth for register_resource and
+        // grant_access is keyed on `owner` (which now requires
+        // host-level signature per the contract's auth hardening);
+        // initialize does not require auth.
+        env.mock_auths(&[
+            MockAuth {
+                address: &owner,
+                invoke: &MockAuthInvoke {
+                    contract: &access_control_id,
+                    fn_name: "register_resource",
+                    args: (
+                        resource_id.clone(),
+                        owner.clone(),
+                        false,
+                        1u32,
+                        Vec::<Address>::new(&env),
+                    )
+                        .into_val(&env),
+                    sub_invokes: &[],
+                },
+            },
+            MockAuth {
+                address: &owner,
+                invoke: &MockAuthInvoke {
+                    contract: &access_control_id,
+                    fn_name: "grant_access",
+                    args: (
+                        resource_id.clone(),
+                        user.clone(),
+                        PermissionType::Read,
+                        None::<u64>,
+                    )
+                        .into_val(&env),
+                    sub_invokes: &[],
+                },
+            },
+        ]);
+
+        access_control_client.initialize(&admin);
+        access_control_client.register_resource(
+            &resource_id,
+            &owner,
+            &false,
+            &1u32,
+            &Vec::new(&env),
+        );
+        access_control_client.grant_access(
+            &resource_id,
+            &user,
+            &PermissionType::Read,
+            &None::<u64>,
+        );
+
+        // The verifier has zero authorizations, so if `check_access`
+        // ever required auth, this call would abort at the host
+        // boundary before contract logic runs. Coming back `true`
+        // from the verifier confirms the regression invariant holds.
         let allowed = verifier.check(
             &access_control_id,
             &user,
@@ -356,6 +505,7 @@ mod tests {
     #[test]
     fn test_ttl_expiration() {
         let env = Env::default();
+        env.mock_all_auths();
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let user = Address::generate(&env);

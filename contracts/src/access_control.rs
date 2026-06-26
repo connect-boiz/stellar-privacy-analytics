@@ -1,3 +1,34 @@
+//! `DataSovereigntyAccessControl` — Sovereignty-aware access control for
+//! Stellar resources.
+//!
+//! ## Authorization model (post-hardening, see PR #320)
+//!
+//! Every mutating entry point requires the relevant principal to
+//! provide a host-level Stellar signature on the transaction via
+//! `Address::require_auth()`. Per-resource mutators
+//! (`register_resource`, `grant_access`, `revoke_access`,
+//! `create_access_key`) require the resource `owner` to sign. This
+//! binds the on-chain resource identity to a real Stellar account and
+//! prevents a composing or relayer contract from spoofing the owner.
+//!
+//! The read-only verification surface (`check_access`) is intentionally
+//! `require_auth`-free: any contract on the network must be able to
+//! query whether a given user holds a given grant on a given resource
+//! without that user having to sign. See issue #294 for the regression
+//! tests that lock this invariant in.
+//!
+//! `initialize` and the protocol `admin` field follow a separate,
+//! pre-hardening trust model: `admin` is set once at deploy time and is
+//! not yet host-signed. Bringing `admin.require_auth()` into `initialize`
+//! is a deliberate follow-up so this PR stays in scope of #294 / #297.
+//!
+//! ## Identity/admin model
+//!
+//! The on-chain `admin` field distinguishes the deploy-time protocol
+//! admin from per-resource `owner` keys. Per-resource `owner`s are
+//! independent of `admin` and authorize every state mutation against
+//! their own resource.
+
 use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
@@ -124,16 +155,11 @@ impl DataSovereigntyAccessControl {
         multi_sig_threshold: u32,
         authorized_signers: Vec<Address>,
     ) -> Result<(), AccessControlError> {
-        let caller = env.current_contract_address();
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&Symbol::new(&env, "admin"))
-            .unwrap_or_else(|| caller);
-
-        if env.current_contract_address() != admin && !Self::is_authorized(&env, &owner) {
-            return Err(AccessControlError::Unauthorized);
-        }
+        // Host-level signature verification: the supplied owner must have
+        // signed this transaction. This binds the on-chain `owner` field
+        // to a real Stellar account so that the resource cannot be
+        // associated with a spoofed address.
+        owner.require_auth();
 
         if requires_multi_sig {
             if multi_sig_threshold < MIN_MULTI_SIG || multi_sig_threshold > MAX_MULTI_SIG {
@@ -194,10 +220,11 @@ impl DataSovereigntyAccessControl {
             .get(resource_id.clone())
             .ok_or(AccessControlError::ResourceNotFound)?;
 
-        let caller = env.current_contract_address();
-        if caller != resource_owner.owner && !Self::is_authorized(&env, &resource_owner.owner) {
-            return Err(AccessControlError::Unauthorized);
-        }
+        // Host-level signature verification: only the registered resource
+        // owner can grant new permissions. The owner identity was bound
+        // to a real Stellar account at register time, so this check
+        // enforces a real signature rather than relying on storage.
+        resource_owner.owner.require_auth();
 
         let expires_at = if let Some(ttl) = ttl_seconds {
             if ttl > MAX_TTL {
@@ -258,10 +285,9 @@ impl DataSovereigntyAccessControl {
             .get(resource_id.clone())
             .ok_or(AccessControlError::ResourceNotFound)?;
 
-        let caller = env.current_contract_address();
-        if caller != resource_owner.owner && !Self::is_authorized(&env, &resource_owner.owner) {
-            return Err(AccessControlError::Unauthorized);
-        }
+        // Host-level signature verification: only the registered resource
+        // owner can revoke previously granted permissions.
+        resource_owner.owner.require_auth();
 
         let mut permissions: Map<Address, Vec<AccessPermission>> = env
             .storage()
@@ -327,10 +353,9 @@ impl DataSovereigntyAccessControl {
             .get(resource_id.clone())
             .ok_or(AccessControlError::ResourceNotFound)?;
 
-        let caller = env.current_contract_address();
-        if caller != resource_owner.owner && !Self::is_authorized(&env, &resource_owner.owner) {
-            return Err(AccessControlError::Unauthorized);
-        }
+        // Host-level signature verification: only the registered resource
+        // owner can mint access keys for that resource.
+        resource_owner.owner.require_auth();
 
         let expires_at = if let Some(ttl) = ttl_seconds {
             if ttl > MAX_TTL {
@@ -377,10 +402,7 @@ impl DataSovereigntyAccessControl {
             .set(&Symbol::new(&env, ACCESS_KEYS_KEY), &access_keys);
 
         env.events().publish(
-            (
-                Symbol::new(&env, "access_key_created"),
-                resource_id.clone(),
-            ),
+            (Symbol::new(&env, "access_key_created"), resource_id.clone()),
             (key_id.clone(), holder.clone(), expires_at),
         );
 
@@ -500,15 +522,6 @@ impl DataSovereigntyAccessControl {
             (PermissionType::Read, PermissionType::Read) => true,
             _ => false,
         }
-    }
-
-    fn is_authorized(env: &Env, address: &Address) -> bool {
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&Symbol::new(&env, "admin"))
-            .unwrap_or_else(|| env.current_contract_address());
-        address == &admin
     }
 
     fn log_access(

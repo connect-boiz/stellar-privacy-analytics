@@ -1,3 +1,28 @@
+//! `UpgradeableProxy` — Timbuktu-style upgrade proxy with time-locked
+//! admin transfers.
+//!
+//! ## Authorization model (post-hardening, see PR #320 / issue #297)
+//!
+//! Every admin-gated entry point on this contract enforces **two**
+//! authorization layers:
+//!
+//! 1. **Host-level signature verification** via `Address::require_auth()`
+//!    on `admin` (for `initialize`) or `caller` (for every mutator).
+//!    This binds the admin identity to a real Stellar account so a
+//!    composing contract cannot pass `caller = admin_address` and
+//!    bypass the business-logic check downstream.
+//! 2. **Business-logic equality check** (`caller == admin`) which
+//!    enforces "only the current admin may invoke this entry point".
+//!
+//! Layer (1) is the one that closes the gap PR #320 / #297 fixes; a
+//! pre-hardening version of this contract only enforced layer (2),
+//! which any relayer could satisfy by passing the admin address as
+//! caller.
+//!
+//! View functions (`implementation`, `admin`, `upgrade_delay`,
+//! `pending_upgrade`) intentionally do NOT require auth so that other
+//! contracts, dashboards, and frontends can compose on them.
+
 use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
