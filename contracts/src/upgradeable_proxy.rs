@@ -45,12 +45,24 @@ pub struct UpgradeableProxy;
 
 #[contractimpl]
 impl UpgradeableProxy {
-    /// Initialize the proxy with an implementation contract and admin
+    /// Initialize the proxy with an implementation contract and admin.
+    ///
+    /// The supplied `admin` MUST authenticate at the host level. This binds
+    /// the initial admin identity to a real Stellar account, so that the
+    /// proxy cannot be made to recognize an arbitrary address as admin at
+    /// deploy time. Subsequent admin-only mutations continue to enforce
+    /// `caller.require_auth()`; see PR follow-up to issue #297.
     pub fn initialize(
         env: Env,
         implementation: BytesN<32>,
         admin: Address,
     ) -> Result<(), ProxyError> {
+        // Host-level signature verification: the deploy-time admin must
+        // have signed this transaction. Without this check any relayer or
+        // composing contract could declare an arbitrary address as the
+        // admin on behalf of whichever account actually submits the call.
+        admin.require_auth();
+
         // Check if already initialized
         if env
             .storage()
@@ -118,12 +130,23 @@ impl UpgradeableProxy {
             .unwrap())
     }
 
-    /// Begin upgrade process with time delay
+    /// Begin upgrade process with time delay.
+    ///
+    /// Requires `caller.require_auth()` (host-level signature) AND
+    /// `caller == admin` (business-logic authorization). The auth check
+    /// prevents a composing contract from spoofing the admin address; the
+    /// equality check enforces "only the current admin". See PR follow-up
+    /// to issue #297.
     pub fn initiate_upgrade(
         env: Env,
         new_implementation: BytesN<32>,
         caller: Address,
     ) -> Result<(), ProxyError> {
+        // Host-level signature verification. Without this, any contract
+        // could pass `caller = admin_address` and bypass the equality
+        // check below even when the actual transaction signer is hostile.
+        caller.require_auth();
+
         // Check if caller is admin
         let admin = Self::admin(env.clone())?;
         if caller != admin {
@@ -177,8 +200,13 @@ impl UpgradeableProxy {
         Ok(())
     }
 
-    /// Complete the upgrade after delay period
+    /// Complete the upgrade after delay period.
+    ///
+    /// Requires `caller.require_auth()` — see PR follow-up to issue #297.
     pub fn complete_upgrade(env: Env, caller: Address) -> Result<(), ProxyError> {
+        // Host-level signature verification.
+        caller.require_auth();
+
         // Check if caller is admin
         let admin = Self::admin(env.clone())?;
         if caller != admin {
@@ -248,8 +276,13 @@ impl UpgradeableProxy {
         Ok(())
     }
 
-    /// Cancel pending upgrade
+    /// Cancel pending upgrade.
+    ///
+    /// Requires `caller.require_auth()` — see PR follow-up to issue #297.
     pub fn cancel_upgrade(env: Env, caller: Address) -> Result<(), ProxyError> {
+        // Host-level signature verification.
+        caller.require_auth();
+
         // Check if caller is admin
         let admin = Self::admin(env.clone())?;
         if caller != admin {
@@ -282,8 +315,13 @@ impl UpgradeableProxy {
         Ok(())
     }
 
-    /// Set upgrade delay (only callable by admin)
+    /// Set upgrade delay (only callable by admin).
+    ///
+    /// Requires `caller.require_auth()` — see PR follow-up to issue #297.
     pub fn set_upgrade_delay(env: Env, new_delay: u64, caller: Address) -> Result<(), ProxyError> {
+        // Host-level signature verification.
+        caller.require_auth();
+
         // Check if caller is admin
         let admin = Self::admin(env.clone())?;
         if caller != admin {
@@ -363,8 +401,13 @@ impl UpgradeableProxy {
         }))
     }
 
-    /// Transfer admin rights (only callable by current admin)
+    /// Transfer admin rights (only callable by current admin).
+    ///
+    /// Requires `caller.require_auth()` — see PR follow-up to issue #297.
     pub fn transfer_admin(env: Env, new_admin: Address, caller: Address) -> Result<(), ProxyError> {
+        // Host-level signature verification.
+        caller.require_auth();
+
         // Check if caller is admin
         let admin = Self::admin(env.clone())?;
         if caller != admin {
