@@ -60,8 +60,22 @@ impl FixedPointMath {
         // ln(1 - 2|U|)
         let ln_val = Self::ln_1_minus_x(two_abs_u);
 
-        // -b * sgn(U) * ln(...)
-        (-b * sign * ln_val) / Self::SCALE
+        // -b * sgn(U) * ln(...) with overflow protection
+        // Use checked multiplication chain to prevent silent overflow in release mode
+        let product = b
+            .checked_mul(sign)
+            .and_then(|v| v.checked_mul(ln_val));
+        match product {
+            Some(p) => (-p) / Self::SCALE,
+            None => {
+                // Overflow: clamp to a reasonable extreme value
+                if sign < 0 {
+                    i128::MIN / Self::SCALE
+                } else {
+                    i128::MAX / Self::SCALE
+                }
+            }
+        }
     }
 }
 

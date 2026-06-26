@@ -588,6 +588,50 @@ impl StellarAnalytics {
         Ok(())
     }
 
+    /// Remove authorized oracle (admin only)
+    pub fn remove_oracle(env: Env, oracle: Address) -> Result<(), StellarAnalyticsError> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&Symbol::new(&env, "admin"))
+            .ok_or(StellarAnalyticsError::NotAuthorizedOracle)?;
+
+        let caller = env.current_contract_address(); // In real implementation, get from auth
+        if caller != admin {
+            return Err(StellarAnalyticsError::NotAuthorizedOracle);
+        }
+
+        let mut oracles: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&Symbol::new(&env, "authorized_oracles"))
+            .unwrap_or_else(|| Vec::new(&env));
+
+        // Filter out the oracle to remove
+        let mut found = false;
+        let mut new_oracles = Vec::new(&env);
+        for existing in oracles.iter() {
+            if existing == oracle {
+                found = true;
+            } else {
+                new_oracles.push_back(existing);
+            }
+        }
+
+        if !found {
+            return Err(StellarAnalyticsError::NotAuthorizedOracle);
+        }
+
+        env.storage()
+            .instance()
+            .set(&Symbol::new(&env, "authorized_oracles"), &new_oracles);
+
+        env.events()
+            .publish((Symbol::new(&env, "oracle_removed"), oracle.clone()), ());
+
+        Ok(())
+    }
+
     /// Get analysis request details
     pub fn get_analysis_request(
         env: Env,
@@ -1096,6 +1140,41 @@ mod test {
 
         let (_total, budget_used_after, _active) = StellarAnalytics::get_stats(env.clone());
         assert_eq!(budget_used_after, 100000000000000000);
+    }
+
+    #[test]
+    fn test_add_and_remove_oracle() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let oracle = Address::generate(&env);
+
+        StellarAnalytics::initialize(env.clone(), admin.clone());
+
+        // Add then remove should succeed
+        StellarAnalytics::add_oracle(env.clone(), oracle.clone()).unwrap();
+        let result = StellarAnalytics::remove_oracle(env.clone(), oracle.clone());
+        assert!(result.is_ok());
+
+        // Removing same oracle again should fail (not found)
+        let result = StellarAnalytics::remove_oracle(env.clone(), oracle);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_remove_oracle_non_existent_fails() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let non_oracle = Address::generate(&env);
+
+        StellarAnalytics::initialize(env.clone(), admin.clone());
+
+        // Removing a non-existent oracle should fail
+        let result = StellarAnalytics::remove_oracle(env.clone(), non_oracle);
+        assert!(result.is_err());
     }
 
     #[test]
