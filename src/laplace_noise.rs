@@ -38,7 +38,11 @@ impl FixedPointMath {
     /// scaled by `sensitivity / epsilon`.
     pub fn laplace_noise(env: &Env, epsilon: i128, sensitivity: i128, seed: Bytes) -> i128 {
         // b = sensitivity / epsilon
-        let b = (sensitivity * Self::SCALE) / epsilon;
+        // Use checked multiplication to prevent i128 overflow in computation
+        let b = sensitivity
+            .checked_mul(Self::SCALE)
+            .map(|v| v / epsilon)
+            .unwrap_or(i128::MAX);
 
         // Generate a uniform random value U in [-0.5, 0.5)
         // We use SHA256 of the seed to ensure determinism and resilience against reconstruction
@@ -60,8 +64,22 @@ impl FixedPointMath {
         // ln(1 - 2|U|)
         let ln_val = Self::ln_1_minus_x(two_abs_u);
 
-        // -b * sgn(U) * ln(...)
-        (-b * sign * ln_val) / Self::SCALE
+        // Compute absolute magnitude of ln_val for checked multiplication
+        let abs_ln_val = if ln_val < 0 { -ln_val } else { ln_val };
+
+        // Use checked multiplication to prevent i128 overflow
+        // -b * sgn(U) * ln(...) / SCALE
+        match b.checked_mul(abs_ln_val) {
+            Some(prod) => sign * (prod / Self::SCALE),
+            None => {
+                // Overflow: clamp to maximum reasonable value based on sign
+                if sign > 0 {
+                    i128::MAX
+                } else {
+                    i128::MIN
+                }
+            }
+        }
     }
 }
 
@@ -143,6 +161,52 @@ impl DpAnalyticsContract {
 mod test {
     use super::*;
     use soroban_sdk::testutils::Address as _;
+
+    #[test]
+    fn test_laplace_noise_overflow_protection() {
+        let env = Env::default();
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+
+        // Use max safe sensitivity (avoids overflow in b = sensitivity * SCALE / epsilon)
+        // but large enough that b * abs_ln_val overflows for typical U values
+        // sensitivity * SCALE = i128::MAX, so b = i128::MAX (with epsilon=1)
+        // b * abs_ln_val overflows for any abs_ln_val > 1 (guaranteed for non-zero U)
+        let sensitivity = i128::MAX / FixedPointMath::SCALE;
+        let epsilon = 1;
+
+        // This should not panic — overflow in b * abs_ln_val should be safely clamped
+        let noise = FixedPointMath::laplace_noise(&env, epsilon, sensitivity, seed);
+
+        // Verify the noise is clamped to extreme bounds (overflow occurred)
+        // If U happens to be 0 (abs_ln_val = 0), noise would be 0 which is also valid
+        assert!(
+            noise == i128::MAX || noise == i128::MIN || noise == 0,
+            "Overflow should clamp to i128::MAX or i128::MIN, or be 0 for edge case. Got: {}",
+            noise
+        );
+    }
+
+    #[test]
+    fn test_laplace_noise_normal_case() {
+        let env = Env::default();
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+
+        // Normal case: reasonable sensitivity and epsilon
+        let noise = FixedPointMath::laplace_noise(&env, 1000, 10000, seed);
+
+        // Noise should be within i128 bounds (not saturated)
+        assert!(noise > i128::MIN && noise < i128::MAX);
+    }
+
+    #[test]
+    fn test_laplace_noise_zero_sensitivity() {
+        let env = Env::default();
+        let seed = Bytes::from_slice(&env, &[1, 2, 3, 4]);
+
+        // Zero sensitivity means zero noise
+        let noise = FixedPointMath::laplace_noise(&env, 1000, 0, seed);
+        assert_eq!(noise, 0);
+    }
 
     #[test]
     fn test_dp_noise_and_budget() {
