@@ -385,3 +385,462 @@ impl UpgradeableProxy {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    // ----- Test helpers -----------------------------------------------------
+
+    /// A non-zero 32-byte hash that can act as a valid implementation
+    /// identifier in proxy tests. The proxy rejects the all-zero address
+    /// as invalid. The `env` is threaded through so the resulting `BytesN`
+    /// is bound to the same env instance the contract is operating on,
+    /// avoiding cross-env type mismatches.
+    fn implementation_with_byte(env: &Env, seed: u8) -> BytesN<32> {
+        let mut bytes = [0u8; 32];
+        bytes[0] = seed;
+        BytesN::from_array(env, &bytes)
+    }
+
+    fn valid_implementation(env: &Env) -> BytesN<32> {
+        implementation_with_byte(env, 1)
+    }
+
+    fn new_implementation(env: &Env) -> BytesN<32> {
+        implementation_with_byte(env, 2)
+    }
+
+    fn third_implementation(env: &Env) -> BytesN<32> {
+        implementation_with_byte(env, 3)
+    }
+
+    fn zero_implementation(env: &Env) -> BytesN<32> {
+        BytesN::from_array(env, &[0u8; 32])
+    }
+
+    // ----- initialize ------------------------------------------------------
+
+    #[test]
+    fn test_initialize_success() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        let impl_addr = valid_implementation(&env);
+
+        let result = UpgradeableProxy::initialize(env.clone(), impl_addr.clone(), admin.clone());
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(
+            UpgradeableProxy::implementation(env.clone()),
+            Ok(impl_addr)
+        );
+        assert_eq!(UpgradeableProxy::admin(env.clone()), Ok(admin));
+
+        // Default upgrade delay is 7 days.
+        assert_eq!(
+            UpgradeableProxy::upgrade_delay(env.clone()),
+            Ok(DEFAULT_UPGRADE_DELAY)
+        );
+    }
+
+    #[test]
+    fn test_initialize_fails_when_already_initialized() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        let impl_addr = valid_implementation(&env);
+
+        UpgradeableProxy::initialize(env.clone(), impl_addr.clone(), admin.clone()).unwrap();
+
+        let second = UpgradeableProxy::initialize(env.clone(), impl_addr, admin);
+        assert_eq!(second, Err(ProxyError::AlreadyInitialized));
+    }
+
+    #[test]
+    fn test_initialize_fails_with_invalid_implementation() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+
+        let result = UpgradeableProxy::initialize(env.clone(), zero_implementation(&env), admin);
+        assert_eq!(result, Err(ProxyError::InvalidImplementation));
+    }
+
+    #[test]
+    fn test_implementation_query_before_initialize_fails() {
+        let env = Env::default();
+
+        assert_eq!(
+            UpgradeableProxy::implementation(env.clone()),
+            Err(ProxyError::NotInitialized)
+        );
+        assert_eq!(
+            UpgradeableProxy::admin(env.clone()),
+            Err(ProxyError::NotInitialized)
+        );
+    }
+
+    // ----- initiate_upgrade ------------------------------------------------
+
+    #[test]
+    fn test_initiate_upgrade_by_admin_succeeds() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let new_impl = new_implementation(&env);
+        let result =
+            UpgradeableProxy::initiate_upgrade(env.clone(), new_impl.clone(), admin.clone());
+        assert_eq!(result, Ok(()));
+
+        let pending = UpgradeableProxy::pending_upgrade(env.clone()).unwrap();
+        let pending = pending.expect("pending upgrade info should exist");
+        assert_eq!(pending.new_implementation, new_impl);
+        assert_eq!(pending.initiated_at, env.ledger().timestamp());
+    }
+
+    #[test]
+    fn test_initiate_upgrade_by_non_admin_fails() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let stranger = Address::generate(&env);
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin).unwrap();
+
+        let result = UpgradeableProxy::initiate_upgrade(env.clone(), new_implementation(&env), stranger);
+        assert_eq!(result, Err(ProxyError::NotAdmin));
+    }
+
+    #[test]
+    fn test_initiate_upgrade_with_invalid_implementation_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result = UpgradeableProxy::initiate_upgrade(env.clone(), zero_implementation(&env), admin);
+        assert_eq!(result, Err(ProxyError::InvalidImplementation));
+    }
+
+    #[test]
+    fn test_initiate_upgrade_twice_without_completion_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        UpgradeableProxy::initiate_upgrade(
+            env.clone(),
+            new_implementation(&env),
+            admin.clone(),
+        )
+        .unwrap();
+
+        let second = UpgradeableProxy::initiate_upgrade(
+            env.clone(),
+            new_implementation(&env),
+            admin.clone(),
+        );
+        assert_eq!(second, Err(ProxyError::UpgradeAlreadyInitiated));
+
+        // The pending upgrade from the first call is still tracked.
+        let pending = UpgradeableProxy::pending_upgrade(env.clone()).unwrap();
+        assert!(
+            pending.is_some(),
+            "first initiate must leave pending upgrade stored"
+        );
+    }
+
+    // ----- complete_upgrade ------------------------------------------------
+
+    #[test]
+    fn test_complete_upgrade_before_delay_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let new_impl = new_implementation(&env);
+        UpgradeableProxy::initiate_upgrade(env.clone(), new_impl, admin.clone()).unwrap();
+
+        // We have NOT advanced the ledger, so the delay has not elapsed.
+        let result = UpgradeableProxy::complete_upgrade(env.clone(), admin.clone());
+        assert_eq!(result, Err(ProxyError::UpgradeNotReady));
+    }
+
+    #[test]
+    fn test_complete_upgrade_after_delay_succeeds() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let new_impl = new_implementation(&env);
+        UpgradeableProxy::initiate_upgrade(env.clone(), new_impl.clone(), admin.clone()).unwrap();
+
+        // Advance the ledger past the minimum upgrade delay so the upgrade
+        // can be completed.
+        env.ledger()
+            .set_timestamp(env.ledger().timestamp() + DEFAULT_UPGRADE_DELAY + 1);
+
+        let result = UpgradeableProxy::complete_upgrade(env.clone(), admin);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(
+            UpgradeableProxy::implementation(env.clone()),
+            Ok(new_impl)
+        );
+        assert_eq!(
+            UpgradeableProxy::pending_upgrade(env.clone()),
+            Ok(None),
+            "pending upgrade should be cleared after a successful completion"
+        );
+    }
+
+    #[test]
+    fn test_complete_upgrade_by_non_admin_fails_even_after_delay() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let stranger = Address::generate(&env);
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        UpgradeableProxy::initiate_upgrade(env.clone(), new_implementation(&env), admin.clone())
+            .unwrap();
+        env.ledger()
+            .set_timestamp(env.ledger().timestamp() + DEFAULT_UPGRADE_DELAY + 1);
+
+        let result = UpgradeableProxy::complete_upgrade(env.clone(), stranger);
+        assert_eq!(result, Err(ProxyError::NotAdmin));
+    }
+
+    #[test]
+    fn test_complete_upgrade_with_no_pending_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result = UpgradeableProxy::complete_upgrade(env.clone(), admin);
+        assert_eq!(result, Err(ProxyError::NoPendingUpgrade));
+    }
+
+    // ----- cancel_upgrade --------------------------------------------------
+
+    #[test]
+    fn test_cancel_upgrade_clears_pending_upgrade() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        UpgradeableProxy::initiate_upgrade(env.clone(), new_implementation(&env), admin.clone())
+            .unwrap();
+        assert!(UpgradeableProxy::pending_upgrade(env.clone())
+            .unwrap()
+            .is_some());
+
+        let result = UpgradeableProxy::cancel_upgrade(env.clone(), admin.clone());
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(
+            UpgradeableProxy::pending_upgrade(env.clone()),
+            Ok(None),
+            "pending upgrade information should be cleared after cancellation"
+        );
+
+        // Original implementation must remain in place.
+        assert_eq!(
+            UpgradeableProxy::implementation(env.clone()),
+            Ok(valid_implementation(&env))
+        );
+
+        // After cancellation, a fresh upgrade can be initiated.
+        assert_eq!(
+            UpgradeableProxy::initiate_upgrade(env.clone(), new_implementation(&env), admin),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn test_cancel_upgrade_by_non_admin_fails() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let stranger = Address::generate(&env);
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        UpgradeableProxy::initiate_upgrade(env.clone(), new_implementation(&env), admin).unwrap();
+
+        let result = UpgradeableProxy::cancel_upgrade(env.clone(), stranger);
+        assert_eq!(result, Err(ProxyError::NotAdmin));
+    }
+
+    #[test]
+    fn test_cancel_upgrade_with_no_pending_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result = UpgradeableProxy::cancel_upgrade(env.clone(), admin);
+        assert_eq!(result, Err(ProxyError::NoPendingUpgrade));
+    }
+
+    // ----- transfer_admin --------------------------------------------------
+
+    #[test]
+    fn test_transfer_admin_enables_new_admin() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        let new_admin = Address::generate(&env);
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result = UpgradeableProxy::transfer_admin(
+            env.clone(),
+            new_admin.clone(),
+            admin.clone(),
+        );
+        assert_eq!(result, Ok(()));
+
+        // The new admin is now the admin of record.
+        assert_eq!(UpgradeableProxy::admin(env.clone()), Ok(new_admin.clone()));
+
+        // Privileged actions with the OLD admin are rejected.
+        assert_eq!(
+            UpgradeableProxy::initiate_upgrade(
+                env.clone(),
+                new_implementation(&env),
+                admin.clone()
+            ),
+            Err(ProxyError::NotAdmin)
+        );
+
+        // Privileged actions with the NEW admin succeed.
+        assert_eq!(
+            UpgradeableProxy::initiate_upgrade(
+                env.clone(),
+                new_implementation(&env),
+                new_admin.clone()
+            ),
+            Ok(())
+        );
+        // Cleanup so cancellation test below starts from a clean state.
+        UpgradeableProxy::cancel_upgrade(env.clone(), new_admin.clone()).unwrap();
+    }
+
+    #[test]
+    fn test_transfer_admin_by_non_admin_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        let stranger = Address::generate(&env);
+        let new_admin = Address::generate(&env);
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin).unwrap();
+
+        let result = UpgradeableProxy::transfer_admin(env.clone(), new_admin, stranger);
+        assert_eq!(result, Err(ProxyError::NotAdmin));
+    }
+
+    // ----- set_upgrade_delay ----------------------------------------------
+
+    #[test]
+    fn test_set_upgrade_delay_at_minimum_succeeds() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result =
+            UpgradeableProxy::set_upgrade_delay(env.clone(), MIN_UPGRADE_DELAY, admin.clone());
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(
+            UpgradeableProxy::upgrade_delay(env.clone()),
+            Ok(MIN_UPGRADE_DELAY)
+        );
+    }
+
+    #[test]
+    fn test_set_upgrade_delay_above_minimum_succeeds() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let new_delay = MIN_UPGRADE_DELAY + 86_400; // 48h
+        let result = UpgradeableProxy::set_upgrade_delay(env.clone(), new_delay, admin);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(UpgradeableProxy::upgrade_delay(env.clone()), Ok(new_delay));
+    }
+
+    #[test]
+    fn test_set_upgrade_delay_below_minimum_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result =
+            UpgradeableProxy::set_upgrade_delay(env.clone(), MIN_UPGRADE_DELAY - 1, admin);
+        assert_eq!(result, Err(ProxyError::InvalidDelay));
+    }
+
+    #[test]
+    fn test_set_upgrade_delay_zero_fails() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let result = UpgradeableProxy::set_upgrade_delay(env.clone(), 0u64, admin);
+        assert_eq!(result, Err(ProxyError::InvalidDelay));
+    }
+
+    #[test]
+    fn test_set_upgrade_delay_by_non_admin_fails() {
+        let env = Env::default();
+        let admin = Address::generate(&env);
+        let stranger = Address::generate(&env);
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin).unwrap();
+
+        let result = UpgradeableProxy::set_upgrade_delay(env.clone(), MIN_UPGRADE_DELAY, stranger);
+        assert_eq!(result, Err(ProxyError::NotAdmin));
+    }
+
+    // ----- integration / edge cases ---------------------------------------
+
+    #[test]
+    fn test_full_upgrade_lifecycle() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let v1 = new_implementation(&env);
+        let v2 = third_implementation(&env);
+
+        UpgradeableProxy::initiate_upgrade(env.clone(), v1.clone(), admin.clone()).unwrap();
+        env.ledger()
+            .set_timestamp(env.ledger().timestamp() + DEFAULT_UPGRADE_DELAY + 1);
+        UpgradeableProxy::complete_upgrade(env.clone(), admin.clone()).unwrap();
+        assert_eq!(UpgradeableProxy::implementation(env.clone()), Ok(v1));
+
+        UpgradeableProxy::initiate_upgrade(env.clone(), v2.clone(), admin.clone()).unwrap();
+        env.ledger()
+            .set_timestamp(env.ledger().timestamp() + DEFAULT_UPGRADE_DELAY + 1);
+        UpgradeableProxy::complete_upgrade(env.clone(), admin).unwrap();
+        assert_eq!(UpgradeableProxy::implementation(env.clone()), Ok(v2));
+    }
+
+    #[test]
+    fn test_custom_delay_affects_complete_upgrade_window() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let custom_delay = MIN_UPGRADE_DELAY + 86_400; // 48h
+        UpgradeableProxy::set_upgrade_delay(env.clone(), custom_delay, admin.clone()).unwrap();
+
+        UpgradeableProxy::initiate_upgrade(env.clone(), new_implementation(&env), admin.clone())
+            .unwrap();
+
+        // One second before the custom delay elapses, completion is still not ready.
+        env.ledger().set_timestamp(custom_delay - 1);
+        assert_eq!(
+            UpgradeableProxy::complete_upgrade(env.clone(), admin.clone()),
+            Err(ProxyError::UpgradeNotReady)
+        );
+
+        // At the exact delay boundary, completion succeeds (strict `<` comparison).
+        env.ledger().set_timestamp(custom_delay);
+        let result = UpgradeableProxy::complete_upgrade(env.clone(), admin);
+        assert_eq!(result, Ok(()));
+
+        assert_eq!(
+            UpgradeableProxy::implementation(env.clone()),
+            Ok(new_implementation(&env))
+        );
+    }
+
+    #[test]
+    fn test_upgrade_info_preserves_old_implementation_reference() {
+        let (env, admin) = (Env::default(), Address::generate(&env));
+        UpgradeableProxy::initialize(env.clone(), valid_implementation(&env), admin.clone()).unwrap();
+
+        let v1 = new_implementation(&env);
+        UpgradeableProxy::initiate_upgrade(env.clone(), v1, admin.clone()).unwrap();
+
+        let pending = UpgradeableProxy::pending_upgrade(env.clone())
+            .unwrap()
+            .expect("pending upgrade info should exist after initiate");
+        // Old implementation reference is captured at initiation time.
+        assert_eq!(pending.old_implementation, valid_implementation(&env));
+    }
+}
+
