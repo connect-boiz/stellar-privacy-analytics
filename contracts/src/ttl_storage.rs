@@ -501,12 +501,15 @@ mod test {
     #[test]
     fn test_retrieve_data_from_uninitialized_contract_returns_error() {
         let env = Env::default();
+        let contract_id = env.register(TtlStorage, ());
         let requester = Address::generate(&env);
         let entry_id = BytesN::<32>::from_array(&env, &[1u8; 32]);
 
         // Attempting to retrieve data from an uninitialized contract
         // should return Err (NotAuthorized) instead of panicking
-        let result = TtlStorage::retrieve_data(env, entry_id, requester);
+        let result = env.as_contract(&contract_id, || {
+            TtlStorage::retrieve_data(env.clone(), entry_id, requester)
+        });
         assert!(result.is_err());
     }
 
@@ -515,41 +518,49 @@ mod test {
         let env = Env::default();
         env.mock_all_auths();
 
+        let contract_id = env.register(TtlStorage, ());
         let admin = Address::generate(&env);
         let owner = Address::generate(&env);
         let stranger = Address::generate(&env);
 
-        // Initialize the contract
-        TtlStorage::initialize(env.clone(), admin.clone());
+        let entry_id = env.as_contract(&contract_id, || {
+            // Initialize the contract
+            TtlStorage::initialize(env.clone(), admin.clone());
 
-        // Store some data
-        let data = Bytes::from_slice(&env, &[42u8; 100]);
-        let mut metadata = Map::new(&env);
-        metadata.set(
-            String::from_str(&env, "key"),
-            String::from_str(&env, "value"),
-        );
+            // Give the owner enough storage credits to pay fees
+            TtlStorage::add_storage_credits(env.clone(), owner.clone(), 1000000000).unwrap();
 
-        let entry_id = TtlStorage::store_data(
-            env.clone(),
-            owner.clone(),
-            data.clone(),
-            false,
-            24,
-            metadata,
-        )
-        .unwrap();
+            // Store some data
+            let data = Bytes::from_slice(&env, &[42u8; 100]);
+            let mut metadata = Map::new(&env);
+            metadata.set(
+                String::from_str(&env, "key"),
+                String::from_str(&env, "value"),
+            );
 
-        // Retrieve data as the owner — should succeed
-        let result = TtlStorage::retrieve_data(env.clone(), entry_id.clone(), owner);
-        assert!(result.is_ok());
+            TtlStorage::store_data(
+                env.clone(),
+                owner.clone(),
+                data.clone(),
+                false,
+                24,
+                metadata,
+            )
+            .unwrap()
+        });
 
-        // Retrieve data as admin — should succeed
-        let result = TtlStorage::retrieve_data(env.clone(), entry_id.clone(), admin);
-        assert!(result.is_ok());
+        env.as_contract(&contract_id, || {
+            // Retrieve data as the owner — should succeed
+            let result = TtlStorage::retrieve_data(env.clone(), entry_id.clone(), owner.clone());
+            assert!(result.is_ok());
 
-        // Retrieve data as a stranger (not owner, not admin) — should fail with NotAuthorized
-        let result = TtlStorage::retrieve_data(env.clone(), entry_id, stranger);
-        assert!(result.is_err());
+            // Retrieve data as admin — should succeed
+            let result = TtlStorage::retrieve_data(env.clone(), entry_id.clone(), admin);
+            assert!(result.is_ok());
+
+            // Retrieve data as a stranger (not owner, not admin) — should fail with NotAuthorized
+            let result = TtlStorage::retrieve_data(env.clone(), entry_id, stranger);
+            assert!(result.is_err());
+        });
     }
 }
