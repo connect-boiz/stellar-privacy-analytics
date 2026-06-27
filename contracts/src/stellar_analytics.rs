@@ -130,7 +130,7 @@ impl StellarAnalytics {
 
         // Minimal privacy level
         privacy_levels.set(
-            Symbol::new(&env, "minimal"),
+            String::from_str(&env, "minimal"),
             PrivacyLevel {
                 min_participants: 5,
                 noise_multiplier: 1,
@@ -141,7 +141,7 @@ impl StellarAnalytics {
 
         // Standard privacy level
         privacy_levels.set(
-            Symbol::new(&env, "standard"),
+            String::from_str(&env, "standard"),
             PrivacyLevel {
                 min_participants: 10,
                 noise_multiplier: 2,
@@ -152,7 +152,7 @@ impl StellarAnalytics {
 
         // High privacy level
         privacy_levels.set(
-            Symbol::new(&env, "high"),
+            String::from_str(&env, "high"),
             PrivacyLevel {
                 min_participants: 20,
                 noise_multiplier: 5,
@@ -163,7 +163,7 @@ impl StellarAnalytics {
 
         // Maximum privacy level
         privacy_levels.set(
-            Symbol::new(&env, "maximum"),
+            String::from_str(&env, "maximum"),
             PrivacyLevel {
                 min_participants: 50,
                 noise_multiplier: 10,
@@ -987,57 +987,45 @@ mod test {
         let env = Env::default();
         env.mock_all_auths();
 
-        let admin = Address::generate(&env);
-        let user = Address::generate(&env);
-        let oracle = Address::generate(&env);
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(&env, &contract_id);
 
-        StellarAnalytics::initialize(env.clone(), admin.clone());
-        StellarAnalytics::add_oracle(env.clone(), oracle.clone()).unwrap();
-        StellarAnalytics::add_privacy_budget(env.clone(), user.clone(), 100000000000000000)
-            .unwrap();
+        // Use the contract's own address as admin/oracle
+        // so that env.current_contract_address() auth checks pass
+        let contract_addr: Address = env.as_contract(&contract_id, || {
+            env.current_contract_address()
+        });
+        let user = Address::generate(&env);
+
+        client.initialize(&contract_addr);
+        client.add_oracle(&contract_addr);
+        let budget_amount: i128 = 100000000000000000;
+        client.add_privacy_budget(&user, &budget_amount);
 
         let cid = String::from_str(&env, "QmTest12345678901234567");
         let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
-        StellarAnalytics::register_dataset(
-            env.clone(),
-            cid.clone(),
-            dataset_hash.clone(),
-            user.clone(),
-            1024,
-            false,
-            1,
-            None,
-        )
-        .unwrap();
+        let no_key: Option<BytesN<32>> = None;
+        let size_bytes: u64 = 1024;
+        let version: u32 = 1;
+        let encrypted: bool = false;
+        client.register_dataset(&cid, &dataset_hash, &user, &size_bytes, &encrypted, &version, &no_key);
 
-        let request_id = StellarAnalytics::request_analysis(
-            env.clone(),
-            user.clone(),
-            dataset_hash,
-            cid,
-            String::from_str(&env, "descriptive"),
-            String::from_str(&env, "standard"),
-        )
-        .unwrap();
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard");
+        let request_id = client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
         // Verify total_privacy_budget_used was incremented
-        let (_total, budget_used, _active) = StellarAnalytics::get_stats(env.clone());
+        let (_total, budget_used, _active) = client.get_stats();
         assert_eq!(budget_used, 100000000000000000);
 
         // Complete with 50% usage — 50 tokens refunded, counter should decrement
         let result_hash = BytesN::<32>::from_array(&env, &[3u8; 32]);
         let privacy_proofs = Vec::new(&env);
-        StellarAnalytics::complete_analysis(
-            env.clone(),
-            request_id,
-            result_hash,
-            50000000000000000,
-            95,
-            privacy_proofs,
-        )
-        .unwrap();
+        let partial_budget: i128 = 50000000000000000;
+        let accuracy: u32 = 95;
+        client.complete_analysis(&request_id, &result_hash, &partial_budget, &accuracy, &privacy_proofs);
 
-        let (_total, budget_used_after, _active) = StellarAnalytics::get_stats(env.clone());
+        let (_total, budget_used_after, _active) = client.get_stats();
         assert_eq!(budget_used_after, 50000000000000000);
     }
 
@@ -1046,56 +1034,43 @@ mod test {
         let env = Env::default();
         env.mock_all_auths();
 
-        let admin = Address::generate(&env);
-        let user = Address::generate(&env);
-        let oracle = Address::generate(&env);
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(&env, &contract_id);
 
-        StellarAnalytics::initialize(env.clone(), admin.clone());
-        StellarAnalytics::add_oracle(env.clone(), oracle.clone()).unwrap();
-        StellarAnalytics::add_privacy_budget(env.clone(), user.clone(), 100000000000000000)
-            .unwrap();
+        // Use the contract's own address as admin/oracle
+        let contract_addr: Address = env.as_contract(&contract_id, || {
+            env.current_contract_address()
+        });
+        let user = Address::generate(&env);
+
+        client.initialize(&contract_addr);
+        client.add_oracle(&contract_addr);
+        let budget_amount: i128 = 100000000000000000;
+        client.add_privacy_budget(&user, &budget_amount);
 
         let cid = String::from_str(&env, "QmTest12345678901234567");
         let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
-        StellarAnalytics::register_dataset(
-            env.clone(),
-            cid.clone(),
-            dataset_hash.clone(),
-            user.clone(),
-            1024,
-            false,
-            1,
-            None,
-        )
-        .unwrap();
+        let no_key: Option<BytesN<32>> = None;
+        let size_bytes: u64 = 1024;
+        let version: u32 = 1;
+        let encrypted: bool = false;
+        client.register_dataset(&cid, &dataset_hash, &user, &size_bytes, &encrypted, &version, &no_key);
 
-        let request_id = StellarAnalytics::request_analysis(
-            env.clone(),
-            user.clone(),
-            dataset_hash,
-            cid,
-            String::from_str(&env, "descriptive"),
-            String::from_str(&env, "standard"),
-        )
-        .unwrap();
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard");
+        let request_id = client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
-        let (_total, budget_used, _active) = StellarAnalytics::get_stats(env.clone());
+        let (_total, budget_used, _active) = client.get_stats();
         assert_eq!(budget_used, 100000000000000000);
 
         // Complete with 100% usage — no refund, counter should be unchanged
         let result_hash = BytesN::<32>::from_array(&env, &[3u8; 32]);
         let privacy_proofs = Vec::new(&env);
-        StellarAnalytics::complete_analysis(
-            env.clone(),
-            request_id,
-            result_hash,
-            100000000000000000,
-            95,
-            privacy_proofs,
-        )
-        .unwrap();
+        let full_budget: i128 = 100000000000000000;
+        let accuracy: u32 = 95;
+        client.complete_analysis(&request_id, &result_hash, &full_budget, &accuracy, &privacy_proofs);
 
-        let (_total, budget_used_after, _active) = StellarAnalytics::get_stats(env.clone());
+        let (_total, budget_used_after, _active) = client.get_stats();
         assert_eq!(budget_used_after, 100000000000000000);
     }
 
@@ -1104,44 +1079,39 @@ mod test {
         let env = Env::default();
         env.mock_all_auths();
 
-        let admin = Address::generate(&env);
-        let user = Address::generate(&env);
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(&env, &contract_id);
 
-        StellarAnalytics::initialize(env.clone(), admin.clone());
-        StellarAnalytics::add_privacy_budget(env.clone(), user.clone(), 100000000000000000)
-            .unwrap();
+        // Use the contract's own address as admin and requester
+        // so that env.current_contract_address() auth checks pass
+        let contract_addr: Address = env.as_contract(&contract_id, || {
+            env.current_contract_address()
+        });
+
+        client.initialize(&contract_addr);
+        let budget_amount: i128 = 100000000000000000;
+        client.add_privacy_budget(&contract_addr, &budget_amount);
 
         let cid = String::from_str(&env, "QmTest12345678901234567");
         let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
-        StellarAnalytics::register_dataset(
-            env.clone(),
-            cid.clone(),
-            dataset_hash.clone(),
-            user.clone(),
-            1024,
-            false,
-            1,
-            None,
-        )
-        .unwrap();
+        let no_key: Option<BytesN<32>> = None;
+        let size_bytes: u64 = 1024;
+        let version: u32 = 1;
+        let encrypted: bool = false;
+        client.register_dataset(&cid, &dataset_hash, &contract_addr, &size_bytes, &encrypted, &version, &no_key);
 
-        let request_id = StellarAnalytics::request_analysis(
-            env.clone(),
-            user.clone(),
-            dataset_hash,
-            cid,
-            String::from_str(&env, "descriptive"),
-            String::from_str(&env, "standard"),
-        )
-        .unwrap();
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard");
+        // Use contract_addr as requester so cancel_analysis auth passes
+        let request_id = client.request_analysis(&contract_addr, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
-        let (_total, budget_used, _active) = StellarAnalytics::get_stats(env.clone());
+        let (_total, budget_used, _active) = client.get_stats();
         assert_eq!(budget_used, 100000000000000000);
 
         // Cancel the analysis — full refund, counter should go back to 0
-        StellarAnalytics::cancel_analysis(env.clone(), request_id).unwrap();
+        client.cancel_analysis(&request_id);
 
-        let (_total, budget_used_after, _active) = StellarAnalytics::get_stats(env.clone());
+        let (_total, budget_used_after, _active) = client.get_stats();
         assert_eq!(budget_used_after, 0);
     }
 }

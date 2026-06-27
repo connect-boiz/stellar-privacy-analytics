@@ -61,7 +61,11 @@ impl FixedPointMath {
         let ln_val = Self::ln_1_minus_x(two_abs_u);
 
         // -b * sgn(U) * ln(...)
-        (-b * sign * ln_val) / Self::SCALE
+        // Use saturating multiplication chain to prevent integer overflow
+        // from unchecked triple i128 multiplication
+        let step1 = b.saturating_mul(sign);
+        let step2 = step1.saturating_mul(ln_val);
+        (-step2) / Self::SCALE
     }
 }
 

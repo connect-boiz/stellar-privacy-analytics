@@ -205,11 +205,14 @@ impl DataSovereigntyAccessControl {
 
     pub fn grant_access(
         env: Env,
+        caller: Address,
         resource_id: BytesN<32>,
         user: Address,
         permission_type: PermissionType,
         ttl_seconds: Option<u64>,
     ) -> Result<(), AccessControlError> {
+        caller.require_auth();
+
         let resources: Map<BytesN<32>, ResourceOwner> = env
             .storage()
             .instance()
@@ -272,9 +275,12 @@ impl DataSovereigntyAccessControl {
 
     pub fn revoke_access(
         env: Env,
+        caller: Address,
         resource_id: BytesN<32>,
         user: Address,
     ) -> Result<(), AccessControlError> {
+        caller.require_auth();
+
         let resources: Map<BytesN<32>, ResourceOwner> = env
             .storage()
             .instance()
@@ -338,11 +344,14 @@ impl DataSovereigntyAccessControl {
 
     pub fn create_access_key(
         env: Env,
+        caller: Address,
         resource_id: BytesN<32>,
         holder: Address,
         permissions: Vec<PermissionType>,
         ttl_seconds: Option<u64>,
     ) -> Result<BytesN<32>, AccessControlError> {
+        caller.require_auth();
+
         let resources: Map<BytesN<32>, ResourceOwner> = env
             .storage()
             .instance()
