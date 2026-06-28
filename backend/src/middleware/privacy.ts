@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { logger } from "../utils/logger";
 
 export enum PrivacyLevel {
@@ -14,6 +15,24 @@ export interface PrivacyRequest extends Request {
   consent?: boolean;
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+
+/**
+ * Extract the user ID from a JWT Bearer token without throwing.
+ * Returns undefined when the token is missing, expired, or malformed.
+ */
+function extractUserIdFromJwt(authHeader: string): string | undefined {
+  try {
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      algorithms: ["HS256"],
+    }) as { sub?: string };
+    return decoded.sub;
+  } catch {
+    return undefined;
+  }
+}
+
 export const privacyMiddleware = (
   req: PrivacyRequest,
   res: Response,
@@ -25,11 +44,13 @@ export const privacyMiddleware = (
     ? (privacyHeader.toLowerCase() as PrivacyLevel)
     : PrivacyLevel.HIGH;
 
-  // Extract user ID from JWT (simplified for now)
+  // Extract user ID from JWT
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    // In a real implementation, verify JWT token
-    req.userId = "temp-user-id"; // Placeholder
+  if (authHeader?.startsWith("Bearer ")) {
+    const userId = extractUserIdFromJwt(authHeader);
+    if (userId) {
+      req.userId = userId;
+    }
   }
 
   // Check consent status

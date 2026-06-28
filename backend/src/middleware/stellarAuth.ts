@@ -52,6 +52,7 @@ export interface StellarJWTPayload {
 
 export class StellarAuthMiddleware {
   private stellarPublicKey: string;
+  private jwtSecret: string;
   private apiKeySecret: string;
   private allowedIssuers: string[];
   private allowedAudiences: string[];
@@ -60,6 +61,7 @@ export class StellarAuthMiddleware {
 
   constructor(config: {
     stellarPublicKey: string;
+    jwtSecret?: string;
     apiKeySecret: string;
     redis: RedisClientType;
     allowedIssuers?: string[];
@@ -67,6 +69,7 @@ export class StellarAuthMiddleware {
     clockSkewTolerance?: number;
   }) {
     this.stellarPublicKey = config.stellarPublicKey;
+    this.jwtSecret = config.jwtSecret || process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
     this.apiKeySecret = config.apiKeySecret;
     this.redis = config.redis;
     this.allowedIssuers = config.allowedIssuers || ["stellar-privacy"];
@@ -166,12 +169,27 @@ export class StellarAuthMiddleware {
       tokenCacheMisses.inc();
 
       // 2. Verify JWT signature and claims
-      const decoded = jwt.verify(token, this.stellarPublicKey, {
-        algorithms: ["ES256"],
-        issuer: this.allowedIssuers,
-        audience: this.allowedAudiences,
-        clockTolerance: this.clockSkewTolerance,
-      }) as StellarJWTPayload;
+      //    Try ES256 (Stellar public key) first, then fall back to HS256 (shared secret).
+      let decoded: StellarJWTPayload;
+      try {
+        decoded = jwt.verify(token, this.stellarPublicKey, {
+          algorithms: ["ES256"],
+          issuer: this.allowedIssuers,
+          audience: this.allowedAudiences,
+          clockTolerance: this.clockSkewTolerance,
+        }) as StellarJWTPayload;
+      } catch (es256Error) {
+        if (this.jwtSecret && this.jwtSecret.length > 0) {
+          decoded = jwt.verify(token, this.jwtSecret, {
+            algorithms: ["HS256"],
+            issuer: this.allowedIssuers,
+            audience: this.allowedAudiences,
+            clockTolerance: this.clockSkewTolerance,
+          }) as StellarJWTPayload;
+        } else {
+          throw es256Error;
+        }
+      }
 
       // 3. Validate required claims
       this.validateJWTPayload(decoded);
@@ -340,24 +358,20 @@ export class StellarAuthMiddleware {
   }
 
   /**
-   * Look up service account for API key
+   * Look up service account for an API key.
+   *
+   * Current implementation returns a minimal service-account identity.
+   * In production, this should be backed by a dedicated `api_keys`
+   * database table with columns for key_hash, permissions, rate_limit_tier,
+   * organization_id, is_active, and expires_at.
    */
   private async lookupServiceAccount(apiKey: string): Promise<any> {
-    // This would typically query your database or cache
-    // For now, we'll return a mock service account
-
-    // In a real implementation, you would:
-    // 1. Hash the API key and look it up in your database
-    // 2. Check if the API key is active and not expired
-    // 3. Return the associated service account details
-
-    // Placeholder implementation
+    // TODO: Replace with a proper database lookup once an api_keys table exists.
     return {
-      id: "service-account-123",
-      email: "api-service@stellar-privacy.com",
-      permissions: ["read:queries", "write:queries"],
-      rateLimitTier: "enterprise" as const,
-      organizationId: "org-123",
+      id: `sa_${apiKey.substring(0, 8)}`,
+      email: `api-key@stellar-privacy.local`,
+      permissions: ["read:queries"],
+      rateLimitTier: "basic" as const,
     };
   }
 
@@ -572,6 +586,7 @@ export class StellarAuthMiddleware {
 // Factory function to create middleware instance
 export function createStellarAuth(config: {
   stellarPublicKey: string;
+  jwtSecret?: string;
   apiKeySecret: string;
   allowedIssuers?: string[];
   allowedAudiences?: string[];
@@ -583,6 +598,7 @@ export function createStellarAuth(config: {
 // Default middleware instance using environment variables
 export const stellarAuth = createStellarAuth({
   stellarPublicKey: process.env.STELLAR_PUBLIC_KEY || "",
+  jwtSecret: process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only",
   apiKeySecret: process.env.API_KEY_SECRET || "",
   allowedIssuers: process.env.STELLAR_ALLOWED_ISSUERS?.split(",") || [
     "stellar-privacy",

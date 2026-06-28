@@ -8,6 +8,7 @@ import { RequestTransformer } from "./RequestTransformer";
 import { PrivacyMetrics } from "./PrivacyMetrics";
 import { LoadBalancer } from "./LoadBalancer";
 import { logger } from "../utils/logger";
+import jwt from "jsonwebtoken";
 
 export interface GatewayConfig {
   services: ServiceConfig[];
@@ -411,14 +412,19 @@ export class PrivacyApiGateway {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
-        // In a real implementation, decode and verify JWT
         const token = authHeader.substring(7);
-        // attributes.userId = decodedToken.sub;
-        // attributes.roles = decodedToken.roles;
-        // attributes.department = decodedToken.department;
-        attributes.userId = "demo-user";
-        attributes.roles = ["analyst"];
-        attributes.department = "data-analytics";
+        // Verify with HS256 using the shared JWT secret
+        const jwtSecret = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+        const decoded = jwt.verify(token, jwtSecret, {
+          algorithms: ["HS256"],
+        }) as {
+          sub?: string;
+          permissions?: string[];
+          email?: string;
+        };
+        attributes.userId = decoded.sub || "unknown";
+        attributes.roles = decoded.permissions || [];
+        attributes.email = decoded.email;
       } catch (error) {
         logger.warn("Failed to decode JWT token:", error);
       }
