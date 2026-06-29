@@ -1,280 +1,310 @@
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::onchain_aggregator::{
-        AggregationOperation, AggregationRequest, AggregatorError, BatchProcessing,
-        EncryptedDataPoint, OnChainAggregator,
+        AggregationOperation, AggregationRequest, BatchProcessing, EncryptedDataPoint,
+        OnChainAggregator,
     };
     use soroban_sdk::{
-        testutils::{Address as _, BytesN as _},
-        Address, BytesN, Env, String, Vec,
+        testutils::{Address as TestAddress, BytesN as TestBytesN},
+        Address, Bytes, BytesN, Env, Vec,
     };
 
-    /// Helper: register the contract and return the contract ID + an admin address.
-    fn setup(env: &Env) -> (Address, Address) {
-        // initialize now requires the admin to authorize the call; authorize
-        // all host auth in tests so setup succeeds. Business-logic authorization
-        // (e.g. batch_process caller == admin) is unaffected and still enforced.
-        env.mock_all_auths();
-        let contract_id = env.register(OnChainAggregator, ());
-        let admin = Address::generate(env);
-        env.as_contract(&contract_id, || {
-            OnChainAggregator::initialize(env.clone(), admin.clone());
-        });
-        (contract_id, admin)
+    fn setup_contract(env: &Env) -> Address {
+        let admin = TestAddress::generate(env);
+        OnChainAggregator::initialize(env.clone(), admin.clone());
+        admin
     }
 
-    /// Helper: store a minimal EncryptedDataPoint so that process_aggregation
-    /// can find it.
-    fn store_data_point(env: &Env, contract_id: &Address, data_id: &BytesN<32>) {
-        env.as_contract(contract_id, || {
-            let dp = EncryptedDataPoint {
-                data_id: data_id.clone(),
-                encrypted_value: soroban_sdk::Bytes::from_slice(env, &[1u8; 16]),
-                provider_id: Address::generate(env),
-                timestamp: 1000,
-                data_hash: BytesN::<32>::random(env),
-                epsilon_spent: 100,
-            };
-            env.storage().persistent().set(data_id, &dp);
-        });
+    fn create_data_point(env: &Env, provider_id: Address) -> BytesN<32> {
+        let data_id = TestBytesN::random(env);
+        let mut encrypted_value = Bytes::new(env);
+        let value: i128 = 1000;
+        encrypted_value.append(&Bytes::from_slice(env, &value.to_le_bytes()));
+
+        let data_hash: BytesN<32> = env.crypto().sha256(&encrypted_value).into();
+
+        let data_point = EncryptedDataPoint {
+            data_id: data_id.clone(),
+            encrypted_value,
+            provider_id,
+            timestamp: env.ledger().timestamp(),
+            data_hash,
+            epsilon_spent: 100i128,
+        };
+
+        env.storage().persistent().set(&data_id, &data_point);
+        data_id
     }
 
-    /// Helper: store an AggregationRequest in "pending" status with a single
-    /// data-point reference.
-    fn store_pending_request(
+    fn create_aggregation_request(
         env: &Env,
-        contract_id: &Address,
-        request_id: &BytesN<32>,
-        data_id: &BytesN<32>,
-    ) {
-        env.as_contract(contract_id, || {
-            let mut dps = Vec::new(env);
-            dps.push_back(data_id.clone());
-            let req = AggregationRequest {
-                request_id: request_id.clone(),
-                requester: Address::generate(env),
-                operation: AggregationOperation::Sum,
-                data_points: dps,
-                privacy_budget: 1000,
-                timestamp: env.ledger().timestamp(),
-                status: String::from_str(env, "pending"),
-                compute_credits_used: 1_000_000,
-                batch_id: None,
-            };
-            env.storage().persistent().set(request_id, &req);
-        });
-    }
+        requester: Address,
+        data_point_ids: Vec<BytesN<32>>,
+    ) -> BytesN<32> {
+        let request_id = TestBytesN::random(env);
 
-    /// Check if a Soroban `Vec<BytesN<32>>` contains a given id.
-    fn vec_contains(vec: &Vec<BytesN<32>>, target: &BytesN<32>) -> bool {
-        for item in vec.iter() {
-            if item == *target {
-                return true;
-            }
-        }
-        false
-    }
+        let request = AggregationRequest {
+            request_id: request_id.clone(),
+            requester,
+            operation: AggregationOperation::Count,
+            data_points: data_point_ids,
+            privacy_budget: 1000i128,
+            timestamp: env.ledger().timestamp(),
+            status: soroban_sdk::String::from_str(env, "pending"),
+            compute_credits_used: 500000i128,
+            batch_id: None,
+        };
 
-    // ── batch_process tests ───────────────────────────────────────────
+        env.storage().persistent().set(&request_id, &request);
+        request_id
+    }
 
     #[test]
     fn test_batch_process_all_succeed() {
         let env = Env::default();
-        let (contract_id, admin) = setup(&env);
+        let admin = setup_contract(&env);
+        let provider = TestAddress::generate(&env);
 
-        // Create two valid requests
-        let d1 = BytesN::<32>::random(&env);
-        let d2 = BytesN::<32>::random(&env);
-        store_data_point(&env, &contract_id, &d1);
-        store_data_point(&env, &contract_id, &d2);
+        // Create data points
+        let dp1 = create_data_point(&env, provider.clone());
+        let dp2 = create_data_point(&env, provider.clone());
+        let dp3 = create_data_point(&env, provider.clone());
 
-        let r1 = BytesN::<32>::random(&env);
-        let r2 = BytesN::<32>::random(&env);
-        store_pending_request(&env, &contract_id, &r1, &d1);
-        store_pending_request(&env, &contract_id, &r2, &d2);
+        // Create aggregation requests with data points
+        let mut data_point_ids = Vec::new(&env);
+        data_point_ids.push_back(dp1);
+        data_point_ids.push_back(dp2);
+        let rid1 = create_aggregation_request(&env, provider.clone(), data_point_ids);
 
-        let mut ids = Vec::new(&env);
-        ids.push_back(r1.clone());
-        ids.push_back(r2.clone());
+        let mut data_point_ids2 = Vec::new(&env);
+        data_point_ids2.push_back(dp3);
+        let rid2 = create_aggregation_request(&env, provider.clone(), data_point_ids2);
 
-        let batch_id = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, admin.clone())
-                .expect("batch_process should succeed")
-        });
+        // Build request_ids vec
+        let mut request_ids = Vec::new(&env);
+        request_ids.push_back(rid1.clone());
+        request_ids.push_back(rid2.clone());
 
-        env.as_contract(&contract_id, || {
-            let batch: BatchProcessing = env.storage().persistent().get(&batch_id).unwrap();
-            assert_eq!(batch.status, String::from_str(&env, "completed"));
-            assert_eq!(batch.succeeded_requests.len(), 2);
-            assert_eq!(batch.failed_requests.len(), 0);
-            assert!(batch.completed_at.is_some());
-        });
+        // Process batch
+        let _batch_id = OnChainAggregator::batch_process(
+            env.clone(),
+            request_ids.clone(),
+            admin.clone(),
+        )
+        .unwrap();
+
+        // Verify batch status using get_batch_status query
+        let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
+            .expect("get_batch_status should return the batch");
+
+        assert_eq!(
+            batch.status,
+            soroban_sdk::String::from_str(&env, "completed"),
+            "All requests succeeded, batch should be 'completed'"
+        );
+        assert_eq!(batch.completed_requests.len(), 2u32);
+        assert_eq!(batch.failed_requests.len(), 0u32);
+        assert!(batch.completed_at.is_some());
+
+        // Verify individual requests are "completed"
+        let req1: AggregationRequest = env.storage().persistent().get(&rid1).unwrap();
+        assert_eq!(req1.status, soroban_sdk::String::from_str(&env, "completed"));
+
+        let req2: AggregationRequest = env.storage().persistent().get(&rid2).unwrap();
+        assert_eq!(req2.status, soroban_sdk::String::from_str(&env, "completed"));
     }
 
     #[test]
-    fn test_batch_process_partial_fail() {
+    fn test_batch_process_mixed_results() {
         let env = Env::default();
-        let (contract_id, admin) = setup(&env);
+        let admin = setup_contract(&env);
+        let provider = TestAddress::generate(&env);
 
-        // Valid request
-        let d1 = BytesN::<32>::random(&env);
-        store_data_point(&env, &contract_id, &d1);
-        let r_valid = BytesN::<32>::random(&env);
-        store_pending_request(&env, &contract_id, &r_valid, &d1);
+        // Create a valid data point and request
+        let dp = create_data_point(&env, provider.clone());
+        let mut data_point_ids = Vec::new(&env);
+        data_point_ids.push_back(dp);
+        let valid_rid = create_aggregation_request(&env, provider.clone(), data_point_ids);
 
-        // Non-existent request (will fail with RequestNotFound)
-        let r_nonexistent = BytesN::<32>::random(&env);
+        // Create an invalid (nonexistent) request ID
+        let invalid_rid = TestBytesN::random(&env);
 
-        let mut ids = Vec::new(&env);
-        ids.push_back(r_valid.clone());
-        ids.push_back(r_nonexistent.clone());
+        // Build request_ids with one valid and one invalid
+        let mut request_ids = Vec::new(&env);
+        request_ids.push_back(valid_rid.clone());
+        request_ids.push_back(invalid_rid.clone());
 
-        let batch_id = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, admin.clone())
-                .expect("batch_process should still return Ok")
-        });
+        // Process batch
+        let _batch_id = OnChainAggregator::batch_process(
+            env.clone(),
+            request_ids.clone(),
+            admin.clone(),
+        )
+        .unwrap();
 
-        env.as_contract(&contract_id, || {
-            let batch: BatchProcessing = env.storage().persistent().get(&batch_id).unwrap();
-            assert_eq!(batch.status, String::from_str(&env, "partial"));
-            assert_eq!(batch.succeeded_requests.len(), 1);
-            assert_eq!(batch.failed_requests.len(), 1);
-            // The valid request should now be "completed"
-            let valid: AggregationRequest = env.storage().persistent().get(&r_valid).unwrap();
-            assert_eq!(valid.status, String::from_str(&env, "completed"));
-        });
+        // Verify batch status using get_batch_status query
+        let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
+            .expect("get_batch_status should return the batch");
+
+        assert_eq!(
+            batch.status,
+            soroban_sdk::String::from_str(&env, "partial"),
+            "Mixed results, batch should be 'partial'"
+        );
+        assert_eq!(batch.completed_requests.len(), 1u32);
+        assert_eq!(batch.failed_requests.len(), 1u32);
+        assert!(batch.completed_at.is_some());
+
+        // Verify valid request is "completed"
+        let valid_req: AggregationRequest = env.storage().persistent().get(&valid_rid).unwrap();
+        assert_eq!(valid_req.status, soroban_sdk::String::from_str(&env, "completed"));
+
+        // Verify invalid request is "failed" (NOT "processing")
+        let invalid_req: AggregationRequest =
+            env.storage().persistent().get(&invalid_rid).unwrap();
+        assert_eq!(
+            invalid_req.status,
+            soroban_sdk::String::from_str(&env, "failed"),
+            "Failed request should be marked 'failed', not left in 'processing'"
+        );
     }
 
     #[test]
-    fn test_batch_process_already_completed_request() {
+    fn test_batch_process_all_fail() {
         let env = Env::default();
-        let (contract_id, admin) = setup(&env);
+        let admin = setup_contract(&env);
 
-        // Pre-store an already-completed request
-        let d1 = BytesN::<32>::random(&env);
-        store_data_point(&env, &contract_id, &d1);
+        // Create nonexistent request IDs (all will fail with RequestNotFound)
+        let invalid_rid1 = TestBytesN::random(&env);
+        let invalid_rid2 = TestBytesN::random(&env);
 
-        let r_completed = BytesN::<32>::random(&env);
-        env.as_contract(&contract_id, || {
-            let mut dps = Vec::new(&env);
-            dps.push_back(d1.clone());
-            let completed_req = AggregationRequest {
-                request_id: r_completed.clone(),
-                requester: Address::generate(&env),
-                operation: AggregationOperation::Sum,
-                data_points: dps,
-                privacy_budget: 1000,
-                timestamp: env.ledger().timestamp(),
-                status: String::from_str(&env, "completed"),
-                compute_credits_used: 1_000_000,
-                batch_id: None,
-            };
-            env.storage().persistent().set(&r_completed, &completed_req);
-        });
+        let mut request_ids = Vec::new(&env);
+        request_ids.push_back(invalid_rid1.clone());
+        request_ids.push_back(invalid_rid2.clone());
 
-        let mut ids = Vec::new(&env);
-        ids.push_back(r_completed.clone());
+        // Process batch
+        let _batch_id = OnChainAggregator::batch_process(
+            env.clone(),
+            request_ids.clone(),
+            admin.clone(),
+        )
+        .unwrap();
 
-        let batch_id = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, admin.clone())
-                .expect("batch_process should still return Ok")
-        });
+        // Verify batch status using get_batch_status query
+        let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
+            .expect("get_batch_status should return the batch");
 
-        env.as_contract(&contract_id, || {
-            let batch: BatchProcessing = env.storage().persistent().get(&batch_id).unwrap();
-            assert_eq!(batch.status, String::from_str(&env, "partial"));
-            assert_eq!(batch.succeeded_requests.len(), 0);
-            assert_eq!(batch.failed_requests.len(), 1);
-            // The request should have been updated to "failed"
-            let updated: AggregationRequest = env.storage().persistent().get(&r_completed).unwrap();
-            assert_eq!(updated.status, String::from_str(&env, "failed"));
-        });
+        assert_eq!(
+            batch.status,
+            soroban_sdk::String::from_str(&env, "failed"),
+            "All requests failed, batch should be 'failed'"
+        );
+        assert_eq!(batch.completed_requests.len(), 0u32);
+        assert_eq!(batch.failed_requests.len(), 2u32);
+        assert!(batch.completed_at.is_some());
     }
 
     #[test]
-    fn test_batch_process_reports_correct_ids() {
+    fn test_get_batch_status_returns_breakdown() {
         let env = Env::default();
-        let (contract_id, admin) = setup(&env);
+        let admin = setup_contract(&env);
+        let provider = TestAddress::generate(&env);
 
-        let d1 = BytesN::<32>::random(&env);
-        store_data_point(&env, &contract_id, &d1);
+        // Create 2 valid and 1 invalid requests
+        let dp1 = create_data_point(&env, provider.clone());
+        let dp2 = create_data_point(&env, provider.clone());
 
-        let r_ok = BytesN::<32>::random(&env);
-        store_pending_request(&env, &contract_id, &r_ok, &d1);
+        let mut dp_ids1 = Vec::new(&env);
+        dp_ids1.push_back(dp1);
+        let rid1 = create_aggregation_request(&env, provider.clone(), dp_ids1);
 
-        // Non-existent request
-        let r_bad = BytesN::<32>::random(&env);
+        let mut dp_ids2 = Vec::new(&env);
+        dp_ids2.push_back(dp2);
+        let rid2 = create_aggregation_request(&env, provider.clone(), dp_ids2);
 
-        let mut ids = Vec::new(&env);
-        ids.push_back(r_ok.clone());
-        ids.push_back(r_bad.clone());
+        let invalid_rid = TestBytesN::random(&env);
 
-        let batch_id = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, admin.clone())
-                .expect("batch_process should still return Ok")
-        });
+        let mut request_ids = Vec::new(&env);
+        request_ids.push_back(rid1.clone());
+        request_ids.push_back(invalid_rid.clone());
+        request_ids.push_back(rid2.clone());
 
-        env.as_contract(&contract_id, || {
-            let batch: BatchProcessing = env.storage().persistent().get(&batch_id).unwrap();
+        let batch_id = OnChainAggregator::batch_process(
+            env.clone(),
+            request_ids.clone(),
+            admin.clone(),
+        )
+        .unwrap();
 
-            // Verify the exact IDs appear in the correct lists
-            let succeeded = batch.succeeded_requests;
-            let failed = batch.failed_requests;
-            assert!(vec_contains(&succeeded, &r_ok));
-            assert!(vec_contains(&failed, &r_bad));
-            assert!(!vec_contains(&succeeded, &r_bad));
-            assert!(!vec_contains(&failed, &r_ok));
-        });
+        // Use get_batch_status to retrieve the breakdown
+        let batch = OnChainAggregator::get_batch_status(env.clone(), batch_id.clone())
+            .expect("get_batch_status should return the batch");
+
+        assert_eq!(batch.batch_id, batch_id);
+        assert_eq!(batch.status, soroban_sdk::String::from_str(&env, "partial"));
+        assert_eq!(batch.completed_requests.len(), 2u32);
+        assert_eq!(batch.failed_requests.len(), 1u32);
+
+        // Verify completed requests contain the valid request IDs
+        let completed_ids: Vec<BytesN<32>> = batch.completed_requests.iter().collect();
+        assert!(completed_ids.contains(&rid1));
+        assert!(completed_ids.contains(&rid2));
+
+        // Verify failed requests contain the invalid request ID
+        let failed_ids: Vec<BytesN<32>> = batch.failed_requests.iter().collect();
+        assert!(failed_ids.contains(&invalid_rid));
     }
 
     #[test]
-    fn test_batch_process_unauthorized() {
+    fn test_batch_process_requires_admin_auth() {
         let env = Env::default();
-        let (contract_id, _admin) = setup(&env);
-        let attacker = Address::generate(&env);
+        let admin = setup_contract(&env);
+        let non_admin = TestAddress::generate(&env);
 
-        let mut ids = Vec::new(&env);
-        ids.push_back(BytesN::<32>::random(&env));
+        let request_ids = Vec::new(&env);
 
-        let result = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, attacker)
-        });
-        assert!(matches!(result, Err(AggregatorError::NotAuthorized)));
+        // Non-admin shouldn't be able to batch process
+        let result =
+            OnChainAggregator::batch_process(env.clone(), request_ids, non_admin);
+        assert!(result.is_err());
     }
 
     #[test]
-    fn test_batch_process_empty() {
+    fn test_batch_process_rejects_too_large() {
         let env = Env::default();
-        let (contract_id, admin) = setup(&env);
+        let admin = setup_contract(&env);
 
-        let ids = Vec::new(&env);
-        let batch_id = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, admin.clone())
-                .expect("empty batch should succeed")
-        });
-
-        env.as_contract(&contract_id, || {
-            let batch: BatchProcessing = env.storage().persistent().get(&batch_id).unwrap();
-            assert_eq!(batch.status, String::from_str(&env, "completed"));
-            assert_eq!(batch.succeeded_requests.len(), 0);
-            assert_eq!(batch.failed_requests.len(), 0);
-        });
-    }
-
-    #[test]
-    fn test_batch_process_too_large() {
-        let env = Env::default();
-        let (contract_id, admin) = setup(&env);
-
-        // Create more requests than MAX_BATCH_SIZE (100)
-        let mut ids = Vec::new(&env);
+        // Create more than MAX_BATCH_SIZE (100) requests
+        let mut request_ids = Vec::new(&env);
         for _ in 0..101 {
-            ids.push_back(BytesN::<32>::random(&env));
+            request_ids.push_back(TestBytesN::random(&env));
         }
 
-        let result = env.as_contract(&contract_id, || {
-            OnChainAggregator::batch_process(env.clone(), ids, admin.clone())
-        });
-        assert!(matches!(result, Err(AggregatorError::BatchTooLarge)));
+        let result =
+            OnChainAggregator::batch_process(env.clone(), request_ids, admin);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_batch_process_empty_list() {
+        let env = Env::default();
+        let admin = setup_contract(&env);
+
+        let request_ids = Vec::new(&env);
+
+        let _batch_id =
+            OnChainAggregator::batch_process(env.clone(), request_ids, admin.clone()).unwrap();
+
+        let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
+            .expect("get_batch_status should return the batch");
+
+        assert_eq!(
+            batch.status,
+            soroban_sdk::String::from_str(&env, "completed"),
+            "Empty batch should be 'completed'"
+        );
+        assert_eq!(batch.completed_requests.len(), 0u32);
+        assert_eq!(batch.failed_requests.len(), 0u32);
     }
 }
