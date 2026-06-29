@@ -42,6 +42,10 @@ pids
 *.seed
 *.pid.lock
 
+# Gateway runtime persistence (privacy metrics store, encryption keys, etc.)
+backend/data/
+data/gateway/
+
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov

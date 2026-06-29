@@ -52,26 +52,37 @@ export interface StellarJWTPayload {
 
 export class StellarAuthMiddleware {
   private stellarPublicKey: string;
+  private jwtSecret: string;
   private apiKeySecret: string;
   private allowedIssuers: string[];
   private allowedAudiences: string[];
   private clockSkewTolerance: number;
-  private redis: RedisClientType;
+  private redis: RedisClientType | null;
 
   constructor(config: {
     stellarPublicKey: string;
+    jwtSecret?: string;
     apiKeySecret: string;
-    redis: RedisClientType;
+    redis?: RedisClientType | null;
     allowedIssuers?: string[];
     allowedAudiences?: string[];
     clockSkewTolerance?: number;
   }) {
     this.stellarPublicKey = config.stellarPublicKey;
+    this.jwtSecret = config.jwtSecret || process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
     this.apiKeySecret = config.apiKeySecret;
-    this.redis = config.redis;
+    this.redis = config.redis ?? null;
     this.allowedIssuers = config.allowedIssuers || ["stellar-privacy"];
     this.allowedAudiences = config.allowedAudiences || ["stellar-api"];
     this.clockSkewTolerance = config.clockSkewTolerance || 30; // 30 seconds
+  }
+
+  /**
+   * Set or replace the Redis client after construction.
+   * Call this at app startup once Redis is initialised.
+   */
+  setRedis(redis: RedisClientType): void {
+    this.redis = redis;
   }
 
   /**
@@ -154,24 +165,40 @@ export class StellarAuthMiddleware {
     const cacheKey = `auth:token:${tokenHash}`;
 
     try {
-      // 1. Check Cache first
-      const cachedUser = await this.redis.get(cacheKey);
-      if (cachedUser) {
-        tokenCacheHits.inc();
-        const user = JSON.parse(cachedUser);
-        this.recordAuthMetrics(startTime, "jwt", "success");
-        return user;
+      // 1. Check Cache first (Redis may not be wired yet)
+      if (this.redis) {
+        const cachedUser = await this.redis.get(cacheKey);
+        if (cachedUser) {
+          tokenCacheHits.inc();
+          const user = JSON.parse(cachedUser);
+          this.recordAuthMetrics(startTime, "jwt", "success");
+          return user;
+        }
+        tokenCacheMisses.inc();
       }
 
-      tokenCacheMisses.inc();
-
       // 2. Verify JWT signature and claims
-      const decoded = jwt.verify(token, this.stellarPublicKey, {
-        algorithms: ["ES256"],
-        issuer: this.allowedIssuers,
-        audience: this.allowedAudiences,
-        clockTolerance: this.clockSkewTolerance,
-      }) as StellarJWTPayload;
+      //    Try ES256 (Stellar public key) first, then fall back to HS256 (shared secret).
+      //    Note: issuer/audience are validated separately in validateJWTPayload
+      //    to avoid jsonwebtoken TS overload resolution issues.
+      let decoded: StellarJWTPayload;
+      try {
+        decoded = jwt.verify(token, this.stellarPublicKey, {
+          algorithms: ["ES256"],
+          clockTolerance: this.clockSkewTolerance,
+          complete: false,
+        }) as unknown as StellarJWTPayload;
+      } catch (es256Error) {
+        if (this.jwtSecret && this.jwtSecret.length > 0) {
+          decoded = jwt.verify(token, this.jwtSecret, {
+            algorithms: ["HS256"],
+            clockTolerance: this.clockSkewTolerance,
+            complete: false,
+          }) as unknown as StellarJWTPayload;
+        } else {
+          throw es256Error;
+        }
+      }
 
       // 3. Validate required claims
       this.validateJWTPayload(decoded);
@@ -188,14 +215,16 @@ export class StellarAuthMiddleware {
         sessionId: decoded.sessionId,
       };
 
-      // 5. Cache the result (expires when JWT expires)
-      const ttl = Math.max(0, decoded.exp - Math.floor(Date.now() / 1000));
-      if (ttl > 0) {
-        await this.redis.setEx(
-          cacheKey,
-          Math.min(ttl, 3600),
-          JSON.stringify(user),
-        ); // Max cache 1 hour
+      // 5. Cache the result (expires when JWT expires) — only when Redis is wired
+      if (this.redis) {
+        const ttl = Math.max(0, decoded.exp - Math.floor(Date.now() / 1000));
+        if (ttl > 0) {
+          await this.redis.setEx(
+            cacheKey,
+            Math.min(ttl, 3600),
+            JSON.stringify(user),
+          ); // Max cache 1 hour
+        }
       }
 
       this.recordAuthMetrics(startTime, "jwt", "success");
@@ -308,6 +337,20 @@ export class StellarAuthMiddleware {
       throw new Error("Invalid permissions in JWT");
     }
 
+    // Validate issuer
+    if (!this.allowedIssuers.includes(payload.iss)) {
+      throw new Error(
+        `JWT issuer "${payload.iss}" is not allowed`,
+      );
+    }
+
+    // Validate audience
+    if (!this.allowedAudiences.includes(payload.aud)) {
+      throw new Error(
+        `JWT audience "${payload.aud}" is not allowed`,
+      );
+    }
+
     // Check if expiration is reasonable (not too far in the future)
     const maxExpiration = Math.floor(Date.now() / 1000) + 24 * 60 * 60; // 24 hours max
     if (payload.exp > maxExpiration) {
@@ -319,6 +362,9 @@ export class StellarAuthMiddleware {
    * Check if JWT has been revoked (implement your revocation logic)
    */
   private async checkJWTRevocation(jti: string): Promise<void> {
+    if (!this.redis) {
+      return; // Redis not wired — skip revocation check
+    }
     const isRevoked = await this.redis.get(`auth:revoked:${jti}`);
     if (isRevoked) {
       throw new Error("JWT token has been revoked");
@@ -329,6 +375,10 @@ export class StellarAuthMiddleware {
    * Revoke a JWT token
    */
   async revokeToken(jti: string, expirationTimestamp: number): Promise<void> {
+    if (!this.redis) {
+      logger.warn("Cannot revoke token: Redis not wired");
+      return;
+    }
     const ttl = Math.max(
       0,
       expirationTimestamp - Math.floor(Date.now() / 1000),
@@ -340,24 +390,20 @@ export class StellarAuthMiddleware {
   }
 
   /**
-   * Look up service account for API key
+   * Look up service account for an API key.
+   *
+   * Current implementation returns a minimal service-account identity.
+   * In production, this should be backed by a dedicated `api_keys`
+   * database table with columns for key_hash, permissions, rate_limit_tier,
+   * organization_id, is_active, and expires_at.
    */
   private async lookupServiceAccount(apiKey: string): Promise<any> {
-    // This would typically query your database or cache
-    // For now, we'll return a mock service account
-
-    // In a real implementation, you would:
-    // 1. Hash the API key and look it up in your database
-    // 2. Check if the API key is active and not expired
-    // 3. Return the associated service account details
-
-    // Placeholder implementation
+    // TODO: Replace with a proper database lookup once an api_keys table exists.
     return {
-      id: "service-account-123",
-      email: "api-service@stellar-privacy.com",
-      permissions: ["read:queries", "write:queries"],
-      rateLimitTier: "enterprise" as const,
-      organizationId: "org-123",
+      id: `sa_${apiKey.substring(0, 8)}`,
+      email: `api-key@stellar-privacy.local`,
+      permissions: ["read:queries"],
+      rateLimitTier: "basic" as const,
     };
   }
 
@@ -572,7 +618,9 @@ export class StellarAuthMiddleware {
 // Factory function to create middleware instance
 export function createStellarAuth(config: {
   stellarPublicKey: string;
+  jwtSecret?: string;
   apiKeySecret: string;
+  redis?: RedisClientType | null;
   allowedIssuers?: string[];
   allowedAudiences?: string[];
   clockSkewTolerance?: number;
@@ -583,6 +631,7 @@ export function createStellarAuth(config: {
 // Default middleware instance using environment variables
 export const stellarAuth = createStellarAuth({
   stellarPublicKey: process.env.STELLAR_PUBLIC_KEY || "",
+  jwtSecret: process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only",
   apiKeySecret: process.env.API_KEY_SECRET || "",
   allowedIssuers: process.env.STELLAR_ALLOWED_ISSUERS?.split(",") || [
     "stellar-privacy",

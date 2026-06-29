@@ -15,8 +15,8 @@ const UPGRADE_DELAY_KEY: &str = "UPGRADE_DELAY";
 const UPGRADE_INITIATED_KEY: &str = "UPGRADE_INITIATED";
 
 // Constants
-const MIN_UPGRADE_DELAY: u64 = 86400; // 24 hours in seconds
-const DEFAULT_UPGRADE_DELAY: u64 = 604800; // 7 days in seconds
+pub const MIN_UPGRADE_DELAY: u64 = 86400; // 24 hours in seconds
+pub const DEFAULT_UPGRADE_DELAY: u64 = 604800; // 7 days in seconds
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
@@ -59,6 +59,11 @@ impl UpgradeableProxy {
         {
             return Err(ProxyError::AlreadyInitialized);
         }
+
+        // Require admin authorization to prevent front-running
+        // initialize() between deployment and the legitimate
+        // admin's setup transaction.
+        admin.require_auth();
 
         // Validate implementation address (basic check)
         if implementation == BytesN::from_array(&env, &[0; 32]) {
@@ -124,11 +129,8 @@ impl UpgradeableProxy {
         new_implementation: BytesN<32>,
         caller: Address,
     ) -> Result<(), ProxyError> {
-        // Check if caller is admin
-        let admin = Self::admin(env.clone())?;
-        if caller != admin {
-            return Err(ProxyError::NotAdmin);
-        }
+        // Delegate auth + admin-equality to the shared helper. See issue #297.
+        Self::verify_admin(&env, &caller)?;
 
         // Validate new implementation
         if new_implementation == BytesN::from_array(&env, &[0; 32]) {
@@ -179,11 +181,8 @@ impl UpgradeableProxy {
 
     /// Complete the upgrade after delay period
     pub fn complete_upgrade(env: Env, caller: Address) -> Result<(), ProxyError> {
-        // Check if caller is admin
-        let admin = Self::admin(env.clone())?;
-        if caller != admin {
-            return Err(ProxyError::NotAdmin);
-        }
+        // Delegate auth + admin-equality to the shared helper. See issue #297.
+        Self::verify_admin(&env, &caller)?;
 
         // Check if there's a pending upgrade
         if !env
@@ -250,11 +249,8 @@ impl UpgradeableProxy {
 
     /// Cancel pending upgrade
     pub fn cancel_upgrade(env: Env, caller: Address) -> Result<(), ProxyError> {
-        // Check if caller is admin
-        let admin = Self::admin(env.clone())?;
-        if caller != admin {
-            return Err(ProxyError::NotAdmin);
-        }
+        // Delegate auth + admin-equality to the shared helper. See issue #297.
+        Self::verify_admin(&env, &caller)?;
 
         // Check if there's a pending upgrade
         if !env
@@ -284,11 +280,8 @@ impl UpgradeableProxy {
 
     /// Set upgrade delay (only callable by admin)
     pub fn set_upgrade_delay(env: Env, new_delay: u64, caller: Address) -> Result<(), ProxyError> {
-        // Check if caller is admin
-        let admin = Self::admin(env.clone())?;
-        if caller != admin {
-            return Err(ProxyError::NotAdmin);
-        }
+        // Delegate auth + admin-equality to the shared helper. See issue #297.
+        Self::verify_admin(&env, &caller)?;
 
         // Validate delay
         if new_delay < MIN_UPGRADE_DELAY {
@@ -365,11 +358,12 @@ impl UpgradeableProxy {
 
     /// Transfer admin rights (only callable by current admin)
     pub fn transfer_admin(env: Env, new_admin: Address, caller: Address) -> Result<(), ProxyError> {
-        // Check if caller is admin
-        let admin = Self::admin(env.clone())?;
-        if caller != admin {
-            return Err(ProxyError::NotAdmin);
-        }
+        // Capture the current admin BEFORE the helper consumes the env,
+        // so the post-transfer event can record both ends of the handoff.
+        let old_admin = Self::admin(env.clone())?;
+
+        // Delegate auth + admin-equality to the shared helper. See issue #297.
+        Self::verify_admin(&env, &caller)?;
 
         // Set new admin
         env.storage()
@@ -379,9 +373,32 @@ impl UpgradeableProxy {
         // Emit admin transferred event
         env.events().publish(
             (String::from_str(&env, "admin_transferred"),),
-            (admin, new_admin),
+            (old_admin, new_admin),
         );
 
+        Ok(())
+    }
+
+    /// Centralized admin guard for all mutating entry points.
+    ///
+    /// Performs two checks:
+    /// 1. **Host-level auth** (`caller.require_auth()`) — the Soroban
+    ///    auth context must approve the call. This is the only check
+    ///    that protects against caller-spoofing, because the subsequent
+    ///    equality check trusts whatever `caller` argument is passed.
+    /// 2. **Stored-admin equality** — the supplied caller must match
+    ///    the admin previously recorded by `initialize`.
+    ///
+    /// Centralizing these checks here prevents future mutating methods
+    /// from accidentally omitting host-level auth. Every public entry
+    /// point that affects proxy state MUST start with
+    /// `Self::verify_admin(&env, &caller)?;`. See GitHub issue #297.
+    fn verify_admin(env: &Env, caller: &Address) -> Result<(), ProxyError> {
+        caller.require_auth();
+        let admin = Self::admin(env.clone())?;
+        if caller != &admin {
+            return Err(ProxyError::NotAdmin);
+        }
         Ok(())
     }
 }

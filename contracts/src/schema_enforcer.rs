@@ -2,6 +2,7 @@ use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
 use soroban_sdk::contracttype;
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::Address;
 use soroban_sdk::Bytes;
 use soroban_sdk::BytesN;
@@ -11,16 +12,9 @@ use soroban_sdk::String;
 use soroban_sdk::Symbol;
 use soroban_sdk::Vec;
 
-// Contract state storage keys
-const ACTIVE_SCHEMAS_KEY: &str = "ACTIVE_SCHEMAS";
-const ORG_SCHEMAS_KEY: &str = "ORG_SCHEMAS";
-const VALIDATION_LOGS_KEY: &str = "VALIDATION_LOGS";
-const REJECTION_EVENTS_KEY: &str = "REJECTION_EVENTS";
-
 // Constants
 const MAX_SCHEMA_FIELDS: u32 = 50;
 const MAX_FIELD_NAME_LENGTH: u32 = 256;
-const MAX_SCHEMA_SIZE: u32 = 65536; // 64KB
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
@@ -131,6 +125,11 @@ impl SchemaEnforcer {
         {
             return; // Already initialized
         }
+
+        // Require the admin to authorize initialization. Without this an
+        // attacker could front-run the deployer's setup transaction and
+        // claim admin by passing their own address.
+        admin.require_auth();
 
         // Set admin
         env.storage()
@@ -261,7 +260,7 @@ impl SchemaEnforcer {
                 // Validate field type (basic check - encrypted data type validation)
                 if !Self::validate_encrypted_field_type(
                     expected_field.field_type.clone(),
-                    _encrypted_data,
+                    &_encrypted_data,
                 ) {
                     validation_log.validation_result = false;
                     validation_log
@@ -278,7 +277,7 @@ impl SchemaEnforcer {
 
         // Check for missing required fields
         for field in schema.fields.iter() {
-            if field.required && !payload.encrypted_fields.contains_key(&field.name) {
+            if field.required && !payload.encrypted_fields.contains_key(field.name.clone()) {
                 validation_log.validation_result = false;
                 validation_log
                     .error_messages
@@ -288,6 +287,18 @@ impl SchemaEnforcer {
 
         // Store validation log
         env.storage().persistent().set(&log_id, &validation_log);
+
+        // Append the log id to the validation_logs index that get_validation_log
+        // scans. Without this the index stays empty and every audit lookup
+        // returns None, silently losing the validation trail.
+        let logs_key = Symbol::new(&env, "validation_logs");
+        let mut validation_logs: Vec<BytesN<32>> = env
+            .storage()
+            .persistent()
+            .get(&logs_key)
+            .unwrap_or_else(|| Vec::new(&env));
+        validation_logs.push_back(log_id.clone());
+        env.storage().persistent().set(&logs_key, &validation_logs);
 
         // If validation failed, create rejection event
         if !validation_log.validation_result {
@@ -300,7 +311,7 @@ impl SchemaEnforcer {
                 rejection_reason: validation_log
                     .error_messages
                     .get(0)
-                    .unwrap_or(&String::from_str(&env, "Validation failed"))
+                    .unwrap_or(String::from_str(&env, "Validation failed"))
                     .clone(),
                 timestamp: env.ledger().timestamp(),
             };
@@ -395,6 +406,27 @@ impl SchemaEnforcer {
             .persistent()
             .set(&Symbol::new(&env, "active_schemas"), &active_schemas);
 
+        // Remove from the organization-specific index so get_org_schemas no
+        // longer returns the deactivated schema and the index does not grow
+        // unboundedly with every schema ever created.
+        let org_schemas_key = (Symbol::new(&env, "org_schemas_"), org_id.clone());
+        let org_schemas: Vec<BytesN<32>> = env
+            .storage()
+            .persistent()
+            .get(&org_schemas_key)
+            .unwrap_or_else(|| Vec::new(&env));
+
+        let mut filtered_org_schemas = Vec::new(&env);
+        for id in org_schemas {
+            if id != schema_id {
+                filtered_org_schemas.push_back(id);
+            }
+        }
+
+        env.storage()
+            .persistent()
+            .set(&org_schemas_key, &filtered_org_schemas);
+
         Ok(())
     }
 
@@ -426,7 +458,7 @@ impl SchemaEnforcer {
             .get::<_, Vec<BytesN<32>>>(&logs_key)
         {
             for log_id in logs.iter() {
-                if let Some(log) = env.storage().persistent().get::<_, ValidationLog>(log_id) {
+                if let Some(log) = env.storage().persistent().get::<_, ValidationLog>(&log_id) {
                     if log.payload_id == payload_id {
                         return Some(log);
                     }
@@ -452,9 +484,9 @@ impl SchemaEnforcer {
         version: &String,
     ) -> BytesN<32> {
         let mut combined = soroban_sdk::Bytes::new(env);
-        combined.append(&org_id.to_xdr(env));
-        combined.append(&name.to_xdr(env));
-        combined.append(&version.to_xdr(env));
+        combined.append(&org_id.clone().to_xdr(env));
+        combined.append(&name.clone().to_xdr(env));
+        combined.append(&version.clone().to_xdr(env));
         combined.append(&Bytes::from_slice(
             env,
             &env.ledger().timestamp().to_be_bytes(),
@@ -504,5 +536,100 @@ impl SchemaEnforcer {
             | SchemaFieldType::EncryptedFloat => !_encrypted_data.is_empty(),
             _ => false, // Non-encrypted types shouldn't be in encrypted fields
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+
+    /// Register a schema with no fields/metadata so any payload validates
+    /// cleanly, keeping these tests focused on the validation-log index.
+    fn create_empty_schema(
+        env: &Env,
+        client: &SchemaEnforcerClient,
+        org_id: &Address,
+    ) -> BytesN<32> {
+        let fields: Vec<SchemaField> = Vec::new(env);
+        let required_metadata: Vec<String> = Vec::new(env);
+        client.create_schema(
+            org_id,
+            &String::from_str(env, "schema"),
+            &String::from_str(env, "v1"),
+            &fields,
+            &required_metadata,
+        )
+    }
+
+    fn payload_for(env: &Env, schema_id: &BytesN<32>, seed: u8) -> EncryptedPayload {
+        EncryptedPayload {
+            payload_id: BytesN::<32>::from_array(env, &[seed; 32]),
+            schema_id: schema_id.clone(),
+            provider_id: Address::generate(env),
+            data_hash: BytesN::<32>::from_array(env, &[seed.wrapping_add(1); 32]),
+            encrypted_fields: Map::new(env),
+            metadata: Map::new(env),
+            timestamp: 0,
+        }
+    }
+
+    /// Acceptance: validate a payload, then retrieve its log successfully.
+    #[test]
+    fn test_validation_log_is_indexed_and_retrievable() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(SchemaEnforcer, ());
+        let client = SchemaEnforcerClient::new(&env, &contract_id);
+
+        let org_id = Address::generate(&env);
+        let schema_id = create_empty_schema(&env, &client, &org_id);
+
+        let payload = payload_for(&env, &schema_id, 7);
+        let log_id = client.validate_payload(&payload);
+
+        let log = client.get_validation_log(&payload.payload_id);
+        assert!(
+            log.is_some(),
+            "validation log should be retrievable after validate_payload"
+        );
+        let log = log.unwrap();
+        assert_eq!(log.log_id, log_id);
+        assert_eq!(log.payload_id, payload.payload_id);
+        assert!(log.validation_result);
+    }
+
+    /// Multiple validated payloads must each be independently retrievable,
+    /// proving the index accumulates entries rather than overwriting.
+    #[test]
+    fn test_multiple_validation_logs_are_each_retrievable() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(SchemaEnforcer, ());
+        let client = SchemaEnforcerClient::new(&env, &contract_id);
+
+        let org_id = Address::generate(&env);
+        let schema_id = create_empty_schema(&env, &client, &org_id);
+
+        let payload_a = payload_for(&env, &schema_id, 10);
+        let payload_b = payload_for(&env, &schema_id, 20);
+        client.validate_payload(&payload_a);
+        client.validate_payload(&payload_b);
+
+        let log_a = client.get_validation_log(&payload_a.payload_id);
+        let log_b = client.get_validation_log(&payload_b.payload_id);
+        assert_eq!(log_a.unwrap().payload_id, payload_a.payload_id);
+        assert_eq!(log_b.unwrap().payload_id, payload_b.payload_id);
+    }
+
+    #[test]
+    fn test_get_validation_log_returns_none_for_unknown_payload() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(SchemaEnforcer, ());
+        let client = SchemaEnforcerClient::new(&env, &contract_id);
+
+        let unknown = BytesN::<32>::from_array(&env, &[99u8; 32]);
+        assert!(client.get_validation_log(&unknown).is_none());
     }
 }

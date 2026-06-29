@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { MetricsConfig } from "./PrivacyApiGateway";
+import { MetricsStore } from "./MetricsStore";
 import { logger } from "../utils/logger";
+
+const DEFAULT_FLUSH_INTERVAL = 30000; // 30 seconds
+const DEFAULT_MAX_BUFFER_SIZE = 10000;
 
 export interface PrivacyMetric {
   timestamp: Date;
@@ -67,17 +71,60 @@ export class PrivacyMetrics {
   private aggregationCache: Map<string, AggregatedMetrics>;
   private collectionInterval?: NodeJS.Timeout;
 
+  // Persistence: durable store + flush plumbing (no-ops when persistence is off).
+  private store?: MetricsStore;
+  private unflushed: PrivacyMetric[] = [];
+  private flushInterval?: NodeJS.Timeout;
+  private readonly flushIntervalMs: number;
+  private readonly maxBufferSize: number;
+
   constructor(config: MetricsConfig) {
     this.config = config;
     this.metrics = new Map();
     this.alerts = [];
     this.aggregationCache = new Map();
+
+    const persistence = config.persistence;
+    this.flushIntervalMs = persistence?.flushInterval ?? DEFAULT_FLUSH_INTERVAL;
+    this.maxBufferSize = persistence?.maxBufferSize ?? DEFAULT_MAX_BUFFER_SIZE;
+
+    if (persistence?.enabled) {
+      this.store = new MetricsStore({
+        filePath: persistence.filePath,
+        retentionPeriod: config.retentionPeriod,
+      });
+    }
   }
 
   async start(): Promise<void> {
     if (!this.config.enabled) {
       logger.info("Privacy metrics collection disabled");
       return;
+    }
+
+    // Recover historical metrics persisted before the last shutdown/crash so
+    // getMetrics() reflects them immediately after a restart.
+    if (this.store) {
+      try {
+        const recovered = this.store.load();
+        for (const metric of recovered) {
+          this.metrics.set(metric.requestId, metric);
+        }
+        this.enforceBufferCap();
+        logger.info("Recovered persisted privacy metrics", {
+          recovered: recovered.length,
+          filePath: this.store.getFilePath(),
+        });
+      } catch (error) {
+        logger.error("Failed to recover persisted privacy metrics", {
+          error: (error as Error).message,
+        });
+      }
+
+      // Periodic flush of the in-memory buffer to the durable store.
+      this.flushInterval = setInterval(() => {
+        this.flush();
+      }, this.flushIntervalMs);
     }
 
     // Start periodic aggregation
@@ -90,6 +137,8 @@ export class PrivacyMetrics {
     logger.info("Privacy metrics collection started", {
       collectionInterval: this.config.collectionInterval,
       retentionPeriod: this.config.retentionPeriod,
+      persistence: Boolean(this.store),
+      flushInterval: this.store ? this.flushIntervalMs : undefined,
     });
   }
 
@@ -98,6 +147,14 @@ export class PrivacyMetrics {
       clearInterval(this.collectionInterval);
       this.collectionInterval = undefined;
     }
+
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+      this.flushInterval = undefined;
+    }
+
+    // Final flush so in-flight metrics are not lost on a graceful shutdown.
+    this.flush();
 
     logger.info("Privacy metrics collection stopped");
   }
@@ -128,6 +185,11 @@ export class PrivacyMetrics {
 
     this.metrics.set(metric.requestId, metric);
 
+    if (this.store) {
+      this.unflushed.push(metric);
+      this.enforceBufferCap();
+    }
+
     // Real-time alert checking for critical events
     if (res.statusCode === 403) {
       this.checkForImmediateAlerts(metric);
@@ -145,6 +207,12 @@ export class PrivacyMetrics {
       existingMetric.statusCode = proxyRes.statusCode;
       existingMetric.accessDecision =
         proxyRes.statusCode < 400 ? "allow" : "deny";
+
+      // Re-queue the updated record; the store de-duplicates by requestId with
+      // last-write-wins, so the persisted copy reflects the final status.
+      if (this.store) {
+        this.unflushed.push(existingMetric);
+      }
     }
   }
 
@@ -162,13 +230,7 @@ export class PrivacyMetrics {
       return cached;
     }
 
-    let filteredMetrics = Array.from(this.metrics.values());
-
-    if (timeRange) {
-      filteredMetrics = filteredMetrics.filter(
-        (m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end,
-      );
-    }
+    const filteredMetrics = this.collectMetrics(timeRange);
 
     const aggregated = this.aggregateMetricsData(filteredMetrics);
 
@@ -182,17 +244,9 @@ export class PrivacyMetrics {
     start: Date;
     end: Date;
   }): Promise<PrivacyMetric[]> {
-    let filteredMetrics = Array.from(this.metrics.values()).filter(
+    return this.collectMetrics(timeRange).filter(
       (m) => m.accessDecision === "deny",
     );
-
-    if (timeRange) {
-      filteredMetrics = filteredMetrics.filter(
-        (m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end,
-      );
-    }
-
-    return filteredMetrics;
   }
 
   async getAlerts(
@@ -411,6 +465,89 @@ export class PrivacyMetrics {
     });
   }
 
+  /**
+   * Build the working set for aggregation/queries. With persistence enabled the
+   * durable store is the source of truth (so trimmed-from-memory and recovered
+   * records are included), overlaid with not-yet-flushed records. Without it,
+   * the in-memory map is used as before.
+   */
+  private collectMetrics(timeRange?: {
+    start: Date;
+    end: Date;
+  }): PrivacyMetric[] {
+    if (!this.store) {
+      let arr = Array.from(this.metrics.values());
+      if (timeRange) {
+        arr = arr.filter(
+          (m) => m.timestamp >= timeRange.start && m.timestamp <= timeRange.end,
+        );
+      }
+      return arr;
+    }
+
+    const merged = new Map<string, PrivacyMetric>();
+    for (const metric of this.store.load(timeRange)) {
+      merged.set(metric.requestId, metric);
+    }
+    for (const metric of this.unflushed) {
+      if (
+        timeRange &&
+        (metric.timestamp < timeRange.start || metric.timestamp > timeRange.end)
+      ) {
+        continue;
+      }
+      merged.set(metric.requestId, metric);
+    }
+
+    return Array.from(merged.values());
+  }
+
+  /**
+   * Persist buffered metrics to the durable store. On failure the batch is
+   * re-queued so the next interval retries rather than dropping records.
+   */
+  private flush(): void {
+    if (!this.store || this.unflushed.length === 0) {
+      return;
+    }
+
+    const batch = this.unflushed;
+    this.unflushed = [];
+
+    try {
+      this.store.append(batch);
+    } catch (error) {
+      this.unflushed = batch.concat(this.unflushed);
+      logger.error("Failed to flush privacy metrics to durable store", {
+        pending: this.unflushed.length,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
+   * Bound the in-memory map. Only safe with persistence on, where evicted
+   * (oldest, insertion-ordered) records remain durable in the store/flush queue.
+   */
+  private enforceBufferCap(): void {
+    if (!this.store) {
+      return;
+    }
+
+    let overflow = this.metrics.size - this.maxBufferSize;
+    if (overflow <= 0) {
+      return;
+    }
+
+    for (const id of this.metrics.keys()) {
+      if (overflow <= 0) {
+        break;
+      }
+      this.metrics.delete(id);
+      overflow--;
+    }
+  }
+
   private cleanupOldMetrics(): void {
     const cutoff = new Date(Date.now() - this.config.retentionPeriod);
     const beforeCount = this.metrics.size;
@@ -424,6 +561,12 @@ export class PrivacyMetrics {
     const removed = beforeCount - this.metrics.size;
     if (removed > 0) {
       logger.debug(`Cleaned up ${removed} old privacy metrics`);
+    }
+
+    // Drop expired records from the durable store as well.
+    if (this.store) {
+      this.flush();
+      this.store.compact();
     }
 
     // Clean up old alerts
@@ -602,6 +745,8 @@ export class PrivacyMetrics {
     activeAlerts: number;
     cacheSize: number;
     enabled: boolean;
+    persistenceEnabled: boolean;
+    pendingFlush: number;
   } {
     return {
       totalMetrics: this.metrics.size,
@@ -609,6 +754,8 @@ export class PrivacyMetrics {
       activeAlerts: this.alerts.filter((a) => !a.resolved).length,
       cacheSize: this.aggregationCache.size,
       enabled: this.config.enabled,
+      persistenceEnabled: Boolean(this.store),
+      pendingFlush: this.unflushed.length,
     };
   }
 }

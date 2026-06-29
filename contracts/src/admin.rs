@@ -2,10 +2,11 @@ use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
 use soroban_sdk::contracttype;
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::Address;
+use soroban_sdk::Bytes;
 use soroban_sdk::BytesN;
 use soroban_sdk::Env;
-use soroban_sdk::IntoVal;
 use soroban_sdk::Map;
 use soroban_sdk::String;
 use soroban_sdk::Vec;
@@ -88,10 +89,10 @@ impl MultiSigAdmin {
         // Check for duplicate owners
         let mut unique_owners = Vec::new(&env);
         for owner in owners.iter() {
-            if unique_owners.contains(owner) {
+            if unique_owners.contains(&owner) {
                 return Err(MultiSigError::OwnerExists);
             }
-            unique_owners.push_back(owner);
+            unique_owners.push_back(owner.clone());
         }
 
         // Set owners
@@ -172,7 +173,7 @@ impl MultiSigAdmin {
         }
 
         // Add new owner
-        owners.push_back(new_owner);
+        owners.push_back(new_owner.clone());
         env.storage()
             .instance()
             .set(&String::from_str(&env, OWNERS_KEY), &owners);
@@ -195,7 +196,7 @@ impl MultiSigAdmin {
             return Err(MultiSigError::NotOwner);
         }
 
-        let mut owners = Self::get_owners(env.clone())?;
+        let owners = Self::get_owners(env.clone())?;
         let threshold = Self::get_threshold(env.clone())?;
 
         // Find and remove owner
@@ -205,7 +206,7 @@ impl MultiSigAdmin {
             if owner == owner_to_remove {
                 found = true;
             } else {
-                new_owners.push_back(owner);
+                new_owners.push_back(owner.clone());
             }
         }
 
@@ -307,7 +308,7 @@ impl MultiSigAdmin {
         };
 
         // Calculate transaction hash
-        let transaction_hash = Self::hash_transaction(env.clone(), &transaction);
+        let transaction_hash = Self::hash_transaction(&env, &transaction);
         let tx_hash_copy = transaction_hash.clone();
 
         // Store transaction
@@ -342,20 +343,20 @@ impl MultiSigAdmin {
         transaction_hash: BytesN<32>,
         caller: Address,
     ) -> Result<(), MultiSigError> {
-        // Check if caller is owner
-        if !Self::is_owner(env.clone(), caller)? {
+        // Check if caller is owner (clone caller to avoid move)
+        if !Self::is_owner(env.clone(), caller.clone())? {
             return Err(MultiSigError::NotOwner);
         }
 
         // Get transaction
-        let mut executions = env
+        let executions = env
             .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Transaction>>(&String::from_str(&env, EXECUTIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
         let transaction = executions
-            .get(transaction_hash)
+            .get(transaction_hash.clone())
             .ok_or(MultiSigError::TransactionNotFound)?;
 
         // Check if already executed
@@ -371,7 +372,7 @@ impl MultiSigAdmin {
             .unwrap_or_else(|| Map::new(&env));
 
         let mut tx_confirmations = confirmations
-            .get(transaction_hash)
+            .get(transaction_hash.clone())
             .unwrap_or_else(|| Vec::new(&env));
 
         // Check if already confirmed
@@ -380,6 +381,7 @@ impl MultiSigAdmin {
         }
 
         // Add confirmation
+        let caller_for_event = caller.clone();
         tx_confirmations.push_back(caller);
         confirmations.set(transaction_hash.clone(), tx_confirmations);
         env.storage()
@@ -389,7 +391,7 @@ impl MultiSigAdmin {
         // Emit confirmation event
         env.events().publish(
             (String::from_str(&env, "transaction_confirmed"),),
-            (transaction_hash, caller),
+            (transaction_hash, caller_for_event),
         );
 
         Ok(())
@@ -414,7 +416,7 @@ impl MultiSigAdmin {
             .unwrap_or_else(|| Map::new(&env));
 
         let mut transaction = executions
-            .get(transaction_hash)
+            .get(transaction_hash.clone())
             .ok_or(MultiSigError::TransactionNotFound)?;
 
         // Check if already executed
@@ -430,7 +432,7 @@ impl MultiSigAdmin {
             .unwrap_or_else(|| Map::new(&env));
 
         let tx_confirmations = confirmations
-            .get(transaction_hash)
+            .get(transaction_hash.clone())
             .unwrap_or_else(|| Vec::new(&env));
 
         // Check if enough confirmations
@@ -441,15 +443,18 @@ impl MultiSigAdmin {
 
         // Mark as executed
         transaction.executed = true;
+        let dest_for_event = transaction.destination.clone();
+        let val_for_event = transaction.value;
         executions.set(transaction_hash.clone(), transaction);
         env.storage()
             .instance()
             .set(&String::from_str(&env, EXECUTIONS_KEY), &executions);
 
         // Emit execution event
+        let tx_hash_for_event = transaction_hash;
         env.events().publish(
             (String::from_str(&env, "transaction_executed"),),
-            (transaction_hash, transaction.destination, transaction.value),
+            (tx_hash_for_event, dest_for_event, val_for_event),
         );
 
         Ok(())
@@ -524,15 +529,14 @@ impl MultiSigAdmin {
     }
 
     /// Helper function to hash a transaction
-    fn hash_transaction(env: Env, transaction: &Transaction) -> BytesN<32> {
-        let mut data = Vec::new(&env);
-        data.push_back(transaction.destination.clone());
-        data.push_back(transaction.value.into_val(&env));
-        data.push_back(transaction.data.clone());
-        data.push_back(transaction.nonce.into_val(&env));
-        data.push_back(transaction.executed.into_val(&env));
-
-        let xdr = env.to_xdr(&data);
-        env.crypto().sha256(&xdr).into()
+    fn hash_transaction(env: &Env, transaction: &Transaction) -> BytesN<32> {
+        let mut combined = Bytes::new(env);
+        combined.append(&transaction.destination.clone().to_xdr(env));
+        combined.append(&Bytes::from_slice(env, &transaction.value.to_be_bytes()));
+        combined.append(&transaction.data.clone().to_xdr(env));
+        combined.append(&Bytes::from_slice(env, &transaction.nonce.to_be_bytes()));
+        let executed_byte: u8 = if transaction.executed { 1 } else { 0 };
+        combined.append(&Bytes::from_slice(env, &[executed_byte]));
+        env.crypto().sha256(&combined).into()
     }
 }

@@ -8,6 +8,7 @@ import { RequestTransformer } from "./RequestTransformer";
 import { PrivacyMetrics } from "./PrivacyMetrics";
 import { LoadBalancer } from "./LoadBalancer";
 import { logger } from "../utils/logger";
+import jwt from "jsonwebtoken";
 
 export interface GatewayConfig {
   services: ServiceConfig[];
@@ -80,11 +81,24 @@ export interface LoadBalancingConfig {
   healthyThreshold: number;
 }
 
+export interface MetricsPersistenceConfig {
+  /** When false, metrics live only in memory (legacy behaviour). */
+  enabled: boolean;
+  /** JSONL store location. Defaults to data/gateway/privacy-metrics.jsonl. */
+  filePath?: string;
+  /** How often the in-memory buffer is flushed to disk, in ms. Default 30s. */
+  flushInterval?: number;
+  /** Hard cap on in-memory records; oldest (already-persisted) are evicted. Default 10000. */
+  maxBufferSize?: number;
+}
+
 export interface MetricsConfig {
   enabled: boolean;
   collectionInterval: number;
   retentionPeriod: number;
   exportFormat: "prometheus" | "json" | "csv";
+  /** Optional durable persistence so metrics survive a process restart. */
+  persistence?: MetricsPersistenceConfig;
 }
 
 export class PrivacyApiGateway {
@@ -398,14 +412,19 @@ export class PrivacyApiGateway {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
-        // In a real implementation, decode and verify JWT
         const token = authHeader.substring(7);
-        // attributes.userId = decodedToken.sub;
-        // attributes.roles = decodedToken.roles;
-        // attributes.department = decodedToken.department;
-        attributes.userId = "demo-user";
-        attributes.roles = ["analyst"];
-        attributes.department = "data-analytics";
+        // Verify with HS256 using the shared JWT secret
+        const jwtSecret = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+        const decoded = jwt.verify(token, jwtSecret, {
+          algorithms: ["HS256"],
+        }) as {
+          sub?: string;
+          permissions?: string[];
+          email?: string;
+        };
+        attributes.userId = decoded.sub || "unknown";
+        attributes.roles = decoded.permissions || [];
+        attributes.email = decoded.email;
       } catch (error) {
         logger.warn("Failed to decode JWT token:", error);
       }

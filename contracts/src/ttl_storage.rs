@@ -2,6 +2,7 @@ use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
 use soroban_sdk::contracttype;
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::Address;
 use soroban_sdk::Bytes;
 use soroban_sdk::BytesN;
@@ -11,19 +12,10 @@ use soroban_sdk::String;
 use soroban_sdk::Symbol;
 use soroban_sdk::Vec;
 
-// Contract state storage keys
-const DATA_ENTRIES_KEY: &str = "DATA_ENTRIES";
-const TEMP_DATA_KEY: &str = "TEMP_DATA";
-const STORAGE_FEES_KEY: &str = "STORAGE_FEES";
-const CLEANUP_WORKER_KEY: &str = "CLEANUP_WORKER";
-const USER_BALANCES_KEY: &str = "USER_BALANCES";
-
 // Constants
 const MAX_ENTRY_SIZE: u32 = 65536; // 64KB in bytes
-const DEFAULT_TTL: u64 = 86400; // 24 hours in seconds
-const EXTENSION_TTL: u64 = 3600; // 1 hour in seconds
 const MIN_STORAGE_FEE: i128 = 1000000; // 0.001 XLM
-const CLEANUP_INTERVAL: u64 = 3600; // 1 hour
+const LEDGERS_PER_HOUR: u32 = 720; // ~5s per ledger; converts hour TTLs to ledger TTLs
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
@@ -89,6 +81,11 @@ impl TtlStorage {
         {
             return; // Already initialized
         }
+
+        // Require the admin to authorize initialization. Without this an
+        // attacker could front-run the deployer's setup transaction and
+        // claim admin by passing their own address.
+        admin.require_auth();
 
         // Set admin
         env.storage()
@@ -160,16 +157,24 @@ impl TtlStorage {
         let chunks = Self::split_into_chunks(&env, &data, &entry_id)?;
 
         // Store chunks
-        for chunk in chunks {
+        for chunk in &chunks {
             env.storage().temporary().set(&chunk.chunk_id, &chunk);
         }
 
+        // Chunks live in temporary storage, which otherwise expires at the
+        // default (~24h) TTL regardless of how much storage was paid for. Extend
+        // each chunk's TTL to match the entry lifetime so the data survives
+        // until expires_at instead of being silently lost (reconstruct_data
+        // would otherwise fail with EntryNotFound).
+        Self::extend_chunk_ttls(&env, &entry_id, chunks.len(), ttl_hours);
+
         // Create data entry
+        let chunk_count = chunks.len() as u32;
         let entry = DataEntry {
             entry_id: entry_id.clone(),
             owner: owner.clone(),
             data_hash: env.crypto().sha256(&data).into(),
-            chunk_count: chunks.len() as u32,
+            chunk_count,
             created_at: current_time,
             expires_at,
             ttl_extension_count: 0,
@@ -180,6 +185,18 @@ impl TtlStorage {
 
         // Store entry
         env.storage().persistent().set(&entry_id, &entry);
+
+        // Append the entry id to the data_entries index that
+        // cleanup_expired_data scans. Without this the index stays empty, so
+        // cleanup can never find expired entries and always returns Ok(0).
+        let entries_key = Symbol::new(&env, "data_entries");
+        let mut data_entries: Vec<BytesN<32>> = env
+            .storage()
+            .persistent()
+            .get(&entries_key)
+            .unwrap_or_else(|| Vec::new(&env));
+        data_entries.push_back(entry_id.clone());
+        env.storage().persistent().set(&entries_key, &data_entries);
 
         // Create storage fee record
         let fee_record = StorageFee {
@@ -210,11 +227,11 @@ impl TtlStorage {
         }
 
         // Verify requester authorization (owner or admin)
-        let admin = env
+        let admin: Address = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, "admin"))
-            .unwrap();
+            .ok_or(TtlStorageError::NotAuthorized)?;
         if requester != entry.owner && requester != admin {
             return Err(TtlStorageError::NotAuthorized);
         }
@@ -266,6 +283,12 @@ impl TtlStorage {
 
         // Update entry
         env.storage().persistent().set(&entry_id, &entry);
+
+        // Keep the chunk TTLs in step with the newly-extended entry lifetime,
+        // otherwise the chunks would still expire at their original TTL.
+        let now = env.ledger().timestamp();
+        let remaining_hours = entry.expires_at.saturating_sub(now).div_ceil(3600) as u32;
+        Self::extend_chunk_ttls(&env, &entry_id, entry.chunk_count, remaining_hours);
 
         // Update fee record
         let fee_key = (Symbol::new(&env, "fee_"), entry_id);
@@ -331,7 +354,7 @@ impl TtlStorage {
         amount: i128,
     ) -> Result<(), TtlStorageError> {
         // Verify admin authorization
-        let admin = env
+        let admin: Address = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, "admin"))
@@ -393,7 +416,7 @@ impl TtlStorage {
                 break;
             }
 
-            let chunk_data = data.slice(start, end - start);
+            let chunk_data = data.slice(start..end);
             let chunk_id = Self::generate_chunk_id(env, entry_id, i);
             let checksum: BytesN<32> = env.crypto().sha256(&chunk_data).into();
 
@@ -420,6 +443,21 @@ impl TtlStorage {
         combined.append(&entry_id.to_xdr(env));
         combined.append(&Bytes::from_slice(env, &chunk_index.to_be_bytes()));
         env.crypto().sha256(&combined).into()
+    }
+
+    /// Extend the temporary-storage TTL of every chunk so it survives `ttl_hours`
+    /// of the entry's lifetime. Temporary entries expire by ledger, so hours are
+    /// converted to ledgers and capped at the network maximum entry TTL.
+    fn extend_chunk_ttls(env: &Env, entry_id: &BytesN<32>, chunk_count: u32, ttl_hours: u32) {
+        let ttl_ledgers = ttl_hours
+            .saturating_mul(LEDGERS_PER_HOUR)
+            .min(env.storage().max_ttl());
+        for i in 0..chunk_count {
+            let chunk_id = Self::generate_chunk_id(env, entry_id, i);
+            env.storage()
+                .temporary()
+                .extend_ttl(&chunk_id, ttl_ledgers, ttl_ledgers);
+        }
     }
 
     fn reconstruct_data(env: &Env, entry: &DataEntry) -> Result<Bytes, TtlStorageError> {
@@ -488,5 +526,212 @@ impl TtlStorage {
         env.storage()
             .persistent()
             .set(&(Symbol::new(&env, "balance_"), user.clone()), &new_balance);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::testutils::Ledger;
+
+    #[test]
+    fn test_retrieve_data_from_uninitialized_contract_returns_error() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(TtlStorage, ());
+        let client = TtlStorageClient::new(&env, &contract_id);
+
+        let requester = Address::generate(&env);
+        let entry_id = BytesN::<32>::from_array(&env, &[1u8; 32]);
+
+        // Attempting to retrieve data from an uninitialized contract
+        // should return Err (NotAuthorized) instead of panicking
+        let result = client.try_retrieve_data(&entry_id, &requester);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_retrieve_data_from_initialized_contract_succeeds() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(TtlStorage, ());
+        let client = TtlStorageClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let owner = Address::generate(&env);
+        let stranger = Address::generate(&env);
+
+        // Initialize the contract
+        client.initialize(&admin);
+
+        // Add storage credits to the owner so store_data won't fail with InsufficientFee
+        let credits: i128 = 1000000000; // 1000 XLM-equivalent credits
+        client.add_storage_credits(&owner, &credits);
+
+        // Store some data
+        let data = Bytes::from_slice(&env, &[42u8; 100]);
+        let mut metadata = Map::new(&env);
+        metadata.set(
+            String::from_str(&env, "key"),
+            String::from_str(&env, "value"),
+        );
+
+        let ttl_hours: u32 = 24;
+        let is_temp: bool = false;
+        let entry_id = client.store_data(&owner, &data, &is_temp, &ttl_hours, &metadata);
+
+        // Retrieve data as the owner — should succeed
+        let retrieved = client.retrieve_data(&entry_id, &owner);
+        assert!(!retrieved.is_empty());
+
+        // Retrieve data as admin — should succeed
+        let retrieved = client.retrieve_data(&entry_id, &admin);
+        assert!(!retrieved.is_empty());
+
+        // Retrieve data as a stranger (not owner, not admin) — should fail with NotAuthorized
+        let result = client.try_retrieve_data(&entry_id, &stranger);
+        assert!(result.is_err());
+    }
+
+    fn setup_with_owner(env: &Env) -> (TtlStorageClient<'_>, Address) {
+        env.mock_all_auths();
+        let contract_id = env.register(TtlStorage, ());
+        let client = TtlStorageClient::new(env, &contract_id);
+        let admin = Address::generate(env);
+        let owner = Address::generate(env);
+        client.initialize(&admin);
+        // Generous credit so multi-hour TTLs (e.g. 168h permanent) are affordable.
+        client.add_storage_credits(&owner, &100_000_000_000i128);
+        (client, owner)
+    }
+
+    /// Acceptance (#285): after the chunk TTLs are extended, data stored with a
+    /// long entry TTL survives past the default temporary-storage TTL.
+    #[test]
+    fn test_chunks_survive_past_default_temp_ttl_within_entry_ttl() {
+        let env = Env::default();
+        let (client, owner) = setup_with_owner(&env);
+
+        let data = Bytes::from_slice(&env, &[42u8; 200]);
+        let metadata = Map::new(&env);
+        // 7-day TTL — far beyond the default temporary-storage TTL.
+        let entry_id = client.store_data(&owner, &data, &false, &168u32, &metadata);
+
+        // Advance the ledger sequence well past the default temporary TTL but
+        // within the entry's lifetime. Without the chunk extend_ttl the chunks
+        // would have expired and retrieval would fail with EntryNotFound.
+        let seq = env.ledger().sequence();
+        env.ledger().set_sequence_number(seq + 1000);
+
+        let retrieved = client.retrieve_data(&entry_id, &owner);
+        assert_eq!(retrieved, data);
+    }
+
+    /// Acceptance (#285): once the entry's own (timestamp-based) TTL passes,
+    /// retrieval fails with EntryExpired.
+    #[test]
+    fn test_retrieve_after_entry_ttl_fails_expired() {
+        let env = Env::default();
+        let (client, owner) = setup_with_owner(&env);
+
+        let data = Bytes::from_slice(&env, &[7u8; 64]);
+        let metadata = Map::new(&env);
+        let entry_id = client.store_data(&owner, &data, &false, &1u32, &metadata);
+
+        // Advance time past the entry's 1-hour TTL.
+        let ts = env.ledger().timestamp();
+        env.ledger().set_timestamp(ts + 2 * 3600);
+
+        let result = client.try_retrieve_data(&entry_id, &owner);
+        assert_eq!(result, Err(Ok(TtlStorageError::EntryExpired)));
+    }
+
+    /// bump_instance_ttl must keep chunks alive for the extended lifetime too.
+    #[test]
+    fn test_bump_ttl_keeps_chunks_alive() {
+        let env = Env::default();
+        let (client, owner) = setup_with_owner(&env);
+
+        let data = Bytes::from_slice(&env, &[9u8; 128]);
+        let metadata = Map::new(&env);
+        let entry_id = client.store_data(&owner, &data, &false, &1u32, &metadata);
+
+        // Extend the entry by a further 5 hours; chunk TTLs should follow.
+        client.bump_instance_ttl(&entry_id, &owner, &5u32);
+
+        let seq = env.ledger().sequence();
+        env.ledger().set_sequence_number(seq + 1000);
+
+        let retrieved = client.retrieve_data(&entry_id, &owner);
+        assert_eq!(retrieved, data);
+    }
+
+    /// Acceptance (#284): a temporary entry past its TTL is found via the
+    /// data_entries index and removed by cleanup_expired_data.
+    #[test]
+    fn test_cleanup_removes_expired_temporary_entry() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(TtlStorage, ());
+        let client = TtlStorageClient::new(&env, &contract_id);
+
+        // initialize sets the cleanup worker to the admin.
+        let admin = Address::generate(&env);
+        let owner = Address::generate(&env);
+        client.initialize(&admin);
+        client.add_storage_credits(&owner, &1_000_000_000i128);
+
+        // Store a temporary entry with a 1-hour TTL.
+        let data = Bytes::from_slice(&env, &[42u8; 64]);
+        let metadata = Map::new(&env);
+        let entry_id = client.store_data(&owner, &data, &true, &1u32, &metadata);
+
+        // The entry exists before expiry.
+        assert!(client.try_get_data_entry_info(&entry_id).is_ok());
+
+        // Advance time past the TTL (2 hours).
+        env.ledger()
+            .set_timestamp(env.ledger().timestamp() + 2 * 3600);
+
+        // Cleanup must find the entry via the index and remove it.
+        let cleaned = client.cleanup_expired_data(&admin);
+        assert_eq!(cleaned, 1);
+
+        // The expired entry is gone.
+        assert!(client.try_get_data_entry_info(&entry_id).is_err());
+    }
+
+    /// A non-expired (permanent) entry must survive cleanup, and only the
+    /// worker recorded at initialization may run cleanup.
+    #[test]
+    fn test_cleanup_preserves_live_entry_and_rejects_non_worker() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(TtlStorage, ());
+        let client = TtlStorageClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let owner = Address::generate(&env);
+        client.initialize(&admin);
+        client.add_storage_credits(&owner, &1_000_000_000i128);
+
+        // Permanent (non-temporary) entry with a 24-hour TTL.
+        let data = Bytes::from_slice(&env, &[7u8; 32]);
+        let metadata = Map::new(&env);
+        let entry_id = client.store_data(&owner, &data, &false, &24u32, &metadata);
+
+        // A non-worker cannot run cleanup.
+        let stranger = Address::generate(&env);
+        assert!(client.try_cleanup_expired_data(&stranger).is_err());
+
+        // Worker cleanup runs but removes nothing (entry is live).
+        let cleaned = client.cleanup_expired_data(&admin);
+        assert_eq!(cleaned, 0);
+        assert!(client.try_get_data_entry_info(&entry_id).is_ok());
     }
 }

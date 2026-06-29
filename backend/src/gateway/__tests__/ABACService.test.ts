@@ -16,7 +16,13 @@
  */
 
 import * as geoip from "geoip-lite";
-import { AttributeResolver, ABACService, UserAttributes } from "../ABACService";
+import {
+  ABACPolicy,
+  ABACService,
+  AttributeResolver,
+  Resource,
+  UserAttributes,
+} from "../ABACService";
 
 // ---------------------------------------------------------------------------
 // Mock geoip-lite so we do not need the actual MaxMind database in CI.
@@ -271,5 +277,367 @@ describe("ABACService.evaluateAccess – geo-based policy decisions", () => {
     await service.evaluateAccess(userAttrs, resource);
 
     expect(mockLookup).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ABACService.evaluateAccess() – nested logical expression evaluation (QI-031)
+// ---------------------------------------------------------------------------
+describe("ABACService.evaluateAccess – nested logical expressions", () => {
+  let service: ABACService;
+
+  const analyticsResource: Resource = {
+    path: "/analytics/report",
+    method: "GET",
+    service: "analytics",
+    dataClassification: "internal",
+  };
+
+  const baseUser: UserAttributes = {
+    roles: ["analyst"],
+    consent: true,
+    department: "engineering",
+    clearanceLevel: "high",
+  };
+
+  beforeEach(() => {
+    service = new ABACService();
+    mockLookup.mockReset();
+  });
+
+  function addNestedPolicy(
+    id: string,
+    condition: ABACPolicy["condition"],
+  ): void {
+    service.addPolicy({
+      id,
+      name: `Nested policy ${id}`,
+      description: "Test nested logical expression evaluation",
+      effect: "allow",
+      priority: 300,
+      enabled: true,
+      target: {
+        resources: [
+          { attribute: "service", operator: "equals", value: "analytics" },
+        ],
+      },
+      condition,
+    });
+  }
+
+  it("evaluates 3-level nested AND (and → and → or) when all branches match", async () => {
+    addNestedPolicy("nested-and-3", {
+      operator: "and",
+      operands: [
+        { attribute: "consent", operator: "equals", value: true },
+        {
+          operator: "and",
+          operands: [
+            { attribute: "roles", operator: "contains", value: "analyst" },
+            {
+              operator: "or",
+              operands: [
+                {
+                  attribute: "department",
+                  operator: "equals",
+                  value: "engineering",
+                },
+                {
+                  attribute: "clearanceLevel",
+                  operator: "equals",
+                  value: "top-secret",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const decision = await service.evaluateAccess(baseUser, analyticsResource);
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.policy).toBe("nested-and-3");
+  });
+
+  it("evaluates 3-level nested AND as false when inner OR branch fails", async () => {
+    addNestedPolicy("nested-and-3-fail", {
+      operator: "and",
+      operands: [
+        { attribute: "consent", operator: "equals", value: true },
+        {
+          operator: "and",
+          operands: [
+            { attribute: "roles", operator: "contains", value: "analyst" },
+            {
+              operator: "or",
+              operands: [
+                {
+                  attribute: "department",
+                  operator: "equals",
+                  value: "marketing",
+                },
+                {
+                  attribute: "clearanceLevel",
+                  operator: "equals",
+                  value: "low",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["viewer"],
+        consent: true,
+        department: "engineering",
+        clearanceLevel: "medium",
+      },
+      analyticsResource,
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.policy).not.toBe("nested-and-3-fail");
+  });
+
+  it("evaluates 3-level nested OR (or → or → and) when deep branch matches", async () => {
+    addNestedPolicy("nested-or-3", {
+      operator: "or",
+      operands: [
+        { attribute: "roles", operator: "contains", value: "admin" },
+        {
+          operator: "or",
+          operands: [
+            { attribute: "roles", operator: "contains", value: "viewer" },
+            {
+              operator: "and",
+              operands: [
+                { attribute: "consent", operator: "equals", value: true },
+                {
+                  attribute: "department",
+                  operator: "equals",
+                  value: "data-analytics",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const decision = await service.evaluateAccess(
+      {
+        ...baseUser,
+        roles: ["analyst"],
+        department: "data-analytics",
+      },
+      analyticsResource,
+    );
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.policy).toBe("nested-or-3");
+  });
+
+  it("evaluates 3-level nested OR as false when no branch matches", async () => {
+    addNestedPolicy("nested-or-3-fail", {
+      operator: "or",
+      operands: [
+        { attribute: "roles", operator: "contains", value: "admin" },
+        {
+          operator: "or",
+          operands: [
+            { attribute: "roles", operator: "contains", value: "viewer" },
+            {
+              operator: "and",
+              operands: [
+                { attribute: "consent", operator: "equals", value: false },
+                {
+                  attribute: "department",
+                  operator: "equals",
+                  value: "sales",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["contractor"],
+        consent: false,
+        department: "engineering",
+      },
+      analyticsResource,
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.policy).not.toBe("nested-or-3-fail");
+  });
+
+  it("evaluates 3-level nested NOT (not → and → or) when inner expression is false", async () => {
+    addNestedPolicy("nested-not-3", {
+      operator: "not",
+      operands: [
+        {
+          operator: "and",
+          operands: [
+            { attribute: "consent", operator: "equals", value: false },
+            {
+              operator: "or",
+              operands: [
+                {
+                  attribute: "roles",
+                  operator: "contains",
+                  value: "viewer",
+                },
+                {
+                  attribute: "clearanceLevel",
+                  operator: "equals",
+                  value: "low",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const decision = await service.evaluateAccess(baseUser, analyticsResource);
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.policy).toBe("nested-not-3");
+  });
+
+  it("evaluates 3-level nested NOT as false when inner expression is true", async () => {
+    addNestedPolicy("nested-not-3-deny", {
+      operator: "not",
+      operands: [
+        {
+          operator: "and",
+          operands: [
+            { attribute: "consent", operator: "equals", value: true },
+            {
+              operator: "or",
+              operands: [
+                {
+                  attribute: "roles",
+                  operator: "contains",
+                  value: "analyst",
+                },
+                {
+                  attribute: "clearanceLevel",
+                  operator: "equals",
+                  value: "low",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["viewer"],
+        consent: true,
+        department: "engineering",
+        clearanceLevel: "low",
+      },
+      analyticsResource,
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.policy).not.toBe("nested-not-3-deny");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ABACService.evaluateAccess() – default policy decisions
+// ---------------------------------------------------------------------------
+describe("ABACService.evaluateAccess – default policies", () => {
+  let service: ABACService;
+
+  beforeEach(() => {
+    service = new ABACService();
+    mockLookup.mockReset();
+  });
+
+  it("allows analyst access to analytics when consent and classification match", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        dataClassification: "internal",
+      },
+      {
+        path: "/analytics",
+        method: "GET",
+        service: "analytics",
+        dataClassification: "internal",
+      },
+    );
+
+    expect(decision.allowed).toBe(true);
+    expect(decision.policy).toBe("analyst-access");
+  });
+
+  it("denies sensitive data access without high clearance", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        clearanceLevel: "low",
+      },
+      {
+        path: "/data/sensitive",
+        method: "GET",
+        service: "analytics",
+        dataClassification: "sensitive",
+      },
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.policy).toBe("sensitive-data-protection");
+  });
+
+  it("allows sensitive data access with high clearance", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: true,
+        clearanceLevel: "high",
+      },
+      {
+        path: "/data/sensitive",
+        method: "GET",
+        service: "analytics",
+        dataClassification: "sensitive",
+      },
+    );
+
+    expect(decision.allowed).toBe(true);
+  });
+
+  it("denies personal data access without consent", async () => {
+    const decision = await service.evaluateAccess(
+      {
+        roles: ["analyst"],
+        consent: false,
+      },
+      {
+        path: "/data/personal",
+        method: "GET",
+        service: "analytics",
+        dataClassification: "personal",
+      },
+    );
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.policy).toBe("consent-requirement");
   });
 });

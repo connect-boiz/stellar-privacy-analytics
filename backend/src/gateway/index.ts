@@ -225,6 +225,11 @@ export const defaultGatewayConfig: GatewayConfig = {
     collectionInterval: 60000, // 1 minute
     retentionPeriod: 7 * 24 * 60 * 60 * 1000, // 7 days
     exportFormat: "prometheus",
+    persistence: {
+      enabled: true,
+      flushInterval: 30000, // 30 seconds
+      maxBufferSize: 10000,
+    },
   },
 };
 

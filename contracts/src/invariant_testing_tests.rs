@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use soroban_sdk::{
-        testutils::{Address as TestAddress, BytesN as TestBytesN},
+        testutils::Address as _,
         Env, Vec,
     };
+    use crate::invariant_testing::InvariantTesting;
 
     #[test]
     fn test_noise_invariant_positive() {
@@ -84,7 +84,7 @@ mod tests {
         let env = Env::default();
         let mut attackers = Vec::new(&env);
         for _ in 0..5 {
-            attackers.push_back(TestAddress::generate(&env));
+            attackers.push_back(soroban_sdk::Address::generate(&env));
         }
 
         let result = InvariantTesting::simulate_sybil_attack(env.clone(), attackers, 1000000);
@@ -97,7 +97,7 @@ mod tests {
         let env = Env::default();
         let mut attackers = Vec::new(&env);
         for _ in 0..100 {
-            attackers.push_back(TestAddress::generate(&env));
+            attackers.push_back(soroban_sdk::Address::generate(&env));
         }
 
         let result =

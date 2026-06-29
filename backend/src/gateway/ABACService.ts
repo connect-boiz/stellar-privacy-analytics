@@ -321,34 +321,45 @@ export class ABACService {
     return userMatch && resourceMatch && environmentMatch;
   }
 
+  private isAttributeCondition(
+    operand: LogicalExpression | AttributeCondition,
+  ): operand is AttributeCondition {
+    return "attribute" in operand;
+  }
+
+  private isLogicalExpression(
+    operand: LogicalExpression | AttributeCondition,
+  ): operand is LogicalExpression {
+    return "operands" in operand;
+  }
+
   private evaluateLogicalExpression(
     expression: LogicalExpression,
     userAttributes: UserAttributes,
     resource: Resource,
   ): { result: boolean; explanation: string; matchedRules: string[] } {
     const matchedRules: string[] = [];
+    const context = { ...userAttributes, ...resource };
 
     switch (expression.operator) {
       case "and":
         const andResults = expression.operands.map((operand) => {
-          if ("attribute" in operand) {
-            const cond = operand as AttributeCondition;
-            const result = this.evaluateAttributeCondition(cond, {
-              ...userAttributes,
-              ...resource,
-            });
+          if (this.isAttributeCondition(operand)) {
+            const result = this.evaluateAttributeCondition(operand, context);
             if (result)
               matchedRules.push(
-                `${cond.attribute} ${cond.operator} ${cond.value}`,
+                `${operand.attribute} ${operand.operator} ${operand.value}`,
               );
             return result;
-          } else {
+          }
+          if (this.isLogicalExpression(operand)) {
             return this.evaluateLogicalExpression(
-              operand as LogicalExpression,
+              operand,
               userAttributes,
               resource,
             ).result;
           }
+          return false;
         });
 
         return {
@@ -359,24 +370,22 @@ export class ABACService {
 
       case "or":
         const orResults = expression.operands.map((operand) => {
-          if ("attribute" in operand) {
-            const cond = operand as AttributeCondition;
-            const result = this.evaluateAttributeCondition(cond, {
-              ...userAttributes,
-              ...resource,
-            });
+          if (this.isAttributeCondition(operand)) {
+            const result = this.evaluateAttributeCondition(operand, context);
             if (result)
               matchedRules.push(
-                `${cond.attribute} ${cond.operator} ${cond.value}`,
+                `${operand.attribute} ${operand.operator} ${operand.value}`,
               );
             return result;
-          } else {
+          }
+          if (this.isLogicalExpression(operand)) {
             return this.evaluateLogicalExpression(
-              operand as LogicalExpression,
+              operand,
               userAttributes,
               resource,
             ).result;
           }
+          return false;
         });
 
         return {
@@ -387,24 +396,24 @@ export class ABACService {
 
       case "not":
         const operandResult = expression.operands[0];
-        if ("attribute" in operandResult) {
-          const cond = operandResult as AttributeCondition;
-          const result = this.evaluateAttributeCondition(cond, {
-            ...userAttributes,
-            ...resource,
-          });
+        if (this.isAttributeCondition(operandResult)) {
+          const result = this.evaluateAttributeCondition(
+            operandResult,
+            context,
+          );
           if (result)
             matchedRules.push(
-              `NOT ${cond.attribute} ${cond.operator} ${cond.value}`,
+              `NOT ${operandResult.attribute} ${operandResult.operator} ${operandResult.value}`,
             );
           return {
             result: !result,
-            explanation: `Negated condition: NOT (${cond.attribute} ${cond.operator} ${cond.value})`,
+            explanation: `Negated condition: NOT (${operandResult.attribute} ${operandResult.operator} ${operandResult.value})`,
             matchedRules,
           };
-        } else {
+        }
+        if (this.isLogicalExpression(operandResult)) {
           const innerResult = this.evaluateLogicalExpression(
-            operandResult as LogicalExpression,
+            operandResult,
             userAttributes,
             resource,
           );
@@ -414,6 +423,11 @@ export class ABACService {
             matchedRules,
           };
         }
+        return {
+          result: false,
+          explanation: "NOT operand is neither AttributeCondition nor LogicalExpression",
+          matchedRules,
+        };
 
       default:
         return {

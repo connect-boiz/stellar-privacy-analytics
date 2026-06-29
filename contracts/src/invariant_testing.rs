@@ -5,7 +5,6 @@ use soroban_sdk::contracttype;
 use soroban_sdk::Address;
 use soroban_sdk::BytesN;
 use soroban_sdk::Env;
-use soroban_sdk::Map;
 use soroban_sdk::String;
 use soroban_sdk::Symbol;
 use soroban_sdk::Vec;
@@ -150,7 +149,7 @@ impl InvariantTesting {
         let mut violations = 0;
 
         for value in test_data.iter() {
-            if Self::test_noise_invariant(env.clone(), *value).is_err() {
+            if Self::test_noise_invariant(env.clone(), value).is_err() {
                 violations += 1;
             }
         }

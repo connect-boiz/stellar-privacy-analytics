@@ -3,8 +3,21 @@ import {
   PrivacyLevel,
   DataType,
   AnonymizationTechnique,
+  PrivacySettings,
+  DataField,
+  DataSchema,
 } from "../types/privacy";
-import { AnalysisType, VisualizationType } from "../types/analytics";
+import {
+  AnalysisType,
+  VisualizationType,
+  AggregationType,
+  NoiseMechanism,
+  AnonymizationLevel,
+  AnalysisStatus,
+  AnalysisParameters,
+  XRayAnalysis,
+  VisualizationConfig,
+} from "../types/analytics";
 
 // Privacy Settings Validation
 export const PrivacySettingsSchema = z.object({
@@ -68,11 +81,7 @@ export const AnalysisParametersSchema = z.object({
     )
     .optional(),
   groupBy: z.array(z.string()).optional(),
-  aggregations: z
-    .array(
-      z.enum(["count", "sum", "average", "median", "min", "max", "std_dev"]),
-    )
-    .optional(),
+  aggregations: z.array(z.nativeEnum(AggregationType)).optional(),
   timeRange: z
     .object({
       start: z.date(),
@@ -92,10 +101,10 @@ export const XRayAnalysisSchema = z.object({
   privacySettings: z.object({
     differentialPrivacyEpsilon: z.number().min(0.01).max(10),
     minimumSampleSize: z.number().min(2),
-    noiseMechanism: z.enum(["laplace", "gaussian", "exponential"]),
-    anonymizationLevel: z.enum(["none", "low", "medium", "high"]),
+    noiseMechanism: z.nativeEnum(NoiseMechanism),
+    anonymizationLevel: z.nativeEnum(AnonymizationLevel),
   }),
-  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]),
+  status: z.nativeEnum(AnalysisStatus),
   results: z.any().optional(),
   createdAt: z.date(),
   completedAt: z.date().optional(),
@@ -117,6 +126,66 @@ export const VisualizationConfigSchema = z.object({
     )
     .optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Inferred TypeScript types (QI-039)
+//
+// Canonical, schema-derived types so consumers never re-declare a shape by
+// hand. None of the schemas above use transforms/coercion, so the inferred
+// output type (`z.infer`) is identical to the input type.
+//
+// The plain domain names (`PrivacySettings`, `DataSchema`, ...) are already
+// exported as hand-written interfaces from `../types/*` and re-exported through
+// the package barrel, so these inferred aliases use a `Validated` prefix to
+// stay collision-free while remaining unambiguously the schema's source of
+// truth. The drift guards below fail `tsc --noEmit` if a schema and its
+// canonical interface ever diverge.
+// ---------------------------------------------------------------------------
+export type ValidatedPrivacySettings = z.infer<typeof PrivacySettingsSchema>;
+export type ValidatedDataField = z.infer<typeof DataFieldSchema>;
+export type ValidatedDataSchema = z.infer<typeof DataSchemaSchema>;
+export type ValidatedAnalysisParameters = z.infer<
+  typeof AnalysisParametersSchema
+>;
+export type ValidatedXRayAnalysis = z.infer<typeof XRayAnalysisSchema>;
+export type ValidatedVisualizationConfig = z.infer<
+  typeof VisualizationConfigSchema
+>;
+
+// --- Compile-time drift guards --------------------------------------------
+// `Expect<...>` only accepts `true`, so a divergence collapses the argument to
+// `false` and raises a type error under `tsc --noEmit`, keeping each schema in
+// step with its canonical domain interface.
+//
+// The invariant asserted is: every canonical domain object is a valid instance
+// of the schema-inferred type. (Exact bidirectional equality is intentionally
+// not used: `z.any()` fields such as `validationRules[].value` are inferred as
+// optional, which never exactly equals a required interface field even though
+// the shapes are compatible.) This catches the realistic drifts — a schema
+// adding/renaming a required field, or changing a field's/enum's type.
+type Expect<T extends true> = T;
+type CanonicalIsValid<Canonical, Validated> = [Canonical] extends [Validated]
+  ? true
+  : false;
+
+/* eslint-disable @typescript-eslint/no-unused-vars -- guards exist only for their compile-time check */
+type _GuardPrivacySettings = Expect<
+  CanonicalIsValid<PrivacySettings, ValidatedPrivacySettings>
+>;
+type _GuardDataField = Expect<CanonicalIsValid<DataField, ValidatedDataField>>;
+type _GuardDataSchema = Expect<
+  CanonicalIsValid<DataSchema, ValidatedDataSchema>
+>;
+type _GuardVisualizationConfig = Expect<
+  CanonicalIsValid<VisualizationConfig, ValidatedVisualizationConfig>
+>;
+type _GuardAnalysisParameters = Expect<
+  CanonicalIsValid<AnalysisParameters, ValidatedAnalysisParameters>
+>;
+type _GuardXRayAnalysis = Expect<
+  CanonicalIsValid<XRayAnalysis, ValidatedXRayAnalysis>
+>;
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // Validation Utilities
 export class ValidationService {

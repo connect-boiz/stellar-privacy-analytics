@@ -18,6 +18,7 @@ import { rateLimitMonitor } from "./monitoring/rateLimitMonitor";
 
 // Import routes and middleware
 import { authRoutes } from "./routes/auth";
+import { stellarAuth } from "./middleware/stellarAuth";
 import { analyticsRoutes } from "./routes/analytics";
 import { dataRoutes, initializeUploadSocket } from "./routes/data";
 import { privacyRoutes } from "./routes/privacy";
@@ -380,6 +381,11 @@ async function initializeServices() {
   try {
     // Initialize Redis first
     await initializeRedis();
+
+    // Wire Redis into the StellarAuthMiddleware so JWT caching & revocation work
+    const redis = getRedisClient();
+    stellarAuth.setRedis(redis);
+    logger.info("Redis wired into StellarAuthMiddleware");
 
     // Initialize rate limiters
     await initializeRateLimiters();

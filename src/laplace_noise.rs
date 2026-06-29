@@ -25,9 +25,32 @@ pub struct FixedPointMath;
 impl FixedPointMath {
     pub const SCALE: i128 = 10_000;
 
+    /// Sentinel value returned when x >= SCALE to prevent Taylor series
+    /// divergence. This large negative value signals that the input is out
+    /// of the valid convergence range for the ln(1-x) approximation.
+    pub const LN_DIVERGENCE_SENTINEL: i128 = -1_000_000;
+
     /// Approximates ln(1 - x) using Taylor series for x in [0, 1)
     /// x is expected to be scaled by SCALE.
+    ///
+    /// # Input Validation
+    /// The Taylor series approximation for ln(1-x) is only valid for x ∈ [0, 1).
+    /// When x reaches or exceeds SCALE (x ≥ 1 in unscaled terms), the series
+    /// diverges, producing inaccurate results. This function guards against
+    /// divergence by returning a sentinel value for out-of-range inputs.
     pub fn ln_1_minus_x(x: i128) -> i128 {
+        // Guard: ln(1 - 0) = 0
+        if x <= 0 {
+            return 0;
+        }
+        // Guard: x must be strictly less than SCALE for series convergence.
+        // Values at or above SCALE would cause the Taylor series to diverge
+        // and produce nonsensical (very large negative) outputs.
+        if x >= Self::SCALE {
+            // Return a large negative sentinel that saturates gracefully
+            // rather than allowing the series to explode.
+            return Self::LN_DIVERGENCE_SENTINEL;
+        }
         let x2 = (x * x) / Self::SCALE;
         let x3 = (x2 * x) / Self::SCALE;
         // ln(1-x) ≈ -x - x^2/2 - x^3/3
@@ -61,7 +84,11 @@ impl FixedPointMath {
         let ln_val = Self::ln_1_minus_x(two_abs_u);
 
         // -b * sgn(U) * ln(...)
-        (-b * sign * ln_val) / Self::SCALE
+        // Use saturating multiplication chain to prevent integer overflow
+        // from unchecked triple i128 multiplication
+        let step1 = b.saturating_mul(sign);
+        let step2 = step1.saturating_mul(ln_val);
+        (-step2) / Self::SCALE
     }
 }
 
@@ -143,6 +170,34 @@ impl DpAnalyticsContract {
 mod test {
     use super::*;
     use soroban_sdk::testutils::Address as _;
+
+    #[test]
+    fn test_ln_1_minus_x_edge_cases() {
+        // x = 0 should return 0 (ln(1-0) = ln(1) = 0)
+        assert_eq!(FixedPointMath::ln_1_minus_x(0), 0);
+
+        // x < 0 should also return 0 (guard handles negative inputs)
+        assert_eq!(FixedPointMath::ln_1_minus_x(-1), 0);
+
+        // x = SCALE (1.0 unscaled) should return the divergence sentinel
+        // to prevent Taylor series from diverging
+        assert_eq!(
+            FixedPointMath::ln_1_minus_x(FixedPointMath::SCALE),
+            FixedPointMath::LN_DIVERGENCE_SENTINEL
+        );
+
+        // x > SCALE should also return the divergence sentinel
+        assert_eq!(
+            FixedPointMath::ln_1_minus_x(FixedPointMath::SCALE * 2),
+            FixedPointMath::LN_DIVERGENCE_SENTINEL
+        );
+
+        // x = SCALE - 1 should produce a valid (negative) result,
+        // distinct from the divergence sentinel
+        let result_near_boundary = FixedPointMath::ln_1_minus_x(FixedPointMath::SCALE - 1);
+        assert!(result_near_boundary < 0);
+        assert_ne!(result_near_boundary, FixedPointMath::LN_DIVERGENCE_SENTINEL);
+    }
 
     #[test]
     fn test_dp_noise_and_budget() {
