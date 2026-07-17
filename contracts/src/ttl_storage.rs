@@ -410,7 +410,7 @@ impl TtlStorage {
 
         for i in 0..chunk_count {
             let start = i * MAX_ENTRY_SIZE;
-            let end = std::cmp::min(start + MAX_ENTRY_SIZE, data_len);
+            let end = core::cmp::min(start + MAX_ENTRY_SIZE, data_len);
 
             if start >= data_len {
                 break;

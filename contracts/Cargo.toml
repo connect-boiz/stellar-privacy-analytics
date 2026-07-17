@@ -15,10 +15,6 @@ crate-type = ["cdylib", "rlib"]
 soroban-sdk = "22.0.0"
 soroban-sdk-macros = "22.0.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sha2 = "0.10"
-hmac = "0.12"
-rand = { version = "0.8", features = ["std_rng"] }
 
 [dev-dependencies]
 soroban-sdk = { version = "22.0.0", features = ["testutils"] }
