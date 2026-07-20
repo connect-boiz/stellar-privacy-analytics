@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import multer from "multer";
 import ipfsService from "../services/ipfsService";
 import { body, param, validationResult } from "express-validator";
 import { logger } from "../utils/logger";
@@ -38,7 +39,8 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      if (!req.file) {
+      const file = (req as any).file;
+      if (!file) {
         return res.status(400).json({ error: "No file provided" });
       }
 
@@ -46,7 +48,7 @@ router.post(
         req.body;
 
       const result = await ipfsService.uploadAndPinFile(
-        req.file.buffer,
+        file.buffer,
         fileName,
         {
           encrypted: encrypted || false,

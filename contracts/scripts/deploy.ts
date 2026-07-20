@@ -1,16 +1,11 @@
 import {
-  Server,
   Networks,
   TransactionBuilder,
-  _Account,
+  Account,
   Keypair,
   Contract,
-} from "@stellar/stellar-sdk";
-import {
-  Contract as SorobanContract,
-  xdr,
-  Operation,
-  _Asset,
+  SorobanRpc,
+  Asset,
 } from "@stellar/stellar-sdk";
 import { readFileSync } from "fs";
 import { join } from "path";

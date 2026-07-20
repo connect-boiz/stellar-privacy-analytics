@@ -98,7 +98,7 @@ export class ObservabilityMiddleware {
 
     // Override res.end to capture response completion
     const originalEnd = res.end;
-    res.end = (chunk?: any, encoding?: any) => {
+    res.end = function(this: Response, chunk?: any, encoding?: any) {
       const duration = Date.now() - traceContext.startTime;
 
       // Update trace context with response info
@@ -144,7 +144,7 @@ export class ObservabilityMiddleware {
   /**
    * Generate span ID
    */
-  private generateSpanId(): string {
+  generateSpanId(): string {
     return uuidv4().replace(/-/g, "").substring(0, 16);
   }
 
