@@ -171,6 +171,7 @@ export function useFormPersistence<T extends Record<string, unknown>>(
   );
 
   // Debounced auto-save
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSave = useCallback(
     debounce((data: T) => {
       setIsSaving(true);

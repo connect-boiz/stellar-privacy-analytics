@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, _useMemo, useCallback, useRef } from 'react';
 import {
-  LineChart,
-  Line,
+  _LineChart,
+  _Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -236,6 +236,7 @@ const MemoryEfficientChart: React.FC<MemoryEfficientChartProps> = ({
 
     return () => {
       memoryMonitorRef.current.unsubscribe(chartId);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       memoryMonitorRef.current.stopMonitoring();
     };
   }, [initialData, loadData, getMemoryPressureLevel, currentFallbackMode]);

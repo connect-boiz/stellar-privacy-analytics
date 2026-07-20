@@ -4,11 +4,11 @@
 
 import {
   SimulationResult,
-  SimulationScenario,
+  _SimulationScenario,
   ScenarioComparison,
-  Recommendation,
+  _Recommendation,
   BudgetExport,
-  BudgetShare,
+  _BudgetShare,
   ExportMetadata,
   SharePermission,
   AccessLog,
@@ -866,7 +866,7 @@ export class SimulationExportSharing {
     return sensitivity;
   }
 
-  private prepareChartsData(result: SimulationResult, options: any): any {
+  private prepareChartsData(result: SimulationResult, _options: any): any {
     return {
       allocationChart: this.generateAllocationChart(result),
       metricsChart: this.generateMetricsChart(result),
@@ -1167,43 +1167,43 @@ export class SimulationExportSharing {
     return `Compliance summary with score of ${result.metrics.complianceScore.toFixed(1)}`;
   }
 
-  private generateMetricsCharts(result: SimulationResult): any {
+  private generateMetricsCharts(_result: SimulationResult): any {
     return {
       /* chart data */
     };
   }
 
-  private generateMetricsDetails(result: SimulationResult): any {
+  private generateMetricsDetails(_result: SimulationResult): any {
     return {
       /* detailed metrics */
     };
   }
 
-  private filterMetricsByFocus(metrics: any, focus: string): any {
+  private filterMetricsByFocus(_metrics: any, _focus: string): any {
     return {
       /* filtered metrics */
     };
   }
 
-  private generateAllocationChart(result: SimulationResult): any {
+  private generateAllocationChart(_result: SimulationResult): any {
     return {
       /* allocation chart data */
     };
   }
 
-  private generateMetricsChart(result: SimulationResult): any {
+  private generateMetricsChart(_result: SimulationResult): any {
     return {
       /* metrics chart data */
     };
   }
 
-  private generateTrendChart(result: SimulationResult): any {
+  private generateTrendChart(_result: SimulationResult): any {
     return {
       /* trend chart data */
     };
   }
 
-  private generateRadarChart(result: SimulationResult): any {
+  private generateRadarChart(_result: SimulationResult): any {
     return {
       /* radar chart data */
     };

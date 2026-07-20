@@ -324,7 +324,7 @@ export class CapacityPlanner {
     requirements: CapacityRequirements,
   ): CapacityRecommendations["estimatedCosts"] {
     const workers = this.calculateWorkerRequirements(results, requirements);
-    const infrastructure = this.calculateInfrastructureRequirements(
+    const _infrastructure = this.calculateInfrastructureRequirements(
       results,
       requirements,
     );
@@ -354,7 +354,7 @@ export class CapacityPlanner {
   private static generateWarnings(
     results: LoadTestResults,
     requirements: CapacityRequirements,
-    recommendations: CapacityRecommendations,
+    _recommendations: CapacityRecommendations,
   ): string[] {
     const warnings: string[] = [];
 

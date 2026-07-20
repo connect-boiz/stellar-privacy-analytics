@@ -1,5 +1,4 @@
 import { DatabaseService } from "../services/databaseService";
-import { logger } from "../utils/logger";
 
 export interface PrivacyBudget {
   id: string;

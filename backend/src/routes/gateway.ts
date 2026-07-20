@@ -355,7 +355,7 @@ router.get(
 router.put(
   "/config",
   asyncHandler(async (req: Request, res: Response) => {
-    const { policies, rateLimiting, loadBalancing } = req.body;
+    const { _policies, _rateLimiting, _loadBalancing } = req.body;
 
     logger.info("Gateway configuration updated", {
       updatedSections: Object.keys(req.body),

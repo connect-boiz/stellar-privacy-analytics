@@ -6,7 +6,7 @@ import {
   AnomalyDetection,
   DataAccessEvent,
   PrivacyMetric,
-  AccessPattern,
+  _AccessPattern,
 } from '../types/privacyMetrics';
 
 export interface AnomalyDetectionConfig {
@@ -449,7 +449,7 @@ export class AnomalyDetectionEngine {
     return profiles;
   }
 
-  private getHistoricalProfile(userId: string): any | null {
+  private getHistoricalProfile(_userId: string): any | null {
     // In a real implementation, this would fetch historical data
     // For now, return null to simulate no historical data
     return null;

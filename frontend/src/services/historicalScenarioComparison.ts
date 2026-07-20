@@ -6,9 +6,9 @@ import {
   SimulationScenario,
   SimulationResult,
   ScenarioComparison,
-  ComparisonResult,
+  _ComparisonResult,
   ComparisonInsight,
-  BudgetAllocation,
+  _BudgetAllocation,
   SimulationMetrics,
 } from '../types/privacyBudget';
 
@@ -266,7 +266,7 @@ export class HistoricalScenarioComparison {
   public async compareWithHistorical(
     currentScenario: SimulationScenario,
     currentResult: SimulationResult,
-    comparisonType: 'trend' | 'benchmark' | 'pattern' | 'comprehensive' = 'comprehensive'
+    _comparisonType: 'trend' | 'benchmark' | 'pattern' | 'comprehensive' = 'comprehensive'
   ): Promise<{
     trends: HistoricalTrend[];
     benchmarks: BenchmarkData[];
@@ -431,7 +431,7 @@ export class HistoricalScenarioComparison {
   }
 
   // Trend analysis methods
-  private async analyzeTrends(currentResult: SimulationResult): Promise<HistoricalTrend[]> {
+  private async analyzeTrends(_currentResult: SimulationResult): Promise<HistoricalTrend[]> {
     const trends: HistoricalTrend[] = [];
     const results = this.getHistoricalResults(this.config.timeRange);
 
@@ -868,7 +868,7 @@ export class HistoricalScenarioComparison {
 
   private analyzeEmergingPatterns(
     results: SimulationResult[],
-    currentResult: SimulationResult
+    _currentResult: SimulationResult
   ): PatternInsight[] {
     const patterns: PatternInsight[] = [];
 
@@ -1054,7 +1054,7 @@ export class HistoricalScenarioComparison {
     return 'low';
   }
 
-  private generatePatternRecommendations(type: string, description: string): string[] {
+  private generatePatternRecommendations(type: string, _description: string): string[] {
     const recommendations: string[] = [];
 
     switch (type) {
@@ -1287,13 +1287,13 @@ export class HistoricalScenarioComparison {
     return [trend];
   }
 
-  private recognizeTimelinePatterns(timeline: TimelineData[]): PatternInsight[] {
+  private recognizeTimelinePatterns(_timeline: TimelineData[]): PatternInsight[] {
     // This would recognize patterns in the timeline
     // For now, return empty array
     return [];
   }
 
-  private generateTimelineForecasts(timeline: TimelineData[]): ForecastData[] {
+  private generateTimelineForecasts(_timeline: TimelineData[]): ForecastData[] {
     // This would generate forecasts based on timeline data
     // For now, return empty array
     return [];
@@ -1323,7 +1323,7 @@ export class HistoricalScenarioComparison {
 
   private async generateScenarioComparisons(
     scenarios: SimulationScenario[],
-    results: SimulationResult[]
+    _results: SimulationResult[]
   ): Promise<ScenarioComparison[]> {
     const comparisons: ScenarioComparison[] = [];
 
@@ -1341,22 +1341,22 @@ export class HistoricalScenarioComparison {
     return comparisons;
   }
 
-  private async analyzeComparativeTrends(results: SimulationResult[]): Promise<HistoricalTrend[]> {
+  private async analyzeComparativeTrends(_results: SimulationResult[]): Promise<HistoricalTrend[]> {
     // This would analyze trends across multiple results
     // For now, return empty array
     return [];
   }
 
-  private generateComparativeBenchmarks(results: SimulationResult[]): BenchmarkData[] {
+  private generateComparativeBenchmarks(_results: SimulationResult[]): BenchmarkData[] {
     // This would generate benchmarks for comparison
     // For now, return empty array
     return [];
   }
 
   private generateComparativeInsights(
-    comparisons: ScenarioComparison[],
-    trends: HistoricalTrend[],
-    benchmarks: BenchmarkData[]
+    _comparisons: ScenarioComparison[],
+    _trends: HistoricalTrend[],
+    _benchmarks: BenchmarkData[]
   ): ComparisonInsight[] {
     // This would generate insights from comparisons
     // For now, return empty array
@@ -1364,8 +1364,8 @@ export class HistoricalScenarioComparison {
   }
 
   private generateReportRecommendations(
-    insights: ComparisonInsight[],
-    reportType: string
+    _insights: ComparisonInsight[],
+    _reportType: string
   ): ReportRecommendation[] {
     // This would generate recommendations based on insights and report type
     // For now, return empty array
@@ -1387,12 +1387,12 @@ export class HistoricalScenarioComparison {
     return oldestKey;
   }
 
-  private updateTrends(result: SimulationResult): void {
+  private updateTrends(_result: SimulationResult): void {
     // Update trend analysis with new result
     // This would recalculate trends with the new data point
   }
 
-  private updatePatterns(result: SimulationResult): void {
+  private updatePatterns(_result: SimulationResult): void {
     // Update pattern recognition with new result
     // This would reanalyze patterns with the new data point
   }

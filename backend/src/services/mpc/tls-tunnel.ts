@@ -1,11 +1,11 @@
 import * as https from "https";
-import * as tls from "tls";
+import * as _tls from "tls";
 import * as fs from "fs";
 import { Server } from "https";
 import {
   TLSSocket,
   connect as tlsConnect,
-  createServer as tlsCreateServer,
+  createServer as _tlsCreateServer,
 } from "tls";
 import { EventEmitter } from "events";
 import { logger } from "../../utils/logger";
@@ -204,7 +204,7 @@ export class TLSTunnel extends EventEmitter {
    */
   async stop(): Promise<void> {
     // Close all connections
-    for (const [nodeId, socket] of this.connections) {
+    for (const [_nodeId, socket] of this.connections) {
       socket.end();
     }
     this.connections.clear();

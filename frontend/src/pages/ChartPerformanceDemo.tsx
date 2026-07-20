@@ -188,7 +188,7 @@ const ChartPerformanceDemo: React.FC = () => {
               height={400}
               maxPoints={3000}
               enableProgressiveLoading={true}
-              onPerformanceMetrics={(metrics) => {
+              onPerformanceMetrics={(_metrics) => {
                 // Secondary chart metrics collected
               }}
               fallbackMode="simplified"

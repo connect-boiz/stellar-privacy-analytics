@@ -35,7 +35,7 @@ const PrivacyMonitoringDemo: React.FC = () => {
           await dataService.connectWebSocket();
 
           // Subscribe to real-time updates
-          dataService.subscribe('metrics', (data) => {
+          dataService.subscribe('metrics', (_data) => {
             // Real-time metric update received
           });
 
@@ -192,7 +192,7 @@ const PrivacyMonitoringDemo: React.FC = () => {
 // Tab Components
 const AnalyticsTab: React.FC<{ mockDataEnabled: boolean }> = ({ mockDataEnabled }) => {
   const [insights, setInsights] = useState<any[]>([]);
-  const [trends, setTrends] = useState<any[]>([]);
+  const [_trends, _setTrends] = useState<any[]>([]);
 
   useEffect(() => {
     if (mockDataEnabled) {

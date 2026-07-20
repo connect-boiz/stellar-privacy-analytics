@@ -1,7 +1,7 @@
 import { EventIndexer } from "../services/EventIndexer";
 
 // In a real deployment, indexer instance would be injected via GraphQL context
-let indexerInstance: EventIndexer;
+let _indexerInstance: EventIndexer;
 
 export const resolvers = {
   Query: {

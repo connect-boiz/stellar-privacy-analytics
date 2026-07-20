@@ -16,15 +16,15 @@ export const MPCWorkspace: React.FC = () => {
   const ws = useWebSocket('ws://localhost:3001/mpc');
   const {
     session,
-    isLoading,
-    error,
+    _isLoading,
+    _error,
     createSession,
     addParticipant,
     updateParticipantStatus,
     addLog,
     startComputation,
     getSessionStats,
-    clearSession,
+    _clearSession,
   } = useMPCSession();
 
   const sessionStats = getSessionStats();
@@ -34,6 +34,7 @@ export const MPCWorkspace: React.FC = () => {
       const message = JSON.parse(ws.lastMessage.data);
       handleWebSocketMessage(message);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ws.lastMessage]);
 
   const handleWebSocketMessage = (message: any) => {

@@ -34,7 +34,7 @@ const mockDb = {
   update: jest.fn(),
 };
 
-const mockKnex = jest.fn((table: string) => mockDb) as any;
+const mockKnex = jest.fn((_table: string) => mockDb) as any;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -54,7 +54,7 @@ describe("GET /analytics", () => {
     mockDb.count.mockResolvedValueOnce([{ count: "1" }]);
 
     // Override Promise.all behavior via mock
-    const originalAll = Promise.all.bind(Promise);
+    const _originalAll = Promise.all.bind(Promise);
     jest
       .spyOn(Promise, "all")
       .mockResolvedValueOnce([fakeAnalyses, [{ count: "1" }]]);

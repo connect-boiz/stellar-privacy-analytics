@@ -1,5 +1,4 @@
 import { logger } from "../utils/logger";
-import crypto from "crypto";
 import {
   createHash,
   randomBytes,
@@ -196,7 +195,7 @@ export class HomomorphicEncryptionService {
     try {
       // Simplified Paillier decryption (mock)
       const [lambda, mu] = keyPair.privateKey.split(",").map(Number);
-      const [n, g] = keyPair.publicKey.split(",").map(Number);
+      const [n, _g] = keyPair.publicKey.split(",").map(Number);
 
       const cipher = BigInt(ciphertext);
       const n2 = BigInt(n * n);

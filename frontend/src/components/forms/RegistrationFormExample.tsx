@@ -207,7 +207,7 @@ export function RegistrationFormExample() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStepChange = useCallback((step: number) => {
     setCurrentStep(step);
@@ -215,7 +215,7 @@ export function RegistrationFormExample() {
   }, []);
 
   const handleSubmit = useCallback(
-    async (values: RegistrationFormData) => {
+    async (_values: RegistrationFormData) => {
       setIsSubmitting(true);
       try {
         // Simulate API call

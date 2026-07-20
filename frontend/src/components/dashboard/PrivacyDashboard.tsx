@@ -4,16 +4,16 @@ import {
   AlertTriangle,
   TrendingUp,
   Users,
-  Clock,
-  Globe,
+  _Clock,
+  _Globe,
   Activity,
   CheckCircle,
-  XCircle,
+  _XCircle,
   AlertCircle,
   RefreshCw,
   Settings,
-  Download,
-  Filter,
+  _Download,
+  _Filter,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -25,12 +25,12 @@ import MemoryEfficientChart from '../charts/MemoryEfficientChart';
 
 import {
   DashboardState,
-  PrivacyMetric,
+  _PrivacyMetric,
   AnomalyDetection,
   PrivacyAlert,
   ComplianceStatus,
   AccessPattern,
-  HistoricalTrend,
+  _HistoricalTrend,
 } from '../../types/privacyMetrics';
 
 interface PrivacyDashboardProps {

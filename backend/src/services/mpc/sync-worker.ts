@@ -263,7 +263,7 @@ export class SyncWorker extends EventEmitter {
   ): Promise<void> {
     if (!message.sessionId) return;
 
-    const { participants, operation, threshold } = message.payload;
+    const { participants, _operation, _threshold } = message.payload;
 
     // Join the session if we're a participant
     if (participants.includes(this.mpcNode["nodeId"])) {
@@ -393,7 +393,7 @@ export class SyncWorker extends EventEmitter {
    */
   private async handleHeartbeatMessage(
     fromNodeId: string,
-    message: MPCMessage,
+    _message: MPCMessage,
   ): Promise<void> {
     this.transport.processHeartbeat(fromNodeId);
 
@@ -414,7 +414,7 @@ export class SyncWorker extends EventEmitter {
    */
   private async handleHeartbeatResponseMessage(
     fromNodeId: string,
-    message: MPCMessage,
+    _message: MPCMessage,
   ): Promise<void> {
     this.transport.processHeartbeat(fromNodeId);
   }

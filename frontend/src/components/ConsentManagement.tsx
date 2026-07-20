@@ -1,24 +1,24 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, _useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
   CheckCircle,
   XCircle,
   Clock,
-  AlertTriangle,
+  _AlertTriangle,
   Download,
-  Upload,
+  _Upload,
   Settings,
   FileText,
   Users,
-  Database,
-  Globe,
-  RefreshCw,
+  _Database,
+  _Globe,
+  _RefreshCw,
   ChevronRight,
   ChevronDown,
   Info,
   Trash2,
-  Edit,
+  _Edit,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format, subDays } from 'date-fns';
@@ -199,9 +199,9 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
     'individual'
   );
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [history, setHistory] = useState<ConsentHistoryEntry[]>(sampleConsentHistory);
+  const [history, _setHistory] = useState<ConsentHistoryEntry[]>(sampleConsentHistory);
   const [isLoading, setIsLoading] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [_showExportModal, _setShowExportModal] = useState(false);
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'gdpr' | 'ccpa'>('all');
 
   const toggleCategory = useCallback(
@@ -305,7 +305,7 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
     toast.success('Consent report exported');
   };
 
-  const handleDataDeletion = (categoryId: string) => {
+  const handleDataDeletion = (_categoryId: string) => {
     toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
       loading: 'Deleting data...',
       success: 'Data deleted successfully',

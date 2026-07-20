@@ -5,7 +5,7 @@ import {
   BarChart3,
   Database,
   Shield,
-  Settings,
+  _Settings,
   Menu,
   X,
   Lock,
@@ -23,7 +23,7 @@ import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
-export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+export const Layout: React.FC<{ _children?: React.ReactNode }> = ({ _children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { t } = useTranslation();

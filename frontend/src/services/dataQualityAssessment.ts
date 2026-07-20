@@ -4,7 +4,7 @@
 
 import {
   DatasetMetadata,
-  QualityMetadata,
+  _QualityMetadata,
   QualityScore,
   QualityDimension,
   QualityMetric,
@@ -17,7 +17,7 @@ import {
   TrendAnomaly,
   QualityBenchmark,
   SchemaField,
-  FieldStatistics,
+  _FieldStatistics,
 } from '../types/dataCatalog';
 
 export interface DataQualityConfig {
@@ -437,7 +437,7 @@ export class DataQualityAssessment {
     }
   }
 
-  private createAssessmentJob(datasetId: string, type: string, profileId?: string): string {
+  private createAssessmentJob(datasetId: string, type: string, _profileId?: string): string {
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const job: QualityAssessmentJob = {
@@ -463,7 +463,7 @@ export class DataQualityAssessment {
   private async calculateQualityMetrics(
     metadata: DatasetMetadata,
     profile: QualityProfile,
-    options?: any
+    _options?: any
   ): Promise<QualityMetric[]> {
     const metrics: QualityMetric[] = [];
 
@@ -604,7 +604,7 @@ export class DataQualityAssessment {
     return Math.max(0, accuracy);
   }
 
-  private calculateFormatAccuracy(field: SchemaField): number {
+  private calculateFormatAccuracy(_field: SchemaField): number {
     // Simplified format validation
     // In production, would use actual format validation
     return 95; // Placeholder
@@ -676,7 +676,7 @@ export class DataQualityAssessment {
     let consistentFields = 0;
     const totalFields = metadata.schema.fields.length;
 
-    metadata.schema.fields.forEach((field) => {
+    metadata.schema.fields.forEach((_field) => {
       // Simplified type consistency check
       // In production would analyze actual data
       consistentFields += Math.random() > 0.05 ? 1 : 0; // 95% consistent
@@ -849,7 +849,7 @@ export class DataQualityAssessment {
     return freshness;
   }
 
-  private calculateUpdateFrequency(metadata: DatasetMetadata): number {
+  private calculateUpdateFrequency(_metadata: DatasetMetadata): number {
     // Simplified frequency calculation
     // In production would analyze actual update patterns
     return 85; // Placeholder
@@ -883,8 +883,8 @@ export class DataQualityAssessment {
   }
 
   private async evaluateCustomMetric(
-    metric: QualityMetric,
-    metadata: DatasetMetadata
+    _metric: QualityMetric,
+    _metadata: DatasetMetadata
   ): Promise<number> {
     // Simplified custom metric evaluation
     // In production would parse and execute the formula
@@ -965,7 +965,7 @@ export class DataQualityAssessment {
 
   private async evaluateQualityRule(
     rule: QualityRule,
-    metadata: DatasetMetadata
+    _metadata: DatasetMetadata
   ): Promise<QualityIssue[]> {
     const issues: QualityIssue[] = [];
 
@@ -1053,7 +1053,7 @@ export class DataQualityAssessment {
     return dim ? dim.weight : 0.1;
   }
 
-  private determineTrend(currentScore: number): 'improving' | 'stable' | 'declining' {
+  private determineTrend(_currentScore: number): 'improving' | 'stable' | 'declining' {
     // Simplified trend determination
     // In production would compare with historical data
     return 'stable';
@@ -1211,7 +1211,7 @@ export class DataQualityAssessment {
     });
   }
 
-  private async sendQualityAlert(alert: QualityAlert): Promise<void> {
+  private async sendQualityAlert(_alert: QualityAlert): Promise<void> {
     // Implementation would send alert to notification system
     // Quality Alert: ${alert}
   }
@@ -1279,7 +1279,7 @@ export class DataQualityAssessment {
     };
   }
 
-  private generateImprovementActions(type: string, issue: any): ImprovementAction[] {
+  private generateImprovementActions(type: string, _issue: any): ImprovementAction[] {
     const actions: ImprovementAction[] = [];
 
     switch (type) {
@@ -1368,8 +1368,8 @@ export class DataQualityAssessment {
 
   private generateBenchmarkForDimension(
     dimension: string,
-    category: string,
-    industry?: string
+    _category: string,
+    _industry?: string
   ): QualityBenchmark {
     // Generate benchmark data (simplified)
     const values = {
@@ -1496,7 +1496,7 @@ export class DataQualityAssessment {
     return forecasts;
   }
 
-  private detectTrendAnomalies(timeSeries: TrendDataPoint[], trend: TrendAnalysis): TrendAnomaly[] {
+  private detectTrendAnomalies(timeSeries: TrendDataPoint[], _trend: TrendAnalysis): TrendAnomaly[] {
     const anomalies: TrendAnomaly[] = [];
 
     if (timeSeries.length < 3) return anomalies;
@@ -1768,7 +1768,7 @@ export class DataQualityAssessment {
     };
   }
 
-  private getTotalRecordCount(metadata: DatasetMetadata): number {
+  private getTotalRecordCount(_metadata: DatasetMetadata): number {
     // Simplified record count calculation
     // In production would get from actual data
     return 10000; // Placeholder
@@ -1789,13 +1789,13 @@ export class DataQualityAssessment {
     });
   }
 
-  private isAssessmentDue(profile: QualityProfile): boolean {
+  private isAssessmentDue(_profile: QualityProfile): boolean {
     // Simplified schedule checking
     // In production would use cron expression parsing
     return true; // Placeholder
   }
 
-  private async triggerScheduledAssessment(profile: QualityProfile): Promise<void> {
+  private async triggerScheduledAssessment(_profile: QualityProfile): Promise<void> {
     // Implementation would trigger assessment for relevant datasets
     // Triggering scheduled assessment for profile: ${profile.name}
   }

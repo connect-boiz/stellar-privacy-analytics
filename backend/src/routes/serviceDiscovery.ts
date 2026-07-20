@@ -3,7 +3,7 @@ import { body, param, query, validationResult } from "express-validator";
 import {
   ServiceDiscovery,
   ServiceRegistration,
-  ServiceInfo,
+  _ServiceInfo,
   FailoverPolicy,
   DisasterRecoveryPlan,
 } from "../services/ServiceDiscovery";

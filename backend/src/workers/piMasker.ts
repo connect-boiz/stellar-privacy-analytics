@@ -83,7 +83,7 @@ export class PIIMasker {
       pattern:
         /\b(?:\+1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b/g,
       mask: (match) => {
-        const fullMatch = match[0];
+        const _fullMatch = match[0];
         const areaCode = match[1];
         const prefix = match[2];
         const lineNumber = match[3];

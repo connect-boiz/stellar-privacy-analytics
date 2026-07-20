@@ -328,7 +328,7 @@ export class PrivacyPolicyEngine {
   private extractPrivacyContext(
     req: Request,
     privacyLevel: string,
-    userAttributes: Record<string, any>,
+    _userAttributes: Record<string, any>,
   ): PrivacyContext {
     return {
       level: privacyLevel,

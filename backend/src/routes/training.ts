@@ -441,7 +441,7 @@ router.post(
     }
 
     // Randomize questions if configured
-    let questions = [...module.assessment.questions];
+    const questions = [...module.assessment.questions];
     if (module.assessment.randomizeQuestions) {
       for (let i = questions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));

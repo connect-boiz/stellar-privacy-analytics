@@ -12,9 +12,9 @@ import {
   YAxis,
   CartesianGrid,
   Legend,
-  BarChart,
-  Bar,
-  ComposedChart,
+  _BarChart,
+  _Bar,
+  _ComposedChart,
 } from 'recharts';
 import {
   AlertCircle,
@@ -27,11 +27,11 @@ import {
   Minus,
   AlertTriangle,
   Download,
-  TrendingUp,
+  _TrendingUp,
   Zap,
   Target,
   Sliders,
-  Clock,
+  _Clock,
   CheckCircle,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -72,7 +72,7 @@ interface ApiResponse {
   history: BudgetHistory[];
 }
 
-interface BudgetAllocationData {
+interface _BudgetAllocationData {
   id: string;
   analysisName: string;
   allocated: number;
@@ -160,7 +160,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
   const [allocations, setAllocations] = useState<BudgetAllocation[]>(defaultAllocations);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [totalBudget] = useState(1.0);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [_showExportModal, _setShowExportModal] = useState(false);
 
   const getBudgetColor = useCallback((percentage: number) => {
     if (percentage >= 90) return '#ef4444';

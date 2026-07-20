@@ -10,7 +10,7 @@ export const DataManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
   const [showSecureUpload, setShowSecureUpload] = useState(false);
-  const [recentUploads, setRecentUploads] = useState<UploadReceipt[]>([]);
+  const [_recentUploads, setRecentUploads] = useState<UploadReceipt[]>([]);
 
   const handleUploadComplete = (receipt: UploadReceipt) => {
     setRecentUploads((prev) => [receipt, ...prev]);

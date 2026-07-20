@@ -7,14 +7,14 @@ import {
   SearchRequest,
   SearchResult,
   SearchFilter,
-  SearchPrivacy,
-  ResultPrivacy,
+  _SearchPrivacy,
+  _ResultPrivacy,
   PrivacyMetadata,
-  FieldPrivacy,
-  DataType,
-  AccessPermission,
-  AccessPolicy,
-  ComplianceFramework,
+  _FieldPrivacy,
+  _DataType,
+  _AccessPermission,
+  _AccessPolicy,
+  _ComplianceFramework,
 } from '../types/dataCatalog';
 
 export interface PrivacyPreservingConfig {
@@ -533,8 +533,8 @@ export class PrivacyPreservingDiscovery {
   }
 
   private async executePrivacyAwareSearch(
-    request: SearchRequest,
-    context: DiscoveryContext
+    _request: SearchRequest,
+    _context: DiscoveryContext
   ): Promise<SearchResult> {
     // This would integrate with the actual search engine
     // For now, return a mock result
@@ -608,7 +608,7 @@ export class PrivacyPreservingDiscovery {
     return anonymizedResult;
   }
 
-  private shouldAnonymizeField(field: any, privacyLevel: string): boolean {
+  private shouldAnonymizeField(field: any, _privacyLevel: string): boolean {
     if (!field.privacy) return false;
 
     // Check if field is personal data
@@ -715,7 +715,7 @@ export class PrivacyPreservingDiscovery {
     return token;
   }
 
-  private encryptValue(value: any, parameters: Record<string, any>): string {
+  private encryptValue(value: any, _parameters: Record<string, any>): string {
     // Simplified encryption - in production, use proper encryption
     return `encrypted_${Buffer.from(value.toString()).toString('base64')}`;
   }
@@ -756,23 +756,23 @@ export class PrivacyPreservingDiscovery {
     return anonymized;
   }
 
-  private getMaskedFields(dataset: DatasetMetadata, privacyLevel: string): string[] {
+  private getMaskedFields(dataset: DatasetMetadata, _privacyLevel: string): string[] {
     return dataset.schema.fields
       .filter((field) => field.privacy?.accessRestricted)
       .map((field) => field.name);
   }
 
-  private getAnonymizedFields(dataset: DatasetMetadata, privacyLevel: string): string[] {
+  private getAnonymizedFields(dataset: DatasetMetadata, _privacyLevel: string): string[] {
     return dataset.schema.fields
       .filter((field) => field.privacy?.anonymizationMethod)
       .map((field) => field.name);
   }
 
-  private requiresAccess(dataset: DatasetMetadata, privacyLevel: string): boolean {
+  private requiresAccess(dataset: DatasetMetadata, _privacyLevel: string): boolean {
     return dataset.privacy.level !== 'public';
   }
 
-  private requiresConsent(dataset: DatasetMetadata, privacyLevel: string): boolean {
+  private requiresConsent(dataset: DatasetMetadata, _privacyLevel: string): boolean {
     return dataset.privacy.consentRequirements.length > 0;
   }
 
@@ -864,7 +864,7 @@ export class PrivacyPreservingDiscovery {
     return necessaryFields;
   }
 
-  private createAccessDeniedResult(reason: string): SearchResult {
+  private createAccessDeniedResult(_reason: string): SearchResult {
     return {
       datasets: [],
       total: 0,
@@ -1000,7 +1000,7 @@ export class PrivacyPreservingDiscovery {
     };
   }
 
-  private extractDataTypes(request: SearchRequest): string[] {
+  private extractDataTypes(_request: SearchRequest): string[] {
     // Extract data types from search request
     // Simplified implementation
     return ['technical', 'demographic'];
@@ -1049,7 +1049,7 @@ export class PrivacyPreservingDiscovery {
     return riskMap[purpose] || 0.5;
   }
 
-  private calculateLocationRisk(location: string): number {
+  private calculateLocationRisk(_location: string): number {
     // Simplified location risk calculation
     // In production, would use geolocation and cross-border transfer rules
     return 0.3;

@@ -9,7 +9,7 @@ import {
   Recommendation,
   OptimizationGoal,
   BudgetConstraints,
-  AllocationCategory,
+  _AllocationCategory,
 } from '../types/privacyBudget';
 
 export interface OptimizationConfig {
@@ -791,7 +791,7 @@ export class OptimizationRecommendationEngine {
 
   private calculateRiskScore(
     recommendation: Recommendation,
-    context: RecommendationContext
+    _context: RecommendationContext
   ): number {
     if (recommendation.risks.length === 0) return 0.1; // Low base risk
 
@@ -820,7 +820,7 @@ export class OptimizationRecommendationEngine {
 
   private calculateTimeScore(
     recommendation: Recommendation,
-    context: RecommendationContext
+    _context: RecommendationContext
   ): number {
     const duration = recommendation.implementation.duration;
 
@@ -846,7 +846,7 @@ export class OptimizationRecommendationEngine {
 
   private createImplementationPlan(
     pattern: OptimizationPattern,
-    context: RecommendationContext
+    _context: RecommendationContext
   ): any {
     const steps = pattern.actions.map((action, index) => ({
       id: `step-${index + 1}`,
@@ -882,7 +882,7 @@ export class OptimizationRecommendationEngine {
     };
   }
 
-  private identifyRisks(pattern: OptimizationPattern, context: RecommendationContext): any[] {
+  private identifyRisks(pattern: OptimizationPattern, _context: RecommendationContext): any[] {
     const risks: any[] = [];
 
     if (pattern.category === 'reallocation') {
@@ -916,7 +916,7 @@ export class OptimizationRecommendationEngine {
 
   private generateAlternatives(
     pattern: OptimizationPattern,
-    context: RecommendationContext
+    _context: RecommendationContext
   ): any[] {
     const alternatives: any[] = [];
 
@@ -970,7 +970,7 @@ export class OptimizationRecommendationEngine {
     return `Based on analysis: ${conditionDescriptions.join(', ')}. This pattern has a success rate of ${(pattern.successRate * 100).toFixed(1)}% and confidence level of ${(pattern.confidence * 100).toFixed(1)}%.`;
   }
 
-  private analyzeHistoricalPatterns(context: RecommendationContext): any[] {
+  private analyzeHistoricalPatterns(_context: RecommendationContext): any[] {
     // Simplified historical pattern analysis
     // In a real implementation, this would use more sophisticated ML techniques
     const patterns: any[] = [];
@@ -999,7 +999,7 @@ export class OptimizationRecommendationEngine {
     return patterns;
   }
 
-  private createMLRecommendation(pattern: any, context: RecommendationContext): Recommendation {
+  private createMLRecommendation(pattern: any, _context: RecommendationContext): Recommendation {
     return {
       id: `rec-ml-${Date.now()}`,
       type: 'optimization',

@@ -104,7 +104,7 @@ export class ABACService {
     userAttributes: UserAttributes,
     resource: Resource,
   ): Promise<AccessDecision> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const cacheKey = this.createDecisionCacheKey(userAttributes, resource);
 
     // Check cache first
@@ -194,7 +194,7 @@ export class ABACService {
     resource: Resource,
   ): Promise<AccessDecision> {
     try {
-      const matchedRules: string[] = [];
+      const _matchedRules: string[] = [];
 
       // Check if policy applies to this user and resource
       const targetMatch = this.evaluateTarget(

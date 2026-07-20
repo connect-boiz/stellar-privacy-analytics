@@ -218,8 +218,8 @@ export class BudgetExhaustionHandler {
   }
 
   getBudgetExhaustionStats(
-    userId?: string,
-    datasetId?: string,
+    _userId?: string,
+    _datasetId?: string,
   ): {
     totalExhaustions: number;
     criticalExhaustions: number;

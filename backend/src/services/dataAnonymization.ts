@@ -1,5 +1,4 @@
 import { logger } from "../utils/logger";
-import crypto from "crypto";
 
 export interface AnonymizationConfig {
   algorithm: "k-anonymity" | "l-diversity" | "t-closeness";
@@ -108,7 +107,7 @@ export class DataAnonymizationService {
   ): Promise<AnonymizationResult> {
     const k = config.k || 5;
     const quasiIdentifiers = config.quasiIdentifiers;
-    const maxSuppressionRate = config.maxSuppressionRate || 0.1;
+    const _maxSuppressionRate = config.maxSuppressionRate || 0.1;
 
     logger.info(`Applying k-anonymity with k=${k}`);
 
@@ -122,7 +121,7 @@ export class DataAnonymizationService {
     const anonymizedClasses: EquivalenceClass[] = [];
     let suppressedRecords = 0;
 
-    for (const [key, records] of equivalenceClasses) {
+    for (const [_key, records] of equivalenceClasses) {
       if (records.length < k) {
         // Suppress small equivalence classes
         suppressedRecords += records.length;
@@ -360,7 +359,7 @@ export class DataAnonymizationService {
     };
   }
 
-  private generalizeValues(values: any[], attribute: string): any {
+  private generalizeValues(values: any[], _attribute: string): any {
     const uniqueValues = new Set(values);
 
     if (uniqueValues.size === 1) {
@@ -411,8 +410,8 @@ export class DataAnonymizationService {
   private async furtherGeneralizeForLDiversity(
     eqClass: EquivalenceClass,
     quasiIdentifiers: string[],
-    sensitiveAttribute: string,
-    l: number,
+    _sensitiveAttribute: string,
+    _l: number,
   ): Promise<EquivalenceClass> {
     // Apply more aggressive generalization
     const generalizedRecords = [...eqClass.records];
@@ -508,7 +507,7 @@ export class DataAnonymizationService {
     return distance;
   }
 
-  private calculateClassRisk(classSize: number, totalRecords: number): number {
+  private calculateClassRisk(classSize: number, _totalRecords: number): number {
     return 1 / classSize;
   }
 
@@ -516,8 +515,8 @@ export class DataAnonymizationService {
   private calculateKAnonymityMetrics(
     equivalenceClasses: EquivalenceClass[],
     k: number,
-    totalRecords: number,
-    suppressedRecords: number,
+    _totalRecords: number,
+    _suppressedRecords: number,
   ): AnonymizationMetrics {
     const avgClassSize =
       equivalenceClasses.reduce((sum, cls) => sum + cls.size, 0) /

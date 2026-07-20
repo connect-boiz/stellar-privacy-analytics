@@ -5,8 +5,8 @@
 import {
   PrivacyBudget,
   BudgetAllocation,
-  SimulationScenario,
-  SimulationResult,
+  _SimulationScenario,
+  _SimulationResult,
   BudgetAlert,
   BudgetAnalytics,
   UtilizationAnalytics,
@@ -238,12 +238,12 @@ export class BudgetManagementIntegration {
     return result;
   }
 
-  private async syncBudget(budget: PrivacyBudget): Promise<void> {
+  private async syncBudget(_budget: PrivacyBudget): Promise<void> {
     // This would make an API call to sync budget with external system
     // Syncing budget ${budget.id} with budget management system
   }
 
-  private async syncAllocation(allocation: BudgetAllocation): Promise<void> {
+  private async syncAllocation(_allocation: BudgetAllocation): Promise<void> {
     // This would make an API call to sync allocation with external system
     // Syncing allocation ${allocation.id} with budget management system
   }
@@ -366,7 +366,7 @@ export class BudgetManagementIntegration {
   public async approveBudget(
     approvalId: string,
     approvedBy: string,
-    comments?: string
+    _comments?: string
   ): Promise<boolean> {
     const approval = this.approvals.get(approvalId);
     if (!approval) {
@@ -393,8 +393,8 @@ export class BudgetManagementIntegration {
 
   public async rejectBudget(
     approvalId: string,
-    rejectedBy: string,
-    reason: string
+    _rejectedBy: string,
+    _reason: string
   ): Promise<boolean> {
     const approval = this.approvals.get(approvalId);
     if (!approval) {
@@ -448,7 +448,7 @@ export class BudgetManagementIntegration {
 
   private async assessRisk(
     budget: PrivacyBudget,
-    type: BudgetApproval['type']
+    _type: BudgetApproval['type']
   ): Promise<RiskAssessment> {
     const factors: RiskFactor[] = [];
     let overall: RiskAssessment['overall'] = 'low';
@@ -535,7 +535,7 @@ export class BudgetManagementIntegration {
     return false;
   }
 
-  private async applyApproval(approval: BudgetApproval): Promise<void> {
+  private async applyApproval(_approval: BudgetApproval): Promise<void> {
     // Apply the approved changes to the budget
     // Applying approval ${approval.id} for budget ${approval.budgetId}
   }
@@ -655,7 +655,7 @@ export class BudgetManagementIntegration {
     };
   }
 
-  private async calculateTrendAnalytics(budget: PrivacyBudget): Promise<TrendAnalytics> {
+  private async calculateTrendAnalytics(_budget: PrivacyBudget): Promise<TrendAnalytics> {
     // This would analyze historical trends for the budget
     return {
       direction: 'stable',
@@ -666,7 +666,7 @@ export class BudgetManagementIntegration {
     };
   }
 
-  private async calculateForecastAnalytics(budget: PrivacyBudget): Promise<ForecastAnalytics> {
+  private async calculateForecastAnalytics(_budget: PrivacyBudget): Promise<ForecastAnalytics> {
     // This would generate forecasts based on historical data
     return {
       shortTerm: [],
@@ -677,7 +677,7 @@ export class BudgetManagementIntegration {
     };
   }
 
-  private async calculateBenchmarkAnalytics(budget: PrivacyBudget): Promise<BenchmarkAnalytics> {
+  private async calculateBenchmarkAnalytics(_budget: PrivacyBudget): Promise<BenchmarkAnalytics> {
     // This would compare against industry benchmarks
     return {
       industry: [],
@@ -829,7 +829,7 @@ export class BudgetManagementIntegration {
     const now = Date.now();
     const expiryTime = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    for (const [id, approval] of this.approvals) {
+    for (const [_id, approval] of this.approvals) {
       if (approval.status === 'pending' && now - approval.requestedAt > expiryTime) {
         approval.status = 'expired';
         cleaned++;

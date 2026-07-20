@@ -1,4 +1,4 @@
-import { Env, Address, BytesN, String, Vec, xdr } from "@stellar/stellar-sdk";
+import { Env, Address, BytesN, String, Vec} from "@stellar/stellar-sdk";
 import { StellarAnalytics } from "../src/stellar_analytics";
 
 describe("StellarAnalytics", () => {
@@ -339,7 +339,7 @@ describe("StellarAnalytics", () => {
       const privacyLevel = new String(env, "high");
       const signature = new BytesN(env, Array(64).fill(2));
 
-      const requestId = StellarAnalytics.request_analysis(
+      const _requestId = StellarAnalytics.request_analysis(
         env,
         datasetHash,
         analysisType,

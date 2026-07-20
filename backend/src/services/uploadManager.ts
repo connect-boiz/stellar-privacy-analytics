@@ -187,7 +187,7 @@ export class UploadManager extends EventEmitter {
     return true;
   }
 
-  private async simulateChunkProcessing(chunkData: ChunkData): Promise<void> {
+  private async simulateChunkProcessing(_chunkData: ChunkData): Promise<void> {
     // Simulate network latency and processing time
     return new Promise((resolve) => {
       const processingTime = Math.random() * 100 + 50; // 50-150ms

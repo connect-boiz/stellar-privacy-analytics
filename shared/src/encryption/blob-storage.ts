@@ -1,12 +1,12 @@
-import type { IPFSHTTPClient } from "ipfs-http-client";
+import type { _IPFSHTTPClient } from "ipfs-http-client";
 import FormData from "form-data";
 import axios from "axios";
 import {
   AESEncryption,
   StreamingDecryption,
   KeyManagement,
-  EncryptionResult,
-  DecryptionResult,
+  _EncryptionResult,
+  _DecryptionResult,
 } from "./aes";
 import {
   CIDInfo,
@@ -405,7 +405,7 @@ export class EncryptedBlobStorageAdapter {
    */
   private async getMetadataForCID(cid: string): Promise<CIDInfo | null> {
     // Search in version manager
-    for (const [datasetId, versions] of this.versionManager[
+    for (const [_datasetId, versions] of this.versionManager[
       "versions"
     ].entries()) {
       const version = versions.find((v) => v.cid === cid);

@@ -285,7 +285,7 @@ export class RequestTransformer {
   private async applyTransformation(
     rule: TransformationRule,
     data: any,
-    context: TransformationContext
+    _context: TransformationContext
   ): Promise<TransformationResult> {
     try {
       let transformedData = data;
@@ -592,7 +592,13 @@ export class RequestTransformer {
   private getEncryptionKey(keyId: string): Buffer {
     this.syncKeysFromStore();
 
-    const key = this.encryptionKeys.get(keyId);
+    let key = this.encryptionKeys.get(keyId);
+    if (!key) {
+      // Force a reload from the store in case the mtime-based
+      // sync check missed an external update (e.g. same-second writes).
+      this.syncKeysFromStore(true);
+      key = this.encryptionKeys.get(keyId);
+    }
     if (!key) {
       throw new Error(`Encryption key not found: ${keyId}`);
     }

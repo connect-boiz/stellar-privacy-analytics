@@ -285,7 +285,7 @@ of this upload by visiting the verification URL above.
     };
   }
 
-  private static async signTransaction(transaction: any, account: StellarAccount): Promise<string> {
+  private static async signTransaction(transaction: any, _account: StellarAccount): Promise<string> {
     // In a real implementation, this would use the wallet's signing method
     // For now, we'll simulate signing
 

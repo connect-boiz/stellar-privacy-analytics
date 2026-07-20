@@ -129,6 +129,7 @@ export function TrainingModulePage() {
 
   useEffect(() => {
     fetchModuleData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId]);
 
   useEffect(() => {
@@ -150,6 +151,7 @@ export function TrainingModulePage() {
       }, 1000);
     }
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentTimer, assessmentStarted, assessmentSubmitted]);
 
   const fetchModuleData = async () => {

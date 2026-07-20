@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, _useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload,
@@ -42,7 +42,7 @@ interface UploadProgressProps {
 export const UploadProgress: React.FC<UploadProgressProps> = ({
   uploadId,
   fileName,
-  fileSize,
+  _fileSize,
   onCancel,
   onComplete,
 }) => {
@@ -97,6 +97,7 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
         socket.off('disconnect');
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, uploadId, isOnline]);
 
   // Polling fallback when WebSocket is unavailable

@@ -4,15 +4,15 @@
 
 import {
   DatasetMetadata,
-  LineageMetadata,
-  LineageNode,
+  _LineageMetadata,
+  _LineageNode,
   LineageTransformation,
   LineageGraph,
   LineageGraphNode,
   LineageGraphEdge,
-  GraphLayout,
-  GraphPosition,
-  NodeStyle,
+  _GraphLayout,
+  _GraphPosition,
+  _NodeStyle,
   EdgeStyle,
 } from '../types/dataCatalog';
 
@@ -691,7 +691,7 @@ export class DataLineageVisualization {
     }));
   }
 
-  private async getDatasetMetadata(datasetId: string): Promise<DatasetMetadata | null> {
+  private async getDatasetMetadata(_datasetId: string): Promise<DatasetMetadata | null> {
     // This would fetch metadata from the data catalog
     // For now, return null
     return null;
@@ -882,11 +882,11 @@ export class DataLineageVisualization {
 
     // Position nodes by level
     const levelHeight = 100;
-    nodes.forEach((node, index) => {
+    nodes.forEach((node, _index) => {
       const level = levels.get(node.id) || 0;
       const nodesInLevel = Array.from(levels.values()).filter((l) => l === level).length;
       const positionInLevel = Array.from(levels.entries())
-        .filter(([id, l]) => l === level)
+        .filter(([_id, l]) => l === level)
         .findIndex(([id]) => id === node.id);
 
       node.position = {

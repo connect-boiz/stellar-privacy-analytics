@@ -1,7 +1,6 @@
 import { logger } from "../utils/logger";
 import { ValidationRecord, ValidationStatus } from "../types/certification";
 import { certificationService } from "./certificationService";
-import { databaseService } from "./databaseService";
 
 export interface ValidationData {
   certificationId: string;
@@ -117,7 +116,7 @@ class ValidationService {
   }
 
   private async fetchValidationRecords(
-    certificationId: string,
+    _certificationId: string,
   ): Promise<ValidationRecord[]> {
     // In production, this would fetch from database
     // For demo, return empty array
@@ -127,7 +126,7 @@ class ValidationService {
   private async callThirdPartyValidator(
     certificationId: string,
     validatorName: string,
-    evidence: string[],
+    _evidence: string[],
   ): Promise<{
     status: ValidationStatus;
     comments: string;

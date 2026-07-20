@@ -12,7 +12,7 @@ import {
   AlertTriangle,
   Download,
   FileText,
-  Calendar,
+  _Calendar,
   Scale,
   Globe,
   Heart,

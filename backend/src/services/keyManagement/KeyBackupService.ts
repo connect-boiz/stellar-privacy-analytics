@@ -102,7 +102,7 @@ export class KeyBackupService extends EventEmitter {
   /**
    * Schedule a key for backup
    */
-  async scheduleBackup(keyId: string, wrappedKey: WrappedKey): Promise<void> {
+  async scheduleBackup(keyId: string, _wrappedKey: WrappedKey): Promise<void> {
     if (!this.backupQueue.includes(keyId)) {
       this.backupQueue.push(keyId);
       logger.info("Backup scheduled", { keyId });
@@ -515,7 +515,7 @@ export class KeyBackupService extends EventEmitter {
     throw new Error("All redundant copies failed");
   }
 
-  private async backupToRemote(backupId: string, data: Buffer): Promise<void> {
+  private async backupToRemote(backupId: string, _data: Buffer): Promise<void> {
     // Implement remote backup (S3, Azure Blob, etc.)
     logger.info("Remote backup not yet implemented", { backupId });
   }

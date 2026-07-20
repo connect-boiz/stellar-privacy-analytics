@@ -237,7 +237,7 @@ export class SecureTransport extends EventEmitter {
       return encryptedMessage;
     }
 
-    const { encrypted, checksum, ...message } = encryptedMessage;
+    const { _encrypted, checksum, ...message } = encryptedMessage;
     const calculatedChecksum = this.calculateChecksum(JSON.stringify(message));
 
     if (checksum !== calculatedChecksum) {

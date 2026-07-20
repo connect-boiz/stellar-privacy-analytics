@@ -263,7 +263,7 @@ export class PrivacyRiskAssessmentService {
 
   private evaluateDataSensitivity(dataTypes: string[]): RiskFactor {
     let maxScore = 0;
-    let sensitiveTypes: string[] = [];
+    const sensitiveTypes: string[] = [];
 
     for (const dataType of dataTypes) {
       const score = this.criteria.dataSensitivityWeights[dataType] || 0.5;
@@ -295,7 +295,7 @@ export class PrivacyRiskAssessmentService {
     processingSteps: ProcessingStep[],
   ): RiskFactor {
     let totalRisk = 0;
-    let highRiskActivities: string[] = [];
+    const highRiskActivities: string[] = [];
 
     for (const step of processingSteps) {
       const stepRisk = this.criteria.processingWeights[step.type] || 0.5;
@@ -576,7 +576,7 @@ export class PrivacyRiskAssessmentService {
     return Math.round(score * weight * 100);
   }
 
-  private getImplementationSteps(mitigation: string): string[] {
+  private getImplementationSteps(_mitigation: string): string[] {
     // This would contain detailed implementation steps for each mitigation
     return [
       "Conduct impact assessment",

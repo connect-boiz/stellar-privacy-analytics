@@ -357,6 +357,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [maxFileSize, allowedTypes, onUploadComplete, enableBatchUpload, enableRetry, maxRetries]
   );
 

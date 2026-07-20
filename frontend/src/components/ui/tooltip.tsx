@@ -122,7 +122,7 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       variant = 'default',
       persistOnClick = true,
       className,
-      arrowClassName,
+      _arrowClassName,
       ...props
     },
     ref

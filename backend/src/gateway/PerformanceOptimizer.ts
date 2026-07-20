@@ -58,7 +58,7 @@ export class PerformanceOptimizer {
 
   async optimizeRequest(
     req: Request,
-    res: Response,
+    _res: Response,
   ): Promise<{
     shouldCache: boolean;
     shouldCompress: boolean;
@@ -175,7 +175,7 @@ export class PerformanceOptimizer {
       .filter((rule) => rule.enabled && rule.condition(req))
       .sort((a, b) => b.priority - a.priority);
 
-    let optimizations = {
+    const optimizations = {
       shouldCache: false,
       shouldCompress: false,
       shouldBatch: false,
@@ -243,7 +243,7 @@ export class PerformanceOptimizer {
   private recordMetrics(
     req: Request,
     responseTime: number,
-    cacheHit: boolean,
+    _cacheHit: boolean,
   ): void {
     const path = req.path;
 
@@ -268,9 +268,9 @@ export class PerformanceOptimizer {
   private updatePerformanceHistory(): void {
     const allResponseTimes: number[] = [];
     let totalRequests = 0;
-    let cacheHits = 0;
+    const _cacheHits = 0;
 
-    this.requestMetrics.forEach((times, path) => {
+    this.requestMetrics.forEach((times, _path) => {
       allResponseTimes.push(...times);
       totalRequests += times.length;
     });

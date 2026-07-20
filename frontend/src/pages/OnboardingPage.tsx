@@ -118,6 +118,7 @@ export function OnboardingPage() {
     if (selectedRole) {
       fetchRecommendedTraining();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRole]);
 
   const fetchRecommendedTraining = async () => {

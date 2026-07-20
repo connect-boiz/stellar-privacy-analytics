@@ -228,6 +228,7 @@ export const Modal: React.FC<ModalProps> = ({
     // Small delay to ensure DOM is ready
     const timeoutId = setTimeout(focusElement, 50);
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialFocusRef]);
 
   // Handle focus restoration on close

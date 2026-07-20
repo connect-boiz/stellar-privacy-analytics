@@ -1,7 +1,6 @@
 import { EventEmitter } from "events";
 import { LRUCache } from "lru-cache";
 import { logger } from "../../utils/logger";
-import { getErrorMessage } from "../../utils/errorHandler";
 import type { KeyMetadata } from "./KeyManagementService";
 
 export interface CacheConfig {
@@ -467,7 +466,7 @@ export class PerformanceOptimizer extends EventEmitter {
     logger.debug("Analyzing prefetch opportunities");
   }
 
-  private analyzeUsagePattern(keyId: string, metadata: KeyMetadata): void {
+  private analyzeUsagePattern(_keyId: string, _metadata: KeyMetadata): void {
     // Track usage patterns for optimization
     // This could be used for intelligent prefetching
   }

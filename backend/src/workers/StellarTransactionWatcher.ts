@@ -1,4 +1,4 @@
-import { Server, xdr, rpc } from "@stellar/stellar-sdk";
+import { Server } from "@stellar/stellar-sdk";
 import { logger } from "../utils/logger";
 import { getRedisClient, connectRedis } from "../utils/redis";
 import { sandboxConfig } from "../config/sandboxConfig";

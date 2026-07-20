@@ -152,7 +152,7 @@ function setupEventListeners(): void {
     });
   });
 
-  warmingStrategy.on("strategyFailed", ({ task, strategy, error }) => {
+  warmingStrategy.on("strategyFailed", ({ _task, strategy, error }) => {
     logger.error("Cache warming failed:", {
       strategy: strategy.name,
       error: error instanceof Error ? error.message : "Unknown error",

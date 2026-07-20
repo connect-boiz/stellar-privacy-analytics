@@ -103,7 +103,7 @@ export const FormField = forwardRef<
       disabled = false,
       readOnly = false,
       autoFocus = false,
-      inputProps,
+      _inputProps,
       className = '',
       inputClassName = '',
       children,
@@ -339,7 +339,7 @@ export interface FieldGroupProps {
 
 export function FieldGroup({
   label,
-  name,
+  _name,
   error,
   description,
   required = false,

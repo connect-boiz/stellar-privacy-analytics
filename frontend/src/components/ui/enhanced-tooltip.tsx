@@ -52,7 +52,7 @@ const EnhancedTooltipTrigger = React.forwardRef<
     keyboardAccessible?: boolean;
     showOnFocus?: boolean;
   }
->(({ keyboardAccessible = true, showOnFocus = true, ...props }, ref) => {
+>(({ keyboardAccessible = true, _showOnFocus = true, ...props }, ref) => {
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (keyboardAccessible && (event.key === 'Enter' || event.key === ' ')) {
@@ -161,7 +161,7 @@ const EnhancedTooltip = React.forwardRef<HTMLDivElement, EnhancedTooltipProps>(
       disableAnimations = false,
       ...props
     },
-    ref
+    _ref
   ) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isTouch, setIsTouch] = useState(false);

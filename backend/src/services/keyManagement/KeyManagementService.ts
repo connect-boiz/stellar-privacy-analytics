@@ -805,7 +805,7 @@ export class KeyManagementService extends EventEmitter {
     }
   }
 
-  private async getKeyMaterial(keyId: string): Promise<Buffer> {
+  private async getKeyMaterial(_keyId: string): Promise<Buffer> {
     // This would retrieve the actual key material from HSM
     // For now, we'll generate a placeholder
     return randomBytes(32);

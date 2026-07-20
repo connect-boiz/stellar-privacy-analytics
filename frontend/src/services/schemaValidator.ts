@@ -522,7 +522,7 @@ export class SchemaValidator {
       {
         name: 'Enum Values Check',
         description: 'Check enum has valid values',
-        validate: (field, value) => {
+        validate: (field, _value) => {
           const enumValues = field.constraints.enumValues || [];
           if (enumValues.length === 0) {
             return {

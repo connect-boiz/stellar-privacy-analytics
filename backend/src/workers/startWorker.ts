@@ -18,7 +18,7 @@ async function startWorker() {
     validateConfig(config);
 
     // Create worker instance
-    const worker = new OptimizedAnonymizationWorker(config);
+    const _worker = new OptimizedAnonymizationWorker(config);
 
     logger.info("Anonymization worker started successfully", {
       workerId: process.env.WORKER_ID || "default",

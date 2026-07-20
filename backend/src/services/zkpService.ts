@@ -173,8 +173,8 @@ export class ZKPService extends EventEmitter {
    */
   async verifyProof(
     system: ZKProofSystem,
-    proof: string,
-    publicInputs: any,
+    _proof: string,
+    _publicInputs: any,
   ): Promise<boolean> {
     logger.info(`Verifying ${system} proof...`);
     // Simulate verification

@@ -116,11 +116,12 @@ export const PrivacyMLDashboard: React.FC = () => {
         socket.off('disconnect');
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket]);
 
   const fetchInitialData = async () => {
     try {
-      const [federatedRes, privacyRes, encryptionRes] = await Promise.all([
+      const [federatedRes, privacyRes, _encryptionRes] = await Promise.all([
         fetch(
           `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/status`
         ),

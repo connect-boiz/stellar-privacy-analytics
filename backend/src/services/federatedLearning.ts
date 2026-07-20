@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
 import { logger } from "../utils/logger";
-import crypto from "crypto";
 import { Server as SocketIOServer } from "socket.io";
 
 export interface FederatedClient {
@@ -285,7 +284,7 @@ export class FederatedLearningService extends EventEmitter {
   private async collectModelUpdates(
     clients: FederatedClient[],
   ): Promise<ModelUpdate[]> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const updates: ModelUpdate[] = [];
       const clientIds = new Set(clients.map((c) => c.id));
       let timeout: NodeJS.Timeout;

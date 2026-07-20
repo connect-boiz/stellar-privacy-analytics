@@ -12,38 +12,38 @@ import {
   Eye,
   RefreshCw,
   Plus,
-  Filter,
+  _Filter,
   Search,
-  ExternalLink,
-  FileText,
+  _ExternalLink,
+  _FileText,
   Calendar,
-  Settings,
+  _Settings,
   BarChart3,
   Globe,
-  Lock,
-  Users,
-  TrendingUp,
-  Activity,
-  Zap,
-  Target,
-  BookOpen,
-  Certificate,
-  Link2,
-  Mail,
-  Copy,
+  _Lock,
+  _Users,
+  _TrendingUp,
+  _Activity,
+  _Zap,
+  _Target,
+  _BookOpen,
+  _Certificate,
+  _Link2,
+  _Mail,
+  _Copy,
   CheckSquare,
   AlertCircle,
-  ChevronRight,
-  Star,
-  AwardIcon,
+  _ChevronRight,
+  _Star,
+  _AwardIcon,
 } from 'lucide-react';
 import {
   certificationService,
   Certification,
-  ComplianceCheck,
+  _ComplianceCheck,
   IndustryStandard,
   CertificationRequest,
-  BadgeConfig,
+  _BadgeConfig,
 } from '../services/certificationService';
 import { CertificationDashboardSkeleton } from '@/components/skeletons';
 
@@ -54,16 +54,16 @@ const CertificationDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [showValidationModal, setShowValidationModal] = useState(false);
-  const [showComplianceModal, setShowComplianceModal] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [_showValidationModal, setShowValidationModal] = useState(false);
+  const [_showComplianceModal, setShowComplianceModal] = useState(false);
+  const [_showVerificationModal, setShowVerificationModal] = useState(false);
+  const [_showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedCertification, setSelectedCertification] = useState<Certification | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'overview' | 'validation' | 'compliance' | 'badges' | 'verification'
   >('overview');
-  const [industryStandards, setIndustryStandards] = useState<IndustryStandard[]>([]);
+  const [_industryStandards, setIndustryStandards] = useState<IndustryStandard[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     validated: 0,
@@ -80,6 +80,7 @@ const CertificationDashboard: React.FC = () => {
 
   useEffect(() => {
     calculateStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [certifications]);
 
   const fetchCertifications = async () => {
@@ -182,7 +183,7 @@ const CertificationDashboard: React.FC = () => {
         setShowGenerateModal(false);
         toast.success('Certification created successfully');
       })
-      .catch((error) => {
+      .catch((_error) => {
         toast.error('Failed to create certification');
       });
   };

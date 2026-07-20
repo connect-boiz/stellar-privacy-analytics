@@ -389,7 +389,7 @@ const PrivacyHealthDashboard: React.FC = () => {
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="grid grid-cols-6 gap-4 text-center">
-                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((month, index) => (
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((month, _index) => (
                         <div key={month}>
                           <div className="text-xs text-gray-600">{month}</div>
                           <div className="mt-2 h-20 bg-gray-200 rounded relative">

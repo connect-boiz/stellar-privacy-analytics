@@ -1,5 +1,5 @@
-import { randomBytes, createHash, scrypt, timingSafeEqual } from "crypto";
-import { HSMService, WrappedKey, KeyMetadata } from "./hsmService";
+import { randomBytes, createHash } from "crypto";
+import { HSMService, WrappedKey} from "./hsmService";
 import { AuditService } from "./auditService";
 import { logger } from "../utils/logger";
 import { EventEmitter } from "events";

@@ -69,7 +69,7 @@ class IPFSService {
   async uploadAndPinFile(
     file: Buffer,
     fileName: string,
-    options: {
+    _options: {
       encrypted?: boolean;
       version?: number;
       uploader?: string;
@@ -101,9 +101,9 @@ class IPFSService {
    */
   async pinToPinata(cid: string, fileName?: string): Promise<PinataResponse> {
     try {
-      const url = `${this.pinataBaseUrl}/pinning/pinFileToIPFS`;
+      const _url = `${this.pinataBaseUrl}/pinning/pinFileToIPFS`;
 
-      const formData = new FormData();
+      const _formData = new FormData();
 
       // If we have the file content, upload it directly
       if (fileName) {

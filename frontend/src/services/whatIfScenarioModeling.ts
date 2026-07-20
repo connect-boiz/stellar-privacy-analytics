@@ -8,7 +8,7 @@ import {
   BudgetAllocation,
   SimulationParameters,
   ScenarioConstraints,
-  BusinessObjective,
+  _BusinessObjective,
   SimulationAssumption,
   ScenarioComparison,
   ComparisonResult,
@@ -813,7 +813,7 @@ export class WhatIfScenarioModeling {
     results: SimulationResult[],
     metrics: string[],
     weights: Record<string, number>,
-    comparisonType: string
+    _comparisonType: string
   ): ComparisonResult[] {
     return scenarios.map((scenario, index) => {
       const result = results[index];
@@ -924,7 +924,7 @@ export class WhatIfScenarioModeling {
 
   private generateComparisonInsights(
     results: ComparisonResult[],
-    comparisonType: string
+    _comparisonType: string
   ): ComparisonInsight[] {
     const insights: ComparisonInsight[] = [];
 
@@ -998,7 +998,7 @@ export class WhatIfScenarioModeling {
   private calculateImpactConfidence(
     metricName: string,
     scenario: SimulationScenario,
-    baseline: SimulationScenario
+    _baseline: SimulationScenario
   ): number {
     // Calculate confidence based on scenario parameters and assumptions
     const baseConfidence = scenario.parameters.confidenceLevel;

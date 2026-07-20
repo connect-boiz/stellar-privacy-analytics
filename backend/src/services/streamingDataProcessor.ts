@@ -101,7 +101,7 @@ export class StreamingDataProcessor<T, R> extends EventEmitter {
       });
 
       // Set up output stream
-      let finalStream = batchTransform;
+      const finalStream = batchTransform;
       if (outputStream) {
         finalStream.pipe(outputStream);
       }

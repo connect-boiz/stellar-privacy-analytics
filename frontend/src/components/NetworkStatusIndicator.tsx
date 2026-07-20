@@ -31,7 +31,7 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
     updateNetworkStatus();
 
     // Listen for network status changes
-    const handleStatusChange = (online: boolean) => {
+    const handleStatusChange = (_online: boolean) => {
       updateNetworkStatus();
     };
 

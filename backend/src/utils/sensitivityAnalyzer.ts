@@ -166,7 +166,7 @@ export class SensitivityAnalyzer {
       return sensitivities;
     }
 
-    const groupByColumns = parsedQuery.groupBy;
+    const _groupByColumns = parsedQuery.groupBy;
 
     for (const agg of parsedQuery.aggregations) {
       const sensitivity = this.calculateAggregationSensitivity(agg, mode);

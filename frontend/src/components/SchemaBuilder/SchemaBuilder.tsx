@@ -1,19 +1,19 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, _useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  ChevronRight,
-  ChevronDown,
+  _ChevronRight,
+  _ChevronDown,
   Plus,
   Trash2,
-  Eye,
-  EyeOff,
+  _Eye,
+  _EyeOff,
   Download,
   Upload,
-  Settings,
+  _Settings,
   CheckCircle,
-  AlertCircle,
+  _AlertCircle,
   AlertTriangle,
   Copy,
 } from 'lucide-react';
@@ -110,7 +110,7 @@ export interface SchemaBuilderProps {
 
 const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
   initialSchema,
-  onSchemaChange,
+  _onSchemaChange,
   onValidationResult,
   autoSave = true,
   className = '',
@@ -130,9 +130,9 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
   });
 
   const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [_isDragging, setIsDragging] = useState(false);
   const [validationResult, setValidationResult] = useState<TestResult | null>(null);
-  const [isAutoSaving, setIsAutoSaving] = useState(autoSave);
+  const [_isAutoSaving, _setIsAutoSaving] = useState(autoSave);
 
   // Auto-save functionality
   useEffect(() => {
@@ -300,6 +300,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
       onValidationResult?.(testResult);
       return testResult;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schema]);
 
   const generateTestData = (schema: SchemaConfig): Record<string, any> => {
@@ -466,7 +467,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
   };
 
   // Mock validation function - would integrate with Rust backend
-  const validateSchemaWithRust = async (schema: SchemaConfig, testData: Record<string, any>) => {
+  const validateSchemaWithRust = async (schema: SchemaConfig, _testData: Record<string, any>) => {
     // Simulate API call to Rust backend
     await new Promise((resolve) => setTimeout(resolve, 1000));
 

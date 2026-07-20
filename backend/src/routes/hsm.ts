@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getHSMIntegration } from "../services/hsmIntegration";
 import { logger } from "../utils/logger";
-import { body, param, query, validationResult } from "express-validator";
+import { body, query, validationResult } from "express-validator";
 
 const router = Router();
 
@@ -36,7 +36,7 @@ router.post(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
-      const { purpose, context, ttl } = req.body;
+      const { purpose, context, _ttl } = req.body;
       const userContext = extractUserContext(req);
 
       const hsmIntegration = getHSMIntegration();

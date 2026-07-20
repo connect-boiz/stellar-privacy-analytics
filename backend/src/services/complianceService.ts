@@ -1,7 +1,7 @@
 import { logger } from "../utils/logger";
 import {
   ComplianceCheck,
-  ComplianceStatus,
+  _ComplianceStatus,
   CheckType,
 } from "../types/certification";
 import { certificationService } from "./certificationService";
@@ -45,7 +45,7 @@ class ComplianceService {
   }
 
   async getComplianceHistory(
-    certificationId: string,
+    _certificationId: string,
   ): Promise<ComplianceCheck[]> {
     try {
       // In production, this would fetch from database
@@ -207,7 +207,7 @@ class ComplianceService {
 
   private async updateCertificationCompliance(
     certificationId: string,
-    complianceCheck: ComplianceCheck,
+    _complianceCheck: ComplianceCheck,
   ): Promise<void> {
     // In production, this would update the certification in the database
     logger.info(

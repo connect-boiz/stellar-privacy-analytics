@@ -26,7 +26,6 @@ import { queryRoutes } from "./routes/query";
 import ipfsRoutes from "./routes/ipfs";
 import hsmRoutes from "./routes/hsm";
 import { mpcRoutes, initializeMPCSocket } from "./routes/mpc";
-import { auditRoutes } from "./routes/audit";
 import { sandboxRoutes } from "./routes/sandbox";
 import { privacyNoiseRoutes } from "./routes/privacy-noise";
 import { zkpRoutes } from "./routes/zkp-routes";
@@ -49,7 +48,7 @@ import { initializeCacheService } from "./services/cacheService";
 // Import workers
 import { StellarTransactionWatcher } from "./workers/StellarTransactionWatcher";
 import { privacyBudgetRoutes } from "./routes/privacy-budget";
-import { createGateway, startGateway } from "./gateway";
+import { startGateway } from "./gateway";
 import { trainingRoutes } from "./routes/training";
 import { DatabaseService } from "./services/databaseService";
 import { PrivacyBudgetService } from "./services/privacyBudgetService";

@@ -4,15 +4,15 @@
 
 import {
   DatasetMetadata,
-  PrivacyMetadata,
-  QualityMetadata,
-  UsageMetadata,
-  LineageMetadata,
-  ComplianceMetadata,
-  ProcessingMetadata,
-  LocationMetadata,
-  AccessMetadata,
-  SchemaMetadata,
+  _PrivacyMetadata,
+  _QualityMetadata,
+  _UsageMetadata,
+  _LineageMetadata,
+  _ComplianceMetadata,
+  _ProcessingMetadata,
+  _LocationMetadata,
+  _AccessMetadata,
+  _SchemaMetadata,
 } from '../types/dataCatalog';
 
 export interface DatasetManagementConfig {
@@ -1035,9 +1035,9 @@ export class DatasetManagementIntegration {
   }
 
   private async requestApproval(
-    operationId: string,
-    operationType: string,
-    data: any
+    _operationId: string,
+    _operationType: string,
+    _data: any
   ): Promise<{ approved: boolean; reason?: string }> {
     // Simplified approval logic
     // In production would integrate with approval workflow system
@@ -1075,47 +1075,47 @@ export class DatasetManagementIntegration {
   }
 
   private async createDatasetInSystem(
-    system: ExternalDatasetSystem,
-    metadata: DatasetMetadata
+    _system: ExternalDatasetSystem,
+    _metadata: DatasetMetadata
   ): Promise<void> {
     // System-specific implementation
     // Creating dataset ${metadata.id} in system ${system.name}
   }
 
   private async updateDatasetInSystem(
-    system: ExternalDatasetSystem,
-    datasetId: string,
-    updates: Partial<DatasetMetadata>
+    _system: ExternalDatasetSystem,
+    _datasetId: string,
+    _updates: Partial<DatasetMetadata>
   ): Promise<void> {
     // System-specific implementation
     // Updating dataset ${datasetId} in system ${system.name}
   }
 
   private async deleteDatasetFromSystem(
-    system: ExternalDatasetSystem,
-    datasetId: string
+    _system: ExternalDatasetSystem,
+    _datasetId: string
   ): Promise<void> {
     // System-specific implementation
     // Deleting dataset ${datasetId} from system ${system.name}
   }
 
-  private async testSystemConnection(system: ExternalDatasetSystem): Promise<void> {
+  private async testSystemConnection(_system: ExternalDatasetSystem): Promise<void> {
     // Test connection to external system
     // Testing connection to system ${system.name}
   }
 
-  private async cleanupSystemData(systemId: string): Promise<void> {
+  private async cleanupSystemData(_systemId: string): Promise<void> {
     // Cleanup data related to external system
     // Cleaning up data for system ${systemId}
   }
 
-  private async getDatasetMetadata(datasetId: string): Promise<DatasetMetadata | null> {
+  private async getDatasetMetadata(_datasetId: string): Promise<DatasetMetadata | null> {
     // Get metadata from primary storage or external systems
     // Simplified implementation
     return null;
   }
 
-  private async getDatasetsForSystem(systemId: string): Promise<string[]> {
+  private async getDatasetsForSystem(_systemId: string): Promise<string[]> {
     // Get datasets that are synced with the specified system
     // Simplified implementation
     return [];
@@ -1169,13 +1169,13 @@ export class DatasetManagementIntegration {
     return parts.join('.');
   }
 
-  private calculateDatasetSize(metadata: DatasetMetadata): number {
+  private calculateDatasetSize(_metadata: DatasetMetadata): number {
     // Calculate dataset size based on schema and estimated record count
     // Simplified implementation
     return 1000000; // 1MB placeholder
   }
 
-  private calculateChecksum(metadata: DatasetMetadata): string {
+  private calculateChecksum(_metadata: DatasetMetadata): string {
     // Generate checksum for metadata
     // Simplified implementation
     return `checksum_${Date.now()}`;
@@ -1185,7 +1185,7 @@ export class DatasetManagementIntegration {
     return `/backups/${datasetId}/${backupId}`;
   }
 
-  private generateBackupChecksum(backup: DatasetBackup): string {
+  private generateBackupChecksum(_backup: DatasetBackup): string {
     return `backup_checksum_${Date.now()}`;
   }
 
@@ -1193,17 +1193,17 @@ export class DatasetManagementIntegration {
     return `/archives/${datasetId}/${archiveId}`;
   }
 
-  private async restoreFromBackup(backup: DatasetBackup): Promise<void> {
+  private async restoreFromBackup(_backup: DatasetBackup): Promise<void> {
     // Restore dataset from backup
     // Restoring dataset from backup ${backup.id}
   }
 
-  private async restoreDatasetFromArchive(archive: DatasetArchive): Promise<void> {
+  private async restoreDatasetFromArchive(_archive: DatasetArchive): Promise<void> {
     // Restore dataset from archive
     // Restoring dataset from archive ${archive.id}
   }
 
-  private getDefaultSyncSystem(metadata: DatasetMetadata): ExternalDatasetSystem | undefined {
+  private getDefaultSyncSystem(_metadata: DatasetMetadata): ExternalDatasetSystem | undefined {
     // Find the most suitable system for syncing this dataset
     for (const system of this.externalSystems.values()) {
       if (system.enabled) {
@@ -1217,7 +1217,7 @@ export class DatasetManagementIntegration {
     metadata: DatasetMetadata,
     system: ExternalDatasetSystem,
     result: DatasetSyncResult,
-    options?: any
+    _options?: any
   ): Promise<void> {
     // Perform full synchronization
     // Full sync for dataset ${metadata.id} with system ${system.name}
@@ -1233,7 +1233,7 @@ export class DatasetManagementIntegration {
     metadata: DatasetMetadata,
     system: ExternalDatasetSystem,
     result: DatasetSyncResult,
-    options?: any
+    _options?: any
   ): Promise<void> {
     // Perform incremental synchronization
     // Incremental sync for dataset ${metadata.id} with system ${system.name}

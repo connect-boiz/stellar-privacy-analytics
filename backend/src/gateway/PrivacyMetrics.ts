@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { MetricsConfig } from "./PrivacyApiGateway";
 import { MetricsStore } from "./MetricsStore";
 import { logger } from "../utils/logger";
@@ -660,7 +660,7 @@ export class PrivacyMetrics {
     }
   }
 
-  private isCacheValid(aggregated: AggregatedMetrics): boolean {
+  private isCacheValid(_aggregated: AggregatedMetrics): boolean {
     // Simple cache validity check - in production, use timestamps
     return true;
   }

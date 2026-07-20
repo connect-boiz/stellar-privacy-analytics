@@ -1,11 +1,10 @@
 import { DistributedCacheManager } from "../DistributedCacheManager";
-import { createClient } from "redis";
 
 // Mock Redis
 jest.mock("redis", () => {
   const mockData = new Map<string, string>();
   const mockSets = new Map<string, Set<string>>();
-  let mockCursor = 0;
+  const _mockCursor = 0;
 
   return {
     createClient: jest.fn(() => ({

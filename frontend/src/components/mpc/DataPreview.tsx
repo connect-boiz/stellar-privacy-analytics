@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Off, Download, RefreshCw, Database, Shield } from 'lucide-react';
+import { Download, RefreshCw, Database, Shield } from 'lucide-react';
 import { SearchBar } from '../common';
 
 interface DataPreviewProps {

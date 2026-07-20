@@ -155,7 +155,7 @@ export class DeadLetterQueue extends EventEmitter {
     };
 
     try {
-      const job = await this.queue.add("dead-letter", deadLetterJob, {
+      const _job = await this.queue.add("dead-letter", deadLetterJob, {
         priority: this.calculatePriority(jobData),
         delay: 0,
         attempts: 0,

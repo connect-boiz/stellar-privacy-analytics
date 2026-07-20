@@ -1,4 +1,4 @@
-import { rpc, Contract, xdr } from "@stellar/stellar-sdk";
+import { rpc, xdr } from "@stellar/stellar-sdk";
 import axios from "axios";
 import { logger } from "../utils/logger";
 
@@ -115,7 +115,7 @@ export class EventIndexer {
     const promises = this.webhooks.map((url) =>
       axios
         .post(url, event)
-        .catch((e) => console.error(`Webhook failed for ${url}`)),
+        .catch((_e) => console.error(`Webhook failed for ${url}`)),
     );
     await Promise.allSettled(promises);
   }

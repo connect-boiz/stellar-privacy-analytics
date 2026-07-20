@@ -3,8 +3,6 @@ import {
   randomBytes,
   createCipheriv,
   createDecipheriv,
-  createHash,
-  scryptSync,
 } from "crypto";
 import { logger } from "../../utils/logger";
 import { getErrorMessage } from "../../utils/errorHandler";

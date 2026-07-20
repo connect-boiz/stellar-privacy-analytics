@@ -1,26 +1,26 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, _useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload,
   Lock,
-  Shield,
+  _Shield,
   CheckCircle,
   AlertCircle,
-  ArrowRight,
-  ArrowLeft,
+  _ArrowRight,
+  _ArrowLeft,
   FileText,
-  Hash,
-  Tag,
-  Calendar,
-  Building,
+  _Hash,
+  _Tag,
+  _Calendar,
+  _Building,
   X,
-  Loader2,
+  _Loader2,
   Undo,
-  Database,
-  Eye,
-  EyeOff,
-  Search,
-  Zap,
+  _Database,
+  _Eye,
+  _EyeOff,
+  _Search,
+  _Zap,
   Cpu,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -94,8 +94,8 @@ const EncryptedDataUploadWizard: React.FC = () => {
   });
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [uploadResult, setUploadResult] = useState<EncryptedUploadResult | null>(null);
-  const [showEncryptionKey, setShowEncryptionKey] = useState(false);
-  const [canUndo, setCanUndo] = useState(false);
+  const [_showEncryptionKey, _setShowEncryptionKey] = useState(false);
+  const [_canUndo, setCanUndo] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);

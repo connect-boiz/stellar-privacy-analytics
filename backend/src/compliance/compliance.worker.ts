@@ -35,7 +35,7 @@ export class ComplianceWorker extends WorkerHost {
       where: { regulation: job.data.regulation, active: true },
     });
 
-    let allViolations: Violation[] = [];
+    const allViolations: Violation[] = [];
 
     for (const rule of rules) {
       const violations = await this.ruleExecutor.run(rule);

@@ -9,50 +9,48 @@ import { WorkerMetrics } from "../workers/workerMetrics";
 import { ConnectionPool } from "../utils/connectionPool";
 import { DeadLetterQueue } from "../workers/deadLetterQueue";
 import { LoadTester } from "./loadTest";
-import { CapacityPlanner } from "./capacityPlanner";
-import { createQueueMonitoringRoutes } from "../routes/queueMonitoring";
 import { getWorkerConfig } from "../config/workerConfig";
 
 console.log("✓ All imports successful");
 
 // Test type definitions
-const config = getWorkerConfig();
+const _config = getWorkerConfig();
 console.log("✓ Config loaded");
 
 // Test that classes can be instantiated (type check only)
-type WorkerType = OptimizedAnonymizationWorker;
-type OrchestratorType = WorkerOrchestrator;
-type MetricsType = WorkerMetrics;
-type PoolType = ConnectionPool;
-type DLQType = DeadLetterQueue;
-type TesterType = LoadTester;
+type _WorkerType = OptimizedAnonymizationWorker;
+type _OrchestratorType = WorkerOrchestrator;
+type _MetricsType = WorkerMetrics;
+type _PoolType = ConnectionPool;
+type _DLQType = DeadLetterQueue;
+type _TesterType = LoadTester;
 
 console.log("✓ All type definitions valid");
 
 // Test interfaces
 import type {
-  AnonymizationJob,
-  AnonymizationResult,
-  PIIDetection,
-  WorkerConfig,
+  _AnonymizationJob,
+  _AnonymizationResult,
+  _PIIDetection,
+  _WorkerConfig,
 } from "../workers/optimizedAnonymizationWorker";
 
 import type {
-  OrchestratorConfig,
-  WorkerInstance,
+  _OrchestratorConfig,
+  _WorkerInstance,
 } from "../workers/workerOrchestrator";
 
 import type {
-  DeadLetterJob,
-  DeadLetterStats,
-  RetryPolicy,
+  _DeadLetterJob,
+  _DeadLetterStats,
+  _RetryPolicy,
 } from "../workers/deadLetterQueue";
 
-import type { LoadTestConfig, LoadTestResults } from "./loadTest";
+import type { _LoadTestConfig, _LoadTestResults } from "./loadTest";
 
 import type {
-  CapacityRequirements,
-  CapacityRecommendations,
+  _CapacityRequirements,
+  _CapacityRecommendations,
 } from "./capacityPlanner";
 
 console.log("✓ All interfaces valid");

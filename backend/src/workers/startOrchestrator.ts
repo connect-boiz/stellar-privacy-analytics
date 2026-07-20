@@ -18,7 +18,7 @@ async function startOrchestrator() {
     validateConfig(config);
 
     // Create orchestrator instance
-    const orchestrator = new WorkerOrchestrator(config);
+    const _orchestrator = new WorkerOrchestrator(config);
 
     logger.info("Worker orchestrator started successfully", {
       minWorkers: config.orchestrator.minWorkers,

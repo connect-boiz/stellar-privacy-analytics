@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { logger } from "./logger";
 import { AuthenticatedRequest } from "../middleware/stellarAuth";
 
@@ -142,7 +142,7 @@ export function errorHandler(
   error: Error,
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): void {
   const traceId = req.traceId || generateTraceId();
 

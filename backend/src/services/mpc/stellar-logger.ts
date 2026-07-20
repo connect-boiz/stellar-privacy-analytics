@@ -185,7 +185,7 @@ export class StellarLogger {
   /**
    * Create operations for transaction
    */
-  private createOperations(metadata: MPCSessionMetadata): any[] {
+  private createOperations(_metadata: MPCSessionMetadata): any[] {
     // In a real implementation, this would create appropriate Stellar operations
     // For demonstration, we'll create a simple payment operation to a data account
 
@@ -202,7 +202,7 @@ export class StellarLogger {
   /**
    * Submit transaction to Stellar network
    */
-  private async submitTransaction(payload: any): Promise<string> {
+  private async submitTransaction(_payload: any): Promise<string> {
     // In a real implementation, this would:
     // 1. Sign the transaction with the master keypair
     // 2. Submit to the Stellar network

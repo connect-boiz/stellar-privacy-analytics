@@ -141,7 +141,7 @@ export class ZKProofService {
   /**
    * Verify ZK-proof
    */
-  static async verifyProof(proof: ZKProof): Promise<boolean> {
+  static async verifyProof(_proof: ZKProof): Promise<boolean> {
     await this.initialize();
 
     try {
@@ -191,7 +191,7 @@ export class ZKProofService {
 
   // Helper methods (in real implementation, these would interact with WASM)
 
-  private static async simulateProofGeneration(witnessData: any): Promise<number[]> {
+  private static async simulateProofGeneration(_witnessData: any): Promise<number[]> {
     // Simulate proof generation delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -234,7 +234,7 @@ export class ZKProofService {
     return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  private static async performComplianceChecks(privacySettings: any): Promise<any> {
+  private static async performComplianceChecks(_privacySettings: any): Promise<any> {
     // Simulate compliance checks
     return {
       hasConsent: true,

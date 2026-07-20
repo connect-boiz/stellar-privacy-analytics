@@ -1,4 +1,4 @@
-import { createHash, randomBytes, createHmac } from "crypto";
+import { randomBytes, createHmac } from "crypto";
 
 export class SecureRNG {
   private static instance: SecureRNG;

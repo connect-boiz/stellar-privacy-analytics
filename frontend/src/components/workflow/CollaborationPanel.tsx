@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Users,
   Share2,
-  Link,
+  _Link,
   Mail,
   Copy,
   CheckCircle,
@@ -35,7 +35,7 @@ interface Comment {
 
 export const CollaborationPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'users' | 'share' | 'comments'>('share');
-  const [shareLink, setShareLink] = useState('https://stellar.app/workflow/abc123');
+  const [shareLink, _setShareLink] = useState('https://stellar.app/workflow/abc123');
   const [linkCopied, setLinkCopied] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [selectedRole, setSelectedRole] = useState<'editor' | 'viewer'>('viewer');

@@ -414,7 +414,7 @@ export function monitorPerformance(operationName: string) {
       const req = args.find(
         (arg) => arg && arg.traceId,
       ) as AuthenticatedRequest;
-      const traceId = req?.traceId || "unknown";
+      const _traceId = req?.traceId || "unknown";
 
       const startTime = Date.now();
 

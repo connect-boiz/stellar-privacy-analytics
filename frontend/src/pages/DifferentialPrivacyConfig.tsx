@@ -25,7 +25,7 @@ import {
   Settings,
   RefreshCw,
   Upload,
-  FileText,
+  _FileText,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';

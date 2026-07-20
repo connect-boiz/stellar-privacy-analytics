@@ -1,4 +1,4 @@
-import { Env, Address, BytesN, String, Vec, xdr } from "@stellar/stellar-sdk";
+import { Env, Address, BytesN, String, Vec} from "@stellar/stellar-sdk";
 import { StellarAnalytics } from "../src/stellar_analytics";
 
 describe("StellarAnalytics - Enhanced Tests", () => {

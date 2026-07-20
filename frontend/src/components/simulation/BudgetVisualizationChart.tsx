@@ -8,13 +8,13 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  _PieChart,
+  _Pie,
+  _Cell,
   LineChart,
   Line,
-  Area,
-  AreaChart,
+  _Area,
+  _AreaChart,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
@@ -113,7 +113,7 @@ const AllocationChart: React.FC<{
   height: number;
   colors: string[];
   showLegend: boolean;
-}> = ({ data, height, colors, showLegend }) => {
+}> = ({ data, _height, colors, showLegend }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -161,7 +161,7 @@ const ComparisonChart: React.FC<{
   height: number;
   colors: string[];
   showLegend: boolean;
-}> = ({ data, height, colors, showLegend }) => {
+}> = ({ data, _height, colors, showLegend }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -205,7 +205,7 @@ const ImpactChart: React.FC<{
   data: any[];
   height: number;
   colors: string[];
-}> = ({ data, height, colors }) => {
+}> = ({ data, _height, colors }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -265,7 +265,7 @@ const TrendChart: React.FC<{
   data: any[];
   height: number;
   colors: string[];
-}> = ({ data, height, colors }) => {
+}> = ({ data, _height, colors }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -331,7 +331,7 @@ const RadarChart: React.FC<{
   data: any[];
   height: number;
   colors: string[];
-}> = ({ data, height, colors }) => {
+}> = ({ data, _height, colors }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -415,7 +415,7 @@ function transformImpactData(impacts: ScenarioImpact[]): any[] {
   }));
 }
 
-function transformTrendData(projections: any[]): any[] {
+function transformTrendData(_projections: any[]): any[] {
   // This would transform projection data into trend format
   // For now, return sample data
   return [
@@ -428,7 +428,7 @@ function transformTrendData(projections: any[]): any[] {
   ];
 }
 
-function transformRadarData(data: any[]): any[] {
+function transformRadarData(_data: any[]): any[] {
   // This would transform data into radar format
   // For now, return sample data
   return [

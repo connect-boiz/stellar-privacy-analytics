@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import Redis from "redis";
 import { logger } from "../utils/logger";
 import { AuthenticatedRequest } from "./stellarAuth";

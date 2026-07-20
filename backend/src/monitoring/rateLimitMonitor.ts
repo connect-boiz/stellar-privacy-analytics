@@ -99,7 +99,7 @@ export class RateLimitMonitor {
    */
   private collectMetrics(): void {
     const timestamp = new Date();
-    let aggregatedMetrics: RateLimitMetrics = {
+    const aggregatedMetrics: RateLimitMetrics = {
       totalRequests: 0,
       blockedRequests: 0,
       bypassedRequests: 0,
@@ -109,7 +109,7 @@ export class RateLimitMonitor {
       adaptiveAdjustments: 0,
     };
 
-    for (const [name, rateLimiter] of this.rateLimiters.entries()) {
+    for (const [_name, rateLimiter] of this.rateLimiters.entries()) {
       const metrics = rateLimiter.getEnhancedMetrics();
 
       // Aggregate metrics
@@ -406,7 +406,7 @@ export class RateLimitMonitor {
       this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
     const recentAlerts = this.alerts.slice(-10);
 
-    let trends = { blockRate: 0, collisionRate: 0, adaptiveRate: 0 };
+    const trends = { blockRate: 0, collisionRate: 0, adaptiveRate: 0 };
 
     if (this.metrics.length > 1) {
       const latest = this.metrics[this.metrics.length - 1];

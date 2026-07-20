@@ -328,7 +328,7 @@ export class DataProcessor extends EventEmitter {
         await this.checkAndTriggerGC();
 
         const batchResults = await Promise.all(
-          batch.map(async (task, index) => {
+          batch.map(async (task, _index) => {
             try {
               const result = await task();
               this.metrics.totalRecordsProcessed++;

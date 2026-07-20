@@ -73,7 +73,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function AppRoutes({ isAuthenticated }: { isAuthenticated: boolean }) {
+function _AppRoutes({ isAuthenticated }: { isAuthenticated: boolean }) {
   useKeyboardShortcuts();
 
   return (

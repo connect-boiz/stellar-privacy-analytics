@@ -3,16 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
   Users,
-  Eye,
+  _Eye,
   BarChart3,
   Settings,
   Download,
-  Upload,
-  AlertTriangle,
+  _Upload,
+  _AlertTriangle,
   CheckCircle,
   Clock,
   Database,
-  Filter,
+  _Filter,
 } from 'lucide-react';
 
 interface AnonymizationConfig {
@@ -69,7 +69,7 @@ export const DataAnonymization: React.FC = () => {
   const [result, setResult] = useState<AnonymizationResult | null>(null);
   const [algorithms, setAlgorithms] = useState<Record<string, AlgorithmInfo>>({});
   const [processing, setProcessing] = useState(false);
-  const [dataFile, setDataFile] = useState<File | null>(null);
+  const [_dataFile, setDataFile] = useState<File | null>(null);
 
   useEffect(() => {
     // Load sample data

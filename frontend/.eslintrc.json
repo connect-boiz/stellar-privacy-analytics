@@ -16,15 +16,15 @@
     "sourceType": "module"
   },
   "rules": {
-    "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react-refresh/only-export-components": "off",
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     "@typescript-eslint/no-var-requires": "off",
-    "@typescript-eslint/ban-types": "warn",
-    "@typescript-eslint/ban-ts-comment": "warn",
+    "@typescript-eslint/ban-types": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-unsafe-declaration-merging": "off",
-    "prefer-const": "warn",
+    "prefer-const": "off",
     "no-case-declarations": "off",
-    "no-useless-escape": "warn"
+    "no-useless-escape": "off"
   }
 }

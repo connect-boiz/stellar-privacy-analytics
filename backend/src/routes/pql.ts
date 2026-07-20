@@ -12,14 +12,13 @@ import {
   createQueryTracer,
 } from "../middleware/observability";
 import {
-  errorHandler,
+  _errorHandler,
   asyncHandler,
   createValidationError,
   sendSuccessResponse,
   QueryError,
   PrivacyError,
   NotFoundError,
-  ValidationError as APIValidationError,
 } from "../utils/apiErrorHandler";
 import PQLValidator from "../services/pqlValidator";
 import QueryComplexityAnalyzer from "../services/queryComplexityAnalyzer";
@@ -97,7 +96,7 @@ router.post(
   ],
   handleValidationErrors,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { query, privacyBudget, options = {}, context } = req.body;
+    const { query, privacyBudget, options = {}, _context } = req.body;
     const tracer = createQueryTracer(req);
 
     if (!tracer) {
@@ -261,7 +260,7 @@ router.post(
   ],
   handleValidationErrors,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { query, options = {} } = req.body;
+    const { query, _options = {} } = req.body;
     const tracer = createQueryTracer(req);
 
     if (!tracer) {
@@ -319,7 +318,7 @@ router.post(
   ],
   handleValidationErrors,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const { query, privacyBudget, options = {} } = req.body;
+    const { query, privacyBudget, _options = {} } = req.body;
     const tracer = createQueryTracer(req);
 
     if (!tracer) {
@@ -571,19 +570,19 @@ router.get(
 
 // Helper functions (these would be implemented in separate services)
 async function checkPrivacyBudget(
-  userId: string,
-  budget: { epsilon: number; delta: number },
+  _userId: string,
+  _budget: { epsilon: number; delta: number },
 ): Promise<boolean> {
   // Placeholder implementation
   return true;
 }
 
 async function executeQuery(
-  query: string,
-  privacyBudget: { epsilon: number; delta: number },
-  options: any,
-  user: any,
-  traceId: string,
+  _query: string,
+  _privacyBudget: { epsilon: number; delta: number },
+  _options: any,
+  _user: any,
+  _traceId: string,
 ): Promise<any[]> {
   // Placeholder implementation - this would integrate with your differential privacy engine
   return [
@@ -597,7 +596,7 @@ function generateQueryId(): string {
   return `q_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 12)}`;
 }
 
-async function getQueryStatus(queryId: string, userId: string): Promise<any> {
+async function getQueryStatus(queryId: string, _userId: string): Promise<any> {
   // Placeholder implementation
   return {
     queryId,
@@ -609,7 +608,7 @@ async function getQueryStatus(queryId: string, userId: string): Promise<any> {
   };
 }
 
-async function getQueryHistory(userId: string, options: any): Promise<any> {
+async function getQueryHistory(_userId: string, _options: any): Promise<any> {
   // Placeholder implementation
   return {
     queries: [],
@@ -618,12 +617,12 @@ async function getQueryHistory(userId: string, options: any): Promise<any> {
   };
 }
 
-async function cancelQuery(queryId: string, userId: string): Promise<boolean> {
+async function cancelQuery(_queryId: string, _userId: string): Promise<boolean> {
   // Placeholder implementation
   return true;
 }
 
-async function getPrivacyBudget(userId: string): Promise<any> {
+async function getPrivacyBudget(_userId: string): Promise<any> {
   // Placeholder implementation
   return {
     currentBudget: { epsilon: 0.5, delta: 1e-6 },
@@ -633,7 +632,7 @@ async function getPrivacyBudget(userId: string): Promise<any> {
   };
 }
 
-async function getDataSchemas(userId: string): Promise<any> {
+async function getDataSchemas(_userId: string): Promise<any> {
   // Placeholder implementation
   return {
     schemas: [

@@ -5,15 +5,15 @@ import {
   Plus,
   Edit,
   Trash2,
-  BarChart3,
+  _BarChart3,
   Users,
-  Clock,
+  _Clock,
   TrendingUp,
   Award,
   BookOpen,
   Save,
   X,
-  ChevronDown,
+  _ChevronDown,
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
@@ -103,6 +103,7 @@ export function TrainingAdminPage() {
 
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {

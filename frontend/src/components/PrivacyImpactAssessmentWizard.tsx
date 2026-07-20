@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, _useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
@@ -7,10 +7,10 @@ import {
   Info,
   ArrowRight,
   ArrowLeft,
-  FileText,
+  _FileText,
   Users,
   Database,
-  Lock,
+  _Lock,
   BarChart3,
   Target,
   Zap,
@@ -153,7 +153,7 @@ const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
 ];
 
 export const PrivacyImpactAssessmentWizard: React.FC = () => {
-  const { t } = useTranslation();
+  const { _t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<AssessmentAnswer[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -535,7 +535,7 @@ export const PrivacyImpactAssessmentWizard: React.FC = () => {
                     type="checkbox"
                     value={option}
                     checked={(getCurrentAnswer() as string[])?.includes(option) || false}
-                    onChange={(e) => {
+                    onChange={(_e) => {
                       const current = (getCurrentAnswer() as string[]) || [];
                       const updated = current.includes(option)
                         ? current.filter((item) => item !== option)

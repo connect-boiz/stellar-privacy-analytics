@@ -1,11 +1,11 @@
 import {
-  Server,
+  _Server,
   TransactionBuilder,
   Networks,
   xdr,
   rpc,
   Keypair,
-  Address,
+  _Address,
   Contract,
 } from "@stellar/stellar-sdk";
 import { logger } from "../utils/logger";

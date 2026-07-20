@@ -7,7 +7,7 @@ import {
   Clock,
   CheckCircle,
   PlayCircle,
-  TrendingUp,
+  _TrendingUp,
   Target,
   ChevronRight,
   Filter,
@@ -65,6 +65,7 @@ export function TrainingPage() {
 
   useEffect(() => {
     fetchTrainingData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchTrainingData = async () => {

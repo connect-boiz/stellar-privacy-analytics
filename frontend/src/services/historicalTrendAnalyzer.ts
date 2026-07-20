@@ -5,9 +5,9 @@
 import {
   HistoricalTrend,
   PrivacyMetric,
-  AnomalyDetection,
-  ComplianceStatus,
-  PrivacyAlert,
+  _AnomalyDetection,
+  _ComplianceStatus,
+  _PrivacyAlert,
 } from '../types/privacyMetrics';
 
 export interface TrendAnalysisConfig {

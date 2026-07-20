@@ -16,7 +16,6 @@ import { toast } from 'react-hot-toast';
 import { Modal } from './ui/Modal';
 
 import { WebCryptoService, EncryptedFile, UploadProgress } from '../lib/webCrypto';
-import { Service } from '../lib/zkProof';
 import { StellarWalletService, StellarAccount, UploadReceipt } from '../lib/stellarWallet';
 
 interface SecureDataUploadProps {
@@ -79,6 +78,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,6 +86,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
       const files = Array.from(e.target.files);
       handleFiles(files);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFiles = (files: File[]) => {

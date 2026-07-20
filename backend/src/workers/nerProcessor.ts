@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
-import * as fs from "fs";
-import * as path from "path";
+import * as _fs from "fs";
+import * as _path from "path";
 
 export interface NEREntity {
   text: string;

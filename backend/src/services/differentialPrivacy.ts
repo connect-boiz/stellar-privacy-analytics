@@ -1,5 +1,4 @@
 import { logger } from "../utils/logger";
-import crypto from "crypto";
 
 export interface PrivacyBudget {
   epsilon: number;

@@ -63,7 +63,7 @@ export class MetadataRepository {
   }
 
   private setupPoolEvents(): void {
-    this.pool.on("connect", (client) => {
+    this.pool.on("connect", (_client) => {
       logger.debug("New database connection established", {
         isReadReplica: this.isReadReplica,
         totalCount: this.pool.totalCount,
@@ -82,7 +82,7 @@ export class MetadataRepository {
       });
     });
 
-    this.pool.on("remove", (client) => {
+    this.pool.on("remove", (_client) => {
       logger.debug("Database connection removed", {
         isReadReplica: this.isReadReplica,
         totalCount: this.pool.totalCount,
@@ -90,7 +90,7 @@ export class MetadataRepository {
       });
     });
 
-    this.pool.on("acquire", (client) => {
+    this.pool.on("acquire", (_client) => {
       logger.debug("Database connection acquired", {
         isReadReplica: this.isReadReplica,
         totalCount: this.pool.totalCount,

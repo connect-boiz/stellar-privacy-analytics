@@ -203,7 +203,7 @@ export class PQLValidator {
   private validateBasicStructure(
     query: string,
     errors: PQLValidationError[],
-    warnings: PQLValidationError[],
+    _warnings: PQLValidationError[],
   ): void {
     // Check query length
     if (query.length > this.maxQueryLength) {

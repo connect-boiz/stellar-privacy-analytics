@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
-  Globe,
+  _Globe,
   Search,
   Download,
   Upload,
@@ -28,7 +28,7 @@ interface TranslationNamespace {
 }
 
 export const TranslationManager: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { _t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
   const [selectedNamespace, setSelectedNamespace] = useState('translation');
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,6 +45,7 @@ export const TranslationManager: React.FC = () => {
 
   useEffect(() => {
     loadTranslations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLanguage, selectedNamespace]);
 
   const loadTranslations = async () => {

@@ -4,7 +4,7 @@ import {
   Users,
   Eye,
   Lock,
-  Settings,
+  _Settings,
   AlertCircle,
   CheckCircle,
   Info,
@@ -243,7 +243,7 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
   onConfigChange,
 }) => {
   const [maskingRules, setMaskingRules] = useState(config.maskingRules || []);
-  const [maskingType, setMaskingType] = useState('partial');
+  const [maskingType, _setMaskingType] = useState('partial');
 
   const updateConfig = (newConfig: Record<string, any>) => {
     const updated = { ...config, ...newConfig };

@@ -24,17 +24,17 @@ import {
   Filter,
   Download,
   Share2,
-  Eye,
-  Lock,
-  Unlock,
+  _Eye,
+  _Lock,
+  _Unlock,
   BarChart3,
   PieChart,
   LineChart,
   Activity,
-  FileText,
+  _FileText,
   Settings,
   RefreshCw,
-  ChevronRight,
+  _ChevronRight,
   Info,
   Zap,
 } from 'lucide-react';
@@ -1259,13 +1259,13 @@ const DataCatalogDemo: React.FC = () => {
   const [lineageGraph, setLineageGraph] = useState<LineageGraph | null>(null);
 
   // Initialize services
-  const [privacyDiscovery] = useState(() => PrivacyPreservingDiscovery.getInstance());
+  const [_privacyDiscovery] = useState(() => PrivacyPreservingDiscovery.getInstance());
   const [metadataSearch] = useState(() => MetadataManagementSearch.getInstance());
   const [lineageVisualization] = useState(() => DataLineageVisualization.getInstance());
   const [usageAnalytics] = useState(() => UsageAnalyticsStatistics.getInstance());
   const [accessControl] = useState(() => AccessControlIntegration.getInstance());
   const [qualityAssessment] = useState(() => DataQualityAssessment.getInstance());
-  const [datasetManagement] = useState(() => DatasetManagementIntegration.getInstance());
+  const [_datasetManagement] = useState(() => DatasetManagementIntegration.getInstance());
 
   // Initialize sample data
   useEffect(() => {

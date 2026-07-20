@@ -3,13 +3,13 @@ import { FixedSizeList as List } from 'react-window';
 import EmptyState from './ui/EmptyState';
 import {
   Search,
-  Filter,
+  _Filter,
   Download,
   ExternalLink,
   Shield,
   ShieldAlert,
   ShieldCheck,
-  Calendar,
+  _Calendar,
   User,
   Database,
   ChevronDown,

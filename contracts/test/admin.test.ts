@@ -1,4 +1,4 @@
-import { Env, Address, BytesN, String, Vec, xdr } from "@stellar/stellar-sdk";
+import { Env, Address, BytesN, Vec } from "@stellar/stellar-sdk";
 import { MultiSigAdmin } from "../src/admin";
 
 describe("MultiSigAdmin", () => {

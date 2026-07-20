@@ -1,4 +1,4 @@
-import { Env, Address, BytesN, String, Vec, xdr } from "@stellar/stellar-sdk";
+import { Env, Address, BytesN } from "@stellar/stellar-sdk";
 import { UpgradeableProxy } from "../src/upgradeable_proxy";
 
 describe("UpgradeableProxy", () => {
@@ -201,7 +201,7 @@ describe("UpgradeableProxy", () => {
     });
 
     it("should handle multiple upgrade cycles", () => {
-      const impl1 = new BytesN(env, Array(32).fill(1));
+      const _impl1 = new BytesN(env, Array(32).fill(1));
       const impl2 = new BytesN(env, Array(32).fill(2));
       const impl3 = new BytesN(env, Array(32).fill(3));
 

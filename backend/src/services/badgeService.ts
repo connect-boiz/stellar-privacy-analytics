@@ -66,7 +66,7 @@ class BadgeService {
   ): string {
     // For demo purposes, return a base64 encoded PNG placeholder
     // In production, this would use a proper image generation library
-    const dimensions = this.sizeDimensions[size];
+    const _dimensions = this.sizeDimensions[size];
     return `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`;
   }
 
@@ -139,8 +139,8 @@ class BadgeService {
   }
 
   async validateBadgeRequest(
-    certificationId: string,
-    options: BadgeOptions,
+    _certificationId: string,
+    _options: BadgeOptions,
   ): Promise<boolean> {
     try {
       // In production, this would validate the certification exists and is valid

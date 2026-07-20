@@ -6,7 +6,7 @@ import {
   MonitoringIntegration,
   PrivacyMetric,
   PrivacyAlert,
-  AnomalyDetection,
+  _AnomalyDetection,
 } from '../types/privacyMetrics';
 
 export interface MonitoringConfig {

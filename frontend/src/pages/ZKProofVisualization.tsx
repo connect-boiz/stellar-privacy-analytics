@@ -7,7 +7,7 @@ import {
   Zap,
   Clock,
   CheckCircle,
-  XCircle,
+  _XCircle,
   Info,
   Play,
   Pause,

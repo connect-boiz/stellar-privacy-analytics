@@ -483,7 +483,7 @@ export class DatabasePerformanceService {
     duration: number = 60000, // 1 minute
   ): Promise<any> {
     const startTime = Date.now();
-    const results: any[] = [];
+    const _results: any[] = [];
 
     try {
       logger.info(
@@ -618,7 +618,7 @@ export class DatabasePerformanceService {
     return crypto.createHash("md5").update(key).digest("hex");
   }
 
-  private estimateTableRows(tableName: string): number {
+  private estimateTableRows(_tableName: string): number {
     // Simplified estimation - in practice, use pg_class.reltuples
     return 100000; // Mock value
   }
@@ -704,7 +704,7 @@ export class DatabasePerformanceService {
     }
   }
 
-  private updatePerformanceMetrics(executionTime: number): void {
+  private updatePerformanceMetrics(_executionTime: number): void {
     // Update rolling metrics
     const now = new Date();
     const metrics: PerformanceMetrics = {
@@ -912,7 +912,7 @@ export class DatabasePerformanceService {
   private generatePerformanceRecommendations(
     metrics: PerformanceMetrics,
     slowQueries: QueryPlan[],
-    cacheStats: any,
+    _cacheStats: any,
   ): string[] {
     const recommendations: string[] = [];
 

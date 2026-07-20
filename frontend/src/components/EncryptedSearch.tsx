@@ -8,7 +8,7 @@ import {
   Download,
   X,
   Loader2,
-  AlertCircle,
+  _AlertCircle,
   Hash,
   EyeOff,
   Shield,

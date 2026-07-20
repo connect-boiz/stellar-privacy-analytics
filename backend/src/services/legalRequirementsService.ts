@@ -1,5 +1,4 @@
 import { logger } from "../utils/logger";
-import { getRedisClient } from "../config/redis";
 
 /**
  * Legal Requirements Database Service

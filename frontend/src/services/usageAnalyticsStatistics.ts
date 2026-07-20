@@ -3,8 +3,8 @@
  */
 
 import {
-  DatasetMetadata,
-  UsageMetadata,
+  _DatasetMetadata,
+  _UsageMetadata,
   UsageStatistics,
   UsagePattern,
   DataConsumer,
@@ -15,7 +15,7 @@ import {
   TrendDataPoint,
   TrendAnalysis,
   SeasonalityPattern,
-  ChangePoint,
+  _ChangePoint,
   TrendForecast,
   TrendAnomaly,
   GeoLocation,
@@ -592,7 +592,7 @@ export class UsageAnalyticsStatistics {
     return allQueries;
   }
 
-  private getAllAccesses(timeRange?: { start: number; end: number }, filters?: any): UsageAccess[] {
+  private getAllAccesses(timeRange?: { start: number; end: number }, _filters?: any): UsageAccess[] {
     let allAccesses: UsageAccess[] = [];
 
     this.accessLogs.forEach((accesses) => {
@@ -946,7 +946,7 @@ export class UsageAnalyticsStatistics {
     return peaks;
   }
 
-  private calculatePatternTrends(pattern: number[], period: string): PatternTrend[] {
+  private calculatePatternTrends(pattern: number[], _period: string): PatternTrend[] {
     const trends: PatternTrend[] = [];
 
     // Simple linear regression
@@ -1147,7 +1147,7 @@ export class UsageAnalyticsStatistics {
     return 'internal';
   }
 
-  private async updateRealTimeMetrics(query: UsageQuery): Promise<void> {
+  private async updateRealTimeMetrics(_query: UsageQuery): Promise<void> {
     // Update real-time metrics cache
     // This would update a real-time dashboard or monitoring system
   }
@@ -1209,15 +1209,15 @@ export class UsageAnalyticsStatistics {
 
   // Placeholder methods for more complex analytics
   private calculateTimeSeries(
-    queries: UsageQuery[],
-    metric: string,
-    granularity: string
+    _queries: UsageQuery[],
+    _metric: string,
+    _granularity: string
   ): TrendDataPoint[] {
     // Implementation would calculate time series data for the specified metric
     return [];
   }
 
-  private calculateTrendAnalysis(timeSeries: TrendDataPoint[]): TrendAnalysis {
+  private calculateTrendAnalysis(_timeSeries: TrendDataPoint[]): TrendAnalysis {
     // Implementation would analyze trends in the time series data
     return {
       direction: 'stable',
@@ -1228,41 +1228,41 @@ export class UsageAnalyticsStatistics {
     };
   }
 
-  private generateForecast(timeSeries: TrendDataPoint[], trend: TrendAnalysis): TrendForecast[] {
+  private generateForecast(_timeSeries: TrendDataPoint[], _trend: TrendAnalysis): TrendForecast[] {
     // Implementation would generate forecasts based on historical data
     return [];
   }
 
-  private detectSeasonality(timeSeries: TrendDataPoint[]): SeasonalityPattern[] {
+  private detectSeasonality(_timeSeries: TrendDataPoint[]): SeasonalityPattern[] {
     // Implementation would detect seasonal patterns
     return [];
   }
 
-  private detectAnomalies(timeSeries: TrendDataPoint[], trend: TrendAnalysis): TrendAnomaly[] {
+  private detectAnomalies(_timeSeries: TrendDataPoint[], _trend: TrendAnalysis): TrendAnomaly[] {
     // Implementation would detect anomalies in the time series
     return [];
   }
 
-  private calculateUsagePatterns(queries: UsageQuery[]): UsagePattern[] {
+  private calculateUsagePatterns(_queries: UsageQuery[]): UsagePattern[] {
     // Implementation would identify usage patterns
     return [];
   }
 
-  private calculateUserExpertise(userId: string, queries: UsageQuery[]): UserExpertise[] {
+  private calculateUserExpertise(_userId: string, _queries: UsageQuery[]): UserExpertise[] {
     // Implementation would calculate user expertise levels
     return [];
   }
 
   private generateUserRecommendations(
-    activity: UserActivity,
-    expertise: UserExpertise[],
-    patterns: UsagePattern[]
+    _activity: UserActivity,
+    _expertise: UserExpertise[],
+    _patterns: UsagePattern[]
   ): string[] {
     // Implementation would generate personalized recommendations
     return [];
   }
 
-  private calculateDatasetConsumers(datasetId: string, queries: UsageQuery[]): DataConsumer[] {
+  private calculateDatasetConsumers(_datasetId: string, _queries: UsageQuery[]): DataConsumer[] {
     // Implementation would calculate dataset consumer information
     return [];
   }
@@ -1281,14 +1281,14 @@ export class UsageAnalyticsStatistics {
     };
   }
 
-  private calculateDatasetTrends(datasetId: string, queries: UsageQuery[]): UsageTrend[] {
+  private calculateDatasetTrends(_datasetId: string, _queries: UsageQuery[]): UsageTrend[] {
     // Implementation would calculate usage trends for a dataset
     return [];
   }
 
   private calculateDatasetQualityMetrics(
-    datasetId: string,
-    queries: UsageQuery[]
+    _datasetId: string,
+    _queries: UsageQuery[]
   ): DatasetQualityMetrics {
     // Implementation would calculate quality metrics
     return {
@@ -1302,38 +1302,38 @@ export class UsageAnalyticsStatistics {
   }
 
   private generateDatasetRecommendations(
-    popularity: DatasetPopularity,
-    usage: UsageStatistics,
-    quality: DatasetQualityMetrics
+    _popularity: DatasetPopularity,
+    _usage: UsageStatistics,
+    _quality: DatasetQualityMetrics
   ): string[] {
     // Implementation would generate dataset-specific recommendations
     return [];
   }
 
-  private generateTrendInsights(queries: UsageQuery[]): UsageInsight[] {
+  private generateTrendInsights(_queries: UsageQuery[]): UsageInsight[] {
     // Implementation would generate trend-based insights
     return [];
   }
 
-  private generateAnomalyInsights(queries: UsageQuery[]): UsageInsight[] {
+  private generateAnomalyInsights(_queries: UsageQuery[]): UsageInsight[] {
     // Implementation would generate anomaly-based insights
     return [];
   }
 
   private generateOpportunityInsights(
-    queries: UsageQuery[],
-    accesses: UsageAccess[]
+    _queries: UsageQuery[],
+    _accesses: UsageAccess[]
   ): UsageInsight[] {
     // Implementation would generate opportunity-based insights
     return [];
   }
 
-  private generateRiskInsights(queries: UsageQuery[], accesses: UsageAccess[]): UsageInsight[] {
+  private generateRiskInsights(_queries: UsageQuery[], _accesses: UsageAccess[]): UsageInsight[] {
     // Implementation would generate risk-based insights
     return [];
   }
 
-  private generateEfficiencyInsights(queries: UsageQuery[]): UsageInsight[] {
+  private generateEfficiencyInsights(_queries: UsageQuery[]): UsageInsight[] {
     // Implementation would generate efficiency-based insights
     return [];
   }
@@ -1354,30 +1354,30 @@ export class UsageAnalyticsStatistics {
   }
 
   private generateReportSections(
-    reportType: string,
-    timeRange: any,
-    options?: any
+    _reportType: string,
+    _timeRange: any,
+    _options?: any
   ): ReportSection[] {
     // Implementation would generate report sections based on type
     return [];
   }
 
-  private generateReportVisualizations(sections: ReportSection[]): ReportVisualization[] {
+  private generateReportVisualizations(_sections: ReportSection[]): ReportVisualization[] {
     // Implementation would generate visualizations for report sections
     return [];
   }
 
   private generateReportRecommendations(
-    reportType: string,
-    sections: ReportSection[]
+    _reportType: string,
+    _sections: ReportSection[]
   ): ReportRecommendation[] {
     // Implementation would generate recommendations based on report type and sections
     return [];
   }
 
   private generateReportSummary(
-    sections: ReportSection[],
-    recommendations: ReportRecommendation[]
+    _sections: ReportSection[],
+    _recommendations: ReportRecommendation[]
   ): ReportSummary {
     // Implementation would generate executive summary
     return {

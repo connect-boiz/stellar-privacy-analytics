@@ -218,7 +218,7 @@ export class ServiceRegistry extends EventEmitter {
       const endpoint = healthEndpoint || "/health";
       const url = `http://${serviceInstance.host}:${serviceInstance.port}${endpoint}`;
 
-      const response: AxiosResponse = await axios.get(url, {
+      const _response: AxiosResponse = await axios.get(url, {
         timeout: 5000,
         validateStatus: (status) => status >= 200 && status < 300,
       });

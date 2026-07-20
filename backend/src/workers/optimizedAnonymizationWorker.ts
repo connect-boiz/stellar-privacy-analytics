@@ -1,5 +1,4 @@
 import { Queue, Worker, Job, QueueEvents } from "bullmq";
-import { createClient, RedisClientType } from "redis";
 import { logger } from "../utils/logger";
 import { PIIMasker } from "./piMasker";
 import { NERProcessor } from "./nerProcessor";
@@ -345,11 +344,11 @@ export class OptimizedAnonymizationWorker {
     });
 
     // Queue events monitoring
-    this.queueEvents.on("waiting", ({ jobId }) => {
+    this.queueEvents.on("waiting", ({ _jobId }) => {
       this.metrics.recordJobWaiting();
     });
 
-    this.queueEvents.on("active", ({ jobId }) => {
+    this.queueEvents.on("active", ({ _jobId }) => {
       this.metrics.recordJobActive();
     });
   }

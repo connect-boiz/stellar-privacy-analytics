@@ -161,11 +161,11 @@ export class PrivacyApiGateway {
     const proxy = createProxyMiddleware({
       target: service.baseUrl,
       changeOrigin: true,
-      pathRewrite: (path, req) => {
+      pathRewrite: (path, _req) => {
         // Remove gateway prefix and preserve the rest
         return path.replace(`/gateway/${service.id}`, "");
       },
-      onProxyReq: (proxyReq, req, res) => {
+      onProxyReq: (proxyReq, req, _res) => {
         // Add privacy headers
         proxyReq.setHeader(
           "X-Gateway-Privacy-Level",
@@ -177,7 +177,7 @@ export class PrivacyApiGateway {
         );
         proxyReq.setHeader("X-Gateway-Request-ID", (req as any).requestId);
       },
-      onProxyRes: (proxyRes, req, res) => {
+      onProxyRes: (proxyRes, req, _res) => {
         // Log response for audit
         this.privacyMetrics.recordResponse(req as any, proxyRes);
       },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  LineChart,
-  Line,
+  _LineChart,
+  _Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -9,31 +9,30 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
+  _BarChart,
+  _Bar,
 } from 'recharts';
 import {
   AlertCircle,
   Loader2,
   RefreshCw,
   Zap,
-  Cpu,
-  Database,
+  _Cpu,
+  _Database,
   Activity,
   BarChart3,
-  ChevronDown,
-  ChevronUp,
-  Memory,
-  TrendingDown,
+  _ChevronDown,
+  _ChevronUp,
+  _Memory,
+  _TrendingDown,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
   DataPoint,
-  memoryAwareSampling,
-  progressiveDataLoader,
-  validateDataQuality,
+  _memoryAwareSampling,
+  _progressiveDataLoader,
+  _validateDataQuality,
 } from '../utils/dataSampling';
-import { PerformanceProfiler, ChartPerformanceOptimizer } from '../utils/performanceProfiler';
 
 interface LargeDatasetChartProps {
   data?: DataPoint[];
@@ -194,7 +193,7 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
 
         for (let i = 0; i < 10; i++) {
           await new Promise((resolve) => setTimeout(resolve, 50));
-          const batch = generateLargeDataset(Math.floor(batchSize)).map((p, idx) => ({
+          const batch = generateLargeDataset(Math.floor(batchSize)).map((p, _idx) => ({
             ...p,
             timestamp: p.timestamp + i * batchSize * 1000,
           }));
@@ -224,6 +223,7 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
       loadData(10000);
     }
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);

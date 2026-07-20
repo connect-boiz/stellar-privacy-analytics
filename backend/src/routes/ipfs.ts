@@ -645,7 +645,7 @@ router.post(
 
       const { keyId } = req.params;
 
-      const newKey = await keyManager.rotateKey(keyId);
+      const _newKey = await keyManager.rotateKey(keyId);
 
       logger.info(`Rotated encryption key: ${keyId}`);
 

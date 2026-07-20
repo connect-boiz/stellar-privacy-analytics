@@ -310,7 +310,7 @@ export class QueryComplexityAnalyzer {
 
     // Adjust privacy cost based on operations
     let epsilonMultiplier = 1;
-    let deltaMultiplier = 1;
+    const deltaMultiplier = 1;
 
     // More aggregations require more privacy budget
     epsilonMultiplier += operations.aggregations * 0.1;

@@ -1,5 +1,5 @@
 import * as promClient from "prom-client";
-import { register, Counter, Histogram, Gauge } from "prom-client";
+import { Counter, Histogram, Gauge } from "prom-client";
 
 export { promClient };
 

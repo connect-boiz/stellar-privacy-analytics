@@ -76,6 +76,9 @@ export class HSMService extends EventEmitter {
   private killSwitchActive: boolean = false;
   private connectionHealth: boolean = true;
   private lastHealthCheck: Date = new Date();
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+  private rotationSchedulerInterval: NodeJS.Timeout | null = null;
+  private rotationTimers: Set<NodeJS.Timeout> = new Set();
 
   constructor(config: HSMConfig) {
     super();
@@ -343,8 +346,9 @@ export class HSMService extends EventEmitter {
       this.keyCache.set(response.newKeyId, newMetadata);
 
       // Mark old key as revoked after grace period
-      setTimeout(
+      const timer = setTimeout(
         () => {
+          this.rotationTimers.delete(timer);
           const oldMetadata = this.keyCache.get(keyId);
           if (oldMetadata) {
             oldMetadata.status = "revoked";
@@ -353,6 +357,7 @@ export class HSMService extends EventEmitter {
         },
         this.rotationPolicy.gracePeriodDays * 24 * 60 * 60 * 1000,
       );
+      this.rotationTimers.add(timer);
 
       this.emit("keyRotated", { oldKeyId: keyId, newKeyId: response.newKeyId });
 
@@ -426,7 +431,7 @@ export class HSMService extends EventEmitter {
   }
 
   private startHealthCheck(): void {
-    setInterval(async () => {
+    this.healthCheckInterval = setInterval(async () => {
       try {
         await this.client.get("/v1/health");
         this.connectionHealth = true;
@@ -444,7 +449,7 @@ export class HSMService extends EventEmitter {
       return;
     }
 
-    setInterval(
+    this.rotationSchedulerInterval = setInterval(
       async () => {
         try {
           const keys = await this.listKeys("active");
@@ -476,6 +481,22 @@ export class HSMService extends EventEmitter {
       },
       24 * 60 * 60 * 1000,
     ); // Check daily
+  }
+
+  async shutdown(): Promise<void> {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+    if (this.rotationSchedulerInterval) {
+      clearInterval(this.rotationSchedulerInterval);
+      this.rotationSchedulerInterval = null;
+    }
+    for (const timer of this.rotationTimers) {
+      clearTimeout(timer);
+    }
+    this.rotationTimers.clear();
+    logger.info("HSM service shutdown completed");
   }
 
   getAuditLog(limit: number = 100, offset: number = 0): AuditLogEntry[] {

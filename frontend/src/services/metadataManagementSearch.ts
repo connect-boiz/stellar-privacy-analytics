@@ -8,14 +8,14 @@ import {
   SearchResult,
   SearchFilter,
   SearchSort,
-  SearchPagination,
+  _SearchPagination,
   SearchFacet,
   SearchSuggestion,
   SearchAggregation,
-  SchemaField,
-  PrivacyMetadata,
-  UsageMetadata,
-  QualityMetadata,
+  _SchemaField,
+  _PrivacyMetadata,
+  _UsageMetadata,
+  _QualityMetadata,
 } from '../types/dataCatalog';
 
 export interface MetadataIndexConfig {
@@ -1188,25 +1188,25 @@ export class MetadataManagementSearch {
     };
   }
 
-  private async indexMetadata(metadata: DatasetMetadata): Promise<boolean> {
+  private async indexMetadata(_metadata: DatasetMetadata): Promise<boolean> {
     // This would integrate with the actual search engine (Elasticsearch, etc.)
     // Indexing dataset: ${metadata.id}
     return true;
   }
 
-  private async updateIndexedMetadata(metadata: DatasetMetadata): Promise<boolean> {
+  private async updateIndexedMetadata(_metadata: DatasetMetadata): Promise<boolean> {
     // This would update the indexed document
     // Updating indexed dataset: ${metadata.id}
     return true;
   }
 
-  private async removeIndexedMetadata(datasetId: string): Promise<boolean> {
+  private async removeIndexedMetadata(_datasetId: string): Promise<boolean> {
     // This would remove the document from the index
     // Removing indexed dataset: ${datasetId}
     return true;
   }
 
-  private async fetchMetadataFromIndex(datasetId: string): Promise<DatasetMetadata | null> {
+  private async fetchMetadataFromIndex(_datasetId: string): Promise<DatasetMetadata | null> {
     // This would fetch the metadata from the search index
     // For now, return null
     return null;
@@ -1334,7 +1334,7 @@ export class MetadataManagementSearch {
     return aggs;
   }
 
-  private async executeSearch(query: any, request: SearchRequest): Promise<any> {
+  private async executeSearch(_query: any, _request: SearchRequest): Promise<any> {
     // This would execute the search against the actual search engine
     // For now, return a mock result
     return {
@@ -1349,7 +1349,7 @@ export class MetadataManagementSearch {
     };
   }
 
-  private async processSearchResult(result: any, request: SearchRequest): Promise<SearchResult> {
+  private async processSearchResult(result: any, _request: SearchRequest): Promise<SearchResult> {
     const datasets = result.hits.hits.map((hit: any) => ({
       dataset: hit._source as DatasetMetadata,
       score: hit._score,
@@ -1474,13 +1474,13 @@ export class MetadataManagementSearch {
     return [];
   }
 
-  private async generateSuggestions(query: string, field?: string): Promise<SearchSuggestion[]> {
+  private async generateSuggestions(_query: string, _field?: string): Promise<SearchSuggestion[]> {
     // This would generate suggestions using the search engine's completion suggester
     // For now, return empty array
     return [];
   }
 
-  private buildFacetQuery(field: string, query?: string): any {
+  private buildFacetQuery(field: string, _query?: string): any {
     // This would build a facet query
     return {
       size: 0,
@@ -1504,7 +1504,7 @@ export class MetadataManagementSearch {
     };
   }
 
-  private buildAggregationQuery(request: SearchRequest): any {
+  private buildAggregationQuery(_request: SearchRequest): any {
     // This would build an aggregation query
     return {
       size: 0,
@@ -1512,7 +1512,7 @@ export class MetadataManagementSearch {
     };
   }
 
-  private async executeAggregationSearch(query: any): Promise<SearchAggregation[]> {
+  private async executeAggregationSearch(_query: any): Promise<SearchAggregation[]> {
     // This would execute the aggregation search
     return [];
   }

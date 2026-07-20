@@ -6,12 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  Shield,
+  _Shield,
   AlertTriangle,
   TrendingUp,
   CheckCircle,
   Clock,
-  BarChart3,
+  _BarChart3,
   Activity,
   FileText,
   Settings,
@@ -49,11 +49,12 @@ const RiskAssessmentDashboard: React.FC = () => {
   const [assessments, setAssessments] = useState<RiskAssessment[]>([]);
   const [heatMapData, setHeatMapData] = useState<HeatMapData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
+  const [selectedTimeframe, _setSelectedTimeframe] = useState('30d');
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchDashboardData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeframe]);
 
   const fetchDashboardData = async () => {

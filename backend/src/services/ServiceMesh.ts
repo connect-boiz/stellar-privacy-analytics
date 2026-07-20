@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { ServiceRegistry, ServiceInstance } from "./ServiceRegistry";
-import { CircuitBreakerRegistry, CircuitBreaker } from "./CircuitBreaker";
+import { CircuitBreakerRegistry} from "./CircuitBreaker";
 import { logger } from "../utils/logger";
 import { EventEmitter } from "events";
 

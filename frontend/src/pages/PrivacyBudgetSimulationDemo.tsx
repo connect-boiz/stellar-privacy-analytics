@@ -13,7 +13,7 @@ import {
   BudgetAllocation,
   SimulationScenario,
   SimulationResult,
-  AllocationCategory,
+  _AllocationCategory,
 } from '../types/privacyBudget';
 
 const PrivacyBudgetSimulationDemo: React.FC = () => {
@@ -691,7 +691,7 @@ const SimulationTab: React.FC<{
   result: SimulationResult | null;
   isSimulating: boolean;
   onRunSimulation: () => void;
-}> = ({ scenario, result, isSimulating, onRunSimulation }) => (
+}> = ({ scenario, result, _isSimulating, _onRunSimulation }) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">Simulation</h2>
@@ -774,7 +774,7 @@ const ScenariosTab: React.FC<{
   onSelectScenario: (scenario: SimulationScenario) => void;
   onCreateWhatIf: (templateId: string) => void;
   onCompareScenarios: (scenarioIds: string[]) => Promise<any>;
-}> = ({ scenarios, currentScenario, onSelectScenario, onCreateWhatIf, onCompareScenarios }) => (
+}> = ({ scenarios, currentScenario, onSelectScenario, onCreateWhatIf, _onCompareScenarios }) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">What-If Scenarios</h2>
@@ -906,7 +906,7 @@ const OptimizationTab: React.FC<{
 const ComparisonTab: React.FC<{
   scenarios: SimulationScenario[];
   onAnalyzeHistoricalTrends: () => Promise<any>;
-}> = ({ scenarios, onAnalyzeHistoricalTrends }) => (
+}> = ({ _scenarios, onAnalyzeHistoricalTrends }) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">Comparison & Analysis</h2>

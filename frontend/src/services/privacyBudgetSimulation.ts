@@ -3,7 +3,7 @@
  */
 
 import {
-  PrivacyBudget,
+  _PrivacyBudget,
   BudgetAllocation,
   SimulationScenario,
   SimulationResult,
@@ -12,10 +12,10 @@ import {
   Projection,
   Recommendation,
   SensitivityAnalysis,
-  BudgetOptimization,
-  OptimizationSolution,
+  _BudgetOptimization,
+  _OptimizationSolution,
   AllocationCategory,
-  ImpactFactor,
+  _ImpactFactor,
 } from '../types/privacyBudget';
 
 export interface SimulationConfig {
@@ -384,7 +384,7 @@ export class PrivacyBudgetSimulation {
   private linearOptimization(
     allocations: BudgetAllocation[],
     parameters: SimulationParameters,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): BudgetAllocation[] {
     // Simplified linear programming approach
     const totalBudget = allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
@@ -668,7 +668,7 @@ export class PrivacyBudgetSimulation {
   private generateRecommendations(
     allocations: BudgetAllocation[],
     metrics: SimulationMetrics,
-    scenario: SimulationScenario
+    _scenario: SimulationScenario
   ): Recommendation[] {
     const recommendations: Recommendation[] = [];
 
@@ -841,7 +841,7 @@ export class PrivacyBudgetSimulation {
 
   private calculateConfidenceIntervals(
     allocations: BudgetAllocation[],
-    scenario: SimulationScenario
+    _scenario: SimulationScenario
   ): any[] {
     const confidence = this.config.confidenceLevel;
     const metrics = ['roi', 'risk', 'privacy', 'utility', 'compliance'];
@@ -864,7 +864,7 @@ export class PrivacyBudgetSimulation {
   // Helper methods
   private calculateEfficiencyScore(
     allocation: BudgetAllocation,
-    parameters: SimulationParameters
+    _parameters: SimulationParameters
   ): number {
     const roi = allocation.expectedROI;
     const riskMultiplier = { low: 1.2, medium: 1.0, high: 0.8 }[allocation.riskLevel];
@@ -878,7 +878,7 @@ export class PrivacyBudgetSimulation {
   private calculateFitness(
     allocations: BudgetAllocation[],
     parameters: SimulationParameters,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): number {
     const metrics = this.calculateMetrics(allocations, {
       ...parameters,
@@ -933,7 +933,7 @@ export class PrivacyBudgetSimulation {
     }
   }
 
-  private getGrowthRate(metric: string, allocations: BudgetAllocation[]): number {
+  private getGrowthRate(metric: string, _allocations: BudgetAllocation[]): number {
     // Simplified growth rates
     const growthRates = {
       roi: 0.05,
@@ -1117,7 +1117,7 @@ export class PrivacyBudgetSimulation {
     population: BudgetAllocation[][],
     mutationRate: number,
     totalBudget: number,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): BudgetAllocation[][] {
     return population.map((individual) => {
       if (Math.random() < mutationRate) {
@@ -1187,7 +1187,7 @@ export class PrivacyBudgetSimulation {
   private generateNeighbor(
     current: BudgetAllocation[],
     totalBudget: number,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): BudgetAllocation[] {
     const neighbor = [...current];
     const index = Math.floor(Math.random() * neighbor.length);
@@ -1374,7 +1374,7 @@ export class PrivacyBudgetSimulation {
   private generateTornadoChart(
     parameters: any[],
     allocations: BudgetAllocation[],
-    scenario: SimulationScenario
+    _scenario: SimulationScenario
   ): any {
     return {
       parameters: parameters.map((param) => ({

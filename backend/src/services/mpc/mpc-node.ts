@@ -437,7 +437,7 @@ export class MPCNode extends EventEmitter {
    */
   cleanup(): void {
     // Clear all heartbeat intervals
-    for (const [nodeId, interval] of this.heartbeatIntervals) {
+    for (const [_nodeId, interval] of this.heartbeatIntervals) {
       clearInterval(interval);
     }
     this.heartbeatIntervals.clear();

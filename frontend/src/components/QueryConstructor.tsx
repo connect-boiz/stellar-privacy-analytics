@@ -6,7 +6,7 @@ import {
   Plus,
   Trash2,
   Eye,
-  Save,
+  _Save,
   Play,
   AlertCircle,
   CheckCircle,
@@ -108,7 +108,7 @@ const filterOperators = [
 
 export const QueryConstructor: React.FC = () => {
   const [querySteps, setQuerySteps] = useState<QueryStep[]>([]);
-  const [selectedField, setSelectedField] = useState<string>('');
+  const [_selectedField, setSelectedField] = useState<string>('');
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [favoriteQueries, setFavoriteQueries] = useState<FavoriteQuery[]>([]);

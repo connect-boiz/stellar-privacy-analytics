@@ -1,5 +1,5 @@
-import { createHash, createHmac } from "crypto";
-import { writeFileSync, appendFileSync, existsSync, mkdirSync } from "fs";
+import { createHmac } from "crypto";
+import { appendFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { logger } from "../utils/logger";
 import { EventEmitter } from "events";
@@ -269,7 +269,7 @@ export class AuditService extends EventEmitter {
   private assessRiskLevel(
     action: string,
     outcome: AuditRecord["outcome"],
-    details?: Record<string, any>,
+    _details?: Record<string, any>,
   ): AuditRecord["riskLevel"] {
     // Critical risk indicators
     if (action.includes("revoke") || action.includes("kill_switch")) {

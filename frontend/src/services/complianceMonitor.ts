@@ -273,7 +273,7 @@ export class ComplianceMonitor {
     requirement: ComplianceRequirement
   ): Promise<ComplianceRequirementStatus> {
     let totalScore = 0;
-    let implementedControls = 0;
+    let _implementedControls = 0;
     const gaps: string[] = [];
     const remediation: string[] = [];
 
@@ -283,7 +283,7 @@ export class ComplianceMonitor {
       switch (control.implementationStatus) {
         case 'implemented':
           controlScore = 100;
-          implementedControls++;
+          _implementedControls++;
           break;
         case 'partial':
           controlScore = 50;

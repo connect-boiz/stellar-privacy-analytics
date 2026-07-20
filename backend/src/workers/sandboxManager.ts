@@ -265,11 +265,11 @@ execute().then(result => {
     scriptPath: string,
     executionId: string,
   ): Promise<SandboxResult<T>> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       const startTime = Date.now();
 
       // Set up resource limits
-      const resourceLimits = {
+      const _resourceLimits = {
         memory: this.config.memoryLimit * 1024 * 1024, // Convert MB to bytes
         cpu: this.config.cpuLimit,
         timeout: this.config.timeoutMs,
@@ -287,8 +287,8 @@ execute().then(result => {
 
       this.activeProcesses.set(executionId, child);
 
-      let stdout = "";
-      let stderr = "";
+      let _stdout = "";
+      let _stderr = "";
 
       child.stdout?.on("data", (data) => {
         stdout += data.toString();
@@ -499,7 +499,7 @@ execute().then(result => {
   killAllProcesses(): number {
     let killedCount = 0;
 
-    for (const [executionId, process] of this.activeProcesses) {
+    for (const [_executionId, process] of this.activeProcesses) {
       if (!process.killed) {
         process.kill("SIGKILL");
         killedCount++;

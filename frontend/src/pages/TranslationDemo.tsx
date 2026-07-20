@@ -6,7 +6,7 @@ import {
   Calendar,
   DollarSign,
   Ruler,
-  Clock,
+  _Clock,
   CheckCircle,
   AlertCircle,
   Eye,

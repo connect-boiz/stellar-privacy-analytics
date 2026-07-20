@@ -468,31 +468,31 @@ async function getCurrentAssessmentCriteria(): Promise<RiskAssessmentCriteria> {
 }
 
 async function generateDashboardData(
-  timeframe: string,
-  organizationId?: string,
+  _timeframe: string,
+  _organizationId?: string,
 ): Promise<any> {
   // This would generate dashboard statistics and charts data
   throw new Error("Not implemented");
 }
 
 async function generateTrendsData(
-  workflowId?: string,
-  organizationId?: string,
-  period?: string,
+  _workflowId?: string,
+  _organizationId?: string,
+  _period?: string,
 ): Promise<any> {
   // This would generate trends analysis data
   throw new Error("Not implemented");
 }
 
 async function generateComplianceReport(
-  framework: string,
-  organizationId?: string,
+  _framework: string,
+  _organizationId?: string,
 ): Promise<any> {
   // This would generate detailed compliance reports
   throw new Error("Not implemented");
 }
 
-async function generatePDFReport(data: any): Promise<Buffer> {
+async function generatePDFReport(_data: any): Promise<Buffer> {
   // This would generate PDF reports using a library like puppeteer
   throw new Error("Not implemented");
 }

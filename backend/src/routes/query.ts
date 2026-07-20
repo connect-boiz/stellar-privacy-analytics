@@ -3,7 +3,7 @@ import { body, query } from "express-validator";
 import { asyncHandler } from "../middleware/errorHandler";
 import {
   AggregationType,
-  AnalysisFilter,
+  _AnalysisFilter,
 } from "@stellar/shared";
 import { validateRequest } from "../middleware/validation";
 
@@ -202,7 +202,7 @@ router.post(
     validateRequest,
   ],
   asyncHandler(async (req, res) => {
-    const { query, walletSignature } = req.body;
+    const { query, _walletSignature } = req.body;
 
     // Validate query first
     const validationResponse: any = await (

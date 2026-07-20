@@ -89,7 +89,7 @@ router.post(
         });
       }
 
-      const { sessionId, participants, operation, threshold } = req.body;
+      const { sessionId, participants, operation, _threshold } = req.body;
 
       // Initialize session
       const session = await mpcNode!.initializeSession(

@@ -4,18 +4,18 @@ import {
   Database,
   Activity,
   TrendingUp,
-  TrendingDown,
+  _TrendingDown,
   Zap,
-  Clock,
+  _Clock,
   BarChart3,
   Settings,
-  Play,
-  Pause,
+  _Play,
+  _Pause,
   AlertTriangle,
   CheckCircle,
   RefreshCw,
   Download,
-  Filter,
+  _Filter,
   Eye,
 } from 'lucide-react';
 
@@ -71,7 +71,7 @@ export const DatabasePerformance: React.FC = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [queryToAnalyze, setQueryToAnalyze] = useState<string>('');
-  const [testQueries, setTestQueries] = useState<string[]>([
+  const [testQueries, _setTestQueries] = useState<string[]>([
     "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'",
     "SELECT * FROM analytics_events WHERE event_type = 'page_view' ORDER BY timestamp DESC LIMIT 100",
     'SELECT u.id, u.email, COUNT(o.id) as order_count FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id',
@@ -82,6 +82,7 @@ export const DatabasePerformance: React.FC = () => {
     fetchPerformanceMetrics();
     fetchSlowQueries();
     fetchIndexRecommendations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPerformanceMetrics = async () => {

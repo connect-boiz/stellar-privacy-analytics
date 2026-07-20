@@ -3,16 +3,16 @@
  */
 
 import {
-  DatasetMetadata,
-  AccessMetadata,
+  _DatasetMetadata,
+  _AccessMetadata,
   AccessPermission,
   AccessRole,
   AccessPolicy,
   AccessRequest,
   AccessAudit,
   AccessRestriction,
-  PrivacyMetadata,
-  ComplianceFramework,
+  _PrivacyMetadata,
+  _ComplianceFramework,
 } from '../types/dataCatalog';
 
 export interface AccessControlConfig {
@@ -930,7 +930,7 @@ export class AccessControlIntegration {
 
   private async createApprovalRequest(
     context: AccessContext,
-    decision: AccessDecision
+    _decision: AccessDecision
   ): Promise<AccessRequest | undefined> {
     const request: AccessRequest = {
       id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -997,8 +997,8 @@ export class AccessControlIntegration {
 
   private executeWorkflowAction(
     action: WorkflowAction,
-    request: AccessRequest,
-    context: AccessContext
+    _request: AccessRequest,
+    _context: AccessContext
   ): void {
     switch (action.type) {
       case 'send_email':
@@ -1021,7 +1021,7 @@ export class AccessControlIntegration {
 
   private async applyAccessRestrictions(
     context: AccessContext,
-    decision: AccessDecision
+    _decision: AccessDecision
   ): Promise<AccessRestriction[]> {
     const restrictions: AccessRestriction[] = [];
 
@@ -1140,7 +1140,7 @@ export class AccessControlIntegration {
     };
   }
 
-  private calculateRiskScore(context: AccessContext, decision: AccessDecision): number {
+  private calculateRiskScore(context: AccessContext, _decision: AccessDecision): number {
     let riskScore = 0;
 
     // User risk factors
@@ -1287,15 +1287,15 @@ export class AccessControlIntegration {
     }
   }
 
-  private async syncWithLDAP(system: ExternalSystemConfig): Promise<void> {
+  private async syncWithLDAP(_system: ExternalSystemConfig): Promise<void> {
     // LDAP synchronization implementation
   }
 
-  private async syncWithOAuth(system: ExternalSystemConfig): Promise<void> {
+  private async syncWithOAuth(_system: ExternalSystemConfig): Promise<void> {
     // OAuth synchronization implementation
   }
 
-  private async syncWithSAML(system: ExternalSystemConfig): Promise<void> {
+  private async syncWithSAML(_system: ExternalSystemConfig): Promise<void> {
     // SAML synchronization implementation
   }
 

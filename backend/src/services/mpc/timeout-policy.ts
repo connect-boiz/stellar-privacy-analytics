@@ -163,7 +163,7 @@ export class TimeoutPolicy extends EventEmitter {
    */
   private handleWarnAndContinue(
     timeoutInfo: TimeoutInfo,
-    policy: TimeoutConfig,
+    _policy: TimeoutConfig,
   ): void {
     logger.warn(
       `Timeout warning for ${timeoutInfo.operation} in session ${timeoutInfo.sessionId}`,

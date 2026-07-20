@@ -1,10 +1,8 @@
-import { StellarAnalytics } from "../src/stellar_analytics";
-import { PrivacyOracle } from "../src/privacy_oracle";
 import {
   Server,
   Networks,
   TransactionBuilder,
-  Account,
+  _Account,
   Keypair,
   Contract,
 } from "@stellar/stellar-sdk";
@@ -12,7 +10,7 @@ import {
   Contract as SorobanContract,
   xdr,
   Operation,
-  Asset,
+  _Asset,
 } from "@stellar/stellar-sdk";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -75,7 +73,7 @@ async function deployContract(
   );
 
   // Create deploy transaction
-  const contract = new SorobanContract({
+  const _contract = new SorobanContract({
     wasmHash: wasmHash,
     networkPassphrase,
   });

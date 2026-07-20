@@ -40,7 +40,7 @@ export class FailoverManager extends EventEmitter {
   }
 
   private setupEventListeners(): void {
-    this.serviceRegistry.on("serviceHealthFailed", (instance, error) => {
+    this.serviceRegistry.on("serviceHealthFailed", (instance, _error) => {
       this.handleServiceFailure(instance);
     });
 
@@ -50,7 +50,7 @@ export class FailoverManager extends EventEmitter {
 
     this.serviceMesh.on(
       "requestCompleted",
-      (serviceName: string, status: string, responseTime: number) => {
+      (serviceName: string, status: string, _responseTime: number) => {
         if (status === "error") {
           this.incrementFailureCount(serviceName);
         } else if (status === "success") {

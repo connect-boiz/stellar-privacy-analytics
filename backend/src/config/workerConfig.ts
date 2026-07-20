@@ -1,4 +1,3 @@
-import { WorkerConfig } from "../workers/optimizedAnonymizationWorker";
 import { OrchestratorConfig } from "../workers/workerOrchestrator";
 
 /**

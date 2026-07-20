@@ -517,7 +517,10 @@ export class ComplianceAutomationService {
       await redis.lPush("compliance:scan:history", result.scanId);
       await redis.lTrim("compliance:scan:history", 0, 99); // Keep last 100 scans
     } catch (error) {
-      logger.error("Error persisting scan result:", error);
+      logger.warn("Failed to persist scan result (Redis may not be available):", {
+        scanId: result.scanId,
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 

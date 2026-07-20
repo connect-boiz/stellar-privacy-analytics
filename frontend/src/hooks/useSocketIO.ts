@@ -144,6 +144,7 @@ export const useSocketIO = (options: UseSocketIOOptions = {}): UseSocketIOReturn
     }
 
     return newSocket;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, socketOptions, autoConnect, maxReconnectAttempts, enableOfflineQueue]);
 
   // Schedule reconnection with exponential backoff
@@ -161,6 +162,7 @@ export const useSocketIO = (options: UseSocketIOOptions = {}): UseSocketIOReturn
         socket.connect();
       }
     }, delay);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reconnectAttempts, maxReconnectAttempts, getReconnectDelay, socket, isOnline]);
 
   // Heartbeat mechanism
@@ -226,6 +228,7 @@ export const useSocketIO = (options: UseSocketIOOptions = {}): UseSocketIOReturn
         newSocket.disconnect();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array since we only want to initialize once
 
   return {

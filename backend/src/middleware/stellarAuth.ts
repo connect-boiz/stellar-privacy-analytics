@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { logger } from "../utils/logger";
-import { createHash, timingSafeEqual, randomBytes } from "crypto";
+import { createHash, timingSafeEqual} from "crypto";
 import { RedisClientType } from "redis";
 import { Counter, Histogram } from "prom-client";
 
@@ -158,7 +158,7 @@ export class StellarAuthMiddleware {
    */
   private async authenticateJWT(
     token: string,
-    traceId: string,
+    _traceId: string,
   ): Promise<StellarUser> {
     const startTime = process.hrtime();
     const tokenHash = createHash("sha256").update(token).digest("hex");
@@ -256,7 +256,7 @@ export class StellarAuthMiddleware {
    */
   private async authenticateApiKey(
     apiKey: string,
-    traceId: string,
+    _traceId: string,
   ): Promise<StellarUser> {
     // API keys should be in format: stellar_api_<version>_<hash>
     const apiKeyPattern = /^stellar_api_v[0-9]+_[a-zA-Z0-9]{32,}$/;
@@ -266,7 +266,7 @@ export class StellarAuthMiddleware {
     }
 
     // Extract and verify API key hash
-    const [, version, hash] = apiKey.split("_");
+    const [, _version, hash] = apiKey.split("_");
     const expectedHash = this.hashApiKey(
       apiKey.replace(`_${hash}`, ""),
       this.apiKeySecret,

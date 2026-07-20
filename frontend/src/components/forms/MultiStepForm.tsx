@@ -6,7 +6,7 @@ import {
   Check,
   AlertCircle,
   Save,
-  RotateCcw,
+  _RotateCcw,
   Clock,
   Info,
 } from 'lucide-react';
@@ -164,7 +164,7 @@ export function ProgressIndicator({
 }
 
 // Step Summary Component
-export function StepSummary<T>({ values, steps, currentStep, onStepClick }: StepSummaryProps<T>) {
+export function StepSummary<T>({ _values, steps, currentStep, onStepClick }: StepSummaryProps<T>) {
   return (
     <div className="bg-gray-50 rounded-lg p-4 mb-6">
       <h3 className="text-sm font-medium text-gray-700 mb-3">Form Summary</h3>
@@ -266,14 +266,14 @@ export function MultiStepForm<T extends Record<string, unknown>>({
   ariaLabel = 'Multi-step form',
   showStepNumbers = true,
   allowFreeNavigation = false,
-  confirmOnLeave = true,
+  _confirmOnLeave = true,
   children,
 }: MultiStepFormProps<T> & { children?: React.ReactNode }) {
   const [internalStep, setInternalStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<number | null>(null);
+  const [_showLeaveConfirm, _setShowLeaveConfirm] = useState(false);
+  const [_pendingNavigation, _setPendingNavigation] = useState<number | null>(null);
   const [stepErrors, setStepErrors] = useState<Record<string, string>>(errors);
 
   const currentStep = controlledStep ?? internalStep;

@@ -76,7 +76,7 @@ describe("Encrypted Blob Storage", () => {
       const encrypted = AESEncryption.encrypt(data, key);
 
       // Combine IV, authTag, and encrypted data for streaming
-      const combinedData = Buffer.concat([
+      const _combinedData = Buffer.concat([
         encrypted.iv,
         encrypted.authTag,
         encrypted.encryptedData,
