@@ -29,28 +29,28 @@ console.log("✓ All type definitions valid");
 
 // Test interfaces
 import type {
-  _AnonymizationJob,
-  _AnonymizationResult,
-  _PIIDetection,
-  _WorkerConfig,
+  AnonymizationJob,
+  AnonymizationResult,
+  PIIDetection,
+  WorkerConfig,
 } from "../workers/optimizedAnonymizationWorker";
 
 import type {
-  _OrchestratorConfig,
-  _WorkerInstance,
+  OrchestratorConfig,
+  WorkerInstance,
 } from "../workers/workerOrchestrator";
 
 import type {
-  _DeadLetterJob,
-  _DeadLetterStats,
-  _RetryPolicy,
+  DeadLetterJob,
+  DeadLetterStats,
+  RetryPolicy,
 } from "../workers/deadLetterQueue";
 
-import type { _LoadTestConfig, _LoadTestResults } from "./loadTest";
+import type { LoadTestConfig, LoadTestResults } from "./loadTest";
 
 import type {
-  _CapacityRequirements,
-  _CapacityRecommendations,
+  CapacityRequirements,
+  CapacityRecommendations,
 } from "./capacityPlanner";
 
 console.log("✓ All interfaces valid");

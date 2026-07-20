@@ -1,7 +1,7 @@
 import {
   PrivacyMode,
   DifferentialPrivacyConfig,
-  _DPNoiseMechanism,
+  DPNoiseMechanism,
   PrivacyBudgetConfig,
 } from "@stellar/shared";
 

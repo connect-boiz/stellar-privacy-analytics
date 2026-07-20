@@ -278,7 +278,7 @@ export class PQLValidator {
   /**
    * Simple PQL parser (basic implementation)
    */
-  private parseQuery(query: string): PQLParseNode {
+  parseQuery(query: string): PQLParseNode {
     // This is a simplified parser - in production, you'd use a proper SQL parser
     // For now, we'll do basic tokenization and structure analysis
 

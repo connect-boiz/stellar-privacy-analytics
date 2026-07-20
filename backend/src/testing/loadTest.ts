@@ -1,6 +1,6 @@
 import {
   OptimizedAnonymizationWorker,
-  _WorkerConfig,
+  WorkerConfig,
 } from "../workers/optimizedAnonymizationWorker";
 import { logger } from "../utils/logger";
 

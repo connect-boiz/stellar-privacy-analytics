@@ -7,7 +7,7 @@ import {
   RiskAssessmentCriteria,
 } from "../services/privacyRiskAssessment";
 import { DatabaseService } from "../services/databaseService";
-import { auditService } from "../services/auditService";
+import auditService from "../services/auditService";
 
 const router = Router();
 

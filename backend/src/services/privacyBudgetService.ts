@@ -1,7 +1,7 @@
 import {
   PrivacyBudgetRepository,
   PrivacyBudget,
-  _BudgetConsumption,
+  BudgetConsumption,
 } from "../repositories/privacyBudgetRepository";
 import { logger } from "../utils/logger";
 

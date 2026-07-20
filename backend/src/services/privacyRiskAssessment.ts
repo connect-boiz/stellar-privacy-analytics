@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
 import { DatabaseService } from "./databaseService";
-import { auditService } from "./auditService";
+import auditService from "./auditService";
 
 export interface DataWorkflow {
   id: string;

@@ -162,6 +162,33 @@ jobs:
       - name: Build WASM
         run: cargo build --target wasm32-unknown-unknown --release
 
+  # ── Backend Rust (Monitoring Service) ─────────────────────
+  backend-rust:
+    name: Backend (Rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+          cache-on-failure: true
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Test
+        run: cargo test
+      - name: Build
+        run: cargo build --release
+
   # ── Service Discovery Dashboard ──────────────────────────
   service-discovery:
     name: Service Discovery

@@ -1,7 +1,7 @@
 import { createClient, RedisClientType } from "redis";
 import {
   PrivacyBudget,
-  _RedisPrivacyBudget,
+  RedisPrivacyBudget,
   PrivacyBudgetConfig,
   BudgetExhaustedException,
 } from "@stellar/shared";
