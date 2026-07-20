@@ -32,6 +32,7 @@ import TrainingModulePage from './pages/TrainingModulePage';
 import TrainingAdminPage from './pages/TrainingAdminPage';
 import OnboardingPage from './pages/OnboardingPage';
 import KeyManagementPage from './pages/KeyManagementPage';
+import WalletPage from './pages/WalletPage';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -106,6 +107,7 @@ function AppRoutes({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/network-test" element={<NetworkTestPage />} />
           <Route path="/key-management" element={<KeyManagementPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

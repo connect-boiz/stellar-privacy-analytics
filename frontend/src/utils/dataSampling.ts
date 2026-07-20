@@ -141,7 +141,7 @@ export function adaptiveSampling(data: DataPoint[], maxPoints: number): DataPoin
   );
 
   const sampled: DataPoint[] = [];
-  let _dataIndex = 0;
+  const _dataIndex = 0;
 
   pointsPerBucket.forEach((points, bucketIndex) => {
     const bucketStart = bucketIndex * windowSize;

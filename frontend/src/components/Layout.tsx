@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Target,
   Key,
+  Wallet,
 } from 'lucide-react';
 import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -35,6 +36,7 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     { name: t('navigation.privacy'), href: '/privacy', icon: Shield },
     { name: 'Key Management', href: '/key-management', icon: Key },
     { name: 'Search', href: '/search', icon: Search },
+    { name: 'Wallet', href: '/wallet', icon: Wallet },
     { name: 'Consent', href: '/consent', icon: Users },
     { name: 'Performance', href: '/performance', icon: Sliders },
     { name: 'Training', href: '/training', icon: GraduationCap },

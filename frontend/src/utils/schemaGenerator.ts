@@ -32,13 +32,13 @@ export interface RustFieldConstraints {
   min_value?: u64;
   max_value?: u64;
   pattern?: string;
-  enum_values?: Vec<String>;
+  enum_values?: Vec<string>;
 }
 
 export interface RustConstraint {
   id: string;
   constraint_type: RustConstraintType;
-  field_id: String;
+  field_id: string;
   parameters: RustConstraintParameters;
 }
 
@@ -56,18 +56,18 @@ export interface RustConstraintParameters {
 }
 
 export interface RustMetadata {
-  created_at: String;
-  updated_at: String;
-  version: String;
-  last_tested?: String;
+  created_at: string;
+  updated_at: string;
+  version: string;
+  last_tested?: string;
   test_results: Vec<RustTestResult>;
 }
 
 export interface RustTestResult {
   success: bool;
   timestamp: u64;
-  errors: Vec<String>;
-  warnings: Vec<String>;
+  errors: Vec<string>;
+  warnings: Vec<string>;
 }
 
 export class SchemaGenerator {
@@ -231,7 +231,7 @@ export class SchemaGenerator {
    * Generate Rust struct code
    */
   static generateRustStruct(schema: SchemaConfig): string {
-    let rustCode = `// Auto-generated Rust schema for ZK proofs
+    const rustCode = `// Auto-generated Rust schema for ZK proofs
 // Generated on: ${new Date().toISOString()}
 // Schema: ${schema.name}
 
