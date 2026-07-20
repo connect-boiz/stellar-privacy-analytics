@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Validate configuration
             config.validate().map_err(|e| {
-                error!("Configuration validation failed: {}", e);
+                error!("Configuration validation failed: {e}");
                 e
             })?;
 
@@ -104,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let alert_rules = config.generate_alert_rules();
                 let alert_file = "./monitoring/alert-rules.yml";
                 std::fs::write(alert_file, alert_rules)?;
-                info!("Alert rules generated: {}", alert_file);
+                info!("Alert rules generated: {alert_file}");
             }
 
             // Generate Grafana dashboard if requested
@@ -112,17 +112,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let dashboard_content = include_str!("../../monitoring/grafana-dashboard.json");
                 let dashboard_file = "./monitoring/grafana-dashboard.json";
                 std::fs::write(dashboard_file, dashboard_content)?;
-                info!("Grafana dashboard generated: {}", dashboard_file);
+                info!("Grafana dashboard generated: {dashboard_file}");
             }
 
             // Create and start monitoring service
             let service = MonitoringService::new(config).map_err(|e| {
-                error!("Failed to create monitoring service: {}", e);
+                error!("Failed to create monitoring service: {e}");
                 e
             })?;
 
             info!("Starting Stellar Privacy Analytics Monitoring Service");
-            info!("Metrics endpoint: http://localhost:{}/metrics", port);
+            info!("Metrics endpoint: http://localhost:{port}/metrics");
 
             if service.get_config().prometheus.enable_auth {
                 info!("Authentication enabled for metrics endpoint");
@@ -137,25 +137,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Generate default configuration
             let config = MonitoringConfig::default();
-            let config_file = format!("{}/monitoring-config.toml", output_dir);
+            let config_file = format!("{output_dir}/monitoring-config.toml");
             let config_toml = toml::to_string_pretty(&config)?;
             std::fs::write(&config_file, config_toml)?;
-            info!("Configuration file generated: {}", config_file);
+            info!("Configuration file generated: {config_file}");
 
             // Generate alert rules
             let alert_rules = config.generate_alert_rules();
-            let alert_file = format!("{}/alert-rules.yml", output_dir);
+            let alert_file = format!("{output_dir}/alert-rules.yml");
             std::fs::write(&alert_file, alert_rules)?;
-            info!("Alert rules generated: {}", alert_file);
+            info!("Alert rules generated: {alert_file}");
 
             // Generate Grafana dashboard
             let dashboard_content = include_str!("../../monitoring/grafana-dashboard.json");
-            let dashboard_file = format!("{}/grafana-dashboard.json", output_dir);
+            let dashboard_file = format!("{output_dir}/grafana-dashboard.json");
             std::fs::write(&dashboard_file, dashboard_content)?;
-            info!("Grafana dashboard generated: {}", dashboard_file);
+            info!("Grafana dashboard generated: {dashboard_file}");
 
             // Generate environment file template
-            let env_file = format!("{}/.env.example", output_dir);
+            let env_file = format!("{output_dir}/.env.example");
             let env_content = r#"# Stellar Privacy Analytics Monitoring Configuration
 
 # Prometheus Configuration
@@ -180,9 +180,9 @@ ALERT_MAX_SESSIONS_THRESHOLD=100
 ALERT_QUEUE_SIZE_THRESHOLD=1000
 "#;
             std::fs::write(&env_file, env_content)?;
-            info!("Environment file template generated: {}", env_file);
+            info!("Environment file template generated: {env_file}");
 
-            info!("All configuration files generated in: {}", output_dir);
+            info!("All configuration files generated in: {output_dir}");
         }
     }
 
