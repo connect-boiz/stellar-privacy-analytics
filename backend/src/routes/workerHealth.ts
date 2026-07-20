@@ -14,7 +14,7 @@ export interface HealthResponse {
     processedJobs: number;
     failedJobs: number;
     lastProcessedAt?: Date;
-    averageProcessingTime: number;
+    averageProcessingTime?: number;
   };
   queue: {
     waiting: number;

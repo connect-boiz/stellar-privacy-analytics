@@ -474,16 +474,37 @@ export class KeyRotationScheduler extends EventEmitter {
       clearTimeout(existingTimer);
     }
 
+    const setTimer = (remainingDelay: number) => {
+      if (remainingDelay <= 0) {
+        this.emit("rotationDue", keyId);
+        return;
+      }
+
+      // Clamp to max safe 32-bit signed integer (~24.8 days) to avoid
+      // TimeoutOverflowWarning which causes the timeout to fire in 1ms
+      const maxSafeDelay = 0x7fffffff;
+      const delay = Math.min(remainingDelay, maxSafeDelay);
+
+      const timer = setTimeout(() => {
+        // If the clamped delay was shorter than the actual remaining time,
+        // recalculate and re-arm instead of emitting early
+        const newRemaining = nextRotation.getTime() - Date.now();
+        if (newRemaining > maxSafeDelay) {
+          setTimer(newRemaining);
+        } else {
+          this.emit("rotationDue", keyId);
+        }
+      }, delay);
+
+      this.rotationTimers.set(keyId, timer);
+    };
+
     // Calculate delay
     const delay = nextRotation.getTime() - Date.now();
 
     // Only set timer if rotation is in the future
     if (delay > 0) {
-      const timer = setTimeout(() => {
-        this.emit("rotationDue", keyId);
-      }, delay);
-
-      this.rotationTimers.set(keyId, timer);
+      setTimer(delay);
     }
   }
 }
