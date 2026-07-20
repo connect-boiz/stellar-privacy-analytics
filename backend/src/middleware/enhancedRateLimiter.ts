@@ -35,6 +35,7 @@ export interface RateLimitMetrics {
   peakRequestRate: number;
   collisionCount: number;
   adaptiveAdjustments: number;
+  timestamp?: number;
 }
 
 export class EnhancedRateLimiter extends RateLimiterMiddleware {

@@ -3,7 +3,7 @@ import { body, query } from "express-validator";
 import { asyncHandler } from "../middleware/errorHandler";
 import {
   AggregationType,
-  _AnalysisFilter,
+  AnalysisFilter,
 } from "@stellar/shared";
 import { validateRequest } from "../middleware/validation";
 

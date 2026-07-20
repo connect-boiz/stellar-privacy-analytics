@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
-import { DatabasePerformanceService } from "../services/databasePerformance";
+import { DatabasePerformanceService, IndexRecommendation } from "../services/databasePerformance";
 
 const router = Router();
 
@@ -92,9 +92,8 @@ router.post(
 router.get(
   "/indexes/:tableName",
   asyncHandler(async (req: Request, res: Response) => {
+    const tableName = req.params.tableName;
     try {
-      const { tableName } = req.params;
-
       if (!tableName) {
         return res.status(400).json({ error: "Table name is required" });
       }
@@ -127,15 +126,15 @@ router.post(
           .json({ error: "Table name and column name are required" });
       }
 
-      const recommendation = {
+      const recommendation: IndexRecommendation = {
         tableName,
         columnName,
-        indexType: indexType || "btree",
+        indexType: (indexType as IndexRecommendation["indexType"]) || "btree",
         estimatedImprovement: 0.7,
         currentSelectivity: 0.3,
         estimatedSelectivity: 0.1,
         reason: "Performance optimization recommendation",
-        priority: "medium",
+        priority: "medium" as const,
       };
 
       await performanceService.createRecommendedIndex(recommendation);
@@ -155,8 +154,9 @@ router.post(
 router.get(
   "/partitioning/:tableName/:partitionKey",
   asyncHandler(async (req: Request, res: Response) => {
+    const tableName = req.params.tableName;
     try {
-      const { tableName, partitionKey } = req.params;
+      const { partitionKey } = req.params;
 
       if (!tableName || !partitionKey) {
         return res
@@ -333,4 +333,4 @@ router.get(
   }),
 );
 
-export { router as performanceRoutes, initializePerformanceService };
+export { router as performanceRoutes };

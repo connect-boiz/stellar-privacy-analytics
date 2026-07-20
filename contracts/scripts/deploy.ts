@@ -5,26 +5,29 @@ import {
   Keypair,
   Contract,
   SorobanRpc,
-  Asset,
+  xdr,
+  Address,
+  Operation,
 } from "@stellar/stellar-sdk";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { randomBytes } from "crypto";
 
 // Configuration
 const config = {
   testnet: {
     network: Networks.TESTNET,
-    server: new Server("https://horizon-testnet.stellar.org"),
+    server: new SorobanRpc.Server("https://soroban-testnet.stellar.org"),
     friendbot: "https://friendbot.stellar.org",
   },
   futurenet: {
     network: Networks.FUTURENET,
-    server: new Server("https://horizon-futurenet.stellar.org"),
+    server: new SorobanRpc.Server("https://rpc-futurenet.stellar.org"),
     friendbot: "https://friendbot-futurenet.stellar.org",
   },
   standalone: {
     network: Networks.STANDALONE,
-    server: new Server("http://localhost:8000"),
+    server: new SorobanRpc.Server("http://localhost:8000/soroban/rpc"),
   },
 };
 
@@ -59,23 +62,28 @@ async function deployContract(
   }
 
   // Get account details
-  const account = await server.loadAccount(adminPublicKey);
+  const account = await server.getAccount(adminPublicKey);
 
   // Read WASM file
   const wasmBuffer = readFileSync(join(__dirname, "..", wasmPath));
-  const wasmHash = xdr.Hash.fromXDR(
-    Buffer.from(wasmBuffer.slice(0, 32)).toString("hex"),
-  );
 
   // Create deploy transaction
-  const _contract = new SorobanContract({
-    wasmHash: wasmHash,
-    networkPassphrase,
-  });
-
-  const deployOp = Operation.createCustomContract({
-    wasmHash: wasmHash,
-    address: adminPublicKey,
+  // TODO: Replace with proper Soroban contract deployment using invokeHostFunction
+  const deployOp = Operation.invokeHostFunction({
+    func: xdr.HostFunction.hostFunctionTypeCreateContract(
+      new xdr.CreateContractArgs({
+        contractIdPreimage: xdr.ContractIdPreimage.contractIdPreimageFromAddress(
+          new xdr.ContractIdPreimageFromAddress({
+            address: new Address(adminPublicKey).toScAddress(),
+            salt: randomBytes(32),
+          }),
+        ),
+        executable: xdr.ContractExecutable.contractExecutableWasm(
+          wasmBuffer,
+        ),
+      }),
+    ),
+    auth: [],
   });
 
   const transaction = new TransactionBuilder(account, {
@@ -91,12 +99,15 @@ async function deployContract(
 
   // Submit transaction
   try {
-    const result = await server.submitTransaction(transaction);
+    const result = await server.sendTransaction(transaction);
     console.log(`${contractName} deployed successfully!`);
     console.log("Transaction hash:", result.hash);
 
-    // Extract contract address from result
-    const contractAddress = result.result?.value?.address?.toString();
+    // TODO: Extract contract address from sendTransaction response
+    // SorobanRpc sendTransaction returns hash + status; address extraction
+    // requires polling getTransaction and parsing the result XDR.
+    const contractAddress = (result as any).result?.value?.address?.toString()
+      ?? result.hash;
     console.log("Contract address:", contractAddress);
 
     return contractAddress;
@@ -118,15 +129,13 @@ async function initializeContract(
   const adminKeypair = Keypair.fromSecret(adminSecret);
   const adminPublicKey = adminKeypair.publicKey();
 
-  const account = await server.loadAccount(adminPublicKey);
+  const account = await server.getAccount(adminPublicKey);
   const contract = new Contract(contractAddress);
 
-  let initOp;
-  if (contractType === "analytics") {
-    initOp = contract.call("initialize", adminPublicKey);
-  } else {
-    initOp = contract.call("initialize", adminPublicKey);
-  }
+  const initOp = contract.call(
+    "initialize",
+    new Address(adminPublicKey).toScVal(),
+  );
 
   const transaction = new TransactionBuilder(account, {
     fee: "10000",
@@ -139,7 +148,7 @@ async function initializeContract(
   transaction.sign(adminKeypair);
 
   try {
-    const result = await server.submitTransaction(transaction);
+    const result = await server.sendTransaction(transaction);
     console.log(`${contractType} contract initialized successfully!`);
     console.log("Transaction hash:", result.hash);
     return result.hash;

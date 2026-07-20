@@ -1,7 +1,6 @@
 import { logger } from "../utils/logger";
 import {
   ComplianceCheck,
-  _ComplianceStatus,
   CheckType,
 } from "../types/certification";
 import { certificationService } from "./certificationService";

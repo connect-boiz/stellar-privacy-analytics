@@ -12,7 +12,7 @@ import {
   createQueryTracer,
 } from "../middleware/observability";
 import {
-  _errorHandler,
+  errorHandler,
   asyncHandler,
   createValidationError,
   sendSuccessResponse,

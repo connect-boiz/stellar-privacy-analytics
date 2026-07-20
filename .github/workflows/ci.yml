@@ -118,6 +118,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ env.RUST_VERSION }}
           targets: wasm32-unknown-unknown
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
@@ -132,6 +133,34 @@ jobs:
         run: cargo test --manifest-path Cargo.toml
       - name: Build WASM
         run: cargo build --target wasm32-unknown-unknown --release --manifest-path Cargo.toml
+
+  # ── Contracts (Soroban Smart Contracts) ──────────────────
+  contracts-rust:
+    name: Contracts (Rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+          cache-on-failure: true
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Test
+        run: cargo test
+      - name: Build WASM
+        run: cargo build --target wasm32-unknown-unknown --release
 
   # ── Service Discovery Dashboard ──────────────────────────
   service-discovery:
