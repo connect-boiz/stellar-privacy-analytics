@@ -285,8 +285,20 @@ export class MasterKeyManager extends EventEmitter {
     return createHash("sha256").update(JSON.stringify(keyData)).digest("hex");
   }
 
+  private cacheCleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  shutdown(): void {
+    if (this.cacheCleanupTimer) {
+      clearInterval(this.cacheCleanupTimer);
+      this.cacheCleanupTimer = null;
+    }
+    this.dataKeyCache.clear();
+    this.masterKeys.clear();
+    this.removeAllListeners();
+  }
+
   private startCacheCleanup(): void {
-    setInterval(
+    this.cacheCleanupTimer = setInterval(
       () => {
         const now = new Date();
         let cleanedCount = 0;

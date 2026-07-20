@@ -1,8 +1,8 @@
-import React, { useState, _useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AlertCircle,
   TrendingDown,
-  _TrendingUp,
+  TrendingUp,
   Info,
   RefreshCw,
   Download,

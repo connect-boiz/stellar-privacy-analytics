@@ -7,7 +7,7 @@ import {
   Clock,
   CheckCircle,
   PlayCircle,
-  _TrendingUp,
+  TrendingUp,
   Target,
   ChevronRight,
   Filter,

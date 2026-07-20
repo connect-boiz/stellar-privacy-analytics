@@ -1,14 +1,20 @@
-import {
-  useKeyboardShortcutsModal,
-  useKeyboardShortcuts,
-  ShortcutDefinition,
-} from '../hooks/useKeyboardShortcuts';
+import { useState, useEffect, useCallback } from 'react';
+
+interface ShortcutDefinition {
+  key: string;
+  ctrl?: boolean;
+  alt?: boolean;
+  shift?: boolean;
+  meta?: boolean;
+  description: string;
+  category: string;
+}
 
 function ShortcutKey({ shortcut }: { shortcut: ShortcutDefinition }) {
   const keys: string[] = [];
-  if (shortcut.ctrlKey) keys.push('Ctrl');
-  if (shortcut.altKey) keys.push('Alt');
-  if (shortcut.shiftKey) keys.push('Shift');
+  if (shortcut.ctrl) keys.push('Ctrl');
+  if (shortcut.alt) keys.push('Alt');
+  if (shortcut.shift) keys.push('Shift');
   keys.push(shortcut.key === '?' ? '?' : shortcut.key.toUpperCase());
 
   return (
@@ -28,9 +34,38 @@ function ShortcutKey({ shortcut }: { shortcut: ShortcutDefinition }) {
   );
 }
 
+const DEFAULT_SHORTCUTS: ShortcutDefinition[] = [
+  { key: '/', description: 'Search', category: 'Navigation' },
+  { key: 'n', ctrl: true, description: 'New dataset', category: 'Actions' },
+  { key: 's', ctrl: true, description: 'Save', category: 'Actions' },
+  { key: '?', description: 'Toggle shortcuts', category: 'Help' },
+  { key: 'Escape', description: 'Close modal', category: 'General' },
+];
+
 export function KeyboardShortcutsModal() {
-  const { isOpen, setIsOpen } = useKeyboardShortcutsModal();
-  const shortcuts = useKeyboardShortcuts();
+  const [isOpen, setIsOpen] = useState(false);
+  const [shortcuts] = useState<ShortcutDefinition[]>(DEFAULT_SHORTCUTS);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape' && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  useEffect(() => {
+    const toggleHelp = (event: KeyboardEvent) => {
+      if (event.key === '?') {
+        setIsOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', toggleHelp);
+    return () => window.removeEventListener('keydown', toggleHelp);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -53,7 +88,7 @@ export function KeyboardShortcutsModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">⌨️ Keyboard Shortcuts</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Keyboard Shortcuts</h2>
           <button
             onClick={() => setIsOpen(false)}
             className="text-gray-400 hover:text-gray-600 transition-colors"

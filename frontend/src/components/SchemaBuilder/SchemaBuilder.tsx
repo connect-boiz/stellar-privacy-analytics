@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useEffect, _useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  _ChevronRight,
-  _ChevronDown,
+  ChevronRight,
+  ChevronDown,
   Plus,
   Trash2,
-  _Eye,
-  _EyeOff,
+  Eye,
+  EyeOff,
   Download,
   Upload,
-  _Settings,
+  Settings,
   CheckCircle,
   _AlertCircle,
   AlertTriangle,

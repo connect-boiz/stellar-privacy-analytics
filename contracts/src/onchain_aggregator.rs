@@ -339,9 +339,7 @@ impl OnChainAggregator {
                 }
                 Err(_err) => {
                     // Set the failed request's status to "failed" explicitly
-                    if let Some(mut req) =
-                        Self::get_aggregation_request(&env, &request_id)
-                    {
+                    if let Some(mut req) = Self::get_aggregation_request(&env, &request_id) {
                         req.status = String::from_str(&env, "failed");
                         env.storage().persistent().set(&request_id, &req);
                     }

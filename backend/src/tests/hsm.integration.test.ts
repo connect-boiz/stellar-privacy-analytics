@@ -225,6 +225,9 @@ describe("HSM Integration Tests", () => {
     try {
       await killSwitchService.shutdown();
     } catch { /* ignore */ }
+    try {
+      masterKeyManager.shutdown();
+    } catch { /* ignore */ }
     mockHSM.reset();
   });
 

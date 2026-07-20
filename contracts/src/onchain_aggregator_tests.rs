@@ -87,12 +87,9 @@ mod tests {
         request_ids.push_back(rid2.clone());
 
         // Process batch
-        let _batch_id = OnChainAggregator::batch_process(
-            env.clone(),
-            request_ids.clone(),
-            admin.clone(),
-        )
-        .unwrap();
+        let _batch_id =
+            OnChainAggregator::batch_process(env.clone(), request_ids.clone(), admin.clone())
+                .unwrap();
 
         // Verify batch status using get_batch_status query
         let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
@@ -109,10 +106,16 @@ mod tests {
 
         // Verify individual requests are "completed"
         let req1: AggregationRequest = env.storage().persistent().get(&rid1).unwrap();
-        assert_eq!(req1.status, soroban_sdk::String::from_str(&env, "completed"));
+        assert_eq!(
+            req1.status,
+            soroban_sdk::String::from_str(&env, "completed")
+        );
 
         let req2: AggregationRequest = env.storage().persistent().get(&rid2).unwrap();
-        assert_eq!(req2.status, soroban_sdk::String::from_str(&env, "completed"));
+        assert_eq!(
+            req2.status,
+            soroban_sdk::String::from_str(&env, "completed")
+        );
     }
 
     #[test]
@@ -136,12 +139,9 @@ mod tests {
         request_ids.push_back(invalid_rid.clone());
 
         // Process batch
-        let _batch_id = OnChainAggregator::batch_process(
-            env.clone(),
-            request_ids.clone(),
-            admin.clone(),
-        )
-        .unwrap();
+        let _batch_id =
+            OnChainAggregator::batch_process(env.clone(), request_ids.clone(), admin.clone())
+                .unwrap();
 
         // Verify batch status using get_batch_status query
         let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
@@ -158,11 +158,13 @@ mod tests {
 
         // Verify valid request is "completed"
         let valid_req: AggregationRequest = env.storage().persistent().get(&valid_rid).unwrap();
-        assert_eq!(valid_req.status, soroban_sdk::String::from_str(&env, "completed"));
+        assert_eq!(
+            valid_req.status,
+            soroban_sdk::String::from_str(&env, "completed")
+        );
 
         // Verify invalid request is "failed" (NOT "processing")
-        let invalid_req: AggregationRequest =
-            env.storage().persistent().get(&invalid_rid).unwrap();
+        let invalid_req: AggregationRequest = env.storage().persistent().get(&invalid_rid).unwrap();
         assert_eq!(
             invalid_req.status,
             soroban_sdk::String::from_str(&env, "failed"),
@@ -184,12 +186,9 @@ mod tests {
         request_ids.push_back(invalid_rid2.clone());
 
         // Process batch
-        let _batch_id = OnChainAggregator::batch_process(
-            env.clone(),
-            request_ids.clone(),
-            admin.clone(),
-        )
-        .unwrap();
+        let _batch_id =
+            OnChainAggregator::batch_process(env.clone(), request_ids.clone(), admin.clone())
+                .unwrap();
 
         // Verify batch status using get_batch_status query
         let batch = OnChainAggregator::get_batch_status(env.clone(), _batch_id)
@@ -230,12 +229,9 @@ mod tests {
         request_ids.push_back(invalid_rid.clone());
         request_ids.push_back(rid2.clone());
 
-        let batch_id = OnChainAggregator::batch_process(
-            env.clone(),
-            request_ids.clone(),
-            admin.clone(),
-        )
-        .unwrap();
+        let batch_id =
+            OnChainAggregator::batch_process(env.clone(), request_ids.clone(), admin.clone())
+                .unwrap();
 
         // Use get_batch_status to retrieve the breakdown
         let batch = OnChainAggregator::get_batch_status(env.clone(), batch_id.clone())
@@ -265,8 +261,7 @@ mod tests {
         let request_ids = Vec::new(&env);
 
         // Non-admin shouldn't be able to batch process
-        let result =
-            OnChainAggregator::batch_process(env.clone(), request_ids, non_admin);
+        let result = OnChainAggregator::batch_process(env.clone(), request_ids, non_admin);
         assert!(result.is_err());
     }
 
@@ -281,8 +276,7 @@ mod tests {
             request_ids.push_back(TestBytesN::random(&env));
         }
 
-        let result =
-            OnChainAggregator::batch_process(env.clone(), request_ids, admin);
+        let result = OnChainAggregator::batch_process(env.clone(), request_ids, admin);
         assert!(result.is_err());
     }
 

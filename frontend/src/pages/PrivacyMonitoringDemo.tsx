@@ -44,7 +44,7 @@ const PrivacyMonitoringDemo: React.FC = () => {
           });
 
           dataService.subscribe('anomalies', (anomaly) => {
-            toast.warning(`Anomaly detected: ${anomaly.description}`);
+            toast.error(`Anomaly detected: ${anomaly.description}`);
           });
         }
 

@@ -12,7 +12,6 @@ use soroban_sdk::String;
 use soroban_sdk::Symbol;
 use soroban_sdk::Vec;
 
-
 // Constants
 const MAX_PRIVACY_BUDGET: i128 = 1000000000000000000; // 1e18 (1000 tokens)
 const DEFAULT_PRIVACY_BUDGET: i128 = 100000000000000000; // 1e17 (100 tokens)
@@ -1041,9 +1040,8 @@ mod test {
 
         // Use the contract's own address as admin/oracle
         // so that env.current_contract_address() auth checks pass
-        let contract_addr: Address = env.as_contract(&contract_id, || {
-            env.current_contract_address()
-        });
+        let contract_addr: Address =
+            env.as_contract(&contract_id, || env.current_contract_address());
         let user = Address::generate(&env);
 
         client.initialize(&contract_addr);
@@ -1057,11 +1055,20 @@ mod test {
         let size_bytes: u64 = 1024;
         let version: u32 = 1;
         let encrypted: bool = false;
-        client.register_dataset(&cid, &dataset_hash, &user, &size_bytes, &encrypted, &version, &no_key);
+        client.register_dataset(
+            &cid,
+            &dataset_hash,
+            &user,
+            &size_bytes,
+            &encrypted,
+            &version,
+            &no_key,
+        );
 
         let analysis_type = String::from_str(&env, "descriptive");
         let privacy_level = String::from_str(&env, "standard");
-        let request_id = client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
+        let request_id =
+            client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
         // Verify total_privacy_budget_used was incremented
         let (_total, budget_used, _active) = client.get_stats();
@@ -1072,7 +1079,13 @@ mod test {
         let privacy_proofs = Vec::new(&env);
         let partial_budget: i128 = 50000000000000000;
         let accuracy: u32 = 95;
-        client.complete_analysis(&request_id, &result_hash, &partial_budget, &accuracy, &privacy_proofs);
+        client.complete_analysis(
+            &request_id,
+            &result_hash,
+            &partial_budget,
+            &accuracy,
+            &privacy_proofs,
+        );
 
         let (_total, budget_used_after, _active) = client.get_stats();
         assert_eq!(budget_used_after, 50000000000000000);
@@ -1087,9 +1100,8 @@ mod test {
         let client = StellarAnalyticsClient::new(&env, &contract_id);
 
         // Use the contract's own address as admin/oracle
-        let contract_addr: Address = env.as_contract(&contract_id, || {
-            env.current_contract_address()
-        });
+        let contract_addr: Address =
+            env.as_contract(&contract_id, || env.current_contract_address());
         let user = Address::generate(&env);
 
         client.initialize(&contract_addr);
@@ -1103,11 +1115,20 @@ mod test {
         let size_bytes: u64 = 1024;
         let version: u32 = 1;
         let encrypted: bool = false;
-        client.register_dataset(&cid, &dataset_hash, &user, &size_bytes, &encrypted, &version, &no_key);
+        client.register_dataset(
+            &cid,
+            &dataset_hash,
+            &user,
+            &size_bytes,
+            &encrypted,
+            &version,
+            &no_key,
+        );
 
         let analysis_type = String::from_str(&env, "descriptive");
         let privacy_level = String::from_str(&env, "standard");
-        let request_id = client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
+        let request_id =
+            client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
         let (_total, budget_used, _active) = client.get_stats();
         assert_eq!(budget_used, 100000000000000000);
@@ -1117,7 +1138,13 @@ mod test {
         let privacy_proofs = Vec::new(&env);
         let full_budget: i128 = 100000000000000000;
         let accuracy: u32 = 95;
-        client.complete_analysis(&request_id, &result_hash, &full_budget, &accuracy, &privacy_proofs);
+        client.complete_analysis(
+            &request_id,
+            &result_hash,
+            &full_budget,
+            &accuracy,
+            &privacy_proofs,
+        );
 
         let (_total, budget_used_after, _active) = client.get_stats();
         assert_eq!(budget_used_after, 100000000000000000);
@@ -1133,9 +1160,8 @@ mod test {
 
         // Use the contract's own address as admin and requester
         // so that env.current_contract_address() auth checks pass
-        let contract_addr: Address = env.as_contract(&contract_id, || {
-            env.current_contract_address()
-        });
+        let contract_addr: Address =
+            env.as_contract(&contract_id, || env.current_contract_address());
 
         client.initialize(&contract_addr);
         let budget_amount: i128 = 100000000000000000;
@@ -1147,12 +1173,26 @@ mod test {
         let size_bytes: u64 = 1024;
         let version: u32 = 1;
         let encrypted: bool = false;
-        client.register_dataset(&cid, &dataset_hash, &contract_addr, &size_bytes, &encrypted, &version, &no_key);
+        client.register_dataset(
+            &cid,
+            &dataset_hash,
+            &contract_addr,
+            &size_bytes,
+            &encrypted,
+            &version,
+            &no_key,
+        );
 
         let analysis_type = String::from_str(&env, "descriptive");
         let privacy_level = String::from_str(&env, "standard");
         // Use contract_addr as requester so cancel_analysis auth passes
-        let request_id = client.request_analysis(&contract_addr, &dataset_hash, &cid, &analysis_type, &privacy_level);
+        let request_id = client.request_analysis(
+            &contract_addr,
+            &dataset_hash,
+            &cid,
+            &analysis_type,
+            &privacy_level,
+        );
 
         let (_total, budget_used, _active) = client.get_stats();
         assert_eq!(budget_used, 100000000000000000);

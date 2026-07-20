@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use crate::access_control::{
+        DataSovereigntyAccessControl, DataSovereigntyAccessControlClient, PermissionType,
+    };
     use soroban_sdk::{
         testutils::{Address as _, BytesN as _, Ledger},
         Address, BytesN, Env, Symbol, Vec,
     };
-    use crate::access_control::{DataSovereigntyAccessControl, DataSovereigntyAccessControlClient, PermissionType};
 
     #[test]
     fn test_initialize() {

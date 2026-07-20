@@ -1,12 +1,14 @@
 pub mod config;
 pub mod prometheus_exporter;
 
-use self::config::MonitoringConfig;
-use self::prometheus_exporter::{MetricsCollector, create_metrics_route, create_authenticated_metrics_route};
+pub use self::config::MonitoringConfig;
+pub use self::prometheus_exporter::{
+    create_authenticated_metrics_route, create_metrics_route, MetricsCollector,
+};
+use log::{error, info, warn};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use warp::Filter;
-use log::{info, warn, error};
 
 #[derive(Clone)]
 pub struct MonitoringService {
@@ -18,33 +20,33 @@ impl MonitoringService {
     pub fn new(config: MonitoringConfig) -> Result<Self, String> {
         // Validate configuration
         config.validate()?;
-        
+
         let collector = MetricsCollector::new();
-        
-        Ok(Self {
-            config,
-            collector,
-        })
+
+        Ok(Self { config, collector })
     }
 
     /// Start the monitoring service with HTTP server
     pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
-        info!("Starting monitoring service on port {}", self.config.prometheus.port);
-        
+        info!(
+            "Starting monitoring service on port {}",
+            self.config.prometheus.port
+        );
+
         // Create routes
         let routes = self.create_routes();
-        
+
         // Start the server
         let addr = ([0, 0, 0, 0], self.config.prometheus.port);
-        warp::serve(routes)
-            .run(addr)
-            .await;
-        
+        warp::serve(routes).run(addr).await;
+
         Ok(())
     }
 
     /// Create HTTP routes for the monitoring service
-    fn create_routes(&self) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    fn create_routes(
+        &self,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         let health_route = warp::path("health")
             .and(warp::get())
             .and(warp::any().map(move || self.collector.clone()))
@@ -64,19 +66,23 @@ impl MonitoringService {
         let metrics_route = if let Some(ref allowed_ips) = self.config.prometheus.allowed_ips {
             let ip_filter = warp::addr::remote()
                 .and(warp::any().map(move || allowed_ips.clone()))
-                .and_then(|addr: Option<std::net::SocketAddr>, allowed: Vec<String>| async move {
-                    if let Some(socket_addr) = addr {
-                        let ip_str = socket_addr.ip().to_string();
-                        if allowed.contains(&ip_str) || allowed.contains(&"127.0.0.1".to_string()) {
-                            Ok::<(), warp::Rejection>(())
+                .and_then(
+                    |addr: Option<std::net::SocketAddr>, allowed: Vec<String>| async move {
+                        if let Some(socket_addr) = addr {
+                            let ip_str = socket_addr.ip().to_string();
+                            if allowed.contains(&ip_str)
+                                || allowed.contains(&"127.0.0.1".to_string())
+                            {
+                                Ok::<(), warp::Rejection>(())
+                            } else {
+                                Err(warp::reject::custom(MetricsError::Unauthorized))
+                            }
                         } else {
                             Err(warp::reject::custom(MetricsError::Unauthorized))
                         }
-                    } else {
-                        Err(warp::reject::custom(MetricsError::Unauthorized))
-                    }
-                });
-            
+                    },
+                );
+
             ip_filter.and(metrics_route)
         } else {
             metrics_route
@@ -131,25 +137,33 @@ impl MetricsMiddleware {
     }
 
     /// Create middleware that automatically records API metrics
-    pub fn auto_record(collector: MetricsCollector) -> impl Filter<Extract = (), Error = warp::Rejection> + Clone {
+    pub fn auto_record(
+        collector: MetricsCollector,
+    ) -> impl Filter<Extract = (), Error = warp::Rejection> + Clone {
         warp::any()
             .and(warp::path::full())
             .and(warp::method())
             .and(warp::any().map(move || collector.clone()))
-            .and_then(|path: warp::path::FullPath, method: warp::http::Method, collector: MetricsCollector| async move {
-                let start_time = std::time::Instant::now();
-                
-                // This would be used in a real implementation to record the request
-                // For now, we just return success
-                collector.record_api_request(
-                    path.as_str(),
-                    method.as_str(),
-                    200,
-                    start_time.elapsed()
-                ).await;
-                
-                Ok::<(), warp::Rejection>(())
-            }))
+            .and_then(
+                |path: warp::path::FullPath,
+                 method: warp::http::Method,
+                 collector: MetricsCollector| async move {
+                    let start_time = std::time::Instant::now();
+
+                    // This would be used in a real implementation to record the request
+                    // For now, we just return success
+                    collector
+                        .record_api_request(
+                            path.as_str(),
+                            method.as_str(),
+                            200,
+                            start_time.elapsed(),
+                        )
+                        .await;
+
+                    Ok::<(), warp::Rejection>(())
+                },
+            )
     }
 }
 
@@ -170,7 +184,7 @@ impl MetricsAggregator {
     /// Start the aggregation task
     pub async fn start(&self) {
         let mut interval = tokio::time::interval(self.report_interval);
-        
+
         loop {
             interval.tick().await;
             self.aggregate_and_report().await;
@@ -180,7 +194,7 @@ impl MetricsAggregator {
     async fn aggregate_and_report(&self) {
         let active_sessions = self.collector.get_active_session_count().await;
         let datasets = self.collector.datasets.read().await;
-        
+
         // Calculate aggregate metrics
         let total_epsilon_consumed: f64 = datasets.values().map(|d| d.epsilon_consumed).sum();
         let total_epsilon_budget: f64 = datasets.values().map(|d| d.epsilon_budget_total).sum();
@@ -200,7 +214,10 @@ impl MetricsAggregator {
 
         // Check for alert conditions
         if epsilon_utilization > 80.0 {
-            warn!("High epsilon utilization detected: {:.2}%", epsilon_utilization);
+            warn!(
+                "High epsilon utilization detected: {:.2}%",
+                epsilon_utilization
+            );
         }
 
         if active_sessions > 50 {
@@ -208,7 +225,8 @@ impl MetricsAggregator {
         }
 
         // Update gauge metrics
-        self::prometheus_exporter::get_metrics().smpc_sessions_active
+        self::prometheus_exporter::get_metrics()
+            .smpc_sessions_active
             .with_label_values(&["all", "all"])
             .set(active_sessions as f64);
     }
@@ -237,14 +255,15 @@ pub mod health {
 
     pub async fn check_system_health(collector: &MetricsCollector) -> HealthStatus {
         let components = ComponentHealth {
-            metrics_collector: true, // We can reach the collector
+            metrics_collector: true,   // We can reach the collector
             prometheus_endpoint: true, // If we're here, the endpoint is working
-            alerting: true, // Alerting is configured
+            alerting: true,            // Alerting is configured
         };
 
-        let overall_status = if components.metrics_collector 
-            && components.prometheus_endpoint 
-            && components.alerting {
+        let overall_status = if components.metrics_collector
+            && components.prometheus_endpoint
+            && components.alerting
+        {
             "healthy".to_string()
         } else {
             "unhealthy".to_string()
@@ -284,7 +303,7 @@ mod tests {
     fn test_monitoring_service_invalid_config() {
         let mut config = MonitoringConfig::default();
         config.prometheus.port = 0; // Invalid port
-        
+
         let service = MonitoringService::new(config);
         assert!(service.is_err());
     }
@@ -292,15 +311,21 @@ mod tests {
     #[tokio::test]
     async fn test_metrics_collector() {
         let collector = MetricsCollector::new();
-        
+
         // Test dataset epsilon update
-        collector.update_dataset_epsilon("test_dataset", 0.5, 1.0).await;
-        
+        collector
+            .update_dataset_epsilon("test_dataset", 0.5, 1.0)
+            .await;
+
         // Test session management
-        collector.start_smpc_session("session_1", "standard", "medium", 2).await;
+        collector
+            .start_smpc_session("session_1", "standard", "medium", 2)
+            .await;
         assert_eq!(collector.get_active_session_count().await, 1);
-        
-        collector.complete_smpc_session("session_1", true, None).await;
+
+        collector
+            .complete_smpc_session("session_1", true, None)
+            .await;
         assert_eq!(collector.get_active_session_count().await, 0);
     }
 }

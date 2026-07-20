@@ -37,7 +37,7 @@ import WalletPage from './pages/WalletPage';
 // Hooks
 import { useAuth } from './hooks/useAuth';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { KeyboardShortcutsHelp } from './components/ui/KeyboardShortcutsHelp';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 
 // Styles
 import './index.css';

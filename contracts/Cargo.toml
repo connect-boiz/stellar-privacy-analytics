@@ -23,6 +23,9 @@ rand = { version = "0.8", features = ["std_rng"] }
 [dev-dependencies]
 soroban-sdk = { version = "22.0.0", features = ["testutils"] }
 
+[patch.crates-io]
+ed25519-dalek = { git = "https://github.com/dalek-cryptography/curve25519-dalek", tag = "ed25519-2.2.0" }
+
 [profile.release]
 opt-level = "z"
 lto = true

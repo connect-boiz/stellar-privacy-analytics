@@ -1,4 +1,4 @@
-import React, { useState, _useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
@@ -7,10 +7,10 @@ import {
   Info,
   ArrowRight,
   ArrowLeft,
-  _FileText,
+  FileText,
   Users,
   Database,
-  _Lock,
+  Lock,
   BarChart3,
   Target,
   Zap,

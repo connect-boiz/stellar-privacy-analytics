@@ -6,12 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  _Shield,
+  Shield,
   AlertTriangle,
   TrendingUp,
   CheckCircle,
   Clock,
-  _BarChart3,
+  BarChart3,
   Activity,
   FileText,
   Settings,

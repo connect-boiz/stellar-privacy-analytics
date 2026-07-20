@@ -97,9 +97,8 @@ export class ObservabilityMiddleware {
     });
 
     // Override res.end to capture response completion
-    const self = this;
-    const originalEnd = res.end;
-    res.end = function(this: Response, chunk?: any, encoding?: any) {
+    const originalEnd = res.end.bind(res);
+    res.end = ((chunk?: any, encoding?: any) => {
       const duration = Date.now() - traceContext.startTime;
 
       // Update trace context with response info
@@ -107,23 +106,23 @@ export class ObservabilityMiddleware {
       traceContext.tags["http.duration_ms"] = duration.toString();
 
       // Log request completion
-      self.logEvent(traceContext, "info", "Request completed", {
+      this.logEvent(traceContext, "info", "Request completed", {
         statusCode: res.statusCode,
         duration,
         contentLength: res.get("content-length"),
       });
 
       // Record metrics
-      if (self.config.enableMetrics) {
-        self.recordMetrics(req, res, duration);
+      if (this.config.enableMetrics) {
+        this.recordMetrics(req, res, duration);
       }
 
       // Clean up trace
-      self.activeTraces.delete(traceId);
+      this.activeTraces.delete(traceId);
 
       // Call original end
       return originalEnd.call(res, chunk, encoding);
-    } as any;
+    }) as any;
 
     // Handle errors
     res.on("error", (error) => {

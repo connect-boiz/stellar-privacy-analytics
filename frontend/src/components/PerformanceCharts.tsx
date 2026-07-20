@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  _LineChart,
-  _Line,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -9,20 +9,20 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  _BarChart,
-  _Bar,
+  BarChart,
+  Bar,
 } from 'recharts';
 import {
   AlertCircle,
   Loader2,
   RefreshCw,
   Zap,
-  _Cpu,
-  _Database,
+  Cpu,
+  Database,
   Activity,
   BarChart3,
-  _ChevronDown,
-  _ChevronUp,
+  ChevronDown,
+  ChevronUp,
   _Memory,
   _TrendingDown,
 } from 'lucide-react';
