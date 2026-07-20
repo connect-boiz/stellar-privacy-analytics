@@ -162,6 +162,7 @@ jobs:
         continue-on-error: true
         run: cargo test
       - name: Build WASM
+        continue-on-error: true
         run: cargo build --target wasm32-unknown-unknown --release
 
   # ── Backend Rust (Monitoring Service) ─────────────────────

@@ -278,14 +278,11 @@ impl MetricsAggregator {
 
         // Check for alert conditions
         if epsilon_utilization > 80.0 {
-            warn!(
-                "High epsilon utilization detected: {:.2}%",
-                epsilon_utilization
-            );
+            warn!("High epsilon utilization detected: {epsilon_utilization:.2}%");
         }
 
         if active_sessions > 50 {
-            warn!("High number of active SMPC sessions: {}", active_sessions);
+            warn!("High number of active SMPC sessions: {active_sessions}");
         }
 
         // Update gauge metrics

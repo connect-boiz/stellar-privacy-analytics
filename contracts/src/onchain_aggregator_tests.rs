@@ -6,18 +6,26 @@ mod tests {
         OnChainAggregator,
     };
     use soroban_sdk::{
-        testutils::{Address as TestAddress, BytesN as TestBytesN},
+        testutils::{Address as _, BytesN as TestBytesN},
         Address, Bytes, BytesN, Env, Vec,
     };
 
+    fn generate_address(env: &Env) -> Address {
+        <Address as soroban_sdk::testutils::Address>::generate(env)
+    }
+
+    fn random_bytesn32(env: &Env) -> BytesN<32> {
+        <BytesN<32> as TestBytesN<32>>::random(env)
+    }
+
     fn setup_contract(env: &Env) -> Address {
-        let admin = TestAddress::generate(env);
+        let admin = generate_address(env);
         OnChainAggregator::initialize(env.clone(), admin.clone());
         admin
     }
 
     fn create_data_point(env: &Env, provider_id: Address) -> BytesN<32> {
-        let data_id = TestBytesN::random(env);
+        let data_id = random_bytesn32(env);
         let mut encrypted_value = Bytes::new(env);
         let value: i128 = 1000;
         encrypted_value.append(&Bytes::from_slice(env, &value.to_le_bytes()));
@@ -42,7 +50,7 @@ mod tests {
         requester: Address,
         data_point_ids: Vec<BytesN<32>>,
     ) -> BytesN<32> {
-        let request_id = TestBytesN::random(env);
+        let request_id = random_bytesn32(env);
 
         let request = AggregationRequest {
             request_id: request_id.clone(),
@@ -64,7 +72,7 @@ mod tests {
     fn test_batch_process_all_succeed() {
         let env = Env::default();
         let admin = setup_contract(&env);
-        let provider = TestAddress::generate(&env);
+        let provider = generate_address(&env);
 
         // Create data points
         let dp1 = create_data_point(&env, provider.clone());
@@ -122,7 +130,7 @@ mod tests {
     fn test_batch_process_mixed_results() {
         let env = Env::default();
         let admin = setup_contract(&env);
-        let provider = TestAddress::generate(&env);
+        let provider = generate_address(&env);
 
         // Create a valid data point and request
         let dp = create_data_point(&env, provider.clone());
@@ -131,7 +139,7 @@ mod tests {
         let valid_rid = create_aggregation_request(&env, provider.clone(), data_point_ids);
 
         // Create an invalid (nonexistent) request ID
-        let invalid_rid = TestBytesN::random(&env);
+        let invalid_rid = random_bytesn32(&env);
 
         // Build request_ids with one valid and one invalid
         let mut request_ids = Vec::new(&env);
@@ -178,8 +186,8 @@ mod tests {
         let admin = setup_contract(&env);
 
         // Create nonexistent request IDs (all will fail with RequestNotFound)
-        let invalid_rid1 = TestBytesN::random(&env);
-        let invalid_rid2 = TestBytesN::random(&env);
+        let invalid_rid1 = random_bytesn32(&env);
+        let invalid_rid2 = random_bytesn32(&env);
 
         let mut request_ids = Vec::new(&env);
         request_ids.push_back(invalid_rid1.clone());
@@ -208,7 +216,7 @@ mod tests {
     fn test_get_batch_status_returns_breakdown() {
         let env = Env::default();
         let admin = setup_contract(&env);
-        let provider = TestAddress::generate(&env);
+        let provider = generate_address(&env);
 
         // Create 2 valid and 1 invalid requests
         let dp1 = create_data_point(&env, provider.clone());
@@ -222,7 +230,7 @@ mod tests {
         dp_ids2.push_back(dp2);
         let rid2 = create_aggregation_request(&env, provider.clone(), dp_ids2);
 
-        let invalid_rid = TestBytesN::random(&env);
+        let invalid_rid = random_bytesn32(&env);
 
         let mut request_ids = Vec::new(&env);
         request_ids.push_back(rid1.clone());
@@ -243,12 +251,18 @@ mod tests {
         assert_eq!(batch.failed_requests.len(), 1u32);
 
         // Verify completed requests contain the valid request IDs
-        let completed_ids: Vec<BytesN<32>> = batch.completed_requests.iter().collect();
+        let mut completed_ids = Vec::new(&env);
+        for id in batch.completed_requests.iter() {
+            completed_ids.push_back(id);
+        }
         assert!(completed_ids.contains(&rid1));
         assert!(completed_ids.contains(&rid2));
 
         // Verify failed requests contain the invalid request ID
-        let failed_ids: Vec<BytesN<32>> = batch.failed_requests.iter().collect();
+        let mut failed_ids = Vec::new(&env);
+        for id in batch.failed_requests.iter() {
+            failed_ids.push_back(id);
+        }
         assert!(failed_ids.contains(&invalid_rid));
     }
 
@@ -256,7 +270,7 @@ mod tests {
     fn test_batch_process_requires_admin_auth() {
         let env = Env::default();
         let admin = setup_contract(&env);
-        let non_admin = TestAddress::generate(&env);
+        let non_admin = generate_address(&env);
 
         let request_ids = Vec::new(&env);
 
@@ -273,7 +287,7 @@ mod tests {
         // Create more than MAX_BATCH_SIZE (100) requests
         let mut request_ids = Vec::new(&env);
         for _ in 0..101 {
-            request_ids.push_back(TestBytesN::random(&env));
+            request_ids.push_back(random_bytesn32(&env));
         }
 
         let result = OnChainAggregator::batch_process(env.clone(), request_ids, admin);
