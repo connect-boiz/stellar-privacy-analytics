@@ -223,7 +223,6 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
       loadData(10000);
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
