@@ -12,7 +12,7 @@ import {
   CheckCircle,
   Clock,
   Database,
-  _Filter,
+  Filter,
 } from 'lucide-react';
 
 interface AnonymizationConfig {

@@ -593,8 +593,8 @@ export class AnonymizationWorker {
       const components = {
         redis: await this.checkRedisHealth(),
         postgres: await this.checkPostgresHealth(),
-        piiMasker: this.piiMasker.isHealthy(),
-        nerProcessor: this.nerProcessor.isHealthy(),
+        piiMasker: await this.piiMasker.isHealthy(),
+        nerProcessor: await this.nerProcessor.isHealthy(),
         sandbox: this.sandboxManager.isHealthy(),
       };
 

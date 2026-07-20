@@ -1,12 +1,12 @@
-import type { _IPFSHTTPClient } from "ipfs-http-client";
+import type { IPFSHTTPClient } from "ipfs-http-client";
 import FormData from "form-data";
 import axios from "axios";
 import {
   AESEncryption,
   StreamingDecryption,
   KeyManagement,
-  _EncryptionResult,
-  _DecryptionResult,
+  EncryptionResult,
+  DecryptionResult,
 } from "./aes";
 import {
   CIDInfo,

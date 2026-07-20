@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Settings,
   _Download,
-  _Filter,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 

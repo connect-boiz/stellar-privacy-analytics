@@ -12,7 +12,7 @@ import {
   Eye,
   RefreshCw,
   Plus,
-  _Filter,
+  Filter,
   Search,
   _ExternalLink,
   _FileText,

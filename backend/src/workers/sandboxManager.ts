@@ -287,8 +287,8 @@ execute().then(result => {
 
       this.activeProcesses.set(executionId, child);
 
-      let _stdout = "";
-      let _stderr = "";
+      let stdout = "";
+      let stderr = "";
 
       child.stdout?.on("data", (data) => {
         stdout += data.toString();

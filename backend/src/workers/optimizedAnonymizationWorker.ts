@@ -344,11 +344,11 @@ export class OptimizedAnonymizationWorker {
     });
 
     // Queue events monitoring
-    this.queueEvents.on("waiting", ({ _jobId }) => {
+    this.queueEvents.on("waiting", ({ jobId }) => {
       this.metrics.recordJobWaiting();
     });
 
-    this.queueEvents.on("active", ({ _jobId }) => {
+    this.queueEvents.on("active", ({ jobId }) => {
       this.metrics.recordJobActive();
     });
   }
@@ -912,8 +912,8 @@ export class OptimizedAnonymizationWorker {
       const components = {
         redis: await this.connectionPool.healthCheck(),
         postgres: await this.metadataRepository.healthCheck(),
-        piiMasker: this.piiMasker.isHealthy(),
-        nerProcessor: this.nerProcessor.isHealthy(),
+        piiMasker: await this.piiMasker.isHealthy(),
+        nerProcessor: await this.nerProcessor.isHealthy(),
         sandbox: this.sandboxManager.isHealthy(),
       };
 

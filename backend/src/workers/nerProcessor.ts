@@ -464,13 +464,13 @@ export class NERProcessor {
   /**
    * Health check
    */
-  isHealthy(): boolean {
+  async isHealthy(): Promise<boolean> {
     try {
       // Test with a simple text
       const testText =
         "John Doe works at Acme Corp and can be reached at john@example.com";
-      const result = this.maskWithNER(testText);
-      return result.then((r) => r.maskedText !== testText).catch(() => false);
+      const result = await this.maskWithNER(testText);
+      return result.maskedText !== testText;
     } catch (error) {
       logger.error("NER Processor health check failed:", error);
       return false;
