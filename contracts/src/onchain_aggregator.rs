@@ -471,7 +471,7 @@ impl OnChainAggregator {
         env.storage().persistent().has(data_id)
     }
 
-    fn get_required_credits(env: &Env, operation: &AggregationOperation, data_count: u32) -> i128 {
+    fn get_required_credits(_env: &Env, operation: &AggregationOperation, data_count: u32) -> i128 {
         let base_credits = match operation {
             AggregationOperation::Sum => MIN_CREDITS_FOR_SUM,
             AggregationOperation::Average => MIN_CREDITS_FOR_AVG,
@@ -485,7 +485,7 @@ impl OnChainAggregator {
     fn get_user_credits(env: &Env, user: &Address) -> i128 {
         env.storage()
             .persistent()
-            .get(&(Symbol::new(&env, "credits_"), user.clone()))
+            .get(&(Symbol::new(env, "credits_"), user.clone()))
             .unwrap_or(0i128)
     }
 
@@ -494,7 +494,7 @@ impl OnChainAggregator {
         let new_credits = current_credits + delta;
         env.storage()
             .persistent()
-            .set(&(Symbol::new(&env, "credits_"), user.clone()), &new_credits);
+            .set(&(Symbol::new(env, "credits_"), user.clone()), &new_credits);
     }
 
     fn perform_sum(env: &Env, encrypted_values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
@@ -557,16 +557,16 @@ impl OnChainAggregator {
 
         match operation {
             AggregationOperation::Sum => {
-                params.set(String::from_str(&env, "epsilon"), 1000i128);
-                params.set(String::from_str(&env, "delta"), 1i128);
+                params.set(String::from_str(env, "epsilon"), 1000i128);
+                params.set(String::from_str(env, "delta"), 1i128);
             }
             AggregationOperation::Average => {
-                params.set(String::from_str(&env, "epsilon"), 2000i128);
-                params.set(String::from_str(&env, "delta"), 2i128);
+                params.set(String::from_str(env, "epsilon"), 2000i128);
+                params.set(String::from_str(env, "delta"), 2i128);
             }
             AggregationOperation::Count => {
-                params.set(String::from_str(&env, "epsilon"), 500i128);
-                params.set(String::from_str(&env, "delta"), 1i128);
+                params.set(String::from_str(env, "epsilon"), 500i128);
+                params.set(String::from_str(env, "delta"), 1i128);
             }
         }
 

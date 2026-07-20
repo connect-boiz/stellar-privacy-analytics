@@ -5,9 +5,9 @@ pub use self::config::MonitoringConfig;
 pub use self::prometheus_exporter::{
     create_authenticated_metrics_route, create_metrics_route, MetricsCollector,
 };
-use log::{error, info, warn};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use base64::Engine;
+use log::{info, warn};
+use prometheus::Encoder;
 use warp::Filter;
 
 #[derive(Clone)]
@@ -47,54 +47,111 @@ impl MonitoringService {
     fn create_routes(
         &self,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        let collector = self.collector.clone();
+        let config = self.config.prometheus.clone();
+
+        let collector_for_metrics = collector.clone();
+        let metrics_handler = warp::path("metrics")
+            .and(warp::get())
+            .and(warp::any().map(move || collector_for_metrics.clone()))
+            .and(warp::header::optional::<String>("authorization"))
+            .and(warp::addr::remote())
+            .and_then(
+                move |collector: MetricsCollector,
+                      auth: Option<String>,
+                      addr: Option<std::net::SocketAddr>| {
+                    let config = config.clone();
+                    async move {
+                        // Check IP filtering
+                        if let Some(ref allowed_ips) = config.allowed_ips {
+                            if let Some(socket_addr) = addr {
+                                let ip_str = socket_addr.ip().to_string();
+                                if !allowed_ips.contains(&ip_str)
+                                    && !allowed_ips.contains(&"127.0.0.1".to_string())
+                                {
+                                    return Err(warp::reject::custom(MetricsError::Unauthorized));
+                                }
+                            } else {
+                                return Err(warp::reject::custom(MetricsError::Unauthorized));
+                            }
+                        }
+
+                        // Check auth
+                        if config.enable_auth {
+                            if let Some(auth_header) = auth {
+                                if let Some(encoded) = auth_header.strip_prefix("Basic ") {
+                                    if let Ok(decoded) = base64::engine::general_purpose::STANDARD
+                                        .decode(encoded.as_bytes())
+                                    {
+                                        if let Ok(credentials) = String::from_utf8(decoded) {
+                                            if let Some((user, pass)) = credentials.split_once(':')
+                                            {
+                                                if user
+                                                    == config.auth_username.as_deref().unwrap_or("")
+                                                    && pass
+                                                        == config
+                                                            .auth_password
+                                                            .as_deref()
+                                                            .unwrap_or("")
+                                                {
+                                                    // Auth passed
+                                                } else {
+                                                    return Err(warp::reject::custom(
+                                                        MetricsError::Unauthorized,
+                                                    ));
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    return Err(warp::reject::custom(MetricsError::Unauthorized));
+                                }
+                            } else {
+                                return Err(warp::reject::custom(MetricsError::Unauthorized));
+                            }
+                        }
+
+                        // Serve metrics
+                        let active_count = collector.get_active_session_count().await;
+                        let metrics = self::prometheus_exporter::get_metrics();
+                        metrics
+                            .smpc_sessions_active
+                            .with_label_values(&["all", "all"])
+                            .set(active_count as f64);
+
+                        let encoder = prometheus::TextEncoder::new();
+                        let metric_families = prometheus::gather();
+                        let mut buffer = Vec::new();
+                        encoder
+                            .encode(&metric_families, &mut buffer)
+                            .map_err(|_| warp::reject::custom(MetricsError::Encoding))?;
+
+                        let response = String::from_utf8(buffer)
+                            .map_err(|_| warp::reject::custom(MetricsError::Encoding))?;
+
+                        Ok::<_, warp::Rejection>(warp::reply::with_header(
+                            response,
+                            "Content-Type",
+                            "text/plain; version=0.0.4; charset=utf-8",
+                        ))
+                    }
+                },
+            );
+
+        let collector_for_health = collector.clone();
         let health_route = warp::path("health")
             .and(warp::get())
-            .and(warp::any().map(move || self.collector.clone()))
+            .and(warp::any().map(move || collector_for_health.clone()))
             .and_then(|collector: MetricsCollector| async move {
-                self::prometheus_exporter::health_check(&collector).await
+                Ok::<_, warp::Rejection>(self::prometheus_exporter::health_check(&collector).await)
             });
 
-        let metrics_route = if self.config.prometheus.enable_auth {
-            let username = self.config.prometheus.auth_username.as_ref().unwrap();
-            let password = self.config.prometheus.auth_password.as_ref().unwrap();
-            create_authenticated_metrics_route(self.collector.clone(), username, password)
-        } else {
-            create_metrics_route(self.collector.clone())
-        };
-
-        // Add IP filtering if configured
-        let metrics_route = if let Some(ref allowed_ips) = self.config.prometheus.allowed_ips {
-            let ip_filter = warp::addr::remote()
-                .and(warp::any().map(move || allowed_ips.clone()))
-                .and_then(
-                    |addr: Option<std::net::SocketAddr>, allowed: Vec<String>| async move {
-                        if let Some(socket_addr) = addr {
-                            let ip_str = socket_addr.ip().to_string();
-                            if allowed.contains(&ip_str)
-                                || allowed.contains(&"127.0.0.1".to_string())
-                            {
-                                Ok::<(), warp::Rejection>(())
-                            } else {
-                                Err(warp::reject::custom(MetricsError::Unauthorized))
-                            }
-                        } else {
-                            Err(warp::reject::custom(MetricsError::Unauthorized))
-                        }
-                    },
-                );
-
-            ip_filter.and(metrics_route)
-        } else {
-            metrics_route
-        };
-
-        // Add CORS for development
         let cors = warp::cors()
             .allow_any_origin()
             .allow_headers(vec!["authorization", "content-type"])
             .allow_methods(vec!["GET", "POST"]);
 
-        health_route.or(metrics_route).with(cors)
+        health_route.or(metrics_handler).with(cors)
     }
 
     /// Generate and return Prometheus alert rules
@@ -124,12 +181,19 @@ impl MonitoringService {
 #[derive(Debug)]
 enum MetricsError {
     Unauthorized,
+    Encoding,
 }
 
 impl warp::reject::Reject for MetricsError {}
 
 // Middleware for automatic metrics collection
 pub struct MetricsMiddleware;
+
+impl Default for MetricsMiddleware {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl MetricsMiddleware {
     pub fn new() -> Self {
@@ -150,8 +214,6 @@ impl MetricsMiddleware {
                  collector: MetricsCollector| async move {
                     let start_time = std::time::Instant::now();
 
-                    // This would be used in a real implementation to record the request
-                    // For now, we just return success
                     collector
                         .record_api_request(
                             path.as_str(),
@@ -164,6 +226,8 @@ impl MetricsMiddleware {
                     Ok::<(), warp::Rejection>(())
                 },
             )
+            .map(|_: ()| ())
+            .untuple_one()
     }
 }
 
@@ -235,7 +299,6 @@ impl MetricsAggregator {
 // Health check utilities
 pub mod health {
     use super::*;
-    use serde_json::json;
 
     #[derive(Debug, serde::Serialize)]
     pub struct HealthStatus {
@@ -253,7 +316,7 @@ pub mod health {
         pub alerting: bool,
     }
 
-    pub async fn check_system_health(collector: &MetricsCollector) -> HealthStatus {
+    pub async fn check_system_health(_collector: &MetricsCollector) -> HealthStatus {
         let components = ComponentHealth {
             metrics_collector: true,   // We can reach the collector
             prometheus_endpoint: true, // If we're here, the endpoint is working

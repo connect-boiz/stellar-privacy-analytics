@@ -15,12 +15,13 @@
 //!
 //! ## Quick Start
 //!
-//! ```rust
+//! ```rust,no_run
+//! use stellar_privacy_analytics::MonitoringConfig;
 //! use stellar_privacy_analytics::monitoring::MonitoringService;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let config = MonitoringConfig::from_env();
+//!     let config = MonitoringConfig::default();
 //!     let service = MonitoringService::new(config)?;
 //!     service.start().await?;
 //!     Ok(())

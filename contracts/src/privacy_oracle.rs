@@ -127,7 +127,7 @@ impl PrivacyOracle {
         let requester = env.current_contract_address(); // In real implementation, get from auth
 
         // Validate privacy level (1-4)
-        if privacy_level < 1 || privacy_level > 4 {
+        if !(1..=4).contains(&privacy_level) {
             return Err(PrivacyOracleError::InvalidPrivacyLevel);
         }
 
@@ -142,7 +142,7 @@ impl PrivacyOracle {
             .get(data_source.clone())
             .ok_or(PrivacyOracleError::InvalidFee)?;
 
-        if fee < MIN_FEE || fee > MAX_FEE {
+        if !(MIN_FEE..=MAX_FEE).contains(&fee) {
             return Err(PrivacyOracleError::InvalidFee);
         }
 
@@ -605,11 +605,7 @@ impl PrivacyOracle {
             .get(&Symbol::new(&env, "active_oracle_nodes"))
             .unwrap_or_else(|| Vec::new(&env));
 
-        (
-            total_requests,
-            total_fees_collected,
-            active_nodes.len() as u32,
-        )
+        (total_requests, total_fees_collected, active_nodes.len())
     }
 
     // Helper functions
@@ -663,7 +659,7 @@ impl PrivacyOracle {
 
             // Update reputation based on confidence
             let reputation_change = (confidence as i32 - 50) / 10; // Scale confidence to reputation change
-            let new_reputation = (node.reputation as i32 + reputation_change).max(0).min(100);
+            let new_reputation = (node.reputation as i32 + reputation_change).clamp(0, 100);
             node.reputation = new_reputation as u32;
 
             nodes.set(oracle, node);
@@ -674,7 +670,7 @@ impl PrivacyOracle {
     }
 
     fn remove_from_pending(env: Env, request_id: BytesN<32>) {
-        let mut pending_requests: Vec<BytesN<32>> = env
+        let pending_requests: Vec<BytesN<32>> = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, "pending_requests"))
@@ -697,7 +693,7 @@ impl PrivacyOracle {
     }
 
     fn remove_from_active_nodes(env: Env, node: Address) {
-        let mut active_nodes: Vec<Address> = env
+        let active_nodes: Vec<Address> = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, "active_oracle_nodes"))

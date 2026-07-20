@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
@@ -745,11 +746,11 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::InvalidCID);
         }
 
-        if size_bytes < MIN_DATASET_SIZE_BYTES || size_bytes > MAX_DATASET_SIZE_BYTES {
+        if !(MIN_DATASET_SIZE_BYTES..=MAX_DATASET_SIZE_BYTES).contains(&size_bytes) {
             return Err(StellarAnalyticsError::InvalidInputRange);
         }
 
-        if version < MIN_DATASET_VERSION || version > MAX_DATASET_VERSION {
+        if !(MIN_DATASET_VERSION..=MAX_DATASET_VERSION).contains(&version) {
             return Err(StellarAnalyticsError::VersionMismatch);
         }
 
@@ -957,7 +958,7 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::InvalidCID);
         }
 
-        if size_bytes < MIN_DATASET_SIZE_BYTES || size_bytes > MAX_DATASET_SIZE_BYTES {
+        if !(MIN_DATASET_SIZE_BYTES..=MAX_DATASET_SIZE_BYTES).contains(&size_bytes) {
             return Err(StellarAnalyticsError::InvalidInputRange);
         }
 

@@ -169,7 +169,7 @@ impl TtlStorage {
         Self::extend_chunk_ttls(&env, &entry_id, chunks.len(), ttl_hours);
 
         // Create data entry
-        let chunk_count = chunks.len() as u32;
+        let chunk_count = chunks.len();
         let entry = DataEntry {
             entry_id: entry_id.clone(),
             owner: owner.clone(),
@@ -405,7 +405,7 @@ impl TtlStorage {
         let chunk_count = if data_len <= MAX_ENTRY_SIZE {
             1
         } else {
-            (data_len + MAX_ENTRY_SIZE - 1) / MAX_ENTRY_SIZE
+            data_len.div_ceil(MAX_ENTRY_SIZE)
         };
 
         for i in 0..chunk_count {
@@ -485,7 +485,7 @@ impl TtlStorage {
         env.storage().persistent().remove(entry_id);
 
         // Remove fee record
-        let fee_key = (Symbol::new(&env, "fee_"), entry_id.clone());
+        let fee_key = (Symbol::new(env, "fee_"), entry_id.clone());
         env.storage().persistent().remove(&fee_key);
 
         // Remove chunks (if they exist)
@@ -501,13 +501,13 @@ impl TtlStorage {
         let fees = env
             .storage()
             .instance()
-            .get::<_, Map<Symbol, i128>>(&Symbol::new(&env, "storage_fees"))
+            .get::<_, Map<Symbol, i128>>(&Symbol::new(env, "storage_fees"))
             .unwrap_or_else(|| Map::new(env));
 
         let fee_symbol = match fee_type {
-            "temporary" => Symbol::new(&env, "temporary"),
-            "permanent" => Symbol::new(&env, "permanent"),
-            _ => Symbol::new(&env, "permanent"), // default
+            "temporary" => Symbol::new(env, "temporary"),
+            "permanent" => Symbol::new(env, "permanent"),
+            _ => Symbol::new(env, "permanent"), // default
         };
 
         fees.get(fee_symbol).unwrap_or(MIN_STORAGE_FEE)
@@ -516,7 +516,7 @@ impl TtlStorage {
     fn get_user_balance(env: &Env, user: &Address) -> i128 {
         env.storage()
             .persistent()
-            .get(&(Symbol::new(&env, "balance_"), user.clone()))
+            .get(&(Symbol::new(env, "balance_"), user.clone()))
             .unwrap_or(0i128)
     }
 
@@ -525,7 +525,7 @@ impl TtlStorage {
         let new_balance = current_balance + delta;
         env.storage()
             .persistent()
-            .set(&(Symbol::new(&env, "balance_"), user.clone()), &new_balance);
+            .set(&(Symbol::new(env, "balance_"), user.clone()), &new_balance);
     }
 }
 

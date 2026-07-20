@@ -82,7 +82,7 @@ impl MultiSigAdmin {
         }
 
         // Validate threshold
-        if threshold < MIN_THRESHOLD || threshold > MAX_THRESHOLD || threshold > owners.len() {
+        if !(MIN_THRESHOLD..=MAX_THRESHOLD).contains(&threshold) || threshold > owners.len() {
             return Err(MultiSigError::InvalidThreshold);
         }
 
@@ -220,8 +220,8 @@ impl MultiSigAdmin {
         }
 
         // Adjust threshold if necessary
-        let new_threshold = if threshold > new_owners.len() as u32 {
-            new_owners.len() as u32
+        let new_threshold = if threshold > new_owners.len() {
+            new_owners.len()
         } else {
             threshold
         };
@@ -258,9 +258,7 @@ impl MultiSigAdmin {
         let owners = Self::get_owners(env.clone())?;
 
         // Validate new threshold
-        if new_threshold < MIN_THRESHOLD
-            || new_threshold > MAX_THRESHOLD
-            || new_threshold > owners.len() as u32
+        if !(MIN_THRESHOLD..=MAX_THRESHOLD).contains(&new_threshold) || new_threshold > owners.len()
         {
             return Err(MultiSigError::InvalidThreshold);
         }

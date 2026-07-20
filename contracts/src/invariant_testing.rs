@@ -95,7 +95,7 @@ impl InvariantTesting {
     pub fn test_access_control_invariant(
         env: Env,
         user: Address,
-        resource: BytesN<32>,
+        _resource: BytesN<32>,
         has_access: bool,
     ) -> Result<(), InvariantTestingError> {
         if !has_access && user == env.current_contract_address() {

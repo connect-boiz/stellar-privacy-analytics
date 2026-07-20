@@ -1,6 +1,7 @@
+use base64::Engine;
 use prometheus::{
-    register_counter_vec, register_gauge_vec, register_histogram_vec, CounterVec, GaugeVec,
-    Histogram, HistogramOpts, HistogramVec, Opts,
+    register_counter_vec, register_gauge_vec, register_histogram_vec, CounterVec, Encoder,
+    GaugeVec, HistogramOpts, HistogramVec, Opts,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -12,7 +13,7 @@ pub struct PrivacyMetrics {
     // Privacy budget tracking
     pub epsilon_consumed_total: CounterVec,
     pub epsilon_budget_remaining: GaugeVec,
-    pub epsilon_consumption_rate: Histogram,
+    pub epsilon_consumption_rate: HistogramVec,
 
     // ZK proof metrics
     pub zk_proof_verification_duration: HistogramVec,
@@ -38,6 +39,12 @@ pub struct PrivacyMetrics {
     pub api_request_duration: HistogramVec,
     pub api_requests_total: CounterVec,
     pub api_errors_total: CounterVec,
+}
+
+impl Default for PrivacyMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PrivacyMetrics {
@@ -261,7 +268,7 @@ pub fn get_metrics() -> &'static PrivacyMetrics {
 // Metrics collector for aggregating data from various sources
 #[derive(Clone)]
 pub struct MetricsCollector {
-    datasets: Arc<RwLock<HashMap<String, DatasetMetrics>>>,
+    pub datasets: Arc<RwLock<HashMap<String, DatasetMetrics>>>,
     sessions: Arc<RwLock<HashMap<String, SessionMetrics>>>,
 }
 
@@ -288,6 +295,12 @@ pub enum SessionStatus {
     Active,
     Completed,
     Failed(String),
+}
+
+impl Default for MetricsCollector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MetricsCollector {
@@ -318,7 +331,7 @@ impl MetricsCollector {
         prom_metrics
             .epsilon_consumed_total
             .with_label_values(&[dataset_id, "computation"])
-            .inc_by(consumed as f64);
+            .inc_by(consumed);
         prom_metrics
             .epsilon_budget_remaining
             .with_label_values(&[dataset_id])
@@ -424,7 +437,7 @@ impl MetricsCollector {
         error_type: Option<&str>,
     ) {
         let mut sessions = self.sessions.write().await;
-        if let Some(session) = sessions.get(session_id) {
+        if let Some(session) = sessions.get_mut(session_id) {
             let duration = session.start_time.elapsed();
             let prom_metrics = get_metrics();
 
@@ -522,10 +535,7 @@ pub fn create_metrics_route(
                 .encode(&metric_families, &mut buffer)
                 .map_err(|_| warp::reject::custom(MetricsError::Encoding))?;
 
-            Ok::<String, warp::Rejection>(
-                String::from_utf8(buffer)
-                    .map_err(|_| warp::reject::custom(MetricsError::Encoding))?,
-            )
+            String::from_utf8(buffer).map_err(|_| warp::reject::custom(MetricsError::Encoding))
         })
         .map(|response| {
             warp::reply::with_header(
@@ -538,26 +548,25 @@ pub fn create_metrics_route(
 
 pub fn create_authenticated_metrics_route(
     collector: MetricsCollector,
-    username: &str,
-    password: &str,
+    username: String,
+    password: String,
 ) -> impl Filter<Extract = impl Reply, Error = warp::Rejection> + Clone {
     let auth = warp::header::<String>("authorization")
-        .and(warp::any().map(move || (username.to_string(), password.to_string())))
+        .and(warp::any().map(move || (username.clone(), password.clone())))
         .and_then(
             |auth_header: String, (expected_user, expected_pass): (String, String)| async move {
                 // Basic authentication: "Basic base64(username:password)"
                 if let Some(encoded) = auth_header.strip_prefix("Basic ") {
-                    match base64::decode(encoded) {
-                        Ok(decoded) => {
-                            if let Ok(credentials) = String::from_utf8(decoded) {
-                                if let Some((user, pass)) = credentials.split_once(':') {
-                                    if user == expected_user && pass == expected_pass {
-                                        return Ok::<(), warp::Rejection>(());
-                                    }
+                    if let Ok(decoded) =
+                        base64::engine::general_purpose::STANDARD.decode(encoded.as_bytes())
+                    {
+                        if let Ok(credentials) = String::from_utf8(decoded) {
+                            if let Some((user, pass)) = credentials.split_once(':') {
+                                if user == expected_user && pass == expected_pass {
+                                    return Ok::<(), warp::Rejection>(());
                                 }
                             }
                         }
-                        Err(_) => {}
                     }
                 }
                 Err(warp::reject::custom(MetricsError::Unauthorized))
@@ -569,7 +578,7 @@ pub fn create_authenticated_metrics_route(
     auth.and(warp::path("metrics"))
         .and(warp::get())
         .and(warp::any().map(move || collector_clone.clone()))
-        .and_then(|collector: MetricsCollector| async move {
+        .and_then(|_: (), collector: MetricsCollector| async move {
             let active_count = collector.get_active_session_count().await;
             get_metrics()
                 .smpc_sessions_active
@@ -583,10 +592,7 @@ pub fn create_authenticated_metrics_route(
                 .encode(&metric_families, &mut buffer)
                 .map_err(|_| warp::reject::custom(MetricsError::Encoding))?;
 
-            Ok::<String, warp::Rejection>(
-                String::from_utf8(buffer)
-                    .map_err(|_| warp::reject::custom(MetricsError::Encoding))?,
-            )
+            String::from_utf8(buffer).map_err(|_| warp::reject::custom(MetricsError::Encoding))
         })
         .map(|response| {
             warp::reply::with_header(

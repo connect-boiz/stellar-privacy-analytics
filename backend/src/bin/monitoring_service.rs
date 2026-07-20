@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use log::{error, info};
-use std::env;
+
 use stellar_privacy_analytics::monitoring::{MonitoringConfig, MonitoringService};
 
 #[derive(Parser)]
@@ -109,7 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Generate Grafana dashboard if requested
             if generate_dashboard {
-                let dashboard_content = include_str!("../monitoring/grafana-dashboard.json");
+                let dashboard_content = include_str!("../../monitoring/grafana-dashboard.json");
                 let dashboard_file = "./monitoring/grafana-dashboard.json";
                 std::fs::write(dashboard_file, dashboard_content)?;
                 info!("Grafana dashboard generated: {}", dashboard_file);
@@ -133,25 +133,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Commands::Config { output_dir } => {
             // Create output directory
-            std::fs::create_dir_all(&output_dir, true)?;
+            std::fs::create_dir_all(&output_dir)?;
 
             // Generate default configuration
             let config = MonitoringConfig::default();
             let config_file = format!("{}/monitoring-config.toml", output_dir);
             let config_toml = toml::to_string_pretty(&config)?;
-            std::fs::write(config_file, config_toml)?;
+            std::fs::write(&config_file, config_toml)?;
             info!("Configuration file generated: {}", config_file);
 
             // Generate alert rules
             let alert_rules = config.generate_alert_rules();
             let alert_file = format!("{}/alert-rules.yml", output_dir);
-            std::fs::write(alert_file, alert_rules)?;
+            std::fs::write(&alert_file, alert_rules)?;
             info!("Alert rules generated: {}", alert_file);
 
             // Generate Grafana dashboard
-            let dashboard_content = include_str!("../monitoring/grafana-dashboard.json");
+            let dashboard_content = include_str!("../../monitoring/grafana-dashboard.json");
             let dashboard_file = format!("{}/grafana-dashboard.json", output_dir);
-            std::fs::write(dashboard_file, dashboard_content)?;
+            std::fs::write(&dashboard_file, dashboard_content)?;
             info!("Grafana dashboard generated: {}", dashboard_file);
 
             // Generate environment file template
@@ -179,7 +179,7 @@ ALERT_STORAGE_FAILURE_THRESHOLD=5.0
 ALERT_MAX_SESSIONS_THRESHOLD=100
 ALERT_QUEUE_SIZE_THRESHOLD=1000
 "#;
-            std::fs::write(env_file, env_content)?;
+            std::fs::write(&env_file, env_content)?;
             info!("Environment file template generated: {}", env_file);
 
             info!("All configuration files generated in: {}", output_dir);

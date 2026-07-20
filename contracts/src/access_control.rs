@@ -133,14 +133,14 @@ impl DataSovereigntyAccessControl {
             .storage()
             .instance()
             .get(&Symbol::new(&env, "admin"))
-            .unwrap_or_else(|| caller);
+            .unwrap_or(caller);
 
         if env.current_contract_address() != admin && !Self::is_authorized(&env, &owner) {
             return Err(AccessControlError::Unauthorized);
         }
 
         if requires_multi_sig {
-            if multi_sig_threshold < MIN_MULTI_SIG || multi_sig_threshold > MAX_MULTI_SIG {
+            if !(MIN_MULTI_SIG..=MAX_MULTI_SIG).contains(&multi_sig_threshold) {
                 return Err(AccessControlError::InvalidMultiSigThreshold);
             }
             if authorized_signers.len() < multi_sig_threshold {
@@ -359,10 +359,7 @@ impl DataSovereigntyAccessControl {
             &env,
             &env.ledger().timestamp().to_be_bytes(),
         ));
-        key_data.append(&Bytes::from_slice(
-            &env,
-            &(permissions.len() as u32).to_be_bytes(),
-        ));
+        key_data.append(&Bytes::from_slice(&env, &permissions.len().to_be_bytes()));
         let key_id: BytesN<32> = env.crypto().sha256(&key_data).into();
 
         let access_key = AccessKey {
@@ -500,20 +497,20 @@ impl DataSovereigntyAccessControl {
     }
 
     fn has_permission_level(current: &PermissionType, required: &PermissionType) -> bool {
-        match (current, required) {
-            (PermissionType::Admin, _) => true,
-            (PermissionType::Write, PermissionType::Read) => true,
-            (PermissionType::Write, PermissionType::Write) => true,
-            (PermissionType::Read, PermissionType::Read) => true,
-            _ => false,
-        }
+        matches!(
+            (current, required),
+            (PermissionType::Admin, _)
+                | (PermissionType::Write, PermissionType::Read)
+                | (PermissionType::Write, PermissionType::Write)
+                | (PermissionType::Read, PermissionType::Read)
+        )
     }
 
     fn is_authorized(env: &Env, address: &Address) -> bool {
         let admin: Address = env
             .storage()
             .instance()
-            .get(&Symbol::new(&env, "admin"))
+            .get(&Symbol::new(env, "admin"))
             .unwrap_or_else(|| env.current_contract_address());
         address == &admin
     }
@@ -538,15 +535,15 @@ impl DataSovereigntyAccessControl {
         let mut access_log: Vec<AccessLogEntry> = env
             .storage()
             .instance()
-            .get(&Symbol::new(&env, ACCESS_LOG_KEY))
-            .unwrap_or_else(|| Vec::new(&env));
+            .get(&Symbol::new(env, ACCESS_LOG_KEY))
+            .unwrap_or_else(|| Vec::new(env));
 
         access_log.push_back(log_entry);
 
         // Keep only last 1000 log entries to prevent storage bloat
         if access_log.len() > 1000 {
             let start = access_log.len() - 1000;
-            let mut trimmed = Vec::new(&env);
+            let mut trimmed = Vec::new(env);
             for i in start..access_log.len() {
                 if let Some(entry) = access_log.get(i) {
                     trimmed.push_back(entry);
@@ -557,7 +554,7 @@ impl DataSovereigntyAccessControl {
 
         env.storage()
             .instance()
-            .set(&Symbol::new(&env, ACCESS_LOG_KEY), &access_log);
+            .set(&Symbol::new(env, ACCESS_LOG_KEY), &access_log);
     }
 
     pub fn get_access_log(env: Env) -> Vec<AccessLogEntry> {
@@ -571,7 +568,7 @@ impl DataSovereigntyAccessControl {
         let mut cleaned_count = 0u32;
         let current_time = env.ledger().timestamp();
 
-        let mut permissions: Map<Address, Vec<AccessPermission>> = env
+        let permissions: Map<Address, Vec<AccessPermission>> = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, USER_PERMISSIONS_KEY))
@@ -606,7 +603,7 @@ impl DataSovereigntyAccessControl {
             &updated_permissions,
         );
 
-        let mut access_keys: Map<BytesN<32>, AccessKey> = env
+        let access_keys: Map<BytesN<32>, AccessKey> = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, ACCESS_KEYS_KEY))

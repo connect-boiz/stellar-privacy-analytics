@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrometheusConfig {
@@ -93,19 +92,10 @@ impl Default for AlertingConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MonitoringConfig {
     pub prometheus: PrometheusConfig,
     pub alerting: AlertingConfig,
-}
-
-impl Default for MonitoringConfig {
-    fn default() -> Self {
-        Self {
-            prometheus: PrometheusConfig::default(),
-            alerting: AlertingConfig::default(),
-        }
-    }
 }
 
 impl MonitoringConfig {
@@ -183,12 +173,10 @@ impl MonitoringConfig {
             return Err("Invalid Prometheus port".to_string());
         }
 
-        if self.prometheus.enable_auth {
-            if self.prometheus.auth_username.is_none() || self.prometheus.auth_password.is_none() {
-                return Err(
-                    "Authentication enabled but username or password not provided".to_string(),
-                );
-            }
+        if self.prometheus.enable_auth
+            && (self.prometheus.auth_username.is_none() || self.prometheus.auth_password.is_none())
+        {
+            return Err("Authentication enabled but username or password not provided".to_string());
         }
 
         if self.prometheus.metrics_path.is_empty() {
@@ -330,12 +318,13 @@ groups:
           service: stellar-privacy-analytics
         annotations:
           summary: "High API error rate"
-          description: "API error rate is {{{{ $value | humanizePercentage }}}} for {{{{ $labels.endpoint }}}}"}
+          description: "API error rate is {{{{ $value | humanizePercentage }}}} for {{{{ $labels.endpoint }}}}"
 "#,
             self.alerting.epsilon_consumption_threshold,
             self.alerting.epsilon_consumption_threshold,
             self.alerting.zk_proof_latency_threshold,
             self.alerting.storage_failure_threshold / 100.0,
+            self.alerting.max_active_sessions_threshold,
             self.alerting.max_active_sessions_threshold,
             self.alerting.queue_size_threshold
         )
