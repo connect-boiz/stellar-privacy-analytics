@@ -24,6 +24,7 @@ const envSchema = Joi.object({
   CORS_ORIGINS: Joi.string().default(
     "http://localhost:3000,http://localhost:3001",
   ),
+  DEV_ADMIN_TOKEN: Joi.string().allow("").optional(),
 }).unknown(true);
 
 const { value, error } = envSchema.validate(process.env, {
