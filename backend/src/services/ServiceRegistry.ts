@@ -2,6 +2,8 @@ import Redis from "redis";
 import { EventEmitter } from "events";
 import { logger } from "../utils/logger";
 import axios, { AxiosResponse } from "axios";
+import type { ParsedRedisUrl } from "../utils/redisUrlValidator";
+import { validateRedisUrl } from "../utils/redisUrlValidator";
 
 export interface ServiceInstance {
   id: string;
@@ -28,6 +30,16 @@ export interface ServiceRegistration {
   healthCheckInterval?: number;
 }
 
+export interface ServiceRegistryConfig {
+  redisUrl: string;
+  /**
+   * When true (default), rejects Redis URLs without authentication credentials.
+   * In production, this will throw an error and prevent startup.
+   * In development, it will emit a warning but continue.
+   */
+  requirePassword?: boolean;
+}
+
 export class ServiceRegistry extends EventEmitter {
   private redis: Redis.RedisClientType;
   private services: Map<string, ServiceInstance[]> = new Map();
@@ -35,10 +47,31 @@ export class ServiceRegistry extends EventEmitter {
   private readonly HEALTH_CHECK_INTERVAL = 30000; // 30 seconds
   private readonly SERVICE_TTL = 60000; // 60 seconds
   private readonly MAX_RETRY_ATTEMPTS = 3;
+  private parsedUrl: ParsedRedisUrl;
 
-  constructor(redisUrl: string) {
+  constructor(config: ServiceRegistryConfig) {
     super();
-    this.redis = Redis.createClient({ url: redisUrl });
+
+    const { redisUrl, requirePassword = true } = config;
+
+    // Validate Redis URL — this will throw in production if password is missing
+    this.parsedUrl = validateRedisUrl(redisUrl, { requirePassword });
+
+    // Build the connection config with TLS support
+    const redisConfig: any = {
+      url: redisUrl,
+    };
+
+    // If using rediss:// protocol, ensure TLS socket config is provided
+    if (this.parsedUrl.hasTls) {
+      redisConfig.socket = {
+        tls: true,
+        rejectUnauthorized: process.env.NODE_ENV === "production",
+      };
+      logger.info("ServiceRegistry connecting to Redis with TLS enabled");
+    }
+
+    this.redis = Redis.createClient(redisConfig);
     this.initializeRedis();
   }
 

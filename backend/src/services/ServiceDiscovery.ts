@@ -1,4 +1,4 @@
-import { ServiceRegistry, ServiceRegistration } from "./ServiceRegistry";
+import { ServiceRegistry, ServiceRegistration, ServiceRegistryConfig } from "./ServiceRegistry";
 import { ServiceMesh, ServiceMeshConfig } from "./ServiceMesh";
 import { HealthMonitor } from "./HealthMonitor";
 import {
@@ -11,6 +11,12 @@ import { EventEmitter } from "events";
 
 export interface ServiceDiscoveryConfig {
   redisUrl: string;
+  /**
+   * When true (default), rejects Redis URLs without authentication credentials.
+   * In production, this will throw an error and prevent startup.
+   * In development, it will emit a warning but continue.
+   */
+  requirePassword?: boolean;
   serviceMesh?: ServiceMeshConfig;
   autoRegister?: boolean;
   healthCheckInterval?: number;
@@ -47,6 +53,7 @@ export class ServiceDiscovery extends EventEmitter {
 
     this.config = {
       redisUrl: config.redisUrl,
+      requirePassword: config.requirePassword !== false,
       serviceMesh: config.serviceMesh || {},
       autoRegister: config.autoRegister !== false,
       healthCheckInterval: config.healthCheckInterval || 30000,
@@ -54,7 +61,10 @@ export class ServiceDiscovery extends EventEmitter {
       enableMonitoring: config.enableMonitoring !== false,
     };
 
-    this.serviceRegistry = new ServiceRegistry(config.redisUrl);
+    this.serviceRegistry = new ServiceRegistry({
+      redisUrl: config.redisUrl,
+      requirePassword: config.requirePassword,
+    });
     this.serviceMesh = new ServiceMesh(
       this.serviceRegistry,
       this.config.serviceMesh,

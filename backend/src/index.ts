@@ -390,8 +390,17 @@ async function initializeServices() {
     await initializeRateLimiters();
 
     // Initialize Service Discovery
+    if (!process.env.REDIS_URL) {
+      throw new Error(
+        `REDIS_URL environment variable is not set. ` +
+        `A valid Redis connection URL is required. ` +
+        `Format: redis[s]://[user:password@]host:port[/db] ` +
+        `Example: redis://:yourpassword@redis:6379 or rediss://user:pass@redis:6380`,
+      );
+    }
+
     const serviceDiscovery = new ServiceDiscovery({
-      redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+      redisUrl: process.env.REDIS_URL,
       autoRegister: true,
       enableFailover: true,
       enableMonitoring: true,
@@ -455,9 +464,17 @@ async function initializeServices() {
     app.set("storageService", storageService);
 
     // Start Stellar Transaction Watcher
+    if (!process.env.REDIS_URL) {
+      throw new Error(
+        `REDIS_URL environment variable is not set. ` +
+        `A valid Redis connection URL is required for the Stellar Transaction Watcher. ` +
+        `Format: redis[s]://[user:password@]host:port[/db]`,
+      );
+    }
+
     const stellarWatcher = new StellarTransactionWatcher(
       process.env.STELLAR_RPC_URL || "https://soroban-testnet.stellar.org",
-      process.env.REDIS_URL || "redis://localhost:6379",
+      process.env.REDIS_URL,
       process.env.SOROBAN_CONTRACT_ID || "CC...DEFAULT_CONTRACT_ID",
       process.env.WEBHOOK_URLS ? process.env.WEBHOOK_URLS.split(",") : [],
     );
