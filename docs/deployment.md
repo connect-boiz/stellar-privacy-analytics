@@ -49,27 +49,32 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --scale ba
 
 ## Environment Configuration
 
-### Required Environment Variables
+## Redis Connection URL Format
+
+`REDIS_URL` is a **required** environment variable. The application validates the URL at startup and **refuses to start in production** if no authentication credentials are provided.
+
+### Supported URL formats
+
+| Format | Description | Example |
+|--------|-------------|--------|
+| `redis://:password@host:port` | Standard Redis with password | `redis://:mypassword@redis:6379` |
+| `redis://user:password@host:port` | Redis 6+ ACL with username + password | `redis://admin:secret@redis:6379` |
+| `rediss://:password@host:port` | Redis with TLS encryption | `rediss://:mypassword@redis:6380` |
+| `rediss://user:password@host:port` | Redis with TLS + ACL authentication | `rediss://admin:secret@redis.example.com:6380` |
+
+### Development vs Production
+
+- **Production**: Always requires authentication credentials (password or username+password). The application will crash on startup if `REDIS_URL` has no password.
+- **Development**: Warns about passwordless Redis URLs when `requirePassword` is enabled (default), but continues running. Set `requirePassword: false` in `ServiceDiscoveryConfig` to suppress the warning entirely.
+
+### Examples
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/stellar_db
-REDIS_URL=redis://localhost:6379
+# Development with local Redis (password required but recommended)
+REDIS_URL=redis://:devpassword@localhost:6379
 
-# Security
-ENCRYPTION_KEY=your-256-bit-encryption-key
-JWT_SECRET=your-jwt-secret-key
-HOMOMORPHIC_KEY=your-homomorphic-encryption-key
-
-# API Configuration
-API_PORT=3001
-FRONTEND_URL=http://localhost:3000
-CORS_ORIGIN=http://localhost:3000
-
-# Privacy Settings
-DEFAULT_PRIVACY_LEVEL=high
-DATA_RETENTION_DAYS=365
-DIFFERENTIAL_PRIVACY_EPSILON=1.0
+# Production with TLS
+REDIS_URL=rediss://stellar_app:${REDIS_PASSWORD}@redis.internal:6380
 ```
 
 ### Security Configuration

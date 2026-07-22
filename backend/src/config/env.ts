@@ -9,7 +9,13 @@ const envSchema = Joi.object({
     .default("development"),
   API_HOST: Joi.string().default("localhost"),
   API_PORT: Joi.number().integer().positive().default(3001),
-  REDIS_URL: Joi.string().uri().default("redis://localhost:6379"),
+  REDIS_URL: Joi.string()
+    .uri()
+    .required()
+    .messages({
+      "any.required": "REDIS_URL is required. Format: redis[s]://[user:password@]host:port[/db]",
+      "string.uri": "REDIS_URL must be a valid URI. Format: redis[s]://[user:password@]host:port[/db]",
+    }),
   DB_HOST: Joi.string().default("localhost"),
   DB_PORT: Joi.number().integer().positive().default(5432),
   DB_NAME: Joi.string().default("stellar_privacy"),
