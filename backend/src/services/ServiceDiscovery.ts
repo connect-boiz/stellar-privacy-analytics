@@ -53,6 +53,7 @@ export class ServiceDiscovery extends EventEmitter {
 
     this.config = {
       redisUrl: config.redisUrl,
+      requirePassword: config.requirePassword !== false,
       serviceMesh: config.serviceMesh || {},
       autoRegister: config.autoRegister !== false,
       healthCheckInterval: config.healthCheckInterval || 30000,
