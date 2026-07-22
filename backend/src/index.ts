@@ -19,6 +19,7 @@ import { rateLimitMonitor } from "./monitoring/rateLimitMonitor";
 // Import routes and middleware
 import { authRoutes } from "./routes/auth";
 import { stellarAuth } from "./middleware/stellarAuth";
+import { adminRoutes } from "./routes/admin";
 import { analyticsRoutes } from "./routes/analytics";
 import { dataRoutes, initializeUploadSocket } from "./routes/data";
 import { privacyRoutes } from "./routes/privacy";
@@ -191,49 +192,8 @@ app.use("/api/v1", async (req, res, next) => {
   next();
 });
 
-// Rate limiting monitoring endpoint
-app.get("/api/v1/admin/rate-limit/metrics", (req, res) => {
-  if (process.env.NODE_ENV === "production" && !(req as any).user?.isAdmin) {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-
-  const metrics = rateLimitMonitor.getMetricsSummary();
-  res.json({
-    metrics,
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-  });
-});
-
-// Rate limiting configuration endpoint
-app.get("/api/v1/admin/rate-limit/config", (req, res) => {
-  if (process.env.NODE_ENV === "production" && !(req as any).user?.isAdmin) {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-
-  res.json({
-    config: {
-      standard: {
-        windowMs: 15 * 60 * 1000,
-        basic: { maxRequests: 100 },
-        premium: { maxRequests: 500 },
-        enterprise: { maxRequests: 2000 },
-      },
-      enhanced: {
-        collisionDetection: true,
-        burstProtection: true,
-        adaptiveLimiting: true,
-        alerting: true,
-      },
-      monitoring: {
-        enabled: true,
-        interval: 30000,
-        retention: 24 * 60 * 60 * 1000,
-      },
-    },
-    timestamp: new Date().toISOString(),
-  });
-});
+// Admin routes (rate-limit metrics & config) with admin auth middleware
+app.use("/api/v1/admin", adminRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
