@@ -33,6 +33,26 @@ export interface SecurityMetrics {
   timeWindow: number; // in minutes
 }
 
+interface SecurityEvent {
+  timestamp: number;
+  type: 'failedAuth' | 'suspiciousRequest' | 'keyAnomaly' | 'systemError';
+}
+
+interface CumulativeMetrics {
+  failedAuthentications: number;
+  suspiciousRequests: number;
+  keyAccessAnomalies: number;
+  systemErrors: number;
+}
+
+interface DecayingMetrics {
+  failedAuthentications: number;
+  suspiciousRequests: number;
+  keyAccessAnomalies: number;
+  systemErrors: number;
+  windowStart: number;
+}
+
 export class KillSwitchService extends EventEmitter {
   private hsmService: HSMService;
   private masterKeyManager: MasterKeyManager;
@@ -47,6 +67,23 @@ export class KillSwitchService extends EventEmitter {
     maxKeyAnomalies: number;
     maxSystemErrors: number;
     metricsWindow: number;
+  };
+  // Sliding window implementation
+  private eventTimestamps: SecurityEvent[] = [];
+  // Cumulative tracking across all windows
+  private cumulativeMetrics: CumulativeMetrics = {
+    failedAuthentications: 0,
+    suspiciousRequests: 0,
+    keyAccessAnomalies: 0,
+    systemErrors: 0,
+  };
+  // Decaying metrics from previous half-window
+  private decayingMetrics: DecayingMetrics = {
+    failedAuthentications: 0,
+    suspiciousRequests: 0,
+    keyAccessAnomalies: 0,
+    systemErrors: 0,
+    windowStart: Date.now(),
   };
 
   constructor(
@@ -137,54 +174,154 @@ export class KillSwitchService extends EventEmitter {
   }
 
   private startMetricsCollection(): void {
-    // Reset metrics window periodically
+    // Cleanup old events periodically (every minute)
     this.metricsResetTimer = setInterval(
       () => {
-        this.resetMetrics();
+        this.cleanupOldEvents();
+        this.updateDecayingMetrics();
       },
-      this.securityMetrics.timeWindow * 60 * 1000,
+      60 * 1000, // Run every minute
     );
   }
 
-  private resetMetrics(): void {
+  /**
+   * Remove events outside the sliding window
+   */
+  private cleanupOldEvents(): void {
+    const now = Date.now();
+    const windowMs = this.securityMetrics.timeWindow * 60 * 1000;
+    
+    // Keep only events within the current window
+    this.eventTimestamps = this.eventTimestamps.filter(
+      (event) => now - event.timestamp < windowMs
+    );
+  }
+
+  /**
+   * Update decaying metrics for half-window overlap
+   * This creates a "memory" effect that prevents attackers from 
+   * exploiting window boundaries
+   */
+  private updateDecayingMetrics(): void {
+    const now = Date.now();
+    const halfWindowMs = (this.securityMetrics.timeWindow * 60 * 1000) / 2;
+    const timeSinceWindowStart = now - this.decayingMetrics.windowStart;
+    
+    // If we've passed a half-window, update the decaying metrics
+    if (timeSinceWindowStart >= halfWindowMs) {
+      const currentWindowMetrics = this.getCurrentWindowMetrics();
+      
+      // Set decaying metrics to current half-window counts (50% decay factor)
+      this.decayingMetrics = {
+        failedAuthentications: Math.floor(currentWindowMetrics.failedAuthentications * 0.5),
+        suspiciousRequests: Math.floor(currentWindowMetrics.suspiciousRequests * 0.5),
+        keyAccessAnomalies: Math.floor(currentWindowMetrics.keyAccessAnomalies * 0.5),
+        systemErrors: Math.floor(currentWindowMetrics.systemErrors * 0.5),
+        windowStart: now,
+      };
+      
+      logger.debug('Decaying metrics updated', {
+        decayingMetrics: this.decayingMetrics,
+      });
+    }
+  }
+
+  /**
+   * Get metrics for events within the current sliding window
+   */
+  private getCurrentWindowMetrics(): {
+    failedAuthentications: number;
+    suspiciousRequests: number;
+    keyAccessAnomalies: number;
+    systemErrors: number;
+  } {
+    const now = Date.now();
+    const windowMs = this.securityMetrics.timeWindow * 60 * 1000;
+    
+    const recentEvents = this.eventTimestamps.filter(
+      (event) => now - event.timestamp < windowMs
+    );
+    
+    return {
+      failedAuthentications: recentEvents.filter((e) => e.type === 'failedAuth').length,
+      suspiciousRequests: recentEvents.filter((e) => e.type === 'suspiciousRequest').length,
+      keyAccessAnomalies: recentEvents.filter((e) => e.type === 'keyAnomaly').length,
+      systemErrors: recentEvents.filter((e) => e.type === 'systemError').length,
+    };
+  }
+
+  /**
+   * Record a security event in the sliding window
+   */
+  private recordEvent(type: SecurityEvent['type']): void {
+    const event: SecurityEvent = {
+      timestamp: Date.now(),
+      type,
+    };
+    
+    this.eventTimestamps.push(event);
+    
+    // Update cumulative counters
+    switch (type) {
+      case 'failedAuth':
+        this.cumulativeMetrics.failedAuthentications++;
+        break;
+      case 'suspiciousRequest':
+        this.cumulativeMetrics.suspiciousRequests++;
+        break;
+      case 'keyAnomaly':
+        this.cumulativeMetrics.keyAccessAnomalies++;
+        break;
+      case 'systemError':
+        this.cumulativeMetrics.systemErrors++;
+        break;
+    }
+    
+    // Update the current metrics display
+    const currentMetrics = this.getCurrentWindowMetrics();
     this.securityMetrics = {
       ...this.securityMetrics,
-      failedAuthentications: 0,
-      suspiciousRequests: 0,
-      keyAccessAnomalies: 0,
-      systemErrors: 0,
+      ...currentMetrics,
     };
   }
 
   private recordFailedAuthentication(): void {
-    this.securityMetrics.failedAuthentications++;
+    this.recordEvent('failedAuth');
     logger.warn("Failed authentication recorded", {
-      count: this.securityMetrics.failedAuthentications,
+      slidingWindowCount: this.securityMetrics.failedAuthentications,
+      cumulativeCount: this.cumulativeMetrics.failedAuthentications,
       threshold: this.thresholds.maxFailedAuth,
+      cumulativeThreshold: this.thresholds.maxFailedAuth * 3,
     });
   }
 
   private recordSuspiciousRequest(): void {
-    this.securityMetrics.suspiciousRequests++;
+    this.recordEvent('suspiciousRequest');
     logger.warn("Suspicious request recorded", {
-      count: this.securityMetrics.suspiciousRequests,
+      slidingWindowCount: this.securityMetrics.suspiciousRequests,
+      cumulativeCount: this.cumulativeMetrics.suspiciousRequests,
       threshold: this.thresholds.maxSuspiciousRequests,
+      cumulativeThreshold: this.thresholds.maxSuspiciousRequests * 3,
     });
   }
 
   private recordKeyAnomaly(): void {
-    this.securityMetrics.keyAccessAnomalies++;
+    this.recordEvent('keyAnomaly');
     logger.warn("Key access anomaly recorded", {
-      count: this.securityMetrics.keyAccessAnomalies,
+      slidingWindowCount: this.securityMetrics.keyAccessAnomalies,
+      cumulativeCount: this.cumulativeMetrics.keyAccessAnomalies,
       threshold: this.thresholds.maxKeyAnomalies,
+      cumulativeThreshold: this.thresholds.maxKeyAnomalies * 3,
     });
   }
 
   private recordSystemError(): void {
-    this.securityMetrics.systemErrors++;
+    this.recordEvent('systemError');
     logger.warn("System error recorded", {
-      count: this.securityMetrics.systemErrors,
+      slidingWindowCount: this.securityMetrics.systemErrors,
+      cumulativeCount: this.cumulativeMetrics.systemErrors,
       threshold: this.thresholds.maxSystemErrors,
+      cumulativeThreshold: this.thresholds.maxSystemErrors * 3,
     });
   }
 
@@ -193,36 +330,77 @@ export class KillSwitchService extends EventEmitter {
     reason: string,
   ): void {
     const triggers: string[] = [];
+    const currentMetrics = this.getCurrentWindowMetrics();
+    
+    // Apply decaying metrics from previous half-window
+    const effectiveMetrics = {
+      failedAuthentications: currentMetrics.failedAuthentications + this.decayingMetrics.failedAuthentications,
+      suspiciousRequests: currentMetrics.suspiciousRequests + this.decayingMetrics.suspiciousRequests,
+      keyAccessAnomalies: currentMetrics.keyAccessAnomalies + this.decayingMetrics.keyAccessAnomalies,
+      systemErrors: currentMetrics.systemErrors + this.decayingMetrics.systemErrors,
+    };
 
+    // Check sliding window thresholds (with decaying metrics)
+    if (effectiveMetrics.failedAuthentications >= this.thresholds.maxFailedAuth) {
+      triggers.push(
+        `Failed auth sliding window threshold: ${effectiveMetrics.failedAuthentications}/${this.thresholds.maxFailedAuth} (current: ${currentMetrics.failedAuthentications}, decaying: ${this.decayingMetrics.failedAuthentications})`,
+      );
+    }
+
+    if (effectiveMetrics.suspiciousRequests >= this.thresholds.maxSuspiciousRequests) {
+      triggers.push(
+        `Suspicious requests sliding window threshold: ${effectiveMetrics.suspiciousRequests}/${this.thresholds.maxSuspiciousRequests} (current: ${currentMetrics.suspiciousRequests}, decaying: ${this.decayingMetrics.suspiciousRequests})`,
+      );
+    }
+
+    if (effectiveMetrics.keyAccessAnomalies >= this.thresholds.maxKeyAnomalies) {
+      triggers.push(
+        `Key anomalies sliding window threshold: ${effectiveMetrics.keyAccessAnomalies}/${this.thresholds.maxKeyAnomalies} (current: ${currentMetrics.keyAccessAnomalies}, decaying: ${this.decayingMetrics.keyAccessAnomalies})`,
+      );
+    }
+
+    if (effectiveMetrics.systemErrors >= this.thresholds.maxSystemErrors) {
+      triggers.push(
+        `System errors sliding window threshold: ${effectiveMetrics.systemErrors}/${this.thresholds.maxSystemErrors} (current: ${currentMetrics.systemErrors}, decaying: ${this.decayingMetrics.systemErrors})`,
+      );
+    }
+
+    // Check cumulative thresholds (3x the normal threshold)
+    const cumulativeThreshold = 3;
+    
     if (
-      this.securityMetrics.failedAuthentications >=
-      this.thresholds.maxFailedAuth
+      this.cumulativeMetrics.failedAuthentications >=
+      this.thresholds.maxFailedAuth * cumulativeThreshold
     ) {
       triggers.push(
-        `Failed auth threshold: ${this.securityMetrics.failedAuthentications}/${this.thresholds.maxFailedAuth}`,
+        `Failed auth cumulative threshold: ${this.cumulativeMetrics.failedAuthentications}/${this.thresholds.maxFailedAuth * cumulativeThreshold}`,
       );
     }
 
     if (
-      this.securityMetrics.suspiciousRequests >=
-      this.thresholds.maxSuspiciousRequests
+      this.cumulativeMetrics.suspiciousRequests >=
+      this.thresholds.maxSuspiciousRequests * cumulativeThreshold
     ) {
       triggers.push(
-        `Suspicious requests threshold: ${this.securityMetrics.suspiciousRequests}/${this.thresholds.maxSuspiciousRequests}`,
+        `Suspicious requests cumulative threshold: ${this.cumulativeMetrics.suspiciousRequests}/${this.thresholds.maxSuspiciousRequests * cumulativeThreshold}`,
       );
     }
 
     if (
-      this.securityMetrics.keyAccessAnomalies >= this.thresholds.maxKeyAnomalies
+      this.cumulativeMetrics.keyAccessAnomalies >=
+      this.thresholds.maxKeyAnomalies * cumulativeThreshold
     ) {
       triggers.push(
-        `Key anomalies threshold: ${this.securityMetrics.keyAccessAnomalies}/${this.thresholds.maxKeyAnomalies}`,
+        `Key anomalies cumulative threshold: ${this.cumulativeMetrics.keyAccessAnomalies}/${this.thresholds.maxKeyAnomalies * cumulativeThreshold}`,
       );
     }
 
-    if (this.securityMetrics.systemErrors >= this.thresholds.maxSystemErrors) {
+    if (
+      this.cumulativeMetrics.systemErrors >=
+      this.thresholds.maxSystemErrors * cumulativeThreshold
+    ) {
       triggers.push(
-        `System errors threshold: ${this.securityMetrics.systemErrors}/${this.thresholds.maxSystemErrors}`,
+        `System errors cumulative threshold: ${this.cumulativeMetrics.systemErrors}/${this.thresholds.maxSystemErrors * cumulativeThreshold}`,
       );
     }
 
@@ -457,6 +635,39 @@ export class KillSwitchService extends EventEmitter {
 
   getSecurityMetrics(): SecurityMetrics {
     return { ...this.securityMetrics };
+  }
+
+  /**
+   * Get cumulative metrics across all windows
+   * This is useful for detecting distributed attacks
+   */
+  getCumulativeMetrics(): CumulativeMetrics {
+    return { ...this.cumulativeMetrics };
+  }
+
+  /**
+   * Get the current decaying metrics from the previous half-window
+   */
+  getDecayingMetrics(): Omit<DecayingMetrics, 'windowStart'> {
+    return {
+      failedAuthentications: this.decayingMetrics.failedAuthentications,
+      suspiciousRequests: this.decayingMetrics.suspiciousRequests,
+      keyAccessAnomalies: this.decayingMetrics.keyAccessAnomalies,
+      systemErrors: this.decayingMetrics.systemErrors,
+    };
+  }
+
+  /**
+   * Reset cumulative metrics (use with caution - typically only after system maintenance)
+   */
+  resetCumulativeMetrics(): void {
+    this.cumulativeMetrics = {
+      failedAuthentications: 0,
+      suspiciousRequests: 0,
+      keyAccessAnomalies: 0,
+      systemErrors: 0,
+    };
+    logger.info("Cumulative metrics reset");
   }
 
   getThresholds(): typeof this.thresholds {
