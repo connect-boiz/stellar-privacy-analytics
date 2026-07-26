@@ -10,6 +10,7 @@ export interface HSMIntegrationConfig {
   autoInitializeMasterKey?: boolean;
   enableAutoRecovery?: boolean;
   autoRecoveryDelayMinutes?: number;
+  maxRecoveryAttempts?: number;
   auditRetentionDays?: number;
   killSwitchThresholds?: {
     maxFailedAuth?: number;
@@ -60,8 +61,9 @@ export class HSMIntegration extends EventEmitter {
 
     this.config = {
       autoInitializeMasterKey: true,
-      enableAutoRecovery: false,
-      autoRecoveryDelayMinutes: 30,
+      enableAutoRecovery: true,
+      autoRecoveryDelayMinutes: 5,
+      maxRecoveryAttempts: 5,
       auditRetentionDays: 90,
       killSwitchThresholds: {
         maxFailedAuth: 10,
@@ -102,6 +104,7 @@ export class HSMIntegration extends EventEmitter {
         {
           autoRecoveryEnabled: this.config.enableAutoRecovery,
           autoRecoveryDelay: this.config.autoRecoveryDelayMinutes,
+          maxRecoveryAttempts: this.config.maxRecoveryAttempts,
           thresholds: this.config.killSwitchThresholds,
         },
       );
@@ -372,7 +375,7 @@ export class HSMIntegration extends EventEmitter {
     if (updates.enableAutoRecovery !== undefined) {
       if (updates.enableAutoRecovery) {
         this.killSwitchService.enableAutoRecovery(
-          updates.autoRecoveryDelayMinutes || 30,
+          updates.autoRecoveryDelayMinutes,
         );
       } else {
         this.killSwitchService.disableAutoRecovery();

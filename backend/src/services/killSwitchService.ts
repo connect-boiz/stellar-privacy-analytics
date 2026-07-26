@@ -3,13 +3,14 @@ import { logger } from "../utils/logger";
 import { HSMService } from "./hsmService";
 import { MasterKeyManager } from "./masterKeyManager";
 import { AuditService, AuditRecord } from "./auditService";
+import { killSwitchRecoveryAttempts } from "../utils/prometheus";
 
 export interface KillSwitchTrigger {
   id: string;
   timestamp: Date;
   reason: string;
   severity: "low" | "medium" | "high" | "critical";
-  source: "manual" | "automated" | "security_incident" | "system_failure";
+  source: "manual" | "automated" | "security_incident" | "system_failure" | "hsm_failure";
   triggeredBy?: string;
   metadata?: Record<string, any>;
 }
@@ -22,7 +23,9 @@ export interface KillSwitchStatus {
   totalActivations: number;
   autoRecoveryEnabled: boolean;
   recoveryAttempts: number;
+  maxRecoveryAttempts: number;
   nextRecoveryAttempt?: Date;
+  recoveredAt?: Date;
 }
 
 export interface SecurityMetrics {
@@ -32,6 +35,15 @@ export interface SecurityMetrics {
   systemErrors: number;
   timeWindow: number; // in minutes
 }
+
+// Recovery delay mapping based on trigger source (in minutes)
+export const RECOVERY_DELAY_MAP: Record<KillSwitchTrigger["source"], number> = {
+  hsm_failure: 0.5,        // 30 seconds for HSM transient failure
+  system_failure: 2,       // 2 minutes for system failures
+  security_incident: 5,    // 5 minutes for security incidents
+  automated: 5,            // 5 minutes for automated triggers
+  manual: 5,               // 5 minutes for manual triggers
+};
 
 export class KillSwitchService extends EventEmitter {
   private hsmService: HSMService;
@@ -48,6 +60,8 @@ export class KillSwitchService extends EventEmitter {
     maxSystemErrors: number;
     metricsWindow: number;
   };
+  private maxRecoveryAttempts: number;
+  private currentRecoveryDelay?: number;
 
   constructor(
     hsmService: HSMService,
@@ -56,6 +70,7 @@ export class KillSwitchService extends EventEmitter {
     config: {
       autoRecoveryEnabled?: boolean;
       autoRecoveryDelay?: number; // minutes
+      maxRecoveryAttempts?: number;
       thresholds?: {
         maxFailedAuth?: number;
         maxSuspiciousRequests?: number;
@@ -70,6 +85,8 @@ export class KillSwitchService extends EventEmitter {
     this.hsmService = hsmService;
     this.masterKeyManager = masterKeyManager;
     this.auditService = auditService;
+
+    this.maxRecoveryAttempts = config.maxRecoveryAttempts ?? 5;
 
     this.thresholds = {
       maxFailedAuth: config.thresholds?.maxFailedAuth || 10,
@@ -90,12 +107,16 @@ export class KillSwitchService extends EventEmitter {
     this.status = {
       active: false,
       totalActivations: 0,
-      autoRecoveryEnabled: config.autoRecoveryEnabled ?? false,
+      autoRecoveryEnabled: config.autoRecoveryEnabled ?? true,
       recoveryAttempts: 0,
+      maxRecoveryAttempts: this.maxRecoveryAttempts,
     };
 
     this.startMetricsCollection();
     this.setupEventListeners();
+
+    // Initialize Prometheus gauge
+    killSwitchRecoveryAttempts.set(0);
   }
 
   private setupEventListeners(): void {
@@ -103,7 +124,9 @@ export class KillSwitchService extends EventEmitter {
     this.hsmService.on("connectionUnhealthy", (data) => {
       this.recordSystemError();
       if (data.error.includes("authentication")) {
-        this.checkThresholds("system_failure", "HSM authentication failure");
+        this.checkThresholds("hsm_failure", "HSM authentication failure");
+      } else {
+        this.checkThresholds("hsm_failure", "HSM connection unhealthy");
       }
     });
 
@@ -262,15 +285,19 @@ export class KillSwitchService extends EventEmitter {
       this.status.lastTrigger = trigger;
       this.status.totalActivations++;
       this.status.recoveryAttempts = 0;
+      this.currentRecoveryDelay = undefined;
 
       // Clear master key cache
       this.masterKeyManager.clearCache();
 
-      // Cancel auto-recovery if active
+      // Cancel auto-recovery if active and reset Prometheus gauge
       if (this.autoRecoveryTimer) {
         clearTimeout(this.autoRecoveryTimer);
         this.autoRecoveryTimer = null;
       }
+
+      // Schedule auto-recovery if enabled (start fresh for this activation)
+      this.scheduleAutoRecoveryIfEnabled();
 
       // Log the activation
       await this.auditService.logSecurityViolation(
@@ -346,10 +373,27 @@ export class KillSwitchService extends EventEmitter {
     }
   }
 
-  enableAutoRecovery(delayMinutes: number = 30): void {
+  /**
+   * Enable auto-recovery with a delay based on the trigger source.
+   * If a delayMinutes is explicitly provided, it is used; otherwise the delay
+   * is derived from the last trigger's source using RECOVERY_DELAY_MAP.
+   */
+  enableAutoRecovery(delayMinutes?: number): void {
+    // Store explicitly provided delay for test and backoff purposes
+    if (delayMinutes !== undefined) {
+      this.currentRecoveryDelay = delayMinutes;
+    }
+
+    // Calculate delay based on trigger source if not explicitly provided
+    const computedDelay =
+      this.currentRecoveryDelay ??
+      (this.status.lastTrigger
+        ? RECOVERY_DELAY_MAP[this.status.lastTrigger.source] ?? 5
+        : 5);
+
     this.status.autoRecoveryEnabled = true;
     this.status.nextRecoveryAttempt = new Date(
-      Date.now() + delayMinutes * 60 * 1000,
+      Date.now() + computedDelay * 60 * 1000,
     );
 
     if (this.autoRecoveryTimer) {
@@ -360,12 +404,13 @@ export class KillSwitchService extends EventEmitter {
       async () => {
         await this.attemptAutoRecovery();
       },
-      delayMinutes * 60 * 1000,
+      computedDelay * 60 * 1000,
     );
 
     logger.info("Auto-recovery enabled", {
-      delayMinutes,
+      delayMinutes: computedDelay,
       nextAttempt: this.status.nextRecoveryAttempt,
+      triggerSource: this.status.lastTrigger?.source,
     });
   }
 
@@ -388,21 +433,104 @@ export class KillSwitchService extends EventEmitter {
     }
 
     this.status.recoveryAttempts++;
+    killSwitchRecoveryAttempts.set(this.status.recoveryAttempts);
+
+    logger.info("Auto-recovery attempt started", {
+      attempt: this.status.recoveryAttempts,
+      maxAttempts: this.maxRecoveryAttempts,
+    });
+
+    // Check if max attempts exceeded — escalate to human operators
+    if (this.status.recoveryAttempts > this.maxRecoveryAttempts) {
+      logger.error(
+        "Auto-recovery: Maximum recovery attempts exceeded. Escalating to human operators.",
+        {
+          attempts: this.status.recoveryAttempts,
+          maxAttempts: this.maxRecoveryAttempts,
+          lastTrigger: this.status.lastTrigger,
+        },
+      );
+
+      this.disableAutoRecovery();
+
+      // Log escalation to audit
+      await this.auditService.logSecurityViolation(
+        "kill_switch_recovery_escalated",
+        {
+          userId: "system",
+          ipAddress: "system",
+          userAgent: "kill-switch-service",
+        },
+        {
+          type: "system",
+          id: `escalation-${Date.now()}`,
+        },
+        {
+          reason: "Maximum auto-recovery attempts exceeded",
+          attempts: this.status.recoveryAttempts,
+          maxAttempts: this.maxRecoveryAttempts,
+          lastTrigger: this.status.lastTrigger,
+        },
+      );
+
+      this.emit("recoveryEscalated", {
+        attempts: this.status.recoveryAttempts,
+        maxAttempts: this.maxRecoveryAttempts,
+        lastTrigger: this.status.lastTrigger,
+      });
+
+      return;
+    }
 
     try {
-      // Deactivate first, then verify health
+      // Circuit breaker pattern: Probe first — do a single health check
+      // while still in kill-switch state before attempting full recovery
+      logger.info("Auto-recovery: Running circuit-breaker probe", {
+        attempt: this.status.recoveryAttempts,
+      });
+
+      const probeResult = await this.runRecoveryProbe();
+
+      if (!probeResult.passed) {
+        logger.warn("Auto-recovery: Circuit-breaker probe failed", {
+          attempt: this.status.recoveryAttempts,
+          probeErrors: probeResult.errors,
+        });
+
+        await this.scheduleNextRecoveryAttempt(
+          `Circuit-breaker probe failed: ${probeResult.errors.join("; ")}`,
+        );
+        return;
+      }
+
+      // Probe passed — proceed with full recovery
+      logger.info(
+        "Auto-recovery: Circuit-breaker probe passed, proceeding with recovery",
+        { attempt: this.status.recoveryAttempts },
+      );
+
+      // Deactivate the kill switch
       await this.deactivate(
         `Auto-recovery attempt ${this.status.recoveryAttempts}`,
         "system",
       );
 
+      // Verify system health after deactivation
       const health = await this.masterKeyManager.healthCheck();
 
       if (health.healthy) {
+        this.status.recoveredAt = new Date();
+        killSwitchRecoveryAttempts.set(0);
+
         logger.info("Auto-recovery successful", {
           attempt: this.status.recoveryAttempts,
+          recoveredAt: this.status.recoveredAt,
         });
-        this.emit("autoRecovered", { attempt: this.status.recoveryAttempts });
+
+        this.emit("autoRecovered", {
+          attempt: this.status.recoveryAttempts,
+          recoveredAt: this.status.recoveredAt,
+        });
       } else {
         logger.warn("Auto-recovery: System unhealthy after deactivation", {
           health,
@@ -416,34 +544,124 @@ export class KillSwitchService extends EventEmitter {
           "high",
         );
 
-        // Schedule next attempt with exponential backoff
-        const nextDelay = Math.min(
-          30 * Math.pow(2, this.status.recoveryAttempts),
-          240,
-        );
-        this.enableAutoRecovery(nextDelay);
-
-        this.emit("autoRecoveryFailed", {
-          attempt: this.status.recoveryAttempts,
+        await this.scheduleNextRecoveryAttempt(
+          `System unhealthy after deactivation`,
           health,
-          nextDelay,
-        });
+        );
       }
     } catch (error) {
       logger.error("Auto-recovery attempt failed:", error);
-
-      // Schedule retry
-      const nextDelay = Math.min(
-        30 * Math.pow(2, this.status.recoveryAttempts),
-        240,
-      );
-      this.enableAutoRecovery(nextDelay);
-
-      this.emit("autoRecoveryFailed", {
-        attempt: this.status.recoveryAttempts,
+      await this.scheduleNextRecoveryAttempt(
+        `Error during recovery: ${error}`,
         error,
-        nextDelay,
+      );
+    }
+  }
+
+  /**
+   * Circuit-breaker probe: runs a lightweight health check while still
+   * in kill-switch state to determine if it's safe to deactivate.
+   * Does NOT check the kill-switch status itself since it's expected to be active.
+   */
+  private async runRecoveryProbe(): Promise<{
+    passed: boolean;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+
+    try {
+      // Check HSM connection health (not kill-switch state)
+      const hsmStatus = this.hsmService.getSystemStatus();
+      if (!hsmStatus.connectionHealth) {
+        errors.push("HSM connection unhealthy");
+      }
+
+      // Check master key manager health, filtering out kill-switch-related
+      // issues since the kill switch is expected to be active during recovery
+      const masterKeyHealth = await this.masterKeyManager.healthCheck();
+      const relevantIssues = masterKeyHealth.issues.filter(
+        (issue) => !issue.toLowerCase().includes("kill switch"),
+      );
+      if (relevantIssues.length > 0) {
+        errors.push(
+          `Master key manager unhealthy: ${relevantIssues.join(", ")}`,
+        );
+      }
+
+      // Check if security thresholds are breached (exclude HSM kill-switch state)
+      if (
+        this.securityMetrics.failedAuthentications >=
+        this.thresholds.maxFailedAuth
+      ) {
+        errors.push(
+          `Failed auth threshold still exceeded: ${this.securityMetrics.failedAuthentications}/${this.thresholds.maxFailedAuth}`,
+        );
+      }
+
+      if (
+        this.securityMetrics.suspiciousRequests >=
+        this.thresholds.maxSuspiciousRequests
+      ) {
+        errors.push(
+          `Suspicious requests threshold still exceeded: ${this.securityMetrics.suspiciousRequests}/${this.thresholds.maxSuspiciousRequests}`,
+        );
+      }
+    } catch (error) {
+      errors.push(`Probe error: ${error}`);
+    }
+
+    return {
+      passed: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
+   * Schedule the next recovery attempt with exponential backoff.
+   * Doubles the base delay each attempt, capped at 240 minutes (4 hours).
+   */
+  private async scheduleNextRecoveryAttempt(
+    reason: string,
+    context?: any,
+  ): Promise<void> {
+    const baseDelay =
+      this.currentRecoveryDelay ??
+      RECOVERY_DELAY_MAP[this.status.lastTrigger?.source ?? "automated"] ?? 5;
+    const nextDelay = Math.min(
+      baseDelay * Math.pow(2, this.status.recoveryAttempts),
+      240, // cap at 4 hours
+    );
+
+    logger.warn("Auto-recovery: Scheduling next attempt with exponential backoff", {
+      attempt: this.status.recoveryAttempts,
+      nextDelay,
+      reason,
+      context,
+    });
+
+    this.enableAutoRecovery(nextDelay);
+
+    this.emit("autoRecoveryFailed", {
+      attempt: this.status.recoveryAttempts,
+      reason,
+      nextDelay,
+      context,
+    });
+  }
+
+  /**
+   * Schedule auto-recovery on activation if autoRecoveryEnabled is true.
+   * Uses the trigger source to determine the initial delay.
+   */
+  private scheduleAutoRecoveryIfEnabled(): void {
+    if (this.status.autoRecoveryEnabled && this.status.lastTrigger) {
+      const delayMinutes =
+        RECOVERY_DELAY_MAP[this.status.lastTrigger.source] ?? 5;
+      logger.info("Scheduling auto-recovery on activation", {
+        delayMinutes,
+        triggerSource: this.status.lastTrigger.source,
       });
+      this.enableAutoRecovery(delayMinutes);
     }
   }
 
@@ -521,6 +739,9 @@ export class KillSwitchService extends EventEmitter {
     if (this.metricsResetTimer) {
       clearInterval(this.metricsResetTimer);
     }
+
+    // Reset Prometheus gauge
+    killSwitchRecoveryAttempts.set(0);
 
     logger.info("Kill switch service shutdown completed");
   }

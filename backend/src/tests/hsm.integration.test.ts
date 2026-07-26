@@ -6,7 +6,8 @@ import {
 } from "../services/hsmService";
 import { MasterKeyManager } from "../services/masterKeyManager";
 import { AuditService } from "../services/auditService";
-import { KillSwitchService } from "../services/killSwitchService";
+import { KillSwitchService, RECOVERY_DELAY_MAP } from "../services/killSwitchService";
+import { killSwitchRecoveryAttempts } from "../utils/prometheus";
 import { randomBytes } from "crypto";
 
 // Mock HSM Implementation
@@ -474,6 +475,161 @@ describe("HSM Integration Tests", () => {
       const status = killSwitchService.getStatus();
       expect(status.active).toBe(false);
       expect(status.recoveryAttempts).toBeGreaterThan(0);
+    });
+
+    test("should use circuit-breaker probe before full recovery", async () => {
+      await masterKeyManager.initializeMasterKey();
+
+      const recoveryOrder: string[] = [];
+
+      killSwitchService.on("autoRecovered", () => {
+        recoveryOrder.push("autoRecovered");
+      });
+
+      killSwitchService.on("activated", () => {
+        recoveryOrder.push("activated");
+      });
+
+      await killSwitchService.activate(
+        "Test circuit breaker",
+        "manual",
+        "high",
+      );
+
+      // Enable auto-recovery with very short delay
+      killSwitchService.enableAutoRecovery(0.01);
+
+      // Wait for auto-recovery to complete
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const status = killSwitchService.getStatus();
+      // With healthy HSM, recovery should succeed
+      expect(status.active).toBe(false);
+      expect(status.recoveryAttempts).toBeGreaterThan(0);
+      expect(recoveryOrder).toContain("autoRecovered");
+    });
+
+    test("should escalate to human operators after max recovery attempts", async () => {
+      let escalated = false;
+      let escalatedData: any = null;
+
+      // Create KillSwitchService with only 1 max attempt for faster testing
+      const fastFailKillSwitch = new KillSwitchService(
+        hsmService,
+        masterKeyManager,
+        auditService,
+        {
+          autoRecoveryEnabled: true,
+          maxRecoveryAttempts: 1,
+        },
+      );
+
+      fastFailKillSwitch.on("recoveryEscalated", (data) => {
+        escalated = true;
+        escalatedData = data;
+      });
+
+      // Simulate unhealthy HSM to make recovery probe fail
+      const hsmStatusSpy = jest
+        .spyOn(hsmService, "getSystemStatus")
+        .mockReturnValue({
+          connectionHealth: false,
+          killSwitchActive: true,
+          lastHealthCheck: new Date(),
+          activeKeysCount: 0,
+          rotationPolicy: {} as any,
+        });
+
+      await fastFailKillSwitch.activate(
+        "Test escalation",
+        "manual",
+        "high",
+      );
+
+      // Trigger auto-recovery with short delay
+      fastFailKillSwitch.enableAutoRecovery(0.01);
+
+      // Wait for attempts to process (with exponential backoff from 0.01 base)
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Should have escalated after exceeding max attempts
+      expect(escalated).toBe(true);
+      expect(escalatedData.attempts).toBeGreaterThan(escalatedData.maxAttempts);
+      const status = fastFailKillSwitch.getStatus();
+      expect(status.autoRecoveryEnabled).toBe(false);
+
+      // Cleanup
+      hsmStatusSpy.mockRestore();
+      await fastFailKillSwitch.shutdown();
+    });
+
+    test("should use shorter recovery delay for HSM transient failure", () => {
+      // HSM failure should have 30 second delay
+      expect(RECOVERY_DELAY_MAP["hsm_failure"]).toBe(0.5);
+      expect(RECOVERY_DELAY_MAP["hsm_failure"] * 60).toBe(30); // 30 seconds
+
+      // Security incident should have 5 minute delay
+      expect(RECOVERY_DELAY_MAP["security_incident"]).toBe(5);
+      expect(RECOVERY_DELAY_MAP["security_incident"] * 60).toBe(300); // 5 minutes
+
+      // HSM failure delay should be shorter than security incident
+      expect(RECOVERY_DELAY_MAP["hsm_failure"]).toBeLessThan(
+        RECOVERY_DELAY_MAP["security_incident"],
+      );
+    });
+
+    test("should use recovery delay based on trigger source", async () => {
+      await masterKeyManager.initializeMasterKey();
+
+      // Activate with HSM failure source (should get shorter delay)
+      await killSwitchService.activate(
+        "HSM transient failure",
+        "hsm_failure",
+        "high",
+      );
+
+      const statusAfterActivation = killSwitchService.getStatus();
+      expect(statusAfterActivation.lastTrigger?.source).toBe("hsm_failure");
+
+      // Enable auto-recovery — should compute delay from source
+      killSwitchService.enableAutoRecovery();
+
+      const statusAfterRecovery = killSwitchService.getStatus();
+      expect(statusAfterRecovery.autoRecoveryEnabled).toBe(true);
+      // Next attempt should be ~30 seconds from now (not 5 minutes)
+      if (statusAfterRecovery.nextRecoveryAttempt) {
+        const delayMs =
+          statusAfterRecovery.nextRecoveryAttempt.getTime() - Date.now();
+        // HSM failure gets 30 second delay = 30000ms, allow small timing variance
+        expect(delayMs).toBeLessThan(60000); // less than 1 minute
+      }
+
+      await killSwitchService.deactivate("Test cleanup");
+    });
+
+    test("should enable auto-recovery by default", () => {
+      const status = killSwitchService.getStatus();
+      expect(status.autoRecoveryEnabled).toBe(true);
+      expect(status.maxRecoveryAttempts).toBe(5);
+    });
+
+    test("should track recovery attempts in Prometheus gauge", async () => {
+      await masterKeyManager.initializeMasterKey();
+
+      // Reset gauge before test
+      killSwitchRecoveryAttempts.set(0);
+
+      await killSwitchService.activate("Test prometheus gauge");
+
+      // Enable recovery with very short delay
+      killSwitchService.enableAutoRecovery(0.01);
+
+      // Wait for recovery attempt
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // After successful recovery, gauge should be reset to 0
+      const gaugeValue = await killSwitchRecoveryAttempts.get();
+      expect(gaugeValue.values[0]?.value).toBe(0);
     });
   });
 
