@@ -8,6 +8,7 @@ import { RequestTransformer } from "./RequestTransformer";
 import { PrivacyMetrics } from "./PrivacyMetrics";
 import { LoadBalancer } from "./LoadBalancer";
 import { logger } from "../utils/logger";
+import { validateAndSanitizePolicy } from "./policyValidation";
 import jwt from "jsonwebtoken";
 
 export interface GatewayConfig {
@@ -47,6 +48,7 @@ export interface RouteConfig {
 export interface PolicyConfig {
   id: string;
   name: string;
+  description?: string;
   rules: PolicyRule[];
   priority: number;
   enabled: boolean;
@@ -148,7 +150,11 @@ export class PrivacyApiGateway {
     this.app.get("/gateway/health", this.healthCheck.bind(this));
     this.app.get("/gateway/metrics", this.getMetrics.bind(this));
     this.app.get("/gateway/policies", this.getPolicies.bind(this));
-    this.app.post("/gateway/policies", this.updatePolicy.bind(this));
+    this.app.post(
+      "/gateway/policies",
+      this.policyBodySizeLimit.bind(this),
+      this.updatePolicy.bind(this),
+    );
     this.app.get("/gateway/services", this.getServices.bind(this));
 
     // Setup proxy routes for each service
@@ -471,6 +477,30 @@ export class PrivacyApiGateway {
     });
   }
 
+  // Policy-specific body size limiter (100KB max)
+  private policyBodySizeLimit(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): void {
+    const MAX_POLICY_BODY_SIZE = 100 * 1024; // 100KB
+
+    const contentLength = parseInt(
+      req.headers["content-length"] || "0",
+      10,
+    );
+
+    if (contentLength > MAX_POLICY_BODY_SIZE) {
+      res.status(413).json({
+        error: "Payload Too Large",
+        message: `Policy payload exceeds maximum size of ${MAX_POLICY_BODY_SIZE / 1024}KB`,
+      });
+      return;
+    }
+
+    next();
+  }
+
   // Management endpoints
   private async healthCheck(req: Request, res: Response): Promise<void> {
     const health = await (this.loadBalancer as any).getServicesHealth();
@@ -494,13 +524,32 @@ export class PrivacyApiGateway {
 
   private async updatePolicy(req: Request, res: Response): Promise<void> {
     try {
-      const policy = req.body;
+      const rawPayload = req.body;
+
+      // Validate and sanitize policy payload
+      const validation = validateAndSanitizePolicy(rawPayload);
+
+      if (!validation.valid) {
+        res.status(400).json({
+          error: "Policy Validation Failed",
+          message: validation.error,
+        });
+        return;
+      }
+
+      // Apply sanitized values (use ?? so empty strings from sanitization are preserved)
+      const policy = {
+        ...rawPayload,
+        name: validation.sanitizedName ?? rawPayload.name,
+        description: validation.sanitizedDescription ?? rawPayload.description,
+      };
+
       await this.policyEngine.updatePolicy(policy);
       res.json({
         message: "Policy updated successfully",
         policyId: policy.id,
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({
         error: "Policy Update Failed",
         message: error.message,
