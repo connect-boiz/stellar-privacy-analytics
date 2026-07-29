@@ -393,7 +393,9 @@ async function initializeServices() {
 
     const hsmIntegration = getHSMIntegration({
       autoInitializeMasterKey: true,
-      enableAutoRecovery: false,
+      enableAutoRecovery: true,
+      autoRecoveryDelayMinutes: 5,
+      maxRecoveryAttempts: 5,
       auditRetentionDays: 90,
     });
 

@@ -45,8 +45,8 @@ export const cacheHitRate = new promClient.Gauge({
 // Create metrics for rate limiting
 export const rateLimitMetrics = {
   requestsTotal: new Counter({
-    name: "http_requests_total",
-    help: "Total number of HTTP requests",
+    name: "rate_limit_requests_total",
+    help: "Total number of rate-limited HTTP requests",
     labelNames: ["method", "route", "status_code"],
     registers: [prometheusRegister],
   }),
@@ -60,8 +60,8 @@ export const rateLimitMetrics = {
   }),
 
   activeConnections: new Gauge({
-    name: "active_connections",
-    help: "Number of active connections",
+    name: "rate_limit_active_connections",
+    help: "Number of active connections tracked by rate limiter",
     registers: [prometheusRegister],
   }),
 };
@@ -97,5 +97,12 @@ export const serviceDiscoveryMetrics = {
     registers: [prometheusRegister],
   }),
 };
+
+// Kill switch specific metrics
+export const killSwitchRecoveryAttempts = new Gauge({
+  name: "kill_switch_recovery_attempts",
+  help: "Number of recovery attempts since last kill switch activation",
+  registers: [prometheusRegister],
+});
 
 export default promClient;
