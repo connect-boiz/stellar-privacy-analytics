@@ -202,6 +202,11 @@ impl StellarAnalytics {
         analysis_type: String,
         privacy_level_name: String,
     ) -> Result<BytesN<32>, StellarAnalyticsError> {
+        // Requester must authorize the invocation. Without this, any caller
+        // could supply a victim's address as `requester` and drain that
+        // victim's privacy budget (spoofed requester argument).
+        requester.require_auth();
+
         // Validate IPFS CID format (basic validation)
         if ipfs_cid.is_empty() || ipfs_cid.len() < 10 {
             return Err(StellarAnalyticsError::InvalidCID);
@@ -220,10 +225,13 @@ impl StellarAnalytics {
             .get(privacy_level_name.clone())
             .ok_or(StellarAnalyticsError::InvalidPrivacyLevel)?;
 
-        // Check if consent is required and verify signature
+        // If the privacy level requires consent, the data owner (the dataset's
+        // uploader) must authorize this request. Requiring their signature at
+        // the protocol level enforces consent; previously this was a no-op
+        // comment that let restricted datasets be analyzed without consent.
         if privacy_level.require_consent {
-            // In a real implementation, verify the signature against the data owner's public key
-            // For now, we'll assume the signature is valid
+            let dataset = Self::get_dataset(env.clone(), ipfs_cid.clone())?;
+            dataset.uploader.require_auth();
         }
 
         // Generate request ID
@@ -1030,6 +1038,10 @@ impl StellarAnalytics {
 mod test {
     use super::*;
     use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::testutils::MockAuth;
+    use soroban_sdk::testutils::MockAuthInvoke;
+    use soroban_sdk::IntoVal;
+    use soroban_sdk::Val;
 
     #[test]
     fn test_total_privacy_budget_decremented_on_complete_with_partial_usage() {
@@ -1264,5 +1276,138 @@ mod test {
             StellarAnalytics::is_authorized_oracle(env.clone(), oracle.clone())
         });
         assert!(still_authorized);
+    }
+
+    /// Spoofing prevention: without the requester's signature the host must
+    /// reject `request_analysis`. An attacker cannot drain a victim's privacy
+    /// budget by passing the victim's address as `requester`.
+    #[test]
+    #[should_panic(expected = "Error(Auth, InvalidAction)")]
+    fn test_request_analysis_rejects_spoofed_requester() {
+        let env = Env::default();
+
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let victim = Address::generate(&env);
+
+        // Authorize ONLY the initialize call for the admin.
+        let init_args: Vec<Val> = Vec::from_array(&env, [admin.clone().into_val(&env)]);
+        env.mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "initialize",
+                args: init_args,
+                sub_invokes: &[],
+            },
+        }]);
+        client.initialize(&admin);
+
+        // Register a dataset (no auth required) so the request is otherwise
+        // valid and the only thing missing is the requester's signature.
+        let cid = String::from_str(&env, "QmTest12345678901234567");
+        let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
+        let no_key: Option<BytesN<32>> = None;
+        let size_bytes: u64 = 1024;
+        let encrypted: bool = false;
+        let version: u32 = 1;
+        client.register_dataset(
+            &cid,
+            &dataset_hash,
+            &victim,
+            &size_bytes,
+            &encrypted,
+            &version,
+            &no_key,
+        );
+
+        // Drop all auths: the attacker supplies `victim` as `requester`
+        // without the victim ever signing the invocation.
+        env.mock_auths(&[]);
+
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "minimal"); // require_consent = false
+        client.request_analysis(&victim, &dataset_hash, &cid, &analysis_type, &privacy_level);
+    }
+
+    /// Consent enforcement: for `require_consent` privacy levels the data owner
+    /// (dataset uploader) must authorize the request. Authorizing only the
+    /// requester leaves the owner's consent missing, so the call must fail.
+    #[test]
+    #[should_panic(expected = "Error(Auth, InvalidAction)")]
+    fn test_request_analysis_requires_data_owner_consent() {
+        let env = Env::default();
+
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let requester = Address::generate(&env);
+        let data_owner = Address::generate(&env);
+
+        // Authorize ONLY the initialize call for the admin.
+        let init_args: Vec<Val> = Vec::from_array(&env, [admin.clone().into_val(&env)]);
+        env.mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "initialize",
+                args: init_args,
+                sub_invokes: &[],
+            },
+        }]);
+        client.initialize(&admin);
+
+        // Register a dataset owned by a distinct data owner (no auth needed).
+        let cid = String::from_str(&env, "QmTest12345678901234567");
+        let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
+        let no_key: Option<BytesN<32>> = None;
+        let size_bytes: u64 = 1024;
+        let encrypted: bool = false;
+        let version: u32 = 1;
+        client.register_dataset(
+            &cid,
+            &dataset_hash,
+            &data_owner,
+            &size_bytes,
+            &encrypted,
+            &version,
+            &no_key,
+        );
+
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard"); // require_consent = true
+
+        // Authorize ONLY the requester's request_analysis invocation. The data
+        // owner has not provided consent, so the host must reject the call.
+        let request_args: Vec<Val> = Vec::from_array(
+            &env,
+            [
+                requester.clone().into_val(&env),
+                dataset_hash.clone().into_val(&env),
+                cid.clone().into_val(&env),
+                analysis_type.clone().into_val(&env),
+                privacy_level.clone().into_val(&env),
+            ],
+        );
+        env.mock_auths(&[MockAuth {
+            address: &requester,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "request_analysis",
+                args: request_args,
+                sub_invokes: &[],
+            },
+        }]);
+
+        client.request_analysis(
+            &requester,
+            &dataset_hash,
+            &cid,
+            &analysis_type,
+            &privacy_level,
+        );
     }
 }
