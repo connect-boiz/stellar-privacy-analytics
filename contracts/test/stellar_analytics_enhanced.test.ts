@@ -43,7 +43,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     it("should handle maximum privacy budget edge case", () => {
       const maxBudget = 1000000000000000000n; // Maximum allowed
 
-      StellarAnalytics.add_privacy_budget(env, user, maxBudget);
+      StellarAnalytics.add_privacy_budget(env, admin, user, maxBudget);
 
       const budget = StellarAnalytics.get_user_privacy_budget(env, user);
       expect(budget).toEqual(maxBudget);
@@ -51,12 +51,12 @@ describe("StellarAnalytics - Enhanced Tests", () => {
 
     it("should handle negative values gracefully", () => {
       expect(() => {
-        StellarAnalytics.add_privacy_budget(env, user, -1000n);
+        StellarAnalytics.add_privacy_budget(env, admin, user, -1000n);
       }).toThrow();
     });
 
     it("should handle empty dataset hash", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const emptyHash = new BytesN(env, Array(32).fill(0));
       const analysisType = new String(env, "descriptive");
@@ -75,7 +75,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle extremely large dataset hash", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const largeHash = new BytesN(env, Array(32).fill(255));
       const analysisType = new String(env, "descriptive");
@@ -94,7 +94,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle concurrent analysis requests", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 300000000000000000n); // 300 tokens
+      StellarAnalytics.add_privacy_budget(env, admin, user, 300000000000000000n); // 300 tokens
 
       const datasetHash1 = new BytesN(env, Array(32).fill(1));
       const datasetHash2 = new BytesN(env, Array(32).fill(2));
@@ -128,8 +128,8 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle analysis completion with zero accuracy", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
-      StellarAnalytics.add_oracle(env, oracle);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
+      StellarAnalytics.add_oracle(env, admin, oracle);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -152,6 +152,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
       expect(() => {
         StellarAnalytics.complete_analysis(
           env,
+          oracle,
           requestId,
           resultHash,
           privacyBudgetUsed,
@@ -162,8 +163,8 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle analysis completion with negative accuracy", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
-      StellarAnalytics.add_oracle(env, oracle);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
+      StellarAnalytics.add_oracle(env, admin, oracle);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -186,6 +187,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
       expect(() => {
         StellarAnalytics.complete_analysis(
           env,
+          oracle,
           requestId,
           resultHash,
           privacyBudgetUsed,
@@ -196,8 +198,8 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle empty privacy proofs array", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
-      StellarAnalytics.add_oracle(env, oracle);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
+      StellarAnalytics.add_oracle(env, admin, oracle);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -219,6 +221,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
 
       StellarAnalytics.complete_analysis(
         env,
+        oracle,
         requestId,
         resultHash,
         privacyBudgetUsed,
@@ -231,8 +234,8 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle maximum number of privacy proofs", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
-      StellarAnalytics.add_oracle(env, oracle);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
+      StellarAnalytics.add_oracle(env, admin, oracle);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -262,6 +265,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
 
       StellarAnalytics.complete_analysis(
         env,
+        oracle,
         requestId,
         resultHash,
         privacyBudgetUsed,
@@ -277,12 +281,12 @@ describe("StellarAnalytics - Enhanced Tests", () => {
       const fakeRequestId = new BytesN(env, Array(32).fill(9));
 
       expect(() => {
-        StellarAnalytics.cancel_analysis(env, fakeRequestId);
+        StellarAnalytics.cancel_analysis(env, user, fakeRequestId);
       }).toThrow();
     });
 
     it("should handle double cancellation", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -297,20 +301,20 @@ describe("StellarAnalytics - Enhanced Tests", () => {
         signature,
       );
 
-      StellarAnalytics.cancel_analysis(env, requestId);
+      StellarAnalytics.cancel_analysis(env, user, requestId);
 
       expect(() => {
-        StellarAnalytics.cancel_analysis(env, requestId);
+        StellarAnalytics.cancel_analysis(env, user, requestId);
       }).toThrow("RequestAlreadyCompleted");
     });
 
     it("should handle oracle removal", () => {
-      StellarAnalytics.add_oracle(env, oracle);
+      StellarAnalytics.add_oracle(env, admin, oracle);
 
       // This test assumes there's a remove_oracle function
       // If not implemented, this would fail appropriately
       try {
-        StellarAnalytics.remove_oracle(env, oracle);
+        StellarAnalytics.remove_oracle(env, oracle, admin);
         expect(true).toBe(true); // Success case
       } catch (error) {
         expect(error.message).toContain("not implemented");
@@ -318,24 +322,24 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle privacy budget overflow", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 900000000000000000n); // 900 tokens
+      StellarAnalytics.add_privacy_budget(env, admin, user, 900000000000000000n); // 900 tokens
 
       expect(() => {
-        StellarAnalytics.add_privacy_budget(env, user, 200000000000000000n); // Would exceed max
+        StellarAnalytics.add_privacy_budget(env, admin, user, 200000000000000000n); // Would exceed max
       }).toThrow("BudgetExceeded");
     });
 
     it("should handle very small privacy budget amounts", () => {
       const smallAmount = 1n; // 1 stroop
 
-      StellarAnalytics.add_privacy_budget(env, user, smallAmount);
+      StellarAnalytics.add_privacy_budget(env, admin, user, smallAmount);
 
       const budget = StellarAnalytics.get_user_privacy_budget(env, user);
       expect(budget).toEqual(smallAmount);
     });
 
     it("should handle invalid analysis types", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const invalidAnalysisType = new String(env, "invalid_analysis_type");
@@ -354,7 +358,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle empty analysis type", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const emptyAnalysisType = new String(env, "");
@@ -373,7 +377,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle very long analysis type", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const longAnalysisType = new String(env, "a".repeat(1000)); // Very long string
@@ -392,7 +396,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle malformed signature", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -416,8 +420,8 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle statistics after multiple operations", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 300000000000000000n);
-      StellarAnalytics.add_oracle(env, oracle);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 300000000000000000n);
+      StellarAnalytics.add_oracle(env, admin, oracle);
 
       // Create multiple requests
       for (let i = 0; i < 3; i++) {
@@ -441,7 +445,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle gas limit edge cases", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       // Create a complex scenario that might hit gas limits
       const datasetHash = new BytesN(env, Array(32).fill(1));
@@ -471,6 +475,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
 
       StellarAnalytics.complete_analysis(
         env,
+        oracle,
         requestId,
         resultHash,
         privacyBudgetUsed,
@@ -490,12 +495,12 @@ describe("StellarAnalytics - Enhanced Tests", () => {
 
     it("should prevent unauthorized admin operations", () => {
       expect(() => {
-        StellarAnalytics.add_oracle(env, maliciousUser);
+        StellarAnalytics.add_oracle(env, maliciousUser, oracle);
       }).toThrow("NotAdmin");
     });
 
     it("should prevent access to other users' privacy budgets", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       // Malicious user tries to access user's budget
       const budget = StellarAnalytics.get_user_privacy_budget(
@@ -506,7 +511,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should prevent replay attacks", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 200000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 200000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
@@ -535,7 +540,7 @@ describe("StellarAnalytics - Enhanced Tests", () => {
     });
 
     it("should handle boundary conditions in privacy levels", () => {
-      StellarAnalytics.add_privacy_budget(env, user, 100000000000000000n);
+      StellarAnalytics.add_privacy_budget(env, admin, user, 100000000000000000n);
 
       const datasetHash = new BytesN(env, Array(32).fill(1));
       const analysisType = new String(env, "descriptive");
