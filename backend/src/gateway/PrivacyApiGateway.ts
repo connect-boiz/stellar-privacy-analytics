@@ -3,7 +3,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { PrivacyPolicyEngine } from "./PrivacyPolicyEngine";
 import { ABACService } from "./ABACService";
-import { APIKeyManager } from "./APIKeyManager";
+import { APIKey, APIKeyCreateRequest, APIKeyManager } from "./APIKeyManager";
 import { RequestTransformer } from "./RequestTransformer";
 import { PrivacyMetrics } from "./PrivacyMetrics";
 import { LoadBalancer } from "./LoadBalancer";
@@ -56,7 +56,13 @@ export interface PolicyConfig {
 
 export interface PolicyRule {
   attribute: string;
-  operator: "equals" | "contains" | "startsWith" | "endsWith" | "regex" | "not_equals";
+  operator:
+    | "equals"
+    | "contains"
+    | "startsWith"
+    | "endsWith"
+    | "regex"
+    | "not_equals";
   value: string;
   action: "allow" | "deny" | "transform" | "log";
   transformation?: TransformationRule;
@@ -127,7 +133,7 @@ export class PrivacyApiGateway {
     this.privacyMetrics = new PrivacyMetrics(config.metrics);
     this.loadBalancer = new LoadBalancer(
       config.services.map((service) => service.baseUrl),
-      { healthCheckInterval: config.loadBalancing.healthCheckInterval }
+      { healthCheckInterval: config.loadBalancing.healthCheckInterval },
     );
 
     this.setupMiddleware();
@@ -339,7 +345,11 @@ export class PrivacyApiGateway {
         return;
       }
 
-      const keyValidation = await this.apiKeyManager.validateKey(apiKey);
+      const keyValidation = await this.apiKeyManager.validateKey(apiKey, {
+        ipAddress: req.ip,
+        origin: req.headers.origin,
+        service: this.extractServiceFromPath(req.path),
+      });
 
       if (!keyValidation.valid) {
         res.status(401).json({
@@ -420,7 +430,8 @@ export class PrivacyApiGateway {
       try {
         const token = authHeader.substring(7);
         // Verify with HS256 using the shared JWT secret
-        const jwtSecret = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+        const jwtSecret =
+          process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
         const decoded = jwt.verify(token, jwtSecret, {
           algorithms: ["HS256"],
         }) as {
@@ -443,7 +454,8 @@ export class PrivacyApiGateway {
       if (keyInfo) {
         attributes.apiKeyId = keyInfo.id;
         attributes.apiKeyPermissions = keyInfo.permissions;
-        attributes.apiKeyOwner = keyInfo.metadata?.owner ?? (keyInfo as { owner?: string }).owner;
+        attributes.apiKeyOwner =
+          keyInfo.metadata?.owner ?? (keyInfo as { owner?: string }).owner;
       }
     }
 
@@ -485,10 +497,7 @@ export class PrivacyApiGateway {
   ): void {
     const MAX_POLICY_BODY_SIZE = 100 * 1024; // 100KB
 
-    const contentLength = parseInt(
-      req.headers["content-length"] || "0",
-      10,
-    );
+    const contentLength = parseInt(req.headers["content-length"] || "0", 10);
 
     if (contentLength > MAX_POLICY_BODY_SIZE) {
       res.status(413).json({
@@ -570,6 +579,25 @@ export class PrivacyApiGateway {
 
   public getApp(): express.Application {
     return this.app;
+  }
+
+  public async createApiKey(
+    request: APIKeyCreateRequest,
+  ): Promise<{ key: string; keyInfo: APIKey }> {
+    return this.apiKeyManager.createKey(request);
+  }
+
+  public async listApiKeys(filter?: {
+    owner?: string;
+    department?: string;
+    active?: boolean;
+    permissions?: string[];
+  }): Promise<APIKey[]> {
+    return this.apiKeyManager.listKeys(filter);
+  }
+
+  public async revokeApiKey(keyId: string): Promise<boolean> {
+    return this.apiKeyManager.revokeKey(keyId);
   }
 
   public async start(port: number): Promise<void> {

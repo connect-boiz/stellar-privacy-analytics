@@ -66,17 +66,28 @@ export interface APIKeyUsage {
   statusCode: number;
 }
 
+type RateLimitWindow = {
+  windowStart: number;
+  count: number;
+};
+
+type APIKeyRateUsage = {
+  minute: RateLimitWindow;
+  hour: RateLimitWindow;
+  day: RateLimitWindow;
+};
+
 export class APIKeyManager {
   private keys: Map<string, APIKey>;
   private usageLogs: APIKeyUsage[];
+  private rateUsage: Map<string, APIKeyRateUsage>;
   private keyPrefixLength: number;
-  private keyLength: number;
 
   constructor() {
     this.keys = new Map();
     this.usageLogs = [];
-    this.keyPrefixLength = 8;
-    this.keyLength = 64;
+    this.rateUsage = new Map();
+    this.keyPrefixLength = 16;
 
     this.initializeDefaultKeys();
     this.setupUsageLogCleanup();
@@ -98,10 +109,9 @@ export class APIKeyManager {
         keyPrefix,
         permissions: request.permissions,
         rateLimit: {
-          requestsPerMinute: 60,
-          requestsPerHour: 1000,
-          requestsPerDay: 10000,
-          ...request.rateLimit,
+          requestsPerMinute: request.rateLimit?.requestsPerMinute ?? 60,
+          requestsPerHour: request.rateLimit?.requestsPerHour ?? 1000,
+          requestsPerDay: request.rateLimit?.requestsPerDay ?? 10000,
         },
         restrictions: {
           allowedIPs: request.restrictions?.allowedIPs || [],
@@ -125,7 +135,7 @@ export class APIKeyManager {
         permissions: request.permissions,
       });
 
-      return { key: apiKey, keyInfo };
+      return { key: apiKey, keyInfo: this.cloneKeyForList(keyInfo) };
     } catch (error) {
       logger.error("Failed to create API key:", error);
       throw new Error(`API key creation failed: ${(error as Error).message}`);
@@ -176,10 +186,15 @@ export class APIKeyManager {
         return { valid: false, reason: restrictionCheck.reason };
       }
 
+      const rateLimitCheck = this.checkRateLimit(keyInfo);
+      if (!rateLimitCheck.allowed) {
+        return { valid: false, reason: rateLimitCheck.reason };
+      }
+
       // Update last used timestamp
       keyInfo.metadata.lastUsedAt = new Date();
 
-      return { valid: true, keyInfo };
+      return { valid: true, keyInfo: this.cloneKeyForList(keyInfo) };
     } catch (error) {
       logger.error("API key validation error:", error);
       return { valid: false, reason: "Validation error" };
@@ -216,6 +231,7 @@ export class APIKeyManager {
       }
 
       this.keys.delete(keyId);
+      this.rateUsage.delete(keyId);
 
       logger.info("API key deleted", {
         keyId,
@@ -266,7 +282,23 @@ export class APIKeyManager {
   }
 
   async getKeyInfo(keyId: string): Promise<APIKey | null> {
-    return this.keys.get(keyId) || null;
+    const keyInfo = this.keys.get(keyId);
+    if (keyInfo) {
+      return this.cloneKeyForList(keyInfo);
+    }
+
+    if (!keyId || typeof keyId !== "string") {
+      return null;
+    }
+
+    const inputHash = this.hashKey(keyId);
+    const keyFromRawValue = Array.from(this.keys.values()).find(
+      (candidate) =>
+        candidate.keyHash.length === inputHash.length &&
+        timingSafeEqual(Buffer.from(inputHash), Buffer.from(candidate.keyHash)),
+    );
+
+    return keyFromRawValue ? this.cloneKeyForList(keyFromRawValue) : null;
   }
 
   async listKeys(filter?: {
@@ -378,7 +410,7 @@ export class APIKeyManager {
   }
 
   private generateAPIKey(): string {
-    return randomBytes(this.keyLength).toString("hex");
+    return `stellar_${randomBytes(32).toString("base64url")}`;
   }
 
   private hashKey(key: string): string {
@@ -394,6 +426,73 @@ export class APIKeyManager {
     clonedKey.keyHash = "[REDACTED]";
 
     return clonedKey;
+  }
+
+  private checkRateLimit(keyInfo: APIKey): {
+    allowed: boolean;
+    reason?: string;
+  } {
+    if (!keyInfo.rateLimit) {
+      return { allowed: true };
+    }
+
+    const now = Date.now();
+    const usage = this.getRateUsage(keyInfo.id, now);
+
+    const checks = [
+      {
+        bucket: usage.minute,
+        windowMs: 60 * 1000,
+        limit: keyInfo.rateLimit.requestsPerMinute,
+        label: "per-minute",
+      },
+      {
+        bucket: usage.hour,
+        windowMs: 60 * 60 * 1000,
+        limit: keyInfo.rateLimit.requestsPerHour,
+        label: "per-hour",
+      },
+      {
+        bucket: usage.day,
+        windowMs: 24 * 60 * 60 * 1000,
+        limit: keyInfo.rateLimit.requestsPerDay,
+        label: "per-day",
+      },
+    ];
+
+    for (const check of checks) {
+      if (now - check.bucket.windowStart >= check.windowMs) {
+        check.bucket.windowStart = now;
+        check.bucket.count = 0;
+      }
+
+      if (check.limit > 0 && check.bucket.count >= check.limit) {
+        return {
+          allowed: false,
+          reason: `API key rate limit exceeded (${check.label})`,
+        };
+      }
+    }
+
+    checks.forEach((check) => {
+      check.bucket.count += 1;
+    });
+
+    return { allowed: true };
+  }
+
+  private getRateUsage(keyId: string, now: number): APIKeyRateUsage {
+    let usage = this.rateUsage.get(keyId);
+    if (!usage) {
+      usage = {
+        minute: { windowStart: now, count: 0 },
+        hour: { windowStart: now, count: 0 },
+        day: { windowStart: now, count: 0 },
+      };
+      this.rateUsage.set(keyId, usage);
+    }
+
+    return usage;
   }
 
   private checkRestrictions(

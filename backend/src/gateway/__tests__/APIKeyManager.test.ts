@@ -152,12 +152,13 @@ describe("APIKeyManager", () => {
         "",
       );
 
-      expect(apiKey).toHaveLength(128);
-      expect(apiKey.substring(0, 8)).toBe(keyPrefix);
+      expect(apiKey).toMatch(/^stellar_[A-Za-z0-9_-]{43}$/);
+      expect(apiKey.substring(0, 16)).toBe(keyPrefix);
 
       const validation = await manager.validateKey(apiKey);
       expect(validation.valid).toBe(true);
       expect(validation.keyInfo?.permissions).toContain("admin");
+      expect(validation.keyInfo?.keyHash).toBe("[REDACTED]");
     });
 
     it("randomizes the development key on each start", () => {
@@ -205,6 +206,95 @@ describe("APIKeyManager", () => {
       expect(firstValidation.keyInfo?.name).toBe("Key A");
       expect(secondValidation.valid).toBe(true);
       expect(secondValidation.keyInfo?.name).toBe("Key B");
+    });
+
+    it("returns API keys once and redacts stored hashes from callers", async () => {
+      process.env.NODE_ENV = "test";
+
+      const manager = new APIKeyManager();
+      const { key: apiKey, keyInfo } = await manager.createKey({
+        name: "Gateway Client",
+        permissions: ["analytics:read"],
+        metadata: {
+          owner: "gateway-team",
+          department: "privacy",
+          purpose: "regression-test",
+        },
+      });
+
+      expect(apiKey).toMatch(/^stellar_[A-Za-z0-9_-]{43}$/);
+      expect(keyInfo.keyHash).toBe("[REDACTED]");
+
+      const listedKeys = await manager.listKeys({ owner: "gateway-team" });
+      expect(listedKeys).toHaveLength(1);
+      expect(listedKeys[0].keyHash).toBe("[REDACTED]");
+      expect(JSON.stringify(listedKeys)).not.toContain(apiKey);
+
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: true,
+      });
+    });
+
+    it("immediately rejects a revoked key", async () => {
+      process.env.NODE_ENV = "test";
+
+      const manager = new APIKeyManager();
+      const { key: apiKey, keyInfo } = await manager.createKey({
+        name: "Revocable Gateway Client",
+        permissions: ["analytics:read"],
+        metadata: {
+          owner: "gateway-team",
+          department: "privacy",
+          purpose: "regression-test",
+        },
+      });
+
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: true,
+      });
+      await expect(manager.revokeKey(keyInfo.id)).resolves.toBe(true);
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: false,
+        reason: "API key is deactivated",
+      });
+    });
+
+    it("enforces per-key rate limits", async () => {
+      process.env.NODE_ENV = "test";
+      jest.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+
+      const manager = new APIKeyManager();
+      const { key: apiKey } = await manager.createKey({
+        name: "Rate Limited Gateway Client",
+        permissions: ["analytics:read"],
+        rateLimit: {
+          requestsPerMinute: 2,
+          requestsPerHour: 10,
+          requestsPerDay: 20,
+        },
+        metadata: {
+          owner: "gateway-team",
+          department: "privacy",
+          purpose: "regression-test",
+        },
+      });
+
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: true,
+      });
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: true,
+      });
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: false,
+        reason: "API key rate limit exceeded (per-minute)",
+      });
+
+      jest.advanceTimersByTime(60 * 1000);
+
+      await expect(manager.validateKey(apiKey)).resolves.toMatchObject({
+        valid: true,
+      });
     });
   });
 });
