@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
 import { getGateway } from "../gateway";
+import { APIKeyCreateRequest } from "../gateway/APIKeyManager";
 import { logger } from "../utils/logger";
 
 const router = Router();
@@ -161,7 +162,7 @@ router.get(
 router.post(
   "/api-keys",
   asyncHandler(async (req: Request, res: Response) => {
-    const { name, permissions, restrictions, metadata } = req.body;
+    const { name, permissions, rateLimit, restrictions, metadata } = req.body;
 
     if (!name || !permissions || !metadata) {
       return res.status(400).json({
@@ -169,20 +170,28 @@ router.post(
       });
     }
 
-    // Mock API key creation
-    const apiKey = `stellar_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
-    const keyInfo = {
-      id: `key_${Date.now()}`,
+    if (!metadata.owner || !metadata.department || !metadata.purpose) {
+      return res.status(400).json({
+        error: "Missing required metadata fields: owner, department, purpose",
+      });
+    }
+
+    const gateway = getGateway();
+    if (!gateway) {
+      return res.status(503).json({
+        error: "Gateway not available",
+      });
+    }
+
+    const createRequest: APIKeyCreateRequest = {
       name,
-      keyPrefix: apiKey.substring(0, 12),
       permissions,
-      restrictions: restrictions || {},
-      metadata: {
-        ...metadata,
-        createdAt: new Date(),
-        isActive: true,
-      },
+      rateLimit,
+      restrictions,
+      metadata,
     };
+
+    const { key: apiKey, keyInfo } = await gateway.createApiKey(createRequest);
 
     logger.info("API key created via gateway management", {
       keyId: keyInfo.id,
@@ -202,23 +211,28 @@ router.post(
 router.get(
   "/api-keys",
   asyncHandler(async (req: Request, res: Response) => {
-    // Mock API keys list
+    const gateway = getGateway();
+    if (!gateway) {
+      return res.status(503).json({
+        error: "Gateway not available",
+      });
+    }
+
+    const { owner, department, active, permissions } = req.query;
+    const permissionFilter =
+      typeof permissions === "string"
+        ? permissions.split(",").map((permission) => permission.trim())
+        : undefined;
+    const activeFilter = active === undefined ? undefined : active === "true";
+    const keys = await gateway.listApiKeys({
+      owner: typeof owner === "string" ? owner : undefined,
+      department: typeof department === "string" ? department : undefined,
+      active: activeFilter,
+      permissions: permissionFilter,
+    });
+
     res.json({
-      keys: [
-        {
-          id: "key_001",
-          name: "Analytics Client Key",
-          keyPrefix: "stellar_an_",
-          permissions: ["analytics:read", "analytics:write"],
-          metadata: {
-            owner: "analytics-team",
-            department: "data-analytics",
-            createdAt: new Date("2024-01-15"),
-            lastUsedAt: new Date(),
-            isActive: true,
-          },
-        },
-      ],
+      keys,
     });
   }),
 );
@@ -228,6 +242,20 @@ router.delete(
   "/api-keys/:keyId",
   asyncHandler(async (req: Request, res: Response) => {
     const { keyId } = req.params;
+    const gateway = getGateway();
+    if (!gateway) {
+      return res.status(503).json({
+        error: "Gateway not available",
+      });
+    }
+
+    const revoked = await gateway.revokeApiKey(keyId);
+    if (!revoked) {
+      return res.status(404).json({
+        error: "API key not found",
+        keyId,
+      });
+    }
 
     logger.info("API key revoked via gateway management", { keyId });
 
