@@ -40,6 +40,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **UpgradeableProxy: require admin auth on `initialize`**
   Defense-in-depth against front-running between contract deployment and the
   legitimate admin's setup transaction.
+- **StellarAnalytics: take an explicit authenticated `caller` in admin/oracle entry points**
+  `add_oracle`, `add_privacy_budget`, `update_data_availability`, `pin_dataset`,
+  `complete_analysis` and `cancel_analysis` previously derived the caller from
+  `env.current_contract_address()`, so no external address could ever satisfy
+  the admin/oracle/requester checks and the whole oracle onboarding → analysis
+  completion → cancellation lifecycle was dead code. Each function now takes an
+  explicit `caller: Address` argument guarded by `caller.require_auth()`, and
+  the test suite proves a real admin can add oracles and complete analyses while
+  non-admins, non-oracles and non-requesters are rejected. Fixes #396.
 
 ## [1.0.0] - 2024-03-16
 

@@ -329,14 +329,18 @@ impl StellarAnalytics {
     /// Complete an analysis with results
     pub fn complete_analysis(
         env: Env,
+        caller: Address,
         request_id: BytesN<32>,
         result_hash: BytesN<32>,
         privacy_budget_used: i128,
         accuracy: u32,
         privacy_proofs: Vec<BytesN<32>>,
     ) -> Result<(), StellarAnalyticsError> {
-        // Verify caller is authorized oracle
-        let caller = env.current_contract_address(); // In real implementation, get from auth
+        // The submitting oracle must authorize the invocation. Deriving the
+        // caller from current_contract_address() made this function
+        // permanently unusable: the contract itself can never be an
+        // authorized oracle.
+        caller.require_auth();
         if !Self::is_authorized_oracle(env.clone(), caller) {
             return Err(StellarAnalyticsError::NotAuthorizedOracle);
         }
@@ -449,8 +453,14 @@ impl StellarAnalytics {
     }
 
     /// Cancel an analysis request
-    pub fn cancel_analysis(env: Env, request_id: BytesN<32>) -> Result<(), StellarAnalyticsError> {
-        let caller = env.current_contract_address(); // In real implementation, get from auth
+    pub fn cancel_analysis(
+        env: Env,
+        caller: Address,
+        request_id: BytesN<32>,
+    ) -> Result<(), StellarAnalyticsError> {
+        // The requester must authorize cancelling their own request so the
+        // `caller` argument cannot be spoofed.
+        caller.require_auth();
 
         let mut requests: Map<BytesN<32>, AnalysisRequest> = env
             .storage()
@@ -530,16 +540,19 @@ impl StellarAnalytics {
     /// Add privacy budget to a user (admin only)
     pub fn add_privacy_budget(
         env: Env,
+        caller: Address,
         user: Address,
         amount: i128,
     ) -> Result<(), StellarAnalyticsError> {
+        // Only the admin can top up budgets; the admin must authorize the call.
+        caller.require_auth();
+
         let admin: Address = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, "admin"))
             .ok_or(StellarAnalyticsError::NotAuthorizedOracle)?;
 
-        let caller = env.current_contract_address(); // In real implementation, get from auth
         if caller != admin {
             return Err(StellarAnalyticsError::NotAuthorizedOracle);
         }
@@ -565,14 +578,20 @@ impl StellarAnalytics {
     }
 
     /// Add authorized oracle (admin only)
-    pub fn add_oracle(env: Env, oracle: Address) -> Result<(), StellarAnalyticsError> {
+    pub fn add_oracle(
+        env: Env,
+        caller: Address,
+        oracle: Address,
+    ) -> Result<(), StellarAnalyticsError> {
+        // Only the admin can onboard oracles; the admin must authorize the call.
+        caller.require_auth();
+
         let admin: Address = env
             .storage()
             .instance()
             .get(&Symbol::new(&env, "admin"))
             .ok_or(StellarAnalyticsError::NotAuthorizedOracle)?;
 
-        let caller = env.current_contract_address(); // In real implementation, get from auth
         if caller != admin {
             return Err(StellarAnalyticsError::NotAuthorizedOracle);
         }
@@ -609,9 +628,8 @@ impl StellarAnalytics {
         oracle: Address,
         caller: Address,
     ) -> Result<(), StellarAnalyticsError> {
-        // Authenticate the caller. Because `caller` is supplied by the invoker
-        // (unlike add_oracle's non-spoofable current_contract_address), the
-        // host-level auth check is what actually restricts this to the admin.
+        // Authenticate the caller. Because `caller` is supplied by the invoker,
+        // the host-level auth check is what actually restricts this to the admin.
         caller.require_auth();
 
         let admin: Address = env
@@ -837,12 +855,15 @@ impl StellarAnalytics {
     /// Update data availability status
     pub fn update_data_availability(
         env: Env,
+        caller: Address,
         cid: String,
         available: bool,
         pin_count: u32,
         filecoin_deal_id: Option<u64>,
     ) -> Result<(), StellarAnalyticsError> {
-        let caller = env.current_contract_address(); // In real implementation, get from auth
+        // Only the admin can update availability; the admin must authorize.
+        caller.require_auth();
+
         let admin: Address = env
             .storage()
             .instance()
@@ -887,8 +908,14 @@ impl StellarAnalytics {
     }
 
     /// Pin a dataset (mark as pinned)
-    pub fn pin_dataset(env: Env, cid: String) -> Result<(), StellarAnalyticsError> {
-        let caller = env.current_contract_address(); // In real implementation, get from auth
+    pub fn pin_dataset(
+        env: Env,
+        caller: Address,
+        cid: String,
+    ) -> Result<(), StellarAnalyticsError> {
+        // Only the admin can pin datasets; the admin must authorize.
+        caller.require_auth();
+
         let admin: Address = env
             .storage()
             .instance()
@@ -1043,40 +1070,59 @@ mod test {
     use soroban_sdk::IntoVal;
     use soroban_sdk::Val;
 
+    /// DEFAULT_PRIVACY_BUDGET (100 tokens).
+    const BUDGET: i128 = 100_000_000_000_000_000;
+
+    /// Register the contract, initialize it with a freshly generated admin, and
+    /// return (contract address, client, admin, user, oracle).
+    fn setup(
+        env: &Env,
+    ) -> (
+        Address,
+        StellarAnalyticsClient<'_>,
+        Address,
+        Address,
+        Address,
+    ) {
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(env, &contract_id);
+        let admin = Address::generate(env);
+        let user = Address::generate(env);
+        let oracle = Address::generate(env);
+        client.initialize(&admin);
+        (contract_id, client, admin, user, oracle)
+    }
+
+    /// Register a dataset owned by `uploader`; returns its CID and hash.
+    fn register_test_dataset(
+        env: &Env,
+        client: &StellarAnalyticsClient<'_>,
+        uploader: &Address,
+    ) -> (String, BytesN<32>) {
+        let cid = String::from_str(env, "QmTest12345678901234567");
+        let dataset_hash = BytesN::<32>::from_array(env, &[1u8; 32]);
+        let no_key: Option<BytesN<32>> = None;
+        client.register_dataset(
+            &cid,
+            &dataset_hash,
+            uploader,
+            &1024u64,
+            &false,
+            &1u32,
+            &no_key,
+        );
+        (cid, dataset_hash)
+    }
+
     #[test]
     fn test_total_privacy_budget_decremented_on_complete_with_partial_usage() {
         let env = Env::default();
         env.mock_all_auths();
+        let (_contract_id, client, admin, user, oracle) = setup(&env);
 
-        let contract_id = env.register(StellarAnalytics, ());
-        let client = StellarAnalyticsClient::new(&env, &contract_id);
-
-        // Use the contract's own address as admin/oracle
-        // so that env.current_contract_address() auth checks pass
-        let contract_addr: Address =
-            env.as_contract(&contract_id, || env.current_contract_address());
-        let user = Address::generate(&env);
-
-        client.initialize(&contract_addr);
-        client.add_oracle(&contract_addr);
-        let budget_amount: i128 = 100000000000000000;
-        client.add_privacy_budget(&user, &budget_amount);
-
-        let cid = String::from_str(&env, "QmTest12345678901234567");
-        let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
-        let no_key: Option<BytesN<32>> = None;
-        let size_bytes: u64 = 1024;
-        let version: u32 = 1;
-        let encrypted: bool = false;
-        client.register_dataset(
-            &cid,
-            &dataset_hash,
-            &user,
-            &size_bytes,
-            &encrypted,
-            &version,
-            &no_key,
-        );
+        client.add_oracle(&admin, &oracle);
+        client.add_privacy_budget(&admin, &user, &BUDGET);
+        let (cid, dataset_hash) = register_test_dataset(&env, &client, &user);
 
         let analysis_type = String::from_str(&env, "descriptive");
         let privacy_level = String::from_str(&env, "standard");
@@ -1085,58 +1131,34 @@ mod test {
 
         // Verify total_privacy_budget_used was incremented
         let (_total, budget_used, _active) = client.get_stats();
-        assert_eq!(budget_used, 100000000000000000);
+        assert_eq!(budget_used, BUDGET);
 
         // Complete with 50% usage — 50 tokens refunded, counter should decrement
         let result_hash = BytesN::<32>::from_array(&env, &[3u8; 32]);
         let privacy_proofs = Vec::new(&env);
-        let partial_budget: i128 = 50000000000000000;
-        let accuracy: u32 = 95;
+        let partial_budget: i128 = BUDGET / 2;
         client.complete_analysis(
+            &oracle,
             &request_id,
             &result_hash,
             &partial_budget,
-            &accuracy,
+            &95u32,
             &privacy_proofs,
         );
 
         let (_total, budget_used_after, _active) = client.get_stats();
-        assert_eq!(budget_used_after, 50000000000000000);
+        assert_eq!(budget_used_after, BUDGET / 2);
     }
 
     #[test]
     fn test_total_privacy_budget_unchanged_on_complete_with_full_usage() {
         let env = Env::default();
         env.mock_all_auths();
+        let (_contract_id, client, admin, user, oracle) = setup(&env);
 
-        let contract_id = env.register(StellarAnalytics, ());
-        let client = StellarAnalyticsClient::new(&env, &contract_id);
-
-        // Use the contract's own address as admin/oracle
-        let contract_addr: Address =
-            env.as_contract(&contract_id, || env.current_contract_address());
-        let user = Address::generate(&env);
-
-        client.initialize(&contract_addr);
-        client.add_oracle(&contract_addr);
-        let budget_amount: i128 = 100000000000000000;
-        client.add_privacy_budget(&user, &budget_amount);
-
-        let cid = String::from_str(&env, "QmTest12345678901234567");
-        let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
-        let no_key: Option<BytesN<32>> = None;
-        let size_bytes: u64 = 1024;
-        let version: u32 = 1;
-        let encrypted: bool = false;
-        client.register_dataset(
-            &cid,
-            &dataset_hash,
-            &user,
-            &size_bytes,
-            &encrypted,
-            &version,
-            &no_key,
-        );
+        client.add_oracle(&admin, &oracle);
+        client.add_privacy_budget(&admin, &user, &BUDGET);
+        let (cid, dataset_hash) = register_test_dataset(&env, &client, &user);
 
         let analysis_type = String::from_str(&env, "descriptive");
         let privacy_level = String::from_str(&env, "standard");
@@ -1144,74 +1166,43 @@ mod test {
             client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
         let (_total, budget_used, _active) = client.get_stats();
-        assert_eq!(budget_used, 100000000000000000);
+        assert_eq!(budget_used, BUDGET);
 
         // Complete with 100% usage — no refund, counter should be unchanged
         let result_hash = BytesN::<32>::from_array(&env, &[3u8; 32]);
         let privacy_proofs = Vec::new(&env);
-        let full_budget: i128 = 100000000000000000;
-        let accuracy: u32 = 95;
         client.complete_analysis(
+            &oracle,
             &request_id,
             &result_hash,
-            &full_budget,
-            &accuracy,
+            &BUDGET,
+            &95u32,
             &privacy_proofs,
         );
 
         let (_total, budget_used_after, _active) = client.get_stats();
-        assert_eq!(budget_used_after, 100000000000000000);
+        assert_eq!(budget_used_after, BUDGET);
     }
 
     #[test]
     fn test_total_privacy_budget_decremented_on_cancel() {
         let env = Env::default();
         env.mock_all_auths();
+        let (_contract_id, client, admin, user, _oracle) = setup(&env);
 
-        let contract_id = env.register(StellarAnalytics, ());
-        let client = StellarAnalyticsClient::new(&env, &contract_id);
-
-        // Use the contract's own address as admin and requester
-        // so that env.current_contract_address() auth checks pass
-        let contract_addr: Address =
-            env.as_contract(&contract_id, || env.current_contract_address());
-
-        client.initialize(&contract_addr);
-        let budget_amount: i128 = 100000000000000000;
-        client.add_privacy_budget(&contract_addr, &budget_amount);
-
-        let cid = String::from_str(&env, "QmTest12345678901234567");
-        let dataset_hash = BytesN::<32>::from_array(&env, &[1u8; 32]);
-        let no_key: Option<BytesN<32>> = None;
-        let size_bytes: u64 = 1024;
-        let version: u32 = 1;
-        let encrypted: bool = false;
-        client.register_dataset(
-            &cid,
-            &dataset_hash,
-            &contract_addr,
-            &size_bytes,
-            &encrypted,
-            &version,
-            &no_key,
-        );
+        client.add_privacy_budget(&admin, &user, &BUDGET);
+        let (cid, dataset_hash) = register_test_dataset(&env, &client, &user);
 
         let analysis_type = String::from_str(&env, "descriptive");
         let privacy_level = String::from_str(&env, "standard");
-        // Use contract_addr as requester so cancel_analysis auth passes
-        let request_id = client.request_analysis(
-            &contract_addr,
-            &dataset_hash,
-            &cid,
-            &analysis_type,
-            &privacy_level,
-        );
+        let request_id =
+            client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
 
         let (_total, budget_used, _active) = client.get_stats();
-        assert_eq!(budget_used, 100000000000000000);
+        assert_eq!(budget_used, BUDGET);
 
         // Cancel the analysis — full refund, counter should go back to 0
-        client.cancel_analysis(&request_id);
+        client.cancel_analysis(&user, &request_id);
 
         let (_total, budget_used_after, _active) = client.get_stats();
         assert_eq!(budget_used_after, 0);
@@ -1223,18 +1214,10 @@ mod test {
     fn test_remove_oracle_revokes_authorization() {
         let env = Env::default();
         env.mock_all_auths();
-
-        let contract_id = env.register(StellarAnalytics, ());
-        let client = StellarAnalyticsClient::new(&env, &contract_id);
-
-        // The contract's own address is admin so add_oracle's
-        // current_contract_address == admin check passes.
-        let contract_addr: Address =
-            env.as_contract(&contract_id, || env.current_contract_address());
-        client.initialize(&contract_addr);
+        let (contract_id, client, admin, _user, _oracle) = setup(&env);
 
         let oracle = Address::generate(&env);
-        client.add_oracle(&oracle);
+        client.add_oracle(&admin, &oracle);
 
         let authorized_before = env.as_contract(&contract_id, || {
             StellarAnalytics::is_authorized_oracle(env.clone(), oracle.clone())
@@ -1242,7 +1225,7 @@ mod test {
         assert!(authorized_before);
 
         // Admin revokes the oracle.
-        client.remove_oracle(&oracle, &contract_addr);
+        client.remove_oracle(&oracle, &admin);
 
         let authorized_after = env.as_contract(&contract_id, || {
             StellarAnalytics::is_authorized_oracle(env.clone(), oracle.clone())
@@ -1255,16 +1238,10 @@ mod test {
     fn test_remove_oracle_rejects_non_admin() {
         let env = Env::default();
         env.mock_all_auths();
-
-        let contract_id = env.register(StellarAnalytics, ());
-        let client = StellarAnalyticsClient::new(&env, &contract_id);
-
-        let contract_addr: Address =
-            env.as_contract(&contract_id, || env.current_contract_address());
-        client.initialize(&contract_addr);
+        let (contract_id, client, admin, _user, _oracle) = setup(&env);
 
         let oracle = Address::generate(&env);
-        client.add_oracle(&oracle);
+        client.add_oracle(&admin, &oracle);
 
         // A different address (not the admin) is rejected.
         let stranger = Address::generate(&env);
@@ -1276,6 +1253,198 @@ mod test {
             StellarAnalytics::is_authorized_oracle(env.clone(), oracle.clone())
         });
         assert!(still_authorized);
+    }
+
+    /// Acceptance (#396): a real admin (not the contract address) can onboard
+    /// an oracle, and that oracle can complete an analysis. Previously both
+    /// operations were impossible because the contract derived the caller from
+    /// env.current_contract_address().
+    #[test]
+    fn test_admin_can_add_oracle_and_oracle_completes_analysis() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, admin, user, oracle) = setup(&env);
+
+        client.add_oracle(&admin, &oracle);
+        client.add_privacy_budget(&admin, &user, &BUDGET);
+        let (cid, dataset_hash) = register_test_dataset(&env, &client, &user);
+
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard");
+        let request_id =
+            client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
+
+        let result_hash = BytesN::<32>::from_array(&env, &[3u8; 32]);
+        let privacy_proofs = Vec::new(&env);
+        client.complete_analysis(
+            &oracle,
+            &request_id,
+            &result_hash,
+            &BUDGET,
+            &95u32,
+            &privacy_proofs,
+        );
+
+        let request = client.get_analysis_request(&request_id);
+        assert!(request.completed);
+        let result = client.get_analysis_result(&request_id);
+        assert_eq!(result.result_hash, result_hash);
+    }
+
+    /// A non-admin caller is rejected by add_oracle.
+    #[test]
+    fn test_add_oracle_rejects_non_admin() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, _admin, _user, _oracle) = setup(&env);
+
+        let stranger = Address::generate(&env);
+        let oracle = Address::generate(&env);
+        let res = client.try_add_oracle(&stranger, &oracle);
+        assert_eq!(res, Err(Ok(StellarAnalyticsError::NotAuthorizedOracle)));
+    }
+
+    /// A non-oracle caller cannot complete an analysis.
+    #[test]
+    fn test_complete_analysis_rejects_non_oracle() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, admin, user, oracle) = setup(&env);
+
+        client.add_oracle(&admin, &oracle);
+        client.add_privacy_budget(&admin, &user, &BUDGET);
+        let (cid, dataset_hash) = register_test_dataset(&env, &client, &user);
+
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard");
+        let request_id =
+            client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
+
+        let stranger = Address::generate(&env);
+        let result_hash = BytesN::<32>::from_array(&env, &[3u8; 32]);
+        let privacy_proofs = Vec::new(&env);
+        let res = client.try_complete_analysis(
+            &stranger,
+            &request_id,
+            &result_hash,
+            &BUDGET,
+            &95u32,
+            &privacy_proofs,
+        );
+        assert_eq!(res, Err(Ok(StellarAnalyticsError::NotAuthorizedOracle)));
+    }
+
+    /// A non-admin caller cannot top up privacy budgets.
+    #[test]
+    fn test_add_privacy_budget_rejects_non_admin() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, _admin, user, _oracle) = setup(&env);
+
+        let stranger = Address::generate(&env);
+        let res = client.try_add_privacy_budget(&stranger, &user, &BUDGET);
+        assert_eq!(res, Err(Ok(StellarAnalyticsError::NotAuthorizedOracle)));
+    }
+
+    /// Only the admin can update data availability; non-admins are rejected.
+    #[test]
+    fn test_update_data_availability_requires_admin() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, admin, _user, _oracle) = setup(&env);
+
+        let (cid, _dataset_hash) = register_test_dataset(&env, &client, &admin);
+
+        // Non-admin rejected.
+        let stranger = Address::generate(&env);
+        let res = client.try_update_data_availability(&stranger, &cid, &false, &5u32, &None);
+        assert_eq!(res, Err(Ok(StellarAnalyticsError::NotAuthorizedOracle)));
+
+        // Admin succeeds.
+        client.update_data_availability(&admin, &cid, &false, &5u32, &None);
+        let availability = client.get_data_availability(&cid);
+        assert!(!availability.available);
+        assert_eq!(availability.pin_count, 5);
+    }
+
+    /// Only the admin can pin a dataset; non-admins are rejected.
+    #[test]
+    fn test_pin_dataset_requires_admin() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, admin, _user, _oracle) = setup(&env);
+
+        let (cid, _dataset_hash) = register_test_dataset(&env, &client, &admin);
+
+        // Non-admin rejected.
+        let stranger = Address::generate(&env);
+        let res = client.try_pin_dataset(&stranger, &cid);
+        assert_eq!(res, Err(Ok(StellarAnalyticsError::NotAuthorizedOracle)));
+
+        // Admin succeeds.
+        client.pin_dataset(&admin, &cid);
+        let dataset = client.get_dataset(&cid);
+        assert!(dataset.pinned);
+    }
+
+    /// Only the requester can cancel their own analysis.
+    #[test]
+    fn test_cancel_analysis_rejects_non_requester() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let (_contract_id, client, admin, user, _oracle) = setup(&env);
+
+        client.add_privacy_budget(&admin, &user, &BUDGET);
+        let (cid, dataset_hash) = register_test_dataset(&env, &client, &user);
+
+        let analysis_type = String::from_str(&env, "descriptive");
+        let privacy_level = String::from_str(&env, "standard");
+        let request_id =
+            client.request_analysis(&user, &dataset_hash, &cid, &analysis_type, &privacy_level);
+
+        // A non-requester cannot cancel.
+        let stranger = Address::generate(&env);
+        let res = client.try_cancel_analysis(&stranger, &request_id);
+        assert_eq!(res, Err(Ok(StellarAnalyticsError::InvalidRequestId)));
+
+        // The requester can cancel.
+        client.cancel_analysis(&user, &request_id);
+        let request = client.get_analysis_request(&request_id);
+        assert!(request.cancelled);
+    }
+
+    /// Spoofing prevention: without the admin's signature the host must reject
+    /// `add_oracle`. An attacker cannot onboard their own oracle by passing the
+    /// stored admin address as `caller`.
+    #[test]
+    #[should_panic(expected = "Error(Auth, InvalidAction)")]
+    fn test_add_oracle_requires_admin_signature() {
+        let env = Env::default();
+
+        let contract_id = env.register(StellarAnalytics, ());
+        let client = StellarAnalyticsClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let oracle = Address::generate(&env);
+
+        // Authorize ONLY the initialize call for the admin.
+        let init_args: Vec<Val> = Vec::from_array(&env, [admin.clone().into_val(&env)]);
+        env.mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "initialize",
+                args: init_args,
+                sub_invokes: &[],
+            },
+        }]);
+        client.initialize(&admin);
+
+        // Drop all auths: the attacker supplies `admin` as `caller` without
+        // the admin ever signing the invocation.
+        env.mock_auths(&[]);
+
+        client.add_oracle(&admin, &oracle);
     }
 
     /// Spoofing prevention: without the requester's signature the host must
