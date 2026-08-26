@@ -172,3 +172,6 @@ settings/override.*
 # User-specific files
 user-config.*
 personal-settings.*
+
+# Soroban testutils snapshot artifacts (regenerated per-test, not source)
+**/test_snapshots/
