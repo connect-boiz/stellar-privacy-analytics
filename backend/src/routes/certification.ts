@@ -219,6 +219,46 @@ router.post(
   },
 );
 
+// Get validation history for a certification
+router.get(
+  "/:id/validation-history",
+  [param("id").isUUID().withMessage("Valid certification ID is required")],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const certification = await certificationService.getCertification(
+        req.params.id,
+      );
+
+      if (!certification) {
+        return res.status(404).json({
+          error: "Not Found",
+          message: "Certification not found",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const validationHistory =
+        await validationService.getValidationHistory(req.params.id);
+
+      res.json({
+        success: true,
+        certificationId: req.params.id,
+        validationHistory,
+        count: validationHistory.length,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error("Error fetching validation history:", error);
+      res.status(500).json({
+        error: "Internal Server Error",
+        message: "Failed to fetch validation history",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
+
 // Run compliance check
 router.post(
   "/:id/compliance-check",
