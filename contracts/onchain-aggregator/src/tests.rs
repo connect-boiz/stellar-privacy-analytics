@@ -456,7 +456,7 @@ mod tests {
         let mut corrupted = certificate.clone();
         corrupted.signature = Bytes::new(&env);
         env.as_contract(&h.contract_id, || {
-            env.storage().persistent().set(&certificate_id, &corrupted);
+        env.storage().persistent().set(&certificate_id, &corrupted);
         });
         assert!(h.client.get_privacy_certificate(&certificate_id).is_none());
     }
@@ -497,5 +497,144 @@ mod tests {
 
         let err = env.as_contract(&h.contract_id, || OnChainAggregator::verify_state(&env));
         assert_eq!(err, Err(AggregatorError::StateInconsistent));
+    }
+
+    // ── Differential-Privacy regression tests (issue #413) ──────────────────
+
+    /// Helper: decode the little-endian i128 from the first 16 bytes of a
+    /// `Bytes` result value (as produced by `perform_sum`/`perform_count`).
+    fn decode_result_i128(bytes: &Bytes) -> i128 {
+        let mut buf = [0u8; 16];
+        for i in 0u32..16u32 {
+            buf[i as usize] = bytes.get(i).unwrap_or(0);
+        }
+        i128::from_le_bytes(buf)
+    }
+
+    /// DP regression: the Laplace noise is actually applied to the aggregate.
+    ///
+    /// Two independent aggregation requests over the same data are processed
+    /// and their results decoded.  Because the on-chain PRNG is seeded
+    /// differently for each invocation, the two noisy outputs must differ from
+    /// each other.  Additionally, at most one of them may equal the exact
+    /// aggregate — if both equal the exact value, noise was computed but
+    /// discarded (the original bug).
+    #[test]
+    fn test_aggregation_results_are_noisy_and_differ() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let provider = generate_address(&env);
+
+        // create_data_point encodes value=1000 and epsilon_spent=100.
+        // For a Count operation the exact aggregate is 1 (one data point).
+        let exact_count: i128 = 1;
+
+        // First aggregation
+        let dp1 = create_data_point(&env, &h.contract_id, provider.clone());
+        let mut ids1 = Vec::new(&env);
+        ids1.push_back(dp1);
+        let rid1 = create_aggregation_request(
+            &env,
+            &h.contract_id,
+            provider.clone(),
+            ids1,
+            // Budget >= epsilon_spent (100) so the request is accepted.
+            1000i128,
+        );
+        h.client.process_aggregation(&rid1, &h.admin);
+        let result1 = h
+            .client
+            .get_aggregation_result(&rid1)
+            .expect("result must exist after processing");
+
+        // Second aggregation — independent PRNG state.
+        let dp2 = create_data_point(&env, &h.contract_id, provider.clone());
+        let mut ids2 = Vec::new(&env);
+        ids2.push_back(dp2);
+        let rid2 = create_aggregation_request(
+            &env,
+            &h.contract_id,
+            provider.clone(),
+            ids2,
+            1000i128,
+        );
+        h.client.process_aggregation(&rid2, &h.admin);
+        let result2 = h
+            .client
+            .get_aggregation_result(&rid2)
+            .expect("result must exist after processing");
+
+        let noisy1 = decode_result_i128(&result1.encrypted_result);
+        let noisy2 = decode_result_i128(&result2.encrypted_result);
+
+        // At least one result must differ from the exact aggregate (noise applied).
+        assert!(
+            noisy1 != exact_count || noisy2 != exact_count,
+            "both aggregation results equal the exact aggregate {exact_count}; \
+             noise is not being applied to the result (regression: issue #413)"
+        );
+
+        // The two independent noisy results must differ from each other.
+        assert_ne!(
+            noisy1, noisy2,
+            "two independent aggregations returned identical noisy results; \
+             PRNG is not generating distinct noise samples (regression: issue #413)"
+        );
+    }
+
+    /// DP regression: budget over-run is rejected before any result is stored.
+    ///
+    /// Three data points each with epsilon_spent=100 give total_epsilon_spent=300.
+    /// Setting privacy_budget=200 must cause `InsufficientPrivacyBudget` and
+    /// leave the request in "pending" with no stored result.
+    #[test]
+    fn test_budget_overrun_is_rejected_and_leaves_request_pending() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let provider = generate_address(&env);
+
+        let dp1 = create_data_point(&env, &h.contract_id, provider.clone());
+        let dp2 = create_data_point(&env, &h.contract_id, provider.clone());
+        let dp3 = create_data_point(&env, &h.contract_id, provider.clone());
+
+        let mut ids = Vec::new(&env);
+        ids.push_back(dp1);
+        ids.push_back(dp2);
+        ids.push_back(dp3);
+
+        // total_epsilon_spent = 3 * 100 = 300 > privacy_budget = 200
+        let rid = create_aggregation_request(
+            &env,
+            &h.contract_id,
+            provider.clone(),
+            ids,
+            200i128,
+        );
+
+        let res = h.client.try_process_aggregation(&rid, &h.admin);
+        assert_eq!(
+            res,
+            Err(Ok(AggregatorError::InsufficientPrivacyBudget)),
+            "expected InsufficientPrivacyBudget when total epsilon exceeds the declared budget"
+        );
+
+        // No result must be stored.
+        assert!(
+            h.client.get_aggregation_result(&rid).is_none(),
+            "no result may be stored when the privacy budget is exceeded"
+        );
+
+        // Request must remain in "pending" so it can be retried with a
+        // higher budget or fewer data points.
+        let req: AggregationRequest = env.as_contract(&h.contract_id, || {
+            env.storage().persistent().get(&rid).unwrap()
+        });
+        assert_eq!(
+            req.status,
+            String::from_str(&env, "pending"),
+            "request status must remain pending after a budget rejection"
+        );
     }
 }

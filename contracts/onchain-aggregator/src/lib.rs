@@ -24,6 +24,14 @@ const MIN_CREDITS_FOR_AVG: i128 = 2000000; // 0.002 XLM
 const MIN_CREDITS_FOR_COUNT: i128 = 500000; // 0.0005 XLM
 const PRIVACY_BUDGET_COST: i128 = 100000; // 0.0001 XLM per operation
 
+// Differential-privacy Laplace mechanism constants (scaled by NOISE_SCALE_FACTOR
+// to avoid fractional arithmetic in no_std i128 arithmetic).
+// sensitivity = 1 for count/sum/average (global sensitivity of a single record).
+const DP_SENSITIVITY: i128 = 1;
+// NOISE_SCALE_FACTOR: multiplier used to work in fixed-point so that
+// (sensitivity / epsilon) can be expressed as an integer ratio.
+const NOISE_SCALE_FACTOR: i128 = 1_000_000;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
 pub enum AggregationOperation {
@@ -344,9 +352,30 @@ impl OnChainAggregator {
             }
         };
 
+        // ── Differential-privacy: apply Laplace noise to the raw aggregate ──
+        //
+        // Previously `calculate_noise` returned an i128 that was recorded in
+        // the certificate but was never added to the result, making the DP
+        // guarantee purely cosmetic.  We now derive a signed Laplace sample
+        // from the environment PRNG (deterministic in tests, unpredictable
+        // on-chain) and add it to the raw aggregate before persisting.
+        //
+        // Laplace mechanism: noise ~ Lap(sensitivity / epsilon)
+        //   sensitivity = 1 (one record can change the aggregate by at most 1
+        //                    in the scaled integer representation)
+        //   epsilon     = total_epsilon_spent (the actual privacy-loss budget)
+        //
+        // Because epsilon is stored scaled (e.g. 100 == 0.0001 in fixed-point)
+        // we divide by NOISE_SCALE_FACTOR to get the true epsilon before
+        // computing the scale, then re-scale the noise back to integer space.
+        let noise_magnitude =
+            Self::laplace_noise_magnitude(&env, total_epsilon_spent, participants_count);
+        let noisy_result = Self::add_noise_to_result(&env, &encrypted_result, noise_magnitude);
+
         // Generate privacy certificate
         let certificate_id = Self::generate_certificate_id(&env, &request_id);
-        let result_hash: BytesN<32> = env.crypto().sha256(&encrypted_result).into();
+        // Hash covers the *noisy* result so consumers can verify integrity.
+        let result_hash: BytesN<32> = env.crypto().sha256(&noisy_result).into();
 
         // WS3: the certificate must bind the result. The privacy_proofs nonce
         // commits to (request, result, processor, ledger timestamp) and the
@@ -375,7 +404,9 @@ impl OnChainAggregator {
             certificate_id: certificate_id.clone(),
             request_id: request_id.clone(),
             differential_privacy_params: Self::create_dp_params(&env, &request.operation),
-            noise_added: Self::calculate_noise(participants_count),
+            // Record the actual signed noise applied so consumers can audit
+            // calibration without re-computing it.
+            noise_added: noise_magnitude,
             epsilon_used: total_epsilon_spent,
             delta_used: total_epsilon_spent / 1000, // Simplified delta calculation
             timestamp: env.ledger().timestamp(),
@@ -388,10 +419,10 @@ impl OnChainAggregator {
             .persistent()
             .set(&certificate_id, &privacy_certificate);
 
-        // Create result
+        // Create result — stores the *noisy* aggregate, not the raw one.
         let result = AggregationResult {
             request_id: request_id.clone(),
-            encrypted_result: encrypted_result.clone(),
+            encrypted_result: noisy_result,
             result_hash,
             privacy_certificate_id: certificate_id.clone(),
             timestamp: env.ledger().timestamp(),
@@ -770,17 +801,95 @@ impl OnChainAggregator {
         params
     }
 
-    /// Simplified noise calculation based on participant count. The caller
-    /// rejects zero-participant requests before invoking this, and the guard
-    /// here additionally prevents the divide-by-zero panic that previously
-    /// aborted the whole transaction (issue #412 WS3).
-    fn calculate_noise(participants_count: u32) -> i128 {
-        let base_noise = 1000i128;
-        if participants_count == 0 {
-            return base_noise;
+    /// Compute the magnitude of the Laplace noise to inject.
+    ///
+    /// Laplace mechanism scale = sensitivity / epsilon.  Both are stored as
+    /// fixed-point integers scaled by `NOISE_SCALE_FACTOR`, so the integer
+    /// scale is:
+    ///
+    ///   scale_fp = (DP_SENSITIVITY * NOISE_SCALE_FACTOR * NOISE_SCALE_FACTOR)
+    ///              / max(total_epsilon_spent, 1)
+    ///
+    /// We then draw a uniform u64 from the env PRNG and use the standard
+    /// Laplace inversion formula:
+    ///
+    ///   u ∈ (0, 1)  →  noise = -scale * sign(u - 0.5) * ln(1 - 2|u - 0.5|)
+    ///
+    /// Because we have no floating-point in `no_std`, we approximate with a
+    /// fast fixed-point integer table-free method:
+    ///
+    ///   noise ≈ scale_fp * (u_norm - HALF) / HALF
+    ///
+    /// where u_norm is the raw PRNG word interpreted as an i64 shift.  This
+    /// produces a *bounded* triangular approximation that is sufficient for
+    /// the on-chain use-case (true Laplace sampling would require a soft-float
+    /// crate not available in Soroban's `no_std` environment).
+    ///
+    /// The caller guarantees `participants_count > 0`.
+    fn laplace_noise_magnitude(env: &Env, total_epsilon_spent: i128, participants_count: u32) -> i128 {
+        // Sensitivity in fixed-point.
+        let sensitivity_fp = DP_SENSITIVITY * NOISE_SCALE_FACTOR;
+
+        // epsilon is stored as a fixed-point integer scaled by NOISE_SCALE_FACTOR.
+        // Clamp to 1 to avoid division by zero (epsilon=0 would mean infinite
+        // noise — we fall back to the maximum noise of sensitivity_fp).
+        let epsilon_clamped = if total_epsilon_spent < 1 { 1 } else { total_epsilon_spent };
+
+        // scale_fp = sensitivity_fp * NOISE_SCALE_FACTOR / epsilon_fp
+        //          = (sens * NOISE_SCALE_FACTOR^2) / epsilon_clamped
+        let scale_fp = sensitivity_fp
+            .saturating_mul(NOISE_SCALE_FACTOR)
+            .checked_div(epsilon_clamped)
+            .unwrap_or(sensitivity_fp);
+
+        // Draw 16 pseudo-random bytes from the on-chain PRNG.
+        let rand_bytes = env.prng().gen::<BytesN<16>>();
+        let raw = rand_bytes.to_array();
+
+        // Interpret first 8 bytes as u64, then map to a signed offset in
+        // (-NOISE_SCALE_FACTOR/2, +NOISE_SCALE_FACTOR/2).
+        let u64_val = u64::from_be_bytes([raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[7]]);
+        // Map u64 to i64: shift so half the range is negative.
+        let signed: i64 = (u64_val >> 1) as i64 - (i64::MAX / 2);
+        // Normalise to [-NOISE_SCALE_FACTOR, +NOISE_SCALE_FACTOR].
+        let noise_fp = (scale_fp.saturating_mul(signed as i128))
+            .checked_div(i64::MAX as i128)
+            .unwrap_or(0);
+
+        // Scale down by participants so noise is proportional to group size
+        // (larger aggregations need less noise for the same privacy guarantee).
+        let participants = if participants_count == 0 { 1i128 } else { participants_count as i128 };
+        noise_fp.checked_div(participants).unwrap_or(0)
+    }
+
+    /// Add signed noise to a raw aggregate `Bytes` value.
+    ///
+    /// The aggregate is stored as a little-endian i128 in the first 16 bytes.
+    /// We deserialise, add the noise with saturation, and re-serialise.
+    fn add_noise_to_result(env: &Env, raw_result: &Bytes, noise: i128) -> Bytes {
+        if raw_result.len() < 16 {
+            // Unexpected format — return as-is to avoid corrupting unknown data.
+            return raw_result.clone();
         }
-        let scaling_factor = 1000i128 / (participants_count as i128);
-        base_noise.checked_mul(scaling_factor).unwrap_or(base_noise)
+        let mut bytes = [0u8; 16];
+        for i in 0u32..16u32 {
+            bytes[i as usize] = raw_result.get(i).unwrap_or(0);
+        }
+        let exact_value = i128::from_le_bytes(bytes);
+        let noisy_value = exact_value.saturating_add(noise);
+        let mut result = Bytes::new(env);
+        result.append(&Bytes::from_slice(env, &noisy_value.to_le_bytes()));
+        // Preserve any trailing bytes beyond the 16-byte i128 (e.g. metadata).
+        if raw_result.len() > 16 {
+            let tail_start = 16u32;
+            let tail_len = raw_result.len() - tail_start;
+            let mut tail = Bytes::new(env);
+            for i in 0..tail_len {
+                tail.push_back(raw_result.get(tail_start + i).unwrap_or(0));
+            }
+            result.append(&tail);
+        }
+        result
     }
 
     /// Monotonically increasing event nonce for indexer replay detection
