@@ -456,7 +456,7 @@ mod tests {
         let mut corrupted = certificate.clone();
         corrupted.signature = Bytes::new(&env);
         env.as_contract(&h.contract_id, || {
-        env.storage().persistent().set(&certificate_id, &corrupted);
+            env.storage().persistent().set(&certificate_id, &corrupted);
         });
         assert!(h.client.get_privacy_certificate(&certificate_id).is_none());
     }
@@ -552,13 +552,8 @@ mod tests {
         let dp2 = create_data_point(&env, &h.contract_id, provider.clone());
         let mut ids2 = Vec::new(&env);
         ids2.push_back(dp2);
-        let rid2 = create_aggregation_request(
-            &env,
-            &h.contract_id,
-            provider.clone(),
-            ids2,
-            1000i128,
-        );
+        let rid2 =
+            create_aggregation_request(&env, &h.contract_id, provider.clone(), ids2, 1000i128);
         h.client.process_aggregation(&rid2, &h.admin);
         let result2 = h
             .client
@@ -605,13 +600,7 @@ mod tests {
         ids.push_back(dp3);
 
         // total_epsilon_spent = 3 * 100 = 300 > privacy_budget = 200
-        let rid = create_aggregation_request(
-            &env,
-            &h.contract_id,
-            provider.clone(),
-            ids,
-            200i128,
-        );
+        let rid = create_aggregation_request(&env, &h.contract_id, provider.clone(), ids, 200i128);
 
         let res = h.client.try_process_aggregation(&rid, &h.admin);
         assert_eq!(

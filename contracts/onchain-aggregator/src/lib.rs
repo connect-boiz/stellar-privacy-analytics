@@ -826,14 +826,22 @@ impl OnChainAggregator {
     /// crate not available in Soroban's `no_std` environment).
     ///
     /// The caller guarantees `participants_count > 0`.
-    fn laplace_noise_magnitude(env: &Env, total_epsilon_spent: i128, participants_count: u32) -> i128 {
+    fn laplace_noise_magnitude(
+        env: &Env,
+        total_epsilon_spent: i128,
+        participants_count: u32,
+    ) -> i128 {
         // Sensitivity in fixed-point.
         let sensitivity_fp = DP_SENSITIVITY * NOISE_SCALE_FACTOR;
 
         // epsilon is stored as a fixed-point integer scaled by NOISE_SCALE_FACTOR.
         // Clamp to 1 to avoid division by zero (epsilon=0 would mean infinite
         // noise — we fall back to the maximum noise of sensitivity_fp).
-        let epsilon_clamped = if total_epsilon_spent < 1 { 1 } else { total_epsilon_spent };
+        let epsilon_clamped = if total_epsilon_spent < 1 {
+            1
+        } else {
+            total_epsilon_spent
+        };
 
         // scale_fp = sensitivity_fp * NOISE_SCALE_FACTOR / epsilon_fp
         //          = (sens * NOISE_SCALE_FACTOR^2) / epsilon_clamped
@@ -848,7 +856,9 @@ impl OnChainAggregator {
 
         // Interpret first 8 bytes as u64, then map to a signed offset in
         // (-NOISE_SCALE_FACTOR/2, +NOISE_SCALE_FACTOR/2).
-        let u64_val = u64::from_be_bytes([raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[7]]);
+        let u64_val = u64::from_be_bytes([
+            raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[7],
+        ]);
         // Map u64 to i64: shift so half the range is negative.
         let signed: i64 = (u64_val >> 1) as i64 - (i64::MAX / 2);
         // Normalise to [-NOISE_SCALE_FACTOR, +NOISE_SCALE_FACTOR].
@@ -858,7 +868,11 @@ impl OnChainAggregator {
 
         // Scale down by participants so noise is proportional to group size
         // (larger aggregations need less noise for the same privacy guarantee).
-        let participants = if participants_count == 0 { 1i128 } else { participants_count as i128 };
+        let participants = if participants_count == 0 {
+            1i128
+        } else {
+            participants_count as i128
+        };
         noise_fp.checked_div(participants).unwrap_or(0)
     }
 
