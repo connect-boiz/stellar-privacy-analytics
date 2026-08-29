@@ -740,7 +740,7 @@ mod test {
     #[should_panic(expected = "HostError: Error(Auth, InvalidAction)")]
     fn test_retrieve_data_requires_auth() {
         let env = Env::default();
-        
+
         let contract_id = env.register(TtlStorage, ());
         let client = TtlStorageClient::new(&env, &contract_id);
 
@@ -753,49 +753,61 @@ mod test {
         use soroban_sdk::IntoVal;
 
         let init_args = soroban_sdk::Vec::from_array(&env, [admin.clone().into_val(&env)]);
-        env.mock_auths(&[
-            MockAuth {
-                address: &admin,
-                invoke: &MockAuthInvoke {
-                    contract: &contract_id,
-                    fn_name: "initialize",
-                    args: init_args,
-                    sub_invokes: &[],
-                },
+        env.mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "initialize",
+                args: init_args,
+                sub_invokes: &[],
             },
-        ]);
+        }]);
         client.initialize(&admin);
 
-        let credits_args = soroban_sdk::Vec::from_array(&env, [owner.clone().into_val(&env), 1_000_000_000i128.into_val(&env)]);
-        env.mock_auths(&[
-            MockAuth {
-                address: &admin,
-                invoke: &MockAuthInvoke {
-                    contract: &contract_id,
-                    fn_name: "add_storage_credits",
-                    args: credits_args,
-                    sub_invokes: &[],
-                },
+        let credits_args = soroban_sdk::Vec::from_array(
+            &env,
+            [
+                owner.clone().into_val(&env),
+                1_000_000_000i128.into_val(&env),
+            ],
+        );
+        env.mock_auths(&[MockAuth {
+            address: &admin,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "add_storage_credits",
+                args: credits_args,
+                sub_invokes: &[],
             },
-        ]);
+        }]);
         client.add_storage_credits(&owner, &1_000_000_000i128);
 
         let data = Bytes::from_slice(&env, &[42u8; 10]);
         let mut metadata = Map::new(&env);
-        metadata.set(String::from_str(&env, "key"), String::from_str(&env, "value"));
+        metadata.set(
+            String::from_str(&env, "key"),
+            String::from_str(&env, "value"),
+        );
 
-        let store_args = soroban_sdk::Vec::from_array(&env, [owner.clone().into_val(&env), data.clone().into_val(&env), false.into_val(&env), 24u32.into_val(&env), metadata.clone().into_val(&env)]);
-        env.mock_auths(&[
-            MockAuth {
-                address: &owner,
-                invoke: &MockAuthInvoke {
-                    contract: &contract_id,
-                    fn_name: "store_data",
-                    args: store_args,
-                    sub_invokes: &[],
-                },
+        let store_args = soroban_sdk::Vec::from_array(
+            &env,
+            [
+                owner.clone().into_val(&env),
+                data.clone().into_val(&env),
+                false.into_val(&env),
+                24u32.into_val(&env),
+                metadata.clone().into_val(&env),
+            ],
+        );
+        env.mock_auths(&[MockAuth {
+            address: &owner,
+            invoke: &MockAuthInvoke {
+                contract: &contract_id,
+                fn_name: "store_data",
+                args: store_args,
+                sub_invokes: &[],
             },
-        ]);
+        }]);
         let entry_id = client.store_data(&owner, &data, &false, &24u32, &metadata);
 
         // Attacker attempts to retrieve data spoofing the owner.
