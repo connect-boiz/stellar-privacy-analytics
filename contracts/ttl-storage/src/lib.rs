@@ -269,6 +269,7 @@ impl TtlStorage {
         }
 
         // Verify requester authorization (owner or admin)
+        requester.require_auth();
         let admin: Address = env
             .storage()
             .instance()
