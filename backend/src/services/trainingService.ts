@@ -1489,6 +1489,19 @@ export class TrainingService {
     const attempt = progress.assessmentAttempts.find((a) => a.id === attemptId);
     if (!attempt) return { error: "Attempt not found" };
 
+    // WS4: double-submit guard — an already-graded attempt is not re-graded.
+    // The stored result is returned so concurrent/duplicate submissions cannot
+    // double-award or double-count.
+    if (attempt.completedAt) {
+      return {
+        attempt,
+        passed: attempt.passed,
+        certificate: attempt.passed && progress.certificateId
+          ? certificates.get(progress.certificateId)
+          : undefined,
+      };
+    }
+
     // Evaluate each question
     let totalPoints = 0;
     let earnedPoints = 0;

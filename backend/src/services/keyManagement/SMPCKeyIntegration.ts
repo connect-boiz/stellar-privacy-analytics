@@ -26,7 +26,7 @@ export class SMPCKeyIntegration extends EventEmitter {
   ): Promise<{
     sessionKeyId: string;
     participantKeys: Map<string, string>;
-    shares: { shareId: string; holder: string; encryptedShare: string }[];
+    shares: { shareId: string; holder: string; share: string }[];
   }> {
     try {
       // Generate master session key

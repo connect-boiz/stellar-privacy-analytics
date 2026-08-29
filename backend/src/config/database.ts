@@ -1,6 +1,7 @@
 import { knex, Knex } from "knex";
 import { logger } from "../utils/logger";
 import { sandboxConfig } from "./sandboxConfig";
+import { getDbPassword } from "../utils/secrets";
 
 export interface DatabaseConfig {
   client: "pg";
@@ -47,7 +48,8 @@ class DatabaseManager {
         host: process.env.DB_HOST || "localhost",
         port: parseInt(process.env.DB_PORT || "5432"),
         user: process.env.DB_USER || "stellar",
-        password: process.env.DB_PASSWORD || "password",
+        // WS2: dev-only fallback centralised in utils/secrets.
+        password: getDbPassword(),
         database: process.env.DB_NAME || "stellar_db",
         ssl:
           process.env.NODE_ENV === "production"
@@ -167,6 +169,28 @@ class DatabaseManager {
     return this.getMainConnection();
   }
 
+  /**
+   * WS3: whitelist an identifier (schema/database name) against a strict
+   * pattern before it is interpolated into DDL. Anything else is rejected —
+   * this eliminates SQL injection through runtime-derived sandbox names.
+   */
+  private static readonly IDENTIFIER_PATTERN = /^[a-z_][a-z0-9_]*$/i;
+
+  private static assertSafeIdentifier(
+    identifier: string,
+    label: string,
+  ): void {
+    if (!DatabaseManager.IDENTIFIER_PATTERN.test(identifier)) {
+      throw new Error(
+        `Unsafe ${label} "${identifier}": identifiers must match ${DatabaseManager.IDENTIFIER_PATTERN}`,
+      );
+    }
+  }
+
+  private static quoteIdentifier(identifier: string): string {
+    return `"${identifier.replace(/"/g, '""')}"`;
+  }
+
   public async createSandboxSchema(): Promise<void> {
     if (!sandboxConfig.isSandboxMode()) {
       throw new Error(
@@ -179,8 +203,14 @@ class DatabaseManager {
     const sandboxSchema = schemaPrefix + "stellar";
 
     try {
+      // Whitelist + quote every identifier before it touches DDL.
+      DatabaseManager.assertSafeIdentifier(schemaPrefix, "schema prefix");
+      DatabaseManager.assertSafeIdentifier(sandboxSchema, "sandbox database");
+
       // Create sandbox database if it doesn't exist
-      await mainDb.raw(`CREATE DATABASE IF NOT EXISTS ${sandboxSchema}`);
+      await mainDb.raw(
+        `CREATE DATABASE IF NOT EXISTS ${DatabaseManager.quoteIdentifier(sandboxSchema)}`,
+      );
       logger.info("Sandbox database created", { database: sandboxSchema });
 
       // Connect to sandbox database and create schemas
@@ -196,12 +226,17 @@ class DatabaseManager {
       ];
 
       for (const schema of schemas) {
-        await sandboxDb.raw(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+        DatabaseManager.assertSafeIdentifier(schema, "schema");
+        await sandboxDb.raw(
+          `CREATE SCHEMA IF NOT EXISTS ${DatabaseManager.quoteIdentifier(schema)}`,
+        );
         logger.debug("Sandbox schema created", { schema });
       }
 
-      // Set default search path for sandbox connection
-      await sandboxDb.raw(`SET search_path TO ${schemaPrefix}public, public`);
+      // Set default search path for sandbox connection (identifier quoted)
+      await sandboxDb.raw(
+        `SET search_path TO ${DatabaseManager.quoteIdentifier(schemaPrefix + "public")}, public`,
+      );
 
       logger.info("Sandbox schema setup completed", { schemas });
     } catch (error) {
@@ -314,6 +349,9 @@ class DatabaseManager {
       const schemaPrefix = sandboxConfig.getConfig().database.schemaPrefix;
       const sandboxDatabase = `${schemaPrefix}${this.config.connection.database}`;
 
+      DatabaseManager.assertSafeIdentifier(schemaPrefix, "schema prefix");
+      DatabaseManager.assertSafeIdentifier(sandboxDatabase, "sandbox database");
+
       // Kill connections to sandbox database
       await mainDb.raw(
         `
@@ -325,7 +363,9 @@ class DatabaseManager {
       );
 
       // Drop sandbox database
-      await mainDb.raw(`DROP DATABASE IF EXISTS ${sandboxDatabase}`);
+      await mainDb.raw(
+        `DROP DATABASE IF EXISTS ${DatabaseManager.quoteIdentifier(sandboxDatabase)}`,
+      );
 
       // Close sandbox connection
       if (this.sandboxInstance) {

@@ -28,8 +28,15 @@ beforeEach(() => {
   (getDb as jest.Mock).mockReturnValue(jest.fn(() => mockDb));
 });
 
+// WS1: owner-scoped routes read req.user — emulate the global auth middleware
+const mockAuth = (_req: any, _res: any, next: any) => {
+  _req.user = { id: "user-1", role: "user" };
+  next();
+};
+
 const app = express();
 app.use(express.json());
+app.use(mockAuth);
 app.use("/data", dataRoutes);
 
 describe("POST /data/upload", () => {
@@ -39,6 +46,7 @@ describe("POST /data/upload", () => {
 
     const res = await request(app)
       .post("/data/upload")
+      .set("Idempotency-Key", "11111111-1111-1111-1111-111111111111")
       .send({ name: "Test Dataset" });
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("datasetId");
@@ -127,5 +135,71 @@ describe("DELETE /data/:id", () => {
     const res = await request(app).delete("/data/ds-1");
     expect(res.status).toBe(200);
     expect(res.body.message).toMatch(/deleted/i);
+  });
+});
+
+describe("WS3 upload hardening (multer cap + size verification)", () => {
+  it("rejects multipart uploads larger than the 100 MB cap with 413", async () => {
+    // 101 MB payload — exceeds MAX_UPLOAD_BYTES
+    const bigBuffer = Buffer.alloc(101 * 1024 * 1024, 1);
+
+    const res = await request(app)
+      .post("/data/upload")
+      .set("Idempotency-Key", "22222222-2222-2222-2222-222222222222")
+      .attach("file", bigBuffer, "big.bin");
+
+    expect(res.status).toBe(413);
+    expect(res.body.error.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+
+  it("rejects a claimed size that does not match actual bytes", async () => {
+    const smallBuffer = Buffer.from("hello world");
+    const res = await request(app)
+      .post("/data/upload")
+      .set("Idempotency-Key", "33333333-3333-3333-3333-333333333333")
+      .field("size", "999999")
+      .attach("file", smallBuffer, "small.txt");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("SIZE_MISMATCH");
+  });
+
+  it("accepts a multipart upload whose size matches actual bytes", async () => {
+    const dataset = { id: "ds-mp", name: "MP Dataset", encrypted: true };
+    mockDb.returning.mockResolvedValueOnce([dataset]);
+
+    const smallBuffer = Buffer.from("hello world");
+    const res = await request(app)
+      .post("/data/upload")
+      .set("Idempotency-Key", "44444444-4444-4444-4444-444444444444")
+      .field("size", String(smallBuffer.length))
+      .attach("file", smallBuffer, "small.txt");
+
+    expect(res.status).toBe(201);
+  });
+});
+
+describe("WS1 dataset ownership scoping", () => {
+  it("does not expose another user's dataset (owner-scoped 404)", async () => {
+    // The query is scoped to owner_id = req.user.id (user-1), so a row owned
+    // by user-2 is never returned — the caller gets 404 and learns nothing
+    // about the row's existence.
+    mockDb.first.mockResolvedValueOnce(undefined);
+
+    const res = await request(app).get("/data/ds-other");
+    expect(res.status).toBe(404);
+  });
+
+  it("allows access to own dataset", async () => {
+    mockDb.first.mockResolvedValueOnce({
+      id: "ds-own",
+      name: "My dataset",
+      encrypted: true,
+      owner_id: "user-1",
+    });
+
+    const res = await request(app).get("/data/ds-own");
+    expect(res.status).toBe(200);
+    expect(res.body.dataset).toMatchObject({ id: "ds-own" });
   });
 });

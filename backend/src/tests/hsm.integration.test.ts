@@ -8,13 +8,18 @@ import { MasterKeyManager } from "../services/masterKeyManager";
 import { AuditService } from "../services/auditService";
 import { KillSwitchService, RECOVERY_DELAY_MAP } from "../services/killSwitchService";
 import { killSwitchRecoveryAttempts } from "../utils/prometheus";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 
 // Mock HSM Implementation
 class MockHSM {
   private keys: Map<
     string,
-    { data: string; algorithm: string; version: number }
+    {
+      data: string;
+      algorithm: string;
+      version: number;
+      tag?: string;
+    }
   > = new Map();
   private keyCounter: number = 1;
   private revokedKeys: Set<string> = new Set();
@@ -28,22 +33,38 @@ class MockHSM {
     plaintext: string,
     algorithm: string,
     _iv?: string,
-  ): Promise<{ wrappedKey: string; keyId: string; version: number }> {
+  ): Promise<{
+    wrappedKey: string;
+    keyId: string;
+    version: number;
+    tag?: string;
+  }> {
     const keyId = `mock-key-${this.instanceId}-${this.keyCounter++}`;
     const version = 1;
 
     // Simulate wrapping (in reality, this would be done in HSM)
     const wrappedKey = Buffer.from(plaintext).toString("base64");
 
-    this.keys.set(keyId, { data: plaintext, algorithm, version });
+    // GCM: the HSM produces the authentication tag (WS2) — the client must
+    // never fabricate it. Derive a deterministic tag so tamper detection works.
+    const isGcm = algorithm.includes("gcm");
+    const tag = isGcm
+      ? createHash("sha256")
+          .update(`${keyId}:${plaintext}`)
+          .digest("hex")
+          .slice(0, 32)
+      : undefined;
 
-    return { wrappedKey, keyId, version };
+    this.keys.set(keyId, { data: plaintext, algorithm, version, tag });
+
+    return { wrappedKey, keyId, version, tag };
   }
 
   async unwrapKey(
     wrappedKey: string,
     keyId: string,
     _version: number,
+    tag?: string,
   ): Promise<{ plaintext: string }> {
     const key = this.keys.get(keyId);
     if (!key) {
@@ -52,6 +73,11 @@ class MockHSM {
 
     if (this.revokedKeys.has(keyId)) {
       throw new Error(`Key ${keyId} has been revoked`);
+    }
+
+    // GCM integrity check: mismatched tag must fail authentication
+    if (key.tag && tag !== key.tag) {
+      throw new Error("GCM authentication failed: tag mismatch");
     }
 
     return { plaintext: key.data };
@@ -94,6 +120,92 @@ class MockHSM {
       createdAt: new Date(),
       status: this.revokedKeys.has(keyId) ? "revoked" : "active",
       usageCount: 0,
+    };
+  }
+
+  /**
+   * WS2: the HSM generates the key internally and returns ONLY the wrapped
+   * form + key ID — plaintext never leaves the HSM to the application.
+   */
+  async generateKey(
+    algorithm: string = "aes-256-gcm",
+  ): Promise<{
+    keyId: string;
+    version: number;
+    wrappedKey: string;
+    algorithm: string;
+    tag?: string;
+  }> {
+    const keyId = `mock-mk-${this.instanceId}-${this.keyCounter++}`;
+    const version = 1;
+    const plaintext = randomBytes(32).toString("base64");
+    const wrappedKey = Buffer.from(plaintext).toString("base64");
+
+    const isGcm = algorithm.includes("gcm");
+    const tag = isGcm
+      ? createHash("sha256")
+          .update(`${keyId}:${plaintext}`)
+          .digest("hex")
+          .slice(0, 32)
+      : undefined;
+
+    this.keys.set(keyId, { data: plaintext, algorithm, version, tag });
+    return { keyId, version, wrappedKey, algorithm, tag };
+  }
+
+  /**
+   * WS2: re-wrap a wrapped key under a new wrapping key. The HSM performs the
+   * unwrap+rewrap internally so plaintext never reaches the application.
+   */
+  async reWrapKey(
+    wrappedKey: string,
+    oldKeyId: string,
+    newKeyId: string,
+    tag?: string,
+  ): Promise<{
+    wrappedKey: string;
+    keyId: string;
+    version: number;
+    tag?: string;
+  }> {
+    const oldKey = this.keys.get(oldKeyId);
+    if (!oldKey) {
+      throw new Error(`Key ${oldKeyId} not found`);
+    }
+    if (this.revokedKeys.has(oldKeyId)) {
+      throw new Error(`Key ${oldKeyId} has been revoked`);
+    }
+    if (oldKey.tag && tag !== oldKey.tag) {
+      throw new Error("GCM authentication failed: tag mismatch");
+    }
+
+    const newKey = this.keys.get(newKeyId);
+    if (!newKey) {
+      throw new Error(`Key ${newKeyId} not found`);
+    }
+
+    // Re-wrap the same plaintext under the new key.
+    const plaintext = oldKey.data;
+    const newVersion = newKey.version + 1;
+    const reWrappedKeyId = `mock-mk-${this.instanceId}-${this.keyCounter++}`;
+    const newTag = newKey.tag
+      ? createHash("sha256")
+          .update(`${reWrappedKeyId}:${plaintext}`)
+          .digest("hex")
+          .slice(0, 32)
+      : undefined;
+    this.keys.set(reWrappedKeyId, {
+      data: plaintext,
+      algorithm: newKey.algorithm,
+      version: newVersion,
+      tag: newTag,
+    });
+
+    return {
+      wrappedKey: Buffer.from(plaintext).toString("base64"),
+      keyId: reWrappedKeyId,
+      version: newVersion,
+      tag: newTag,
     };
   }
 
@@ -140,6 +252,22 @@ class MockHTTPClient {
         data.wrappedKey,
         data.keyId,
         data.version,
+        data.tag,
+      );
+      return { data: result };
+    }
+
+    if (path.includes("/generate")) {
+      const result = await this.mockHSM.generateKey(data.algorithm);
+      return { data: result };
+    }
+
+    if (path.includes("/re-wrap") || path.includes("/rewrap")) {
+      const result = await this.mockHSM.reWrapKey(
+        data.wrappedKey,
+        data.oldKeyId,
+        data.newKeyId,
+        data.tag,
       );
       return { data: result };
     }
@@ -270,7 +398,99 @@ describe("HSM Integration Tests", () => {
     });
   });
 
-  describe("Master Key Management", () => {
+  describe("Master Key Management — WS2 persistence & rotation", () => {
+    test("should rotate master key without data loss", async () => {
+      const oldKeyId = await masterKeyManager.initializeMasterKey();
+
+      const dataKeyResponse = await masterKeyManager.generateDataKey({
+        purpose: "test-encryption",
+        userId: "test-user",
+      });
+
+      const newKeyId = await masterKeyManager.rotateMasterKey();
+      expect(newKeyId).not.toBe(oldKeyId);
+
+      // Old ciphertext still decryptable (via deprecated key until re-wrap)
+      const decryptedKey = await masterKeyManager.decryptDataKey(
+        dataKeyResponse.wrappedKey,
+        { purpose: "test-encryption", userId: "test-user" },
+      );
+      expect(decryptedKey).toBe(dataKeyResponse.plaintextKey);
+    });
+
+    test("should re-wrap persisted data keys under the new master key on rotation", async () => {
+      // In-memory repository emulating the Postgres tables.
+      const storedKeys: any[] = [];
+      const storedDataKeys: any[] = [];
+      const repo = {
+        saveMasterKey: async (r: any) => storedKeys.push(r),
+        getMasterKeys: async () => storedKeys,
+        saveWrappedDataKey: async (w: any) => {
+          const idx = storedDataKeys.findIndex(
+            (d) => d.keyId === w.keyId && d.version === w.version,
+          );
+          if (idx >= 0) storedDataKeys[idx] = w;
+          else storedDataKeys.push(w);
+        },
+        getWrappedDataKeys: async () => storedDataKeys,
+      };
+
+      const mgr = new MasterKeyManager(hsmService, auditService, repo as any);
+      await mgr.initializeMasterKey();
+      await mgr.generateDataKey({ purpose: "p1", userId: "u1" });
+      await mgr.generateDataKey({ purpose: "p2", userId: "u1" });
+
+      expect(storedDataKeys.length).toBe(2);
+      const oldDataKeyIds = storedDataKeys.map((d) => d.keyId).sort();
+
+      const newKeyId = await mgr.rotateMasterKey();
+      expect(newKeyId).toBeDefined();
+
+      // After rotation with persistence, the data keys must have been
+      // re-wrapped (their wrapping keyId changed to the new master key).
+      const reWrappedIds = storedDataKeys.map((d) => d.keyId).sort();
+      expect(reWrappedIds).not.toEqual(oldDataKeyIds);
+      expect(storedDataKeys.length).toBeGreaterThanOrEqual(2);
+
+      // The re-wrapped keys must still decrypt to the same plaintext.
+      mgr.shutdown();
+    });
+
+    test("restart test: persisted wrapped data keys decrypt after shutdown + re-init", async () => {
+      const storedKeys: any[] = [];
+      const storedDataKeys: any[] = [];
+      const repo = {
+        saveMasterKey: async (r: any) => storedKeys.push(r),
+        getMasterKeys: async () => storedKeys,
+        saveWrappedDataKey: async (w: any) => {
+          const idx = storedDataKeys.findIndex(
+            (d) => d.keyId === w.keyId && d.version === w.version,
+          );
+          if (idx >= 0) storedDataKeys[idx] = w;
+          else storedDataKeys.push(w);
+        },
+        getWrappedDataKeys: async () => storedDataKeys,
+      };
+
+      const mgr1 = new MasterKeyManager(hsmService, auditService, repo as any);
+      await mgr1.initializeMasterKey();
+      const first = await mgr1.generateDataKey({ purpose: "p1", userId: "u1" });
+      const wrapped = first.wrappedKey;
+      mgr1.shutdown();
+
+      // Simulate process restart: same HSM + same repository.
+      const mgr2 = new MasterKeyManager(hsmService, auditService, repo as any);
+      const restored = await mgr2.restoreFromPersistence();
+      expect(restored).toBe(true);
+
+      const decrypted = await mgr2.decryptDataKey(wrapped, {
+        purpose: "p1",
+        userId: "u1",
+      });
+      expect(decrypted).toBe(first.plaintextKey);
+      mgr2.shutdown();
+    });
+
     test("should initialize master key and generate data keys", async () => {
       const masterKeyId = await masterKeyManager.initializeMasterKey();
       expect(masterKeyId).toBeDefined();

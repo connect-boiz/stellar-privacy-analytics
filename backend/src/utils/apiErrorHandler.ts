@@ -15,7 +15,7 @@ export interface ErrorResponse {
   traceId: string;
 }
 
-export interface ValidationError {
+export interface ValidationIssue {
   field: string;
   code: string;
   message: string;
@@ -45,11 +45,11 @@ export class APIError extends Error {
 }
 
 export class ValidationError extends APIError {
-  public readonly validations: ValidationError[];
+  public readonly validations: ValidationIssue[];
 
   constructor(
     message: string,
-    validations: ValidationError[],
+    validations: ValidationIssue[],
     traceId?: string,
   ) {
     super("VALIDATION_ERROR", message, 400, { validations }, traceId);
@@ -230,7 +230,7 @@ export function createValidationError(
   validationErrors: any[],
   traceId?: string,
 ): ValidationError {
-  const validations: ValidationError[] = validationErrors.map((err) => ({
+  const validations: ValidationIssue[] = validationErrors.map((err) => ({
     field: err.param || err.path,
     code: err.msg || "INVALID_VALUE",
     message: err.msg || "Invalid value provided",

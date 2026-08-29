@@ -108,6 +108,39 @@ jobs:
       - run: npm run type-check
       - run: npm test
       - run: npm run build
+      - name: Security grep gates (WS1/WS2/WS5)
+        run: |
+          # WS1: no process.env.JWT_SECRET fallback to a hardcoded *string
+          # literal* anywhere in backend/src. Referencing the centralized
+          # DEV_JWT_SECRET constant (utils/secrets) is allowed.
+          if grep -rnE 'process\.env\.JWT_SECRET\s*\|\|\s*"' src/ ; then
+            echo "::error::Hardcoded JWT_SECRET literal fallback found (issue #413 WS1)"
+            exit 1
+          fi
+          # WS2: no hardcoded secret fallback values in || chains (the issue
+          # names default-master-key, default-key, change-me-in-production and
+          # the DB password "password"; "postgres" as a DB *username* default
+          # is allowed).
+          if grep -rnE '\|\|\s*"(default-master-key|default-key|change-me-in-production|password)"' src/ ; then
+            echo "::error::Hardcoded secret fallback found (issue #413 WS2)"
+            exit 1
+          fi
+          # WS2: known dev literals may only appear in the centralized
+          # utils/secrets.ts and the env.ts KNOWN_DEV_SECRETS registry.
+          if grep -rn --include='*.ts' -E '(default-master-key-32-chars|default-signature-key|dev-only-jwt-secret|dev-only-32-byte-master-key)' src/ \
+            | grep -vE 'src/(utils/secrets\.ts|config/env\.ts)' ; then
+            echo "::error::Dev secret literal used outside the centralized registry (issue #413 WS2)"
+            exit 1
+          fi
+          # WS5: the emergency bypass literal may only exist in the registry,
+          # never as an active default in the rate limiter.
+          if grep -rn --include='*.ts' 'emergency-bypass-2024' src/ \
+            | grep -v 'src/config/env.ts' ; then
+            echo "::error::Public rate-limit bypass key present outside registry (issue #413 WS5)"
+            exit 1
+          fi
+      - name: Auth-coverage test (WS1)
+        run: npx jest src/__tests__/auth-route-coverage.test.ts --forceExit
 
   # ── Root Soroban Extras ──────────────────────────────────
   rust-extras:

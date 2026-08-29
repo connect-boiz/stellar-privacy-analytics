@@ -31,7 +31,7 @@ export class SMPCOrchestrator extends EventEmitter {
 
   constructor() {
     super();
-    this.transport = new SecureTransport();
+    this.transport = new SecureTransport("orchestrator");
     logger.info("SMPC Orchestrator initialized");
   }
 

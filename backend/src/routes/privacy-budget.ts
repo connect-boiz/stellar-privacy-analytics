@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { body, validationResult } from "express-validator";
 import { logger } from "../utils/logger";
+import { idempotency } from "../middleware/idempotency";
 
 const router = Router();
 
@@ -104,6 +105,7 @@ router.get("/budget/:datasetId", (req: Request, res: Response) => {
  */
 router.post(
   "/budget/:datasetId/consume",
+  idempotency({ methods: ["POST"] }),
   [
     body("amount")
       .isFloat({ min: 0.001 })
@@ -239,7 +241,10 @@ router.get("/budgets", (req: Request, res: Response) => {
  * POST /api/v1/privacy/budget/:datasetId/reset
  * Reset privacy budget (admin function)
  */
-router.post("/budget/:datasetId/reset", (req: Request, res: Response) => {
+router.post(
+  "/budget/:datasetId/reset",
+  idempotency({ methods: ["POST"] }),
+  (req: Request, res: Response) => {
   try {
     const { datasetId } = req.params;
     const budget = privacyBudgets.get(datasetId);

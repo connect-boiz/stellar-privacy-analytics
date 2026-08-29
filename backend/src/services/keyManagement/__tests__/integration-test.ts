@@ -14,6 +14,7 @@ import { PerformanceOptimizer } from "../PerformanceOptimizer";
 import { SMPCKeyIntegration } from "../SMPCKeyIntegration";
 import { ZKPKeyIntegration } from "../ZKPKeyIntegration";
 import { HSMService } from "../../hsmService";
+import { MasterKeyManager } from "../../masterKeyManager";
 
 // Simple test framework
 class IntegrationTestRunner {
@@ -74,6 +75,7 @@ async function setupServices() {
   };
 
   const hsmService = new HSMService(hsmConfig);
+  const masterKeyManager = new MasterKeyManager(hsmService);
   const thresholdCrypto = new ThresholdCryptography();
   const backupService = new KeyBackupService(hsmService);
   const sharingService = new KeySharingService(thresholdCrypto);
@@ -81,10 +83,7 @@ async function setupServices() {
 
   const keyManagementService = new KeyManagementService(
     hsmService,
-    thresholdCrypto,
-    backupService,
-    sharingService,
-    performanceOptimizer,
+    masterKeyManager,
   );
 
   const rotationScheduler = new KeyRotationScheduler(keyManagementService);

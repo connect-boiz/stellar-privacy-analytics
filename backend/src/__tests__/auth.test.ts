@@ -2,6 +2,7 @@ import request from "supertest";
 import express from "express";
 import { errorHandler } from "../middleware/errorHandler";
 import jwt from "jsonwebtoken";
+import { DEV_JWT_SECRET } from "../utils/secrets";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -45,7 +46,8 @@ app.use(errorHandler);
 // Helpers
 // ---------------------------------------------------------------------------
 
-const JWT_SECRET = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+// Shared dev secret — must match the one authRoutes uses to sign/verify.
+const JWT_SECRET = process.env.JWT_SECRET || DEV_JWT_SECRET;
 
 function decodeToken(token: string): any {
   return jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
@@ -54,6 +56,8 @@ function decodeToken(token: string): any {
 describe("Auth API Endpoints", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset WS5 in-process throttle/lockout state between tests
+    require("../routes/auth").__resetAuthThrottleForTests();
   });
 
   // -----------------------------------------------------------------------

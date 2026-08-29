@@ -11,6 +11,7 @@ import * as path from "path";
 import { HSMService, WrappedKey } from "../hsmService";
 import { logger } from "../../utils/logger";
 import { getErrorMessage } from "../../utils/errorHandler";
+import { getBackupEncryptionPassword } from "../../utils/secrets";
 import type { KeyMetadata } from "./KeyManagementService";
 
 export interface BackupConfig {
@@ -54,8 +55,9 @@ export class KeyBackupService extends EventEmitter {
 
     this.config = {
       backupPath: process.env.KEY_BACKUP_PATH || "./backups/keys",
-      encryptionPassword:
-        process.env.BACKUP_ENCRYPTION_PASSWORD || "change-me-in-production",
+      // WS2: dev-only fallback centralised in utils/secrets; production is
+      // blocked by the boot-time secret audit.
+      encryptionPassword: getBackupEncryptionPassword(),
       compressionEnabled: true,
       redundancyLevel: 3,
       remoteBackupEnabled: false,

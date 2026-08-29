@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { logger } from "../utils/logger";
+import { getJwtSecret } from "../utils/secrets";
 
 export enum PrivacyLevel {
   LOW = "low",
@@ -15,7 +16,7 @@ export interface PrivacyRequest extends Request {
   consent?: boolean;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+const JWT_SECRET = getJwtSecret();
 
 /**
  * Extract the user ID from a JWT Bearer token without throwing.

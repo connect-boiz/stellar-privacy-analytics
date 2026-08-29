@@ -432,13 +432,13 @@ export class NERProcessor {
   /**
    * Get entity statistics
    */
-  getEntityStatistics(text: string): {
+  async getEntityStatistics(text: string): Promise<{
     totalEntities: number;
     entitiesByType: Record<string, number>;
     averageConfidence: number;
     highConfidenceEntities: number;
-  } {
-    const result = this.extractEntities(text);
+  }> {
+    const result = await this.extractEntities(text);
     const entitiesByType: Record<string, number> = {};
     let totalConfidence = 0;
     let highConfidenceCount = 0;

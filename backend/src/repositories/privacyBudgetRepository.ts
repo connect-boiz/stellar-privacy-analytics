@@ -100,7 +100,7 @@ export class PrivacyBudgetRepository {
         throw new Error("Privacy budget exceeded");
       }
 
-      // 2. Record consumption
+      // 2. Record consumption (append-only ledger — WS4)
       const consumptionId = `cons_${Date.now()}`;
       await client.query(
         `INSERT INTO budget_consumption_history (
@@ -108,6 +108,20 @@ export class PrivacyBudgetRepository {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           consumptionId,
+          budgetId,
+          amount,
+          details.operation,
+          details.description,
+          details.userId,
+          new Date(),
+        ],
+      );
+
+      await client.query(
+        `INSERT INTO budget_transactions (
+          budget_id, amount, operation, description, user_id, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
           budgetId,
           amount,
           details.operation,

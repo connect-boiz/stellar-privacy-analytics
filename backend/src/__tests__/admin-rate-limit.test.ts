@@ -41,12 +41,15 @@ jest.mock("../monitoring/rateLimitMonitor", () => ({
 // Import the real admin routes (not a duplicated copy)
 // ---------------------------------------------------------------------------
 import { adminRoutes } from "../routes/admin";
+import { DEV_JWT_SECRET } from "../utils/secrets";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const JWT_SECRET = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+// Use the shared dev secret so the signing key matches the one adminAuth uses
+// to verify (secrets.getJwtSecret returns DEV_JWT_SECRET when JWT_SECRET unset).
+const JWT_SECRET = process.env.JWT_SECRET || DEV_JWT_SECRET;
 
 function createAdminToken(): string {
   return jwt.sign(

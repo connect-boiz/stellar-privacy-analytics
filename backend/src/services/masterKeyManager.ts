@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from "crypto";
-import { HSMService, WrappedKey} from "./hsmService";
+import { HSMService, WrappedKey } from "./hsmService";
 import { AuditService } from "./auditService";
+import { MasterKeyRepository } from "../repositories/masterKeyRepository";
 import { logger } from "../utils/logger";
 import { EventEmitter } from "events";
 
@@ -38,25 +39,59 @@ export class MasterKeyManager extends EventEmitter {
   private maxCacheSize: number = 1000;
   private dataKeyTtl: number = 3600; // 1 hour default
   private auditService?: AuditService;
+  private repository?: MasterKeyRepository;
 
-  constructor(hsmService: HSMService, auditService?: AuditService) {
+  constructor(
+    hsmService: HSMService,
+    auditService?: AuditService,
+    repository?: MasterKeyRepository,
+  ) {
     super();
     this.hsmService = hsmService;
     this.auditService = auditService;
+    this.repository = repository;
     this.startCacheCleanup();
+  }
+
+  /**
+   * WS2 — attach durable persistence (master_keys / wrapped_keys). Safe to
+   * call at any time; key material already in memory is left untouched.
+   */
+  setRepository(repository: MasterKeyRepository): void {
+    this.repository = repository;
+  }
+
+  /**
+   * WS2 — restore persisted master-key state after a restart. Returns true
+   * when an active master key was recovered; false when nothing is stored.
+   */
+  async restoreFromPersistence(): Promise<boolean> {
+    if (!this.repository) return false;
+    try {
+      const storedKeys = await this.repository.getMasterKeys();
+      if (storedKeys.length === 0) return false;
+
+      for (const record of storedKeys) {
+        this.masterKeys.set(record.keyId, record);
+      }
+      const active = storedKeys.find((k) => k.status === "active");
+      this.activeMasterKeyId = active?.keyId || storedKeys[0].keyId;
+      logger.info("Restored master-key state from persistence", {
+        keyId: this.activeMasterKeyId,
+        total: storedKeys.length,
+      });
+      return true;
+    } catch (error) {
+      logger.error("Failed to restore master-key persistence:", error);
+      return false;
+    }
   }
 
   async initializeMasterKey(): Promise<string> {
     try {
-      // Generate a new master key that never leaves the HSM
-      const masterKeyBytes = randomBytes(32); // 256-bit key
-
-      // Wrap the master key in HSM
-      const wrappedMasterKey = await this.hsmService.wrapKey(
-        masterKeyBytes,
-        undefined,
-        "aes-256-gcm",
-      );
+      // WS2: never generate the master key in application memory. The HSM
+      // generates it internally and returns only the wrapped form + key ID.
+      const wrappedMasterKey = await this.hsmService.generateKey("aes-256-gcm");
 
       const masterKeyRecord: MasterKeyRecord = {
         keyId: wrappedMasterKey.keyId,
@@ -71,6 +106,11 @@ export class MasterKeyManager extends EventEmitter {
 
       this.masterKeys.set(wrappedMasterKey.keyId, masterKeyRecord);
       this.activeMasterKeyId = wrappedMasterKey.keyId;
+
+      // WS2: persist master-key record so restarts are recoverable.
+      if (this.repository) {
+        await this.repository.saveMasterKey(masterKeyRecord);
+      }
 
       logger.info("Master key initialized", { keyId: wrappedMasterKey.keyId });
       this.emit("masterKeyInitialized", { keyId: wrappedMasterKey.keyId });
@@ -126,6 +166,12 @@ export class MasterKeyManager extends EventEmitter {
       masterKey.usageCount++;
       masterKey.lastUsed = new Date();
       this.masterKeys.set(this.activeMasterKeyId, masterKey);
+
+      // WS2: persist the wrapped data key so restarts/rotations are recoverable.
+      if (this.repository) {
+        await this.repository.saveWrappedDataKey(wrappedDataKey);
+        await this.repository.saveMasterKey(masterKey);
+      }
 
       // Cache the plaintext key temporarily for performance
       const expiresAt = new Date(
@@ -183,6 +229,43 @@ export class MasterKeyManager extends EventEmitter {
       return cached.key;
     }
 
+    // WS4: version-pin the unwrap. The wrapped key records the master-key
+    // version it was protected under; unwrapping with a mismatched (rotated)
+    // master key must fail rather than silently using the wrong key.
+    const wrappingMasterKey = this.masterKeys.get(wrappedKey.keyId);
+    if (
+      wrappingMasterKey &&
+      this.activeMasterKeyId &&
+      wrappingMasterKey.keyId !== this.activeMasterKeyId
+    ) {
+      // The data key is wrapped under a deprecated master key. Re-wrap it
+      // under the active key (HSM-side, no plaintext exposure) and retry.
+      try {
+        const reWrapped = await this.hsmService.reWrapKey(
+          wrappedKey,
+          this.activeMasterKeyId,
+        );
+        if (this.repository) {
+          await this.repository.saveWrappedDataKey(reWrapped);
+        }
+        const dataKeyBytes = await this.hsmService.unwrapKey(reWrapped);
+        const plaintextKey = dataKeyBytes.toString("base64");
+        const expiresAt = new Date(
+          Date.now() + (request.ttl || this.dataKeyTtl) * 1000,
+        );
+        this.dataKeyCache.set(cacheKey, {
+          key: plaintextKey,
+          expires: expiresAt,
+        });
+        return plaintextKey;
+      } catch (error) {
+        logger.error("Failed to re-wrap data key for active master key:", error);
+        throw new Error(
+          "Data key is wrapped under a rotated master key and could not be re-wrapped",
+        );
+      }
+    }
+
     try {
       // Unwrap data key using HSM
       const dataKeyBytes = await this.hsmService.unwrapKey(wrappedKey);
@@ -215,24 +298,49 @@ export class MasterKeyManager extends EventEmitter {
       throw new Error("Current master key not found");
     }
 
+    const oldKeyId = this.activeMasterKeyId;
     try {
       // Mark current key as deprecated
       currentMasterKey.status = "deprecated";
-      this.masterKeys.set(this.activeMasterKeyId, currentMasterKey);
+      this.masterKeys.set(oldKeyId, currentMasterKey);
 
-      // Create new master key
+      // Create new master key (HSM-sourced; the app never holds plaintext)
       const newKeyId = await this.initializeMasterKey();
+
+      // WS2: re-wrap every persisted data key under the new active master key.
+      // The HSM performs unwrap+rewrap internally so plaintext never leaves
+      // the HSM. Old ciphertext remains decryptable via the deprecated key
+      // until re-wrap completes; after it, decrypts use the new key.
+      if (this.repository) {
+        // Snapshot the list — re-wrapping persists new rows, so iterating the
+        // live array would grow the loop forever.
+        const storedDataKeys = [...(await this.repository.getWrappedDataKeys())];
+        for (const dataKey of storedDataKeys) {
+          try {
+            const reWrapped = await this.hsmService.reWrapKey(dataKey, newKeyId);
+            await this.repository.saveWrappedDataKey(reWrapped);
+          } catch (error) {
+            // Keep the old wrapped key on the deprecated master key; it stays
+            // decryptable via the deprecated key until a later retry.
+            logger.warn("Failed to re-wrap data key after rotation", {
+              keyId: dataKey.keyId,
+              error: (error as Error).message,
+            });
+          }
+        }
+        await this.repository.saveMasterKey(currentMasterKey);
+      }
 
       // Clear data key cache to force re-encryption with new master key
       this.dataKeyCache.clear();
 
       logger.info("Master key rotated", {
-        oldKeyId: this.activeMasterKeyId,
+        oldKeyId,
         newKeyId,
       });
 
       this.emit("masterKeyRotated", {
-        oldKeyId: this.activeMasterKeyId,
+        oldKeyId,
         newKeyId,
       });
 
@@ -240,7 +348,7 @@ export class MasterKeyManager extends EventEmitter {
     } catch (error) {
       // Restore status on failure
       currentMasterKey.status = "active";
-      this.masterKeys.set(this.activeMasterKeyId, currentMasterKey);
+      this.masterKeys.set(oldKeyId, currentMasterKey);
       throw error;
     }
   }

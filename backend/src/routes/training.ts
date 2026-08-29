@@ -3,8 +3,26 @@ import { body, param, query } from "express-validator";
 import { asyncHandler } from "../middleware/errorHandler";
 import TrainingService, { UserRole } from "../services/trainingService";
 import { validateRequest } from "../middleware/validation";
+import { idempotency } from "../middleware/idempotency";
+import { schemas } from "../middleware/requestSchemas";
 
 const router = Router();
+
+/**
+ * WS1: reject anonymous callers instead of falling back to a shared
+ * "demo-user" identity. Returns 401 when req.user is absent.
+ */
+function requireAuthenticatedUser(req: Request, res: Response): string | null {
+  const userId = (req as any).user?.id;
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      error: "Authentication required",
+    });
+    return null;
+  }
+  return userId;
+}
 
 const TRAINING_ROLES: UserRole[] = [
   "admin",
@@ -121,7 +139,15 @@ router.post(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "system";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
+    // Admin-only: creation requires the training:admin permission.
+    if (!(req as any).user?.permissions?.includes("training:admin")) {
+      return res.status(403).json({
+        success: false,
+        error: "Admin access required to create training modules",
+      });
+    }
     const module = TrainingService.createModule(req.body, userId);
 
     res.status(201).json({
@@ -147,6 +173,14 @@ router.put(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
+    if (!(req as any).user?.permissions?.includes("training:admin")) {
+      return res.status(403).json({
+        success: false,
+        error: "Admin access required to update training modules",
+      });
+    }
     const { moduleId } = req.params;
     const module = TrainingService.updateModule(moduleId, req.body);
 
@@ -170,6 +204,14 @@ router.delete(
   "/modules/:moduleId",
   [moduleIdParam(), validateRequest],
   asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
+    if (!(req as any).user?.permissions?.includes("training:admin")) {
+      return res.status(403).json({
+        success: false,
+        error: "Admin access required to delete training modules",
+      });
+    }
     const { moduleId } = req.params;
     const deleted = TrainingService.deleteModule(moduleId);
 
@@ -202,7 +244,8 @@ router.get(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { moduleId } = req.query;
 
     const progress = TrainingService.getUserProgress(
@@ -231,7 +274,8 @@ router.post(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { moduleId } = req.body;
 
     const result = TrainingService.startModule(userId, moduleId);
@@ -264,7 +308,8 @@ router.put(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { moduleId } = req.params;
     const { contentIndex, timeSpent } = req.body;
 
@@ -341,7 +386,8 @@ router.post(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { moduleId, exerciseId, answers } = req.body;
 
     const result = TrainingService.submitExercise(
@@ -419,7 +465,8 @@ router.post(
     validateRequest,
   ],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { moduleId } = req.body;
 
     const result = TrainingService.startAssessment(userId, moduleId);
@@ -472,18 +519,12 @@ router.post(
 // Submit assessment
 router.post(
   "/assessment/submit",
-  [
-    body("moduleId")
-      .trim()
-      .notEmpty()
-      .matches(/^[a-zA-Z0-9_-]{1,128}$/),
-    body("attemptId").trim().notEmpty().isLength({ max: 128 }),
-    body("answers").isObject(),
-    body("timeSpent").optional().isInt({ min: 0, max: 1_000_000_000 }),
-    validateRequest,
-  ],
+  idempotency({ methods: ["POST"] }),
+  schemas.trainingSubmitAssessment,
+  validateRequest,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { moduleId, attemptId, answers, timeSpent } = req.body;
 
     // Convert answers object to Map
@@ -533,7 +574,8 @@ router.post(
 router.get(
   "/certificates",
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
 
     const certificates = TrainingService.getUserCertificates(userId);
 
@@ -667,7 +709,8 @@ router.post(
   "/onboarding/assign",
   [body("role").isIn(TRAINING_ROLES), validateRequest],
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id || "demo-user";
+    const userId = requireAuthenticatedUser(req, res);
+    if (!userId) return;
     const { role } = req.body;
 
     const progress = TrainingService.assignRequiredTraining(

@@ -45,6 +45,7 @@ import setupSwaggerDocumentation from "./docs/swagger";
 import { getHSMIntegration } from "./services/hsmIntegration";
 import { MemoryMonitorService } from "./services/memoryMonitorService";
 import { initializeCacheService } from "./services/cacheService";
+import { getStorageMasterKey, getDbPassword } from "./utils/secrets";
 
 // Import workers
 import { StellarTransactionWatcher } from "./workers/StellarTransactionWatcher";
@@ -54,6 +55,8 @@ import { trainingRoutes } from "./routes/training";
 import { DatabaseService } from "./services/databaseService";
 import { PrivacyBudgetService } from "./services/privacyBudgetService";
 import { PrivacyBudgetRepository } from "./repositories/privacyBudgetRepository";
+import { MasterKeyRepository } from "./repositories/masterKeyRepository";
+import { AuditRepository } from "./repositories/auditRepository";
 import { StorageService } from "./services/storageService";
 
 // Import Service Discovery
@@ -61,6 +64,14 @@ import { ServiceDiscovery } from "./services/ServiceDiscovery";
 
 const app = express();
 const server = createServer(app);
+
+// Trust a bounded number of proxy hops and never trust client-supplied
+// forwarding headers beyond that boundary (WS3/WS5: header-spoofed identity
+// and rate-limit keys). Configure via TRUST_PROXY_HOPS (default: 1).
+app.set(
+  "trust proxy",
+  parseInt(process.env.TRUST_PROXY_HOPS || "1", 10) || 1,
+);
 
 // Initialize WebSocket for upload progress
 const uploadSocket = initializeUploadSocket(server);
@@ -95,10 +106,10 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        process.env.NODE_ENV === "development"
-      ) {
+      // Never allow arbitrary origins with credentials — not even in
+      // development; the wildcard must come from an explicit CORS_ORIGINS
+      // list (WS5.6).
+      if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         logger.warn(`CORS blocked request from origin: ${origin}`);
@@ -222,6 +233,23 @@ app.get("/health", (req, res) => {
 // API routes
 const apiRouter = express.Router();
 
+// WS1 — mount authentication ONCE at the router level. Everything under
+// /api/v1 requires a valid JWT or API key unless explicitly whitelisted:
+//  * /auth/* — registration/login/logout
+//  * /health — liveness probe
+//  * /sandbox — dev/test sandbox (still rate limited)
+const AUTH_WHITELIST_PREFIXES = ["/auth", "/health", "/sandbox"];
+
+apiRouter.use((req, res, next) => {
+  const whitelisted = AUTH_WHITELIST_PREFIXES.some((prefix) =>
+    req.path.startsWith(prefix),
+  );
+  if (whitelisted) {
+    return next();
+  }
+  return stellarAuth.authenticate(req as any, res, next);
+});
+
 // Apply specialized rate limiting to different route groups
 apiRouter.use("/auth", authRoutes); // No auth required for auth endpoints
 
@@ -319,16 +347,17 @@ process.on("SIGINT", () => {
   });
 });
 
-// Unhandled promise rejection handler
-process.on("unhandledRejection", (reason, promise) => {
-  logger.error("Unhandled Rejection at:", promise, "reason:", reason);
-  process.exit(1);
+// Unhandled promise rejection handler — WS5.6: log and continue instead of
+// letting a single rejection take the whole API down (trivial DoS). In
+// production, the orchestrator (k8s/pm2/systemd) is responsible for bounded
+// restarts; the process only exits on SIGTERM/SIGINT graceful shutdown.
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection:", reason);
 });
 
-// Uncaught exception handler
+// Uncaught exception handler — same rationale: degrade gracefully.
 process.on("uncaughtException", (error) => {
   logger.error("Uncaught Exception:", error);
-  process.exit(1);
 });
 
 // Start server
@@ -408,7 +437,9 @@ async function initializeServices() {
       port: parseInt(process.env.DB_PORT || "5432"),
       database: process.env.DB_NAME || "stellar_privacy",
       user: process.env.DB_USER || "postgres",
-      password: process.env.DB_PASSWORD || "postgres",
+      // WS2: production requires a real DB_PASSWORD (boot guard in env.ts);
+      // the dev default is only used outside production.
+      password: process.env.DB_PASSWORD || getDbPassword(),
       max: 100, // High concurrency
     });
     await dbService.healthCheck();
@@ -419,10 +450,20 @@ async function initializeServices() {
     const budgetService = new PrivacyBudgetService(budgetRepo);
     app.set("budgetService", budgetService);
 
-    // Initialize Storage Service
-    const storageService = new StorageService(
-      process.env.STORAGE_MASTER_KEY || "default-master-key-32-chars-long!!!",
-    );
+    // WS2: attach durable master-key persistence now that the DB is up.
+    const masterKeyRepo = new MasterKeyRepository(dbService);
+    hsmIntegration.getMasterKeyManager().setRepository(masterKeyRepo);
+    await hsmIntegration.getMasterKeyManager().restoreFromPersistence();
+
+    // WS5: attach the durable Postgres audit store (canonical append-only
+    // record; the JSONL file remains as a derived export).
+    const auditRepo = new AuditRepository(dbService);
+    hsmIntegration.getAuditService().setRepository(auditRepo);
+
+    // Initialize Storage Service — STORAGE_MASTER_KEY is required in
+    // production (fail-closed boot guard in config/env.ts); the dev-only
+    // fallback is centralised in utils/secrets.
+    const storageService = new StorageService(getStorageMasterKey());
     app.set("storageService", storageService);
 
     // Start Stellar Transaction Watcher

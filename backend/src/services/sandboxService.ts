@@ -343,7 +343,7 @@ export class SandboxService {
       const keys = await this.redisClient.keys(pattern);
 
       if (keys.length > 0) {
-        await this.redisClient.del(...keys);
+        await this.redisClient.del(keys);
         logger.warn("All sandbox data cleared", { keyCount: keys.length });
       }
     }

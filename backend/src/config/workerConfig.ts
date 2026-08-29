@@ -1,4 +1,5 @@
 import { OrchestratorConfig } from "../workers/workerOrchestrator";
+import { getDbPassword } from "../utils/secrets";
 
 /**
  * Worker configuration for different environments
@@ -22,7 +23,7 @@ export const developmentConfig: OrchestratorConfig = {
       port: parseInt(process.env.POSTGRES_PORT || "5432"),
       database: process.env.POSTGRES_DB || "stellar_db",
       username: process.env.POSTGRES_USER || "stellar",
-      password: process.env.POSTGRES_PASSWORD || "password",
+      password: getDbPassword(),
     },
   },
   piiMasking: {
@@ -80,7 +81,7 @@ export const productionConfig: OrchestratorConfig = {
       port: parseInt(process.env.POSTGRES_PORT || "5432"),
       database: process.env.POSTGRES_DB || "stellar_db",
       username: process.env.POSTGRES_USER || "stellar",
-      password: process.env.POSTGRES_PASSWORD || "password",
+      password: getDbPassword(),
     },
   },
   piiMasking: {
@@ -135,7 +136,7 @@ export const testConfig: OrchestratorConfig = {
       port: parseInt(process.env.POSTGRES_PORT || "5432"),
       database: process.env.POSTGRES_TEST_DB || "stellar_test_db",
       username: process.env.POSTGRES_USER || "stellar",
-      password: process.env.POSTGRES_PASSWORD || "password",
+      password: getDbPassword(),
     },
   },
   piiMasking: {

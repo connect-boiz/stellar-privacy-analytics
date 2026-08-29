@@ -46,10 +46,11 @@ export class RateLimiterMiddleware {
     emergencyBypassKey?: string;
   }) {
     this.redis = config.redis;
+    // WS5: no public/default bypass key. When unset, the emergency bypass is
+    // simply disabled; production is blocked from booting with the old
+    // public literal by the config/env.ts secret audit.
     this.emergencyBypassKey =
-      config.emergencyBypassKey ||
-      process.env.RATE_LIMIT_EMERGENCY_BYPASS_KEY ||
-      "emergency-bypass-2024";
+      config.emergencyBypassKey || process.env.RATE_LIMIT_EMERGENCY_BYPASS_KEY || "";
 
     // Initialize metrics
     this.metrics = {
@@ -111,7 +112,8 @@ export class RateLimiterMiddleware {
       next: NextFunction,
     ): Promise<void> => {
       try {
-        // Check for emergency bypass
+        // Check for emergency bypass (WS5: only honoured when a real key is
+        // configured; usage is always logged and alerted).
         if (this.checkEmergencyBypass(req)) {
           this.metrics.rateLimitBypasses.inc({ reason: "emergency_key" });
           logger.warn("Emergency bypass used", {
@@ -171,17 +173,24 @@ export class RateLimiterMiddleware {
           type,
           tier,
         );
-      } catch (error) {
-        logger.error("Rate limiting error", {
-          error: error instanceof Error ? error.message : String(error),
-          traceId: req.traceId,
-          userId: req.user?.id,
-        });
+    } catch (error) {
+      logger.error("Rate limiting error", {
+        error: error instanceof Error ? error.message : String(error),
+        traceId: req.traceId,
+        userId: req.user?.id,
+      });
 
-        // Fail open - allow request but log error
-        next();
-      }
-    };
+      // WS5: fail-closed — a rate-limiter outage must not silently disable
+      // DoS protection. Return 503 so the caller retries via the orchestrator.
+      res.status(503).json({
+        error: {
+          code: "RATE_LIMIT_SERVICE_UNAVAILABLE",
+          message: "Rate limiting service temporarily unavailable",
+        },
+        traceId: req.traceId,
+      });
+    }
+  };
   };
 
   /**
@@ -278,19 +287,14 @@ export class RateLimiterMiddleware {
         traceId: req.traceId,
       });
 
-      // Fail-closed for production, fail-open for development
-      if (process.env.NODE_ENV === "production") {
-        await this.handleRateLimitExceeded(req, res, config, {
-          limit: config.maxRequests,
-          remaining: 0,
-          reset: windowEnd * 1000,
-          retryAfter: windowSeconds,
-        });
-        return;
-      }
-
-      // Fail open in development
-      next();
+      // WS5: fail-closed in all environments — a Redis outage must not
+      // silently disable DoS protection.
+      await this.handleRateLimitExceeded(req, res, config, {
+        limit: config.maxRequests,
+        remaining: 0,
+        reset: windowEnd * 1000,
+        retryAfter: windowSeconds,
+      });
     }
   }
 
@@ -347,39 +351,21 @@ export class RateLimiterMiddleware {
    * Generate rate limit key for IP-based limiting with proxy support
    */
   private ipKeyGenerator(req: AuthenticatedRequest): string {
-    // Check multiple headers for real IP (proxy-aware)
-    const xForwardedFor = (req as any).headers["x-forwarded-for"];
-    const xRealIp = (req as any).headers["x-real-ip"];
-    const cfConnectingIp = (req as any).headers["cf-connecting-ip"]; // Cloudflare
-    const xClientIp = (req as any).headers["x-client-ip"];
-
-    let ip = "unknown";
-
-    if (xForwardedFor) {
-      // X-Forwarded-For can contain multiple IPs, take the first one (original client)
-      ip = xForwardedFor.split(",")[0].trim();
-    } else if (xRealIp) {
-      ip = xRealIp;
-    } else if (cfConnectingIp) {
-      ip = cfConnectingIp;
-    } else if (xClientIp) {
-      ip = xClientIp;
-    } else {
-      // Fallback to direct connection IP
-      ip =
-        (req as any).ip ||
-        (req as any).connection?.remoteAddress ||
-        (req as any).socket?.remoteAddress ||
-        "unknown";
-    }
+    // WS5: rely on Express's trust-proxy-resolved req.ip instead of trusting
+    // client-supplied forwarding headers directly (which allows an attacker
+    // to rotate headers and reset their limit). app.set("trust proxy", N)
+    // in index.ts bounds which hops are trusted.
+    const ip =
+      (req as any).ip ||
+      (req as any).connection?.remoteAddress ||
+      (req as any).socket?.remoteAddress ||
+      "unknown";
 
     // Normalize IP (remove IPv6 prefix for IPv4-mapped addresses)
-    if (ip.startsWith("::ffff:")) {
-      ip = ip.substring(7);
-    }
+    const normalized = ip.startsWith("::ffff:") ? ip.substring(7) : ip;
 
     // Hash IP for privacy and consistency
-    return this.hashString(ip);
+    return this.hashString(normalized);
   }
 
   /**
@@ -426,9 +412,13 @@ export class RateLimiterMiddleware {
   }
 
   /**
-   * Check for emergency bypass
+   * Check for emergency bypass — only honoured when a real bypass key is
+   * configured (never a hardcoded default).
    */
   private checkEmergencyBypass(req: AuthenticatedRequest): boolean {
+    if (!this.emergencyBypassKey) {
+      return false;
+    }
     const bypassKey = (req as any).headers["x-emergency-bypass"] as string;
     const queryBypass = (req as any).query.emergency_bypass as string;
 
@@ -439,25 +429,19 @@ export class RateLimiterMiddleware {
   }
 
   /**
-   * Extract API key from request
+   * Extract API key from request — WS5: Bearer tokens are JWTs, never API
+   * keys, and keys must arrive via the x-api-key header (not query params,
+   * which leak into logs).
    */
   private extractApiKey(req: AuthenticatedRequest): string | null {
-    // Check Authorization header (Bearer token)
     const authHeader = (req as any).headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
-      return authHeader.substring(7);
+      return null;
     }
 
-    // Check X-API-Key header
     const apiKeyHeader = (req as any).headers["x-api-key"] as string;
     if (apiKeyHeader) {
       return apiKeyHeader;
-    }
-
-    // Check query parameter
-    const apiKeyQuery = (req as any).query.api_key as string;
-    if (apiKeyQuery) {
-      return apiKeyQuery;
     }
 
     return null;
@@ -472,14 +456,28 @@ export class RateLimiterMiddleware {
   }
 
   /**
-   * Get tier for API key (simplified - in production, look up from database)
+   * Get tier for API key — WS5: no prefix-based tier escalation; the tier
+   * comes from the api_keys table (WS1). Defaults to basic when the key
+   * cannot be resolved (auth will reject it anyway).
    */
   private async getApiKeyTier(
     apiKey: string,
   ): Promise<"basic" | "premium" | "enterprise"> {
-    // For now, determine tier based on API key prefix
-    if (apiKey.startsWith("pk_ent_")) return "enterprise";
-    if (apiKey.startsWith("pk_prem_")) return "premium";
+    try {
+      const { getDb } = require("../config/database") as typeof import("../config/database");
+      const { createHash } = require("crypto") as typeof import("crypto");
+      const keyHash = createHash("sha256").update(apiKey).digest("hex");
+      const row: any = await getDb()("api_keys")
+        .where({ key_hash: keyHash, is_active: true })
+        .first();
+      if (row && row.rate_limit_tier) {
+        return row.rate_limit_tier;
+      }
+    } catch (error) {
+      logger.error("Failed to resolve API key tier", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     return "basic";
   }
 

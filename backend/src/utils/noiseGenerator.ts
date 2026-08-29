@@ -15,7 +15,13 @@ export class NoiseGenerator {
   private createSecureRandom(): () => number {
     return () => {
       const buffer = crypto.randomBytes(8);
-      const view = new DataView(buffer);
+      // The Buffer's underlying ArrayBuffer is used for the DataView.
+      const view = new DataView(
+        buffer.buffer.slice(
+          buffer.byteOffset,
+          buffer.byteOffset + buffer.byteLength,
+        ) as ArrayBuffer,
+      );
       const random = view.getBigUint64(0, false);
       return Number(random) / Number(BigInt(2) ** BigInt(64));
     };

@@ -84,7 +84,7 @@ export class StreamingDataProcessor<T, R> extends EventEmitter {
             this.currentBatch.length >= this.options.batchSize ||
             this.isMemoryLimitReached()
           ) {
-            this.processBatch(processor, callback);
+            this.processBatch(processor, batchTransform, callback);
           } else {
             callback();
           }
@@ -93,7 +93,7 @@ export class StreamingDataProcessor<T, R> extends EventEmitter {
         flush: (callback: any) => {
           // Process remaining items in batch
           if (this.currentBatch.length > 0) {
-            this.processBatch(processor, callback);
+            this.processBatch(processor, batchTransform, callback);
           } else {
             callback();
           }
@@ -350,6 +350,7 @@ export class StreamingDataProcessor<T, R> extends EventEmitter {
    */
   private processBatch(
     processor: BatchProcessor<T, R>,
+    batchTransform: Transform,
     callback: (error?: Error, data?: any) => void,
   ): void {
     const batch = [...this.currentBatch];
@@ -362,7 +363,7 @@ export class StreamingDataProcessor<T, R> extends EventEmitter {
 
         // Push each result to the stream
         results.forEach((result) => {
-          this.push(result);
+          batchTransform.push(result);
         });
 
         this.emit("batch-processed", {

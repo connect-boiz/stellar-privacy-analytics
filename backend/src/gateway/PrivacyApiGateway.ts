@@ -10,6 +10,7 @@ import { LoadBalancer } from "./LoadBalancer";
 import { logger } from "../utils/logger";
 import { validateAndSanitizePolicy } from "./policyValidation";
 import jwt from "jsonwebtoken";
+import { getJwtSecret } from "../utils/secrets";
 
 export interface GatewayConfig {
   services: ServiceConfig[];
@@ -429,9 +430,8 @@ export class PrivacyApiGateway {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
         const token = authHeader.substring(7);
-        // Verify with HS256 using the shared JWT secret
-        const jwtSecret =
-          process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+        // Verify with HS256 using the shared JWT secret (WS2: no fallback literal)
+        const jwtSecret = getJwtSecret();
         const decoded = jwt.verify(token, jwtSecret, {
           algorithms: ["HS256"],
         }) as {

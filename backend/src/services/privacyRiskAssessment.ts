@@ -1,6 +1,6 @@
 import { logger } from "../utils/logger";
 import { DatabaseService } from "./databaseService";
-import auditService from "./auditService";
+import { auditService } from "../utils/audit";
 
 export interface DataWorkflow {
   id: string;
@@ -436,7 +436,7 @@ export class PrivacyRiskAssessmentService {
     });
 
     // Risk increases with number of third parties
-    thirdPartyRisk = Math.min(0.8, thirdParties.length * 0.15);
+    thirdPartyRisk = Math.min(0.8, thirdParties.size * 0.15);
 
     // Higher risk for certain types of third parties
     const highRiskThirdParties = [
@@ -477,7 +477,7 @@ export class PrivacyRiskAssessmentService {
       // This would evaluate custom risk factors based on user-defined functions
       // For now, return a placeholder implementation
       return {
-        category: "custom",
+        category: "third_party_risk" as const,
         weight: customFactor.weight,
         score: 0.5,
         description: `Custom factor: ${customFactor.name}`,
@@ -803,7 +803,7 @@ export class PrivacyRiskAssessmentService {
         [workflowId, limit],
       );
 
-      return result.rows.map((row) => ({
+      return result.map((row: any) => ({
         id: row.id,
         workflowId: row.workflow_id,
         overallScore: row.overall_score,
@@ -876,8 +876,9 @@ export class PrivacyRiskAssessmentService {
         critical: { count: 0, workflows: [] },
       };
 
-      result.rows.forEach((row) => {
+      result.forEach((row: any) => {
         const category = row.category || "medium";
+        if (!heatMapData[category]) heatMapData[category] = { count: 0, workflows: [] };
         heatMapData[category].count++;
         heatMapData[category].workflows.push({
           id: row.id,

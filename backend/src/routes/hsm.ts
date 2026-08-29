@@ -1,9 +1,16 @@
 import { Router, Request, Response } from "express";
 import { getHSMIntegration } from "../services/hsmIntegration";
 import { logger } from "../utils/logger";
+import { stellarAuth } from "../middleware/stellarAuth";
 import { body, query, validationResult } from "express-validator";
+import { idempotency } from "../middleware/idempotency";
+import { schemas } from "../middleware/requestSchemas";
 
 const router = Router();
+
+// WS1 — the HSM surface is admin-only: every endpoint here requires the
+// `hsm:manage` permission in addition to the global authentication.
+router.use(stellarAuth.requirePermission("hsm:manage"));
 
 // Middleware to handle validation errors
 const handleValidationErrors = (req: Request, res: Response, next: any) => {
@@ -17,10 +24,11 @@ const handleValidationErrors = (req: Request, res: Response, next: any) => {
   next();
 };
 
-// Extract user context for audit logging
+// Extract user context for audit logging — identity comes exclusively from
+// the authenticated request (req.user), never from client-supplied headers.
 const extractUserContext = (req: Request) => ({
-  userId: (req as any).user?.id || (req.headers["x-user-id"] as string),
-  sessionId: (req as any).sessionId || (req.headers["x-session-id"] as string),
+  userId: (req as any).user?.id || "unknown",
+  sessionId: (req as any).user?.sessionId || "unknown",
   ipAddress: req.ip || req.connection.remoteAddress,
   userAgent: req.headers["user-agent"],
 });
@@ -28,11 +36,8 @@ const extractUserContext = (req: Request) => ({
 // Generate data key
 router.post(
   "/keys/generate",
-  [
-    body("purpose").isString().isLength({ min: 1, max: 100 }),
-    body("context").optional().isObject(),
-    body("ttl").optional().isInt({ min: 60, max: 86400 }), // 1 min to 24 hours
-  ],
+  idempotency({ methods: ["POST"] }),
+  schemas.hsmGenerateKey,
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
@@ -74,11 +79,7 @@ router.post(
 // Decrypt data key
 router.post(
   "/keys/decrypt",
-  [
-    body("wrappedKey").isObject(),
-    body("purpose").isString().isLength({ min: 1, max: 100 }),
-    body("context").optional().isObject(),
-  ],
+  schemas.hsmDecryptKey,
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
@@ -180,7 +181,7 @@ router.get("/health", async (req: Request, res: Response) => {
 // Activate kill switch
 router.post(
   "/kill-switch/activate",
-  [body("reason").isString().isLength({ min: 1, max: 500 })],
+  schemas.hsmReason,
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
@@ -212,7 +213,7 @@ router.post(
 // Deactivate kill switch
 router.post(
   "/kill-switch/deactivate",
-  [body("reason").isString().isLength({ min: 1, max: 500 })],
+  schemas.hsmReason,
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
@@ -419,7 +420,7 @@ router.get(
 // Emergency shutdown
 router.post(
   "/emergency/shutdown",
-  [body("reason").isString().isLength({ min: 1, max: 500 })],
+  schemas.hsmReason,
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {

@@ -252,7 +252,7 @@ export class WorkerHealthController {
     const queueStats = await this.worker.getQueueStats();
 
     // Get dead letter queue stats
-    const deadLetterStats = await this.worker.deadLetterQueue.getStats();
+    const deadLetterStats = await (this.worker as any).deadLetterQueue.getStats();
 
     return {
       status,
@@ -320,11 +320,11 @@ export class WorkerHealthController {
       issues.push("PII Masker is unhealthy");
     }
 
-    if (!healthComponents.nerProcessor) {
+    if (!healthResponse.components.nerProcessor) {
       issues.push("NER Processor is unhealthy");
     }
 
-    if (!healthComponents.sandbox) {
+    if (!healthResponse.components.sandbox) {
       issues.push("Sandbox is unhealthy");
     }
 

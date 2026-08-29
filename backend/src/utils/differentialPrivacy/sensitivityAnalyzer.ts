@@ -24,7 +24,7 @@ export class SensitivityAnalyzer {
     switch (parsed.type) {
       case "COUNT":
         return {
-          sensitivity: this.DEFAULT_SENSITIVITIES.count,
+          sensitivity: SensitivityAnalyzer.DEFAULT_SENSITIVITIES.count,
           type: "count",
           groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
@@ -37,7 +37,7 @@ export class SensitivityAnalyzer {
           );
         }
         return {
-          sensitivity: maxDataValue || this.DEFAULT_SENSITIVITIES.sum,
+          sensitivity: maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.sum,
           type: "sum",
           groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
@@ -50,7 +50,9 @@ export class SensitivityAnalyzer {
           );
         }
         return {
-          sensitivity: (maxDataValue || this.DEFAULT_SENSITIVITIES.average) / 2,
+          sensitivity:
+            (maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.average) /
+            2,
           type: "average",
           groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
@@ -63,7 +65,7 @@ export class SensitivityAnalyzer {
           );
         }
         return {
-          sensitivity: maxDataValue || this.DEFAULT_SENSITIVITIES.max,
+          sensitivity: maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.max,
           type: "max",
           groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
@@ -76,7 +78,7 @@ export class SensitivityAnalyzer {
           );
         }
         return {
-          sensitivity: maxDataValue || this.DEFAULT_SENSITIVITIES.min,
+          sensitivity: maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.min,
           type: "min",
           groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };

@@ -7,7 +7,7 @@ import {
   RiskAssessmentCriteria,
 } from "../services/privacyRiskAssessment";
 import { DatabaseService } from "../services/databaseService";
-import auditService from "../services/auditService";
+import { auditService } from "../utils/audit";
 
 const router = Router();
 
@@ -204,7 +204,7 @@ router.put(
       // Log the criteria update for audit
       await auditService.logEvent({
         eventType: "ASSESSMENT_CRITERIA_UPDATED",
-        userId: req.user?.id || "system",
+        userId: (req as any).user?.id || "system",
         resourceId: "assessment_criteria",
         details: {
           updatedFields: Object.keys(criteriaUpdate),
@@ -377,7 +377,7 @@ router.post(
       // Log batch assessment for audit
       await auditService.logEvent({
         eventType: "BATCH_RISK_ASSESSMENT_COMPLETED",
-        userId: req.user?.id || assessorId,
+        userId: (req as any).user?.id || assessorId,
         resourceId: "batch_assessment",
         details: {
           totalWorkflows: workflows.length,
