@@ -391,3 +391,64 @@ After successful deployment:
 3. Implement security scanning
 4. Configure CI/CD pipelines
 5. Set up disaster recovery procedures
+
+## Soroban Contracts Deployment & Operations
+
+The contracts live in `contracts/` and are organized as a **cargo workspace**:
+each contract is its own crate (`contracts/<name>/`) and compiles to its own
+`.wasm` artifact under `target/wasm32-unknown-unknown/release/<name>.wasm`.
+This matches `soroban-project.yml` and `contracts/scripts/deploy.ts`, which
+deploy `stellar_analytics.wasm` and `privacy_oracle.wasm` per contract.
+
+### Building
+
+```bash
+cd contracts
+cargo build --target wasm32-unknown-unknown --release   # all 8 contract .wasm files
+cargo test                                              # unit + integration tests (hard gate)
+cargo test --release
+cargo clippy --lib --bins -- -D warnings
+cargo fmt --check
+```
+
+The CI `contracts-rust` job runs all of the above plus a grep-based security
+gate — it fails on `env.current_contract_address()` in actor position and on
+whole-map instance-storage keys in the audited contracts (issues #412 WS1/WS3/WS5).
+
+### Upgrade procedure (UpgradeableProxy)
+
+The proxy is a **verified-implementation registry**, not a blind delegator:
+
+1. Deploy the new implementation contract and record its wasm hash.
+2. `register_implementation(env, caller, implementation, required_storage_version)`
+   — only the admin can do this, and only for a hash the admin has actually deployed.
+3. `initiate_upgrade(env, caller, new_implementation, new_storage_version)` — starts
+   the upgrade delay (floor enforced by `MIN_UPGRADE_DELAY`).
+4. `complete_upgrade(env, caller)` — succeeds only after the delay AND when the new
+   implementation's `storage_version` matches the current layout version. A mismatch
+   is refused so incompatible storage layouts can never be pointed to.
+5. Admin transfer is **two-step**: `transfer_admin` proposes a new admin, then the
+   proposed admin must call `accept_admin_transfer` before the role moves. A mistyped
+   address can never lock out the contract.
+
+### TTL durability policy (TtlStorage)
+
+Paid-for storage must outlive its advertised `expires_at`:
+
+- `store_data` extends the TTL of the persistent entry, the fee record and the
+  `data_entries` index alongside the data chunks.
+- `store_data` **fails** for TTLs that cannot be covered by the network's maximum
+  persistent TTL — data is never silently stored to evaporate.
+- `remove_entry` reads the entry before deleting chunks, fee record and index
+  entries, so no paid TTL is orphaned.
+- `cleanup_expired_data` can be rotated to a new worker via
+  `rotate_cleanup_worker(env, caller, new_worker)` (admin-authenticated); a lost
+  worker key no longer permanently disables cleanup.
+
+### Key rotation & auth model
+
+Every mutating entry point across the suite takes an explicit `caller: Address`
+and enforces `caller.require_auth()` at the host level — never argument equality
+alone. See `CHANGELOG.md` (issue #412) for the per-contract breakdown, and
+`contracts/integration-tests/src/auth_regression_tests.rs` for the spoofing
+regression suite.

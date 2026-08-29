@@ -1,31 +1,35 @@
-[package]
-name = "stellar-analytics"
+[workspace]
+resolver = "2"
+members = [
+    "admin",
+    "access-control",
+    "invariant-testing",
+    "onchain-aggregator",
+    "privacy-oracle",
+    "schema-enforcer",
+    "stellar-analytics",
+    "ttl-storage",
+    "upgradeable-proxy",
+    "integration-tests",
+]
+
+[workspace.package]
 version = "1.0.0"
 edition = "2021"
-description = "Privacy-preserving analytics smart contracts on Stellar blockchain"
-authors = ["Stellar Team <team@stellar-ecosystem.com>"]
 license = "MIT"
-repository = "https://github.com/your-org/stellar"
-homepage = "https://stellar-ecosystem.com"
+repository = "https://github.com/connect-boiz/stellar-privacy-analytics"
+authors = ["Stellar Team <team@stellar-ecosystem.com>"]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
+[workspace.dependencies]
 soroban-sdk = "22.0.0"
-soroban-sdk-macros = "22.0.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sha2 = "0.10"
-hmac = "0.12"
 
-[dev-dependencies]
-soroban-sdk = { version = "22.0.0", features = ["testutils"] }
-rand = { version = "0.8", features = ["std_rng"] }
-
+# Needed by soroban-sdk's testutils (ed25519-dalek 2.x) — a `[patch]` table in
+# the workspace root manifest applies to every member crate.
 [patch.crates-io]
 ed25519-dalek = { git = "https://github.com/dalek-cryptography/curve25519-dalek", tag = "ed25519-2.2.0" }
 
+# Shared release settings for the wasm artifacts (cargo forces panic=unwind
+# for test/bench profiles, so `cargo test --release` keeps working).
 [profile.release]
 opt-level = "z"
 lto = true

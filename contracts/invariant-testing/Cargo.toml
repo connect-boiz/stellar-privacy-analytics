@@ -1,0 +1,17 @@
+[package]
+name = "invariant-testing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Internal-only checked-math property-check library for contract invariants (no external entrypoints)"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+soroban-sdk.workspace = true
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.0", features = ["testutils"] }

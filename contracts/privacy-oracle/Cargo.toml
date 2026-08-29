@@ -1,0 +1,17 @@
+[package]
+name = "privacy-oracle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "PrivacyOracle contract: authenticated data requests/fulfillment with per-user deposits"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk.workspace = true
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.0", features = ["testutils"] }
