@@ -2,6 +2,12 @@ import { createClient, RedisClientType } from "redis";
 import { logger } from "./logger";
 import { EventEmitter } from "events";
 
+// The generic RedisClientType from @redis/client (returned by createClient)
+// is not assignable to the narrow non-generic alias; use a permissive alias
+// that matches the actual runtime type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRedisClient = ReturnType<typeof createClient>;
+
 export interface ConnectionPoolConfig {
   host: string;
   port: number;
@@ -14,10 +20,10 @@ export interface ConnectionPoolConfig {
 
 export class ConnectionPool extends EventEmitter {
   private config: ConnectionPoolConfig;
-  private availableConnections: RedisClientType[] = [];
-  private activeConnections: Set<RedisClientType> = new Set();
+  private availableConnections: AnyRedisClient[] = [];
+  private activeConnections: Set<AnyRedisClient> = new Set();
   private waitingQueue: Array<{
-    resolve: (client: RedisClientType) => void;
+    resolve: (client: AnyRedisClient) => void;
     reject: (error: Error) => void;
     timestamp: number;
   }> = [];
@@ -55,7 +61,7 @@ export class ConnectionPool extends EventEmitter {
     }
   }
 
-  private async createConnection(): Promise<RedisClientType> {
+  private async createConnection(): Promise<AnyRedisClient> {
     if (this.connectionCount >= this.config.maxConnections) {
       throw new Error("Maximum connection limit reached");
     }
@@ -90,7 +96,7 @@ export class ConnectionPool extends EventEmitter {
     return client;
   }
 
-  async acquire(): Promise<RedisClientType> {
+  async acquire(): Promise<AnyRedisClient> {
     if (this.isClosing) {
       throw new Error("Connection pool is closing");
     }
@@ -150,7 +156,7 @@ export class ConnectionPool extends EventEmitter {
     });
   }
 
-  release(client: RedisClientType): void {
+  release(client: AnyRedisClient): void {
     if (!this.activeConnections.has(client)) {
       logger.warn("Attempting to release connection not in active pool");
       return;
@@ -178,7 +184,7 @@ export class ConnectionPool extends EventEmitter {
     }
   }
 
-  async execute<T>(fn: (client: RedisClientType) => Promise<T>): Promise<T> {
+  async execute<T>(fn: (client: AnyRedisClient) => Promise<T>): Promise<T> {
     const client = await this.acquire();
 
     try {
@@ -191,7 +197,7 @@ export class ConnectionPool extends EventEmitter {
     }
   }
 
-  private handleConnectionError(client: RedisClientType): void {
+  private handleConnectionError(client: AnyRedisClient): void {
     // Remove from active or available
     this.activeConnections.delete(client);
     const index = this.availableConnections.indexOf(client);
@@ -209,7 +215,7 @@ export class ConnectionPool extends EventEmitter {
     }
   }
 
-  private removeConnection(client: RedisClientType): void {
+  private removeConnection(client: AnyRedisClient): void {
     this.activeConnections.delete(client);
     const index = this.availableConnections.indexOf(client);
     if (index !== -1) {

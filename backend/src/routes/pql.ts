@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { body, param, query, validationResult } from "express-validator";
 import Redis from "redis";
-import { stellarAuth, AuthenticatedRequest } from "../middleware/stellarAuth";
+import { AuthenticatedRequest } from "../middleware/stellarAuth";
 import {
   createPQLRateLimiter,
   PQLRateLimiter,
@@ -48,7 +48,9 @@ const redisClient = Redis.createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
 
-const rateLimiter = new PQLRateLimiter(redisClient);
+const rateLimiter = new PQLRateLimiter(
+  redisClient as unknown as ConstructorParameters<typeof PQLRateLimiter>[0],
+);
 
 // Middleware for validation errors
 const handleValidationErrors = (
@@ -66,7 +68,6 @@ const handleValidationErrors = (
 // POST /api/v1/query - Execute a privacy-preserving query
 router.post(
   "/",
-  stellarAuth.authenticate,
   rateLimiter.queryRateLimit,
   observability.observe,
   [
@@ -245,7 +246,6 @@ router.post(
 // POST /api/v1/query/validate - Validate a PQL query
 router.post(
   "/validate",
-  stellarAuth.authenticate,
   rateLimiter.validationRateLimit,
   observability.observe,
   [
@@ -300,7 +300,6 @@ router.post(
 // POST /api/v1/query/estimate - Estimate query cost and complexity
 router.post(
   "/estimate",
-  stellarAuth.authenticate,
   rateLimiter.validationRateLimit,
   observability.observe,
   [
@@ -373,7 +372,6 @@ router.post(
 // GET /api/v1/query/status/:queryId - Get query execution status
 router.get(
   "/status/:queryId",
-  stellarAuth.authenticate,
   rateLimiter.validationRateLimit,
   observability.observe,
   [
@@ -414,7 +412,6 @@ router.get(
 // GET /api/v1/query/history - Get user's query history
 router.get(
   "/history",
-  stellarAuth.authenticate,
   rateLimiter.validationRateLimit,
   observability.observe,
   [
@@ -473,7 +470,6 @@ router.get(
 // DELETE /api/v1/query/cancel/:queryId - Cancel a running query
 router.delete(
   "/cancel/:queryId",
-  stellarAuth.authenticate,
   rateLimiter.validationRateLimit,
   observability.observe,
   [
@@ -518,7 +514,6 @@ router.delete(
 // GET /api/v1/privacy/budget - Get user's privacy budget status
 router.get(
   "/privacy/budget",
-  stellarAuth.authenticate,
   rateLimiter.validationRateLimit,
   observability.observe,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -545,7 +540,6 @@ router.get(
 // GET /api/v1/schemas - Get available data schemas
 router.get(
   "/schemas",
-  stellarAuth.authenticate,
   rateLimiter.schemaRateLimit,
   observability.observe,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {

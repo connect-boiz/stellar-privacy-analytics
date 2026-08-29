@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { logger } from "../utils/logger";
-import { createHash, timingSafeEqual} from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 import { RedisClientType } from "redis";
 import { Counter, Histogram } from "prom-client";
+import { getDb } from "../config/database";
+import { getJwtSecret } from "../utils/secrets";
 
 // Auth Metrics
 const authDuration = new Histogram({
@@ -69,7 +71,10 @@ export class StellarAuthMiddleware {
     clockSkewTolerance?: number;
   }) {
     this.stellarPublicKey = config.stellarPublicKey;
-    this.jwtSecret = config.jwtSecret || process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+    // WS1/WS2: no process.env.JWT_SECRET || fallback here — the centralized
+    // getJwtSecret() yields the dev-only sentinel outside production, and the
+    // boot-time secret audit blocks that sentinel in production.
+    this.jwtSecret = config.jwtSecret ?? getJwtSecret();
     this.apiKeySecret = config.apiKeySecret;
     this.redis = config.redis ?? null;
     this.allowedIssuers = config.allowedIssuers || ["stellar-privacy"];
@@ -252,7 +257,11 @@ export class StellarAuthMiddleware {
   }
 
   /**
-   * API key authentication for service-to-service communication
+   * API key authentication for service-to-service communication.
+   *
+   * Looks the key up in the `api_keys` table by SHA-256 hash of the raw
+   * key (full-length digest, timingSafeEqual comparison), honouring
+   * is_active and expires_at. Rejects unknown, expired, or inactive keys.
    */
   private async authenticateApiKey(
     apiKey: string,
@@ -265,19 +274,6 @@ export class StellarAuthMiddleware {
       throw new Error("Invalid API key format");
     }
 
-    // Extract and verify API key hash
-    const [, _version, hash] = apiKey.split("_");
-    const expectedHash = this.hashApiKey(
-      apiKey.replace(`_${hash}`, ""),
-      this.apiKeySecret,
-    );
-
-    if (!timingSafeEqual(Buffer.from(hash), Buffer.from(expectedHash))) {
-      throw new Error("Invalid API key");
-    }
-
-    // For API keys, we need to look up the associated service account
-    // This would typically involve a database call or cache lookup
     const serviceAccount = await this.lookupServiceAccount(apiKey);
 
     if (!serviceAccount) {
@@ -390,31 +386,87 @@ export class StellarAuthMiddleware {
   }
 
   /**
-   * Look up service account for an API key.
+   * Look up the service account for an API key against the `api_keys` table.
    *
-   * Current implementation returns a minimal service-account identity.
-   * In production, this should be backed by a dedicated `api_keys`
-   * database table with columns for key_hash, permissions, rate_limit_tier,
-   * organization_id, is_active, and expires_at.
+   * The table stores only the SHA-256 digest of the raw key; verification is
+   * a full-length timing-safe comparison. Expired or deactivated keys are
+   * rejected, and the tier / permissions / organization come from the row.
    */
-  private async lookupServiceAccount(apiKey: string): Promise<any> {
-    // TODO: Replace with a proper database lookup once an api_keys table exists.
-    return {
-      id: `sa_${apiKey.substring(0, 8)}`,
-      email: `api-key@stellar-privacy.local`,
-      permissions: ["read:queries"],
-      rateLimitTier: "basic" as const,
-    };
+  private async lookupServiceAccount(apiKey: string): Promise<{
+    id: string;
+    email: string;
+    permissions: string[];
+    rateLimitTier: "basic" | "premium" | "enterprise";
+    organizationId?: string;
+  } | null> {
+    try {
+      const keyHash = this.hashApiKey(apiKey, this.apiKeySecret);
+      const db = getDb();
+      const row: any = await db("api_keys")
+        .where({ key_hash: keyHash, is_active: true })
+        .first();
+
+      if (!row) {
+        return null;
+      }
+
+      // Full-length, timing-safe confirmation of the stored digest against
+      // the digest of the presented key (defence in depth on top of the
+      // indexed equality lookup).
+      const stored = Buffer.from(String(row.key_hash || ""), "utf8");
+      const presented = Buffer.from(keyHash, "utf8");
+      if (
+        stored.length !== presented.length ||
+        !timingSafeEqual(stored, presented)
+      ) {
+        return null;
+      }
+
+      // Reject expired keys
+      if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
+        logger.warn("API key rejected: expired", { keyId: row.id });
+        return null;
+      }
+
+      return {
+        id: row.id,
+        email: row.email || `api-key@stellar-privacy.local`,
+        permissions: Array.isArray(row.permissions)
+          ? row.permissions
+          : (row.permissions || "read:queries").split(","),
+        rateLimitTier: row.rate_limit_tier || "basic",
+        organizationId: row.organization_id || undefined,
+      };
+    } catch (error) {
+      logger.error("API key lookup failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
   }
 
   /**
-   * Hash API key for secure comparison
+   * Exposed for the rate limiter: whether a request carries a Bearer token
+   * that should be treated as a JWT (never as an API key).
    */
-  private hashApiKey(apiKeyPrefix: string, secret: string): string {
-    return createHash("sha256")
-      .update(`${apiKeyPrefix}:${secret}`)
-      .digest("hex")
-      .substring(0, 32);
+  isBearerToken(authHeader: string | undefined): boolean {
+    return !!authHeader && authHeader.startsWith("Bearer ");
+  }
+
+  /**
+   * Public accessor for the API key hash function (full-length digest).
+   */
+  hashApiKeyForLookup(apiKey: string): string {
+    return this.hashApiKey(apiKey, this.apiKeySecret);
+  }
+
+  /**
+   * Hash API key for secure comparison (full-length SHA-256 digest).
+   * Uses the raw key so the stored digest can be reproduced from the
+   * client-held secret without a shared API_KEY_SECRET.
+   */
+  private hashApiKey(apiKey: string, _secret: string): string {
+    return createHash("sha256").update(apiKey).digest("hex");
   }
 
   /**
@@ -631,7 +683,8 @@ export function createStellarAuth(config: {
 // Default middleware instance using environment variables
 export const stellarAuth = createStellarAuth({
   stellarPublicKey: process.env.STELLAR_PUBLIC_KEY || "",
-  jwtSecret: process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only",
+  // WS1/WS2: the secret is resolved centrally (utils/secrets.getJwtSecret).
+  jwtSecret: undefined,
   apiKeySecret: process.env.API_KEY_SECRET || "",
   allowedIssuers: process.env.STELLAR_ALLOWED_ISSUERS?.split(",") || [
     "stellar-privacy",

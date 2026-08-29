@@ -61,7 +61,7 @@ export class TLSTunnel extends EventEmitter {
       }
 
       this.server = https.createServer(options, (socket) => {
-        this.handleConnection(socket as TLSSocket);
+        this.handleConnection(socket as unknown as TLSSocket);
       });
 
       this.server.listen(port, () => {
@@ -224,7 +224,9 @@ export class TLSTunnel extends EventEmitter {
    * Handle incoming connection
    */
   private handleConnection(socket: TLSSocket): void {
-    const remoteNodeId = socket.getPeerCertificate().subject?.CN || "unknown";
+    const peerCert = socket.getPeerCertificate();
+    const cn = (peerCert as any)?.subject?.CN;
+    const remoteNodeId = typeof cn === "string" ? cn : "unknown";
 
     logger.info(`Incoming connection from ${remoteNodeId}`);
 

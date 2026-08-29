@@ -104,8 +104,8 @@ export class ShamirSecretSharing {
     const coefficients: BigInteger[] = [secret];
 
     for (let i = 1; i < this.threshold; i++) {
-      const randomBytes = randomBytes(32);
-      const randomInt = this.bufferToBigInt(randomBytes);
+      const randomBytesValue = randomBytes(32);
+      const randomInt = this.bufferToBigInt(randomBytesValue);
       coefficients.push(randomInt.mod(this.prime));
     }
 

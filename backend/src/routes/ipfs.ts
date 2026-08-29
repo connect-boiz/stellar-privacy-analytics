@@ -4,8 +4,35 @@ import ipfsService from "../services/ipfsService";
 import { body, param, validationResult } from "express-validator";
 import { logger } from "../utils/logger";
 import { EncryptedBlobStorageAdapter, SimpleKeyManager } from "@stellar/shared";
+import { schemas, validateRequest } from "../middleware/requestSchemas";
 
 const router = express.Router();
+
+/**
+ * WS3: strict CID validator — only well-formed CIDv0 (Qm…) or CIDv1
+ * (b…) identifiers are accepted; path-traversal and scheme injection are
+ * rejected before reaching the IPFS service.
+ */
+export function isValidCid(cid: string): boolean {
+  if (typeof cid !== "string" || cid.length === 0 || cid.length > 128) {
+    return false;
+  }
+  if (/^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cid)) {
+    return true; // CIDv0 base58btc
+  }
+  if (/^b[a-z0-9]{58,59}$/.test(cid)) {
+    return true; // CIDv1 base32
+  }
+  return false;
+}
+
+// WS3: server-side multipart upload with a hard size cap (the global
+// express.json limit does not apply to multipart).
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES },
+});
 
 // Initialize encrypted storage adapter and key manager
 const keyManager = new SimpleKeyManager();
@@ -25,13 +52,9 @@ const storageAdapter = new EncryptedBlobStorageAdapter(
  */
 router.post(
   "/upload",
-  [
-    body("fileName").notEmpty().withMessage("File name is required"),
-    body("encrypted").optional().isBoolean(),
-    body("version").optional().isInt({ min: 0 }),
-    body("uploader").optional().isString(),
-    body("decryptionKeyHash").optional().isString(),
-  ],
+  upload.single("file"),
+  schemas.ipfsUpload,
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -79,7 +102,8 @@ router.post(
  */
 router.post(
   "/pin/:cid",
-  [param("cid").notEmpty().withMessage("CID is required")],
+  [param("cid").custom(isValidCid).withMessage("Invalid CID format")],
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -112,7 +136,8 @@ router.post(
  */
 router.get(
   "/availability/:cid",
-  [param("cid").notEmpty().withMessage("CID is required")],
+  [param("cid").custom(isValidCid).withMessage("Invalid CID format")],
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -149,7 +174,8 @@ router.get(
  */
 router.get(
   "/retrieve/:cid",
-  [param("cid").notEmpty().withMessage("CID is required")],
+  [param("cid").custom(isValidCid).withMessage("Invalid CID format")],
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -188,10 +214,8 @@ router.get(
  */
 router.post(
   "/batch-pin",
-  [
-    body("cids").isArray({ min: 1 }).withMessage("CIDs array is required"),
-    body("cids.*").notEmpty().withMessage("Each CID must be non-empty"),
-  ],
+  schemas.ipfsCidsBatch,
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -227,7 +251,8 @@ router.post(
  */
 router.delete(
   "/unpin/:cid",
-  [param("cid").notEmpty().withMessage("CID is required")],
+  [param("cid").custom(isValidCid).withMessage("Invalid CID format")],
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -258,7 +283,8 @@ router.delete(
  */
 router.get(
   "/deals/:cid",
-  [param("cid").notEmpty().withMessage("CID is required")],
+  [param("cid").custom(isValidCid).withMessage("Invalid CID format")],
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -325,7 +351,8 @@ router.post(
  */
 router.get(
   "/gateway/:cid",
-  [param("cid").notEmpty().withMessage("CID is required")],
+  [param("cid").custom(isValidCid).withMessage("Invalid CID format")],
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
@@ -361,13 +388,8 @@ router.get(
  */
 router.post(
   "/encrypted/upload",
-  [
-    body("datasetId").notEmpty().withMessage("Dataset ID is required"),
-    body("data").notEmpty().withMessage("Data is required"),
-    body("encryptionKeyId").optional().isString(),
-    body("storeOnLedger").optional().isBoolean(),
-    body("metadata").optional().isObject(),
-  ],
+  schemas.ipfsEncryptedUpload,
+  validateRequest,
   async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);

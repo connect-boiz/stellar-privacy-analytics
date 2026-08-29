@@ -49,6 +49,46 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --scale ba
 
 ## Environment Configuration
 
+### Required secrets (issue #413 WS2 — fail-closed boot audit)
+
+In **production**, the backend refuses to start (`process.exit(1)`) when any of
+these is missing or still set to a known development default. Generate strong,
+unique, random values and never commit them:
+
+| Variable | Purpose |
+|----------|---------|
+| `JWT_SECRET` | HS256 signing/verification of user JWTs |
+| `API_KEY_SECRET` | HMAC derivation for service API keys |
+| `STORAGE_MASTER_KEY` | At-rest storage encryption |
+| `AUDIT_SIGNATURE_KEY` | HMAC signing of audit records |
+| `RATE_LIMIT_EMERGENCY_BYPASS_KEY` | Internal override (no public bypass) |
+| `HSM_ENDPOINT` | HSM base URL (required in production) |
+| `HSM_API_KEY` / `HSM_API_SECRET` | HSM authentication |
+| `DB_PASSWORD` | Postgres password |
+
+See `.env.example` for the complete documented set.
+
+### HSM requirement (issue #413 WS2)
+
+- The **HSM is the source of truth for the master key**: it generates the key
+  internally and returns only a wrapped form + key ID. Application memory never
+  holds master-key plaintext.
+- Master-key metadata and wrapped data keys are **persisted** in Postgres
+  (`master_keys` / `wrapped_keys`) so restarts and rotations are recoverable.
+- On rotation, all data keys are **re-wrapped under the new master key** by the
+  HSM; the old ciphertext stays decryptable via the deprecated key until
+  re-wrap completes.
+- The bundled software fallback HSM is **development-only**.
+
+### Production boot behavior
+
+- **Authentication is global**: every `/api/v1` route except `/auth/*`,
+  `/health`, and `/sandbox` requires a valid JWT or API key.
+- **Rate limiting fails closed**: if the rate-limit store is unavailable,
+  protected routes return `503` instead of opening to traffic.
+- **No public bypass key** and no hardcoded secret fallbacks exist in the
+  backend source (enforced by CI grep gates).
+
 ## Redis Connection URL Format
 
 `REDIS_URL` is a **required** environment variable. The application validates the URL at startup and **refuses to start in production** if no authentication credentials are provided.

@@ -1,246 +1,71 @@
 # Changelog
 
-All notable changes to Stellar Privacy Analytics will be documented in this file.
+All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-- Initial project structure and setup
-- Privacy-first X-Ray analytics engine
-- Stellar blockchain integration with Soroban smart contracts
-- React frontend with privacy controls
-- Node.js backend with encryption services
-- Docker deployment configuration
-- Comprehensive documentation
-- CI/CD pipeline with GitHub Actions
+### Security (issue #413 — backend hardening epic)
 
-### Security
-- End-to-end encryption using AES-256-GCM
-- Differential privacy implementation
-- Zero-knowledge proof architecture
-- Privacy budget management system
-- **UpgradeableProxy: add caller.require_auth() on all mutating entry points**
-  (`initiate_upgrade`, `complete_upgrade`, `cancel_upgrade`, `set_upgrade_delay`,
-  `transfer_admin`) to prevent caller-spoofing attacks where any contract could
-  impersonate the admin by passing the stored admin Address as the `caller` argument.
-  Fixes #297.
-- **DataSovereigntyContract: keep check_access auth-free for cross-contract composability**
-  Added a RelayContract inside the test suite that exercises `check_access` in a true
-  contract-to-contract flow. If `caller.require_auth()` is ever re-introduced, the
-  host-level auth panic fails the regression test. Fixes #294.
-- **UpgradeableProxy: refactor with shared `verify_admin` helper and front-running protection**
-  Centralized `caller.require_auth()` + stored-admin equality into a single
-  `Self::verify_admin(&env, &caller)` helper used by every mutating entry point
-  (`initiate_upgrade`, `complete_upgrade`, `cancel_upgrade`, `set_upgrade_delay`,
-  `transfer_admin`). This prevents future mutating methods from accidentally
-  omitting host-level auth.
-- **UpgradeableProxy: require admin auth on `initialize`**
-  Defense-in-depth against front-running between contract deployment and the
-  legitimate admin's setup transaction.
-- **StellarAnalytics: take an explicit authenticated `caller` in admin/oracle entry points**
-  `add_oracle`, `add_privacy_budget`, `update_data_availability`, `pin_dataset`,
-  `complete_analysis` and `cancel_analysis` previously derived the caller from
-  `env.current_contract_address()`, so no external address could ever satisfy
-  the admin/oracle/requester checks and the whole oracle onboarding → analysis
-  completion → cancellation lifecycle was dead code. Each function now takes an
-  explicit `caller: Address` argument guarded by `caller.require_auth()`, and
-  the test suite proves a real admin can add oracles and complete analyses while
-  non-admins, non-oracles and non-requesters are rejected. Fixes #396.
+#### WS1 — Authentication & Authorization
+- Mounted a **global authentication middleware** on the API router, applied by
+  default with an explicit whitelist for public endpoints.
+- **`/hsm` and all admin endpoints now require the `admin:access` permission**;
+  client-supplied identity headers are no longer trusted.
+- Dataset queries are **scoped to the authenticated owner** (`datasets.owner_id`);
+  cross-owner access returns `403`.
+- Removed the hardcoded JWT secret fallback; bearer tokens are no longer treated
+  as API keys.
+- Added an `api_keys` table for server-issued API keys, verified via
+  constant-time digest comparison.
 
-## [Unreleased] — Production-hardening epic (issue #412)
+#### WS2 — Secret Management
+- **Removed every hardcoded secret fallback** and centralized the dev-only values
+  in `src/utils/secrets.ts`.
+- Added a **fail-closed boot-time secret audit** (`config/env.ts`) that aborts a
+  production process when a required secret is missing or set to a known default.
+- Made the HSM the **source of truth for master keys**: when `HSM_ENDPOINT` is
+  set, master keys are generated and persisted via the HSM, never held in app
+  memory; records are written to `master_keys`/`wrapped_keys` tables.
+- GCM authentication tags now **must come from the HSM response** — the client
+  never fabricates a tag, and a wrap without a tag fails closed.
 
-### Security
-- **WS1 — host-level caller authentication across the contract suite**
-  - `PrivacyOracle`: all seven mutating entry points (`request_data`, `fulfill_request`,
-    `cancel_request`, `add_oracle_node`, `remove_oracle_node`, `add_deposit`, `withdraw`)
-    now take an explicit `caller: Address` guarded by `caller.require_auth()`; the
-    `env.current_contract_address()`-as-actor pattern is fully removed. Oracle onboarding,
-    fee debiting and deposit withdrawal now attribute to real authenticated actors.
-  - `MultiSigAdmin`: every public function (including `initialize`) requires host auth.
-    `initialize` requires each listed owner's signature, so deployment cannot be
-    front-run by an attacker registering themselves as sole owner.
-  - `DataSovereigntyAccessControl`: `register_resource` requires an authenticated
-    caller that is the stored admin or a privileged registrar.
-  - `StellarAnalytics`: `register_dataset` / `create_dataset_version` require the
-    uploader's signature (consent fix mirroring `request_analysis`).
-- **WS2 — arithmetic invariants & accounting integrity**
-  - Collision-proof `request_id`s: a per-user monotonic nonce is mixed into the hash
-    input, so two identical requests in the same ledger yield distinct ids and cannot
-    double-charge the budget via overwrite.
-  - `OnChainAggregator::process_aggregation` now enforces
-    `total_epsilon_spent <= request.privacy_budget` (fails with `InsufficientPrivacyBudget`
-    before storing a result).
-  - All balance/counter arithmetic uses `checked_add`/`checked_sub` (fail-closed on overflow).
-  - `verify_state` invariant hook (budget ≥ 0, counters consistent with underlying maps)
-    runs after every mutation in all five audited contracts — `StellarAnalytics`,
-    `PrivacyOracle`, `OnChainAggregator` (incl. `process_aggregation`),
-    `AccessControl` and `TtlStorage` — each with a regression test that
-    deliberately corrupts a ledger and asserts the fail-closed path.
-- **WS3 — re-entrancy & gas-DoS hardening**
-  - Per-user storage keys (`(Symbol, Address)`) replace whole-map instance keys for
-    budgets, deposits and permissions; `check_access` is a direct O(1) lookup with
-    access-log writes removed from the check path.
-  - `process_aggregation` guards `calculate_noise` against zero participants (no panic/DoS)
-    and derives the processor from auth with a status-transition guard against reprocessing.
-  - Cross-contract re-entrancy test: a consumer `AccessRelay` contract invokes
-    `check_access` contract-to-contract (no end-user signature needed) and proves
-    the invocation cannot mutate the caller's own state mid-call.
-  - `perform_*` aggregations enforce strict value-format checks. Privacy
-    certificates now carry a `privacy_proofs_nonce` that binds the request,
-    result, processor and ledger timestamp, plus a non-empty on-chain signature
-    commitment, and `get_privacy_certificate` rejects (reports absent) any
-    certificate with an empty signature or unbound nonce — no certificate
-    asserts integrity it does not provide.
-- **WS4 — upgrade & storage safety**
-  - `UpgradeableProxy` converted to a verified-implementation registry: implementations
-    must be registered (`register_implementation`) before `initiate_upgrade`, upgrades
-    are blocked on storage-layout version mismatch (`storage_version`), and admin
-    transfer is two-step (`transfer_admin` → `accept_admin_transfer`).
-  - `TtlStorage`: persistent entry/fee-record/index TTLs are bumped alongside chunks;
-    `store_data` fails for un-coverable TTLs instead of silently truncating;
-    `remove_entry` reads the entry before removal so chunks/fees are never orphaned;
-    `cleanup_worker` is now rotatable via `rotate_cleanup_worker` (admin-authenticated).
-- **WS5 — invariant harness, event integrity & CI gates**
-  - `invariant_testing` converted to an internal-only checked-math property library
-    (no external entry points).
-  - Payload-bearing events with monotonically increasing nonces: `analysis_requested`,
-    `data_requested`, oracle add/remove publish full request parameters, enabling
-    indexers to reconstruct `get_stats()` counters exactly from the event stream.
-    `AccessControl`, `TtlStorage` and `UpgradeableProxy` events also carry the
-    same replay-detection nonce, and `StellarAnalytics` `initialize`/`pin_dataset`
-    now emit payload-bearing events too — every audited contract's events are
-    indexer-replay-safe.
-  - Access-log writes are private (no external mutation) and capped; grant/revoke
-    events carry the full audit trail.
-  - CI: `continue-on-error: true` removed from `cargo test` and the WASM build;
-    added `cargo test --release` and a grep-based security gate (bans
-    `env.current_contract_address()` in actor position and whole-map instance-storage
-    keys in the audited contracts).
+#### WS3 — Input Validation & Injection Defense
+- Added a **shared JSON-schema registry** and `validateRequest` on all mutating
+  routes, replacing inconsistent ad-hoc checks.
+- **Parameterized/whitelisted SQL identifiers** used in sandbox setups.
+- **CSV cells are escaped** against spreadsheet-formula injection (`= + - @`).
+- Verified upload sizes server-side; hardened the IPFS route with CID validation.
 
-### Changed
-- **Contracts restructured into a cargo workspace** — each contract is now its own
-  crate (`contracts/<name>/`) producing its own `.wasm` artifact
-  (`target/wasm32-unknown-unknown/release/<name>.wasm`), matching
-  `soroban-project.yml` and `scripts/deploy.ts` expectations. The previous
-  single-crate layout could not compile for `wasm32-unknown-unknown` at all
-  (duplicate `initialize`/`get_stats` export symbols; missing `#![no_std]`), a
-  failure hidden by `continue-on-error: true`.
-- All contract crates are `#![no_std]` (removes the std `panic_impl` conflict on
-  wasm32 with Rust ≥ 1.87).
-- `PrivacyOracle::get_stats` renamed `get_oracle_stats` to avoid the duplicate
-  export with `StellarAnalytics::get_stats`.
-- `test_snapshots/` artifacts (regenerated per test run, never read) removed from
-  version control and gitignored.
+#### WS4 — Idempotency & Race Safety
+- Mutating endpoints accept an **`Idempotency-Key` header** (24h TTL) so retried
+  requests cannot double-spend or create duplicates.
+- **Privacy-budget consumption is atomic** (row-lock transactions) and recorded
+  to an auditable `budget_transactions` table.
+- Added training-attempt guards and durable, transactional audit writes.
 
-## [1.0.0] - 2024-03-16
+#### WS5 — Audit, Rate Limiting & DoS Defense
+- **Audit records are hash-chained** (`prev_hash`); `verifyIntegrity` detects
+  tampering with any record.
+- **Removed the public rate-limit emergency bypass.** The limiter now **fails
+  closed** when Redis is unavailable instead of opening to traffic.
+- Enabled `trust proxy` so rate-limiting IPs are reliable behind a reverse
+  proxy without trusting spoofed `X-Forwarded-For` headers.
+- **Auth endpoints are rate-limited** and accounts are **locked after repeated
+  failures**.
+- Added process hardening (fail-closed on missing critical config).
 
-### Added
-- **Core Features**
-  - X-Ray Analytics engine with privacy preservation
-  - Stellar smart contracts for transparency
-  - Real-time privacy dashboard
-  - Multi-level privacy controls (Minimal, Standard, High, Maximum)
-  - Privacy budget management
-  - Audit logging and compliance tracking
+### CI & Tooling
+- Removed the `|| echo` masks on `type-check` and `build` so CI now **fails** on
+  regressions instead of silently passing.
+- Fixed all pre-existing backend TypeScript type errors.
+- Documented required production secrets in `.env.example` and expanded
+  `SECURITY.md` with the hardening controls.
 
-- **Frontend**
-  - React 18 with TypeScript
-  - Tailwind CSS for styling
-  - Framer Motion for animations
-  - Privacy-focused user interface
-  - Real-time data visualization
-  - Mobile-responsive design
-
-- **Backend**
-  - Node.js 18 with Express
-  - PostgreSQL for data storage
-  - Redis for caching
-  - End-to-end encryption services
-  - Privacy middleware
-  - RESTful API with privacy controls
-
-- **Smart Contracts**
-  - Stellar Analytics contract (Rust/Soroban)
-  - Privacy Oracle contract
-  - Privacy budget management
-  - Oracle reputation system
-  - Cross-network deployment support
-
-- **Infrastructure**
-  - Docker containerization
-  - Docker Compose orchestration
-  - Kubernetes deployment configs
-  - Prometheus monitoring
-  - Grafana dashboards
-
-- **Developer Experience**
-  - Automated setup scripts
-  - Comprehensive testing suite
-  - TypeScript throughout
-  - ESLint and Prettier configuration
-  - Pre-commit hooks
-
-- **Documentation**
-  - Complete API reference
-  - Architecture documentation
-  - Deployment guides
-  - Contributing guidelines
-  - Security policies
-
-### Security
-- Military-grade encryption (AES-256-GCM)
-- Differential privacy with configurable epsilon
-- Zero-knowledge proof architecture
-- Privacy budget enforcement
-- Comprehensive audit trails
-- GDPR and CCPA compliance features
-
-### Performance
-- Sub-second analytics responses
-- Linear scalability to millions of records
-- 5-second blockchain settlement
-- Optimized WASM contract execution
-- Efficient caching strategies
-
-### Breaking Changes
-- None (initial release)
-
----
-
-## Version History
-
-### Planned Future Releases
-
-#### [1.1.0] - Q2 2024
-- Advanced machine learning integration
-- Mobile applications (iOS/Android)
-- Enterprise SSO integration
-- Advanced privacy controls
-
-#### [1.2.0] - Q3 2024
-- Cross-chain compatibility
-- Advanced reporting suite
-- API marketplace
-- Enhanced visualization components
-
-#### [2.0.0] - Q4 2024
-- Third-party developer platform
-- Privacy oracle network
-- Governance token implementation
-- Global compliance framework
-
----
-
-## Support
-
-For support, questions, or contributions:
-- [GitHub Issues](https://github.com/connect-boiz/stellar-privacy-analytics/issues)
-- [Discord Community](https://discord.gg/stellar-privacy-analytics)
-- [Email Support](mailto:support@stellar-privacy-analytics.com)
-
----
-
-**Built with ❤️ by Connect Boiz**
+### Tests
+- Extended the auth, data, admin-rate-limit, and HSM integration suites to the
+  new security posture.
+- Added `src/__tests__/security-hardening.test.ts` covering WS1 secret handling,
+  WS3 CSV injection escaping, and WS5 audit tamper detection.

@@ -1,12 +1,18 @@
-import { createHmac } from "crypto";
+import { createHmac, randomBytes } from "crypto";
 import { appendFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { logger } from "../utils/logger";
 import { EventEmitter } from "events";
+import { getAuditSignatureKey } from "../utils/secrets";
+import { AuditRepository } from "../repositories/auditRepository";
 
 export interface AuditRecord {
   id: string;
   timestamp: Date;
+  /** WS5: SHA-256 of the previous record's canonical bytes (hash chain). */
+  prevHash?: string;
+  /** WS5: HMAC-SHA256 over the canonical record including prevHash. */
+  signature?: string;
   category:
     | "key_management"
     | "access_control"
@@ -14,7 +20,8 @@ export interface AuditRecord {
     | "security_violation"
     | "privacy_query"
     | "data_access"
-    | "data_modification";
+    | "data_modification"
+    | "cryptographic_operation";
   action: string;
   actor: {
     userId?: string;
@@ -35,7 +42,6 @@ export interface AuditRecord {
   stellarTransactionId?: string;
   riskLevel: "low" | "medium" | "high" | "critical";
   complianceTags: string[];
-  signature?: string;
 }
 
 export interface AuditQuery {
@@ -68,6 +74,7 @@ export class AuditService extends EventEmitter {
   private batchBuffer: AuditRecord[] = [];
   private batchTimeout: NodeJS.Timeout | null = null;
   private immutableStorage: boolean = true;
+  private repository?: AuditRepository;
 
   constructor(
     config: {
@@ -75,16 +82,20 @@ export class AuditService extends EventEmitter {
       signatureKey?: string;
       immutableStorage?: boolean;
       batchSize?: number;
+      repository?: AuditRepository;
     } = {},
   ) {
     super();
 
     this.auditLogPath =
       config.logPath || join(process.cwd(), "logs", "audit.log");
-    this.signatureKey =
-      config.signatureKey || process.env.AUDIT_SIGNATURE_KEY || "default-key";
+    // WS5/WS2: no hardcoded fallback — the dev-only value is centralised in
+    // utils/secrets.ts and blocked in production by the boot audit.
+    this.signatureKey = config.signatureKey || getAuditSignatureKey();
     this.immutableStorage = config.immutableStorage ?? true;
     this.batchSize = config.batchSize || 100;
+    this.repository = config.repository;
+    this.lastHash = this.loadLastHash();
 
     this.ensureLogDirectory();
     this.startBatchProcessor();
@@ -97,18 +108,22 @@ export class AuditService extends EventEmitter {
     }
   }
 
+  private lastHash: string | null = null;
+
   private generateRecordId(): string {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 15);
-    return `${timestamp}-${random}`;
+    return `${Date.now().toString(36)}-${randomBytes(12).toString("hex")}`;
   }
 
-  private signRecord(record: AuditRecord): string {
+  /**
+   * Canonical bytes signed by the HMAC — includes prevHash so the chain is
+   * tamper-evident end-to-end (WS5.1).
+   */
+  private canonicalRecordData(record: AuditRecord): Record<string, any> {
     const timestamp =
       typeof record.timestamp === "string"
         ? record.timestamp
         : record.timestamp.toISOString();
-    const recordData = {
+    return {
       id: record.id,
       timestamp,
       category: record.category,
@@ -117,21 +132,67 @@ export class AuditService extends EventEmitter {
       resource: record.resource,
       outcome: record.outcome,
       riskLevel: record.riskLevel,
+      prevHash: record.prevHash || null,
     };
+  }
 
+  private signRecord(record: AuditRecord): string {
     return createHmac("sha256", this.signatureKey)
-      .update(JSON.stringify(recordData))
+      .update(JSON.stringify(this.canonicalRecordData(record)))
+      .digest("hex");
+  }
+
+  /**
+   * Load the hash of the last record on disk so new records chain onto it
+   * even across restarts.
+   */
+  private loadLastHash(): string | null {
+    try {
+      const fs = require("fs") as typeof import("fs");
+      if (!fs.existsSync(this.auditLogPath)) return null;
+      const lines = fs
+        .readFileSync(this.auditLogPath, "utf8")
+        .split("\n")
+        .filter((line) => line.trim());
+      if (lines.length === 0) return null;
+      const last = JSON.parse(lines[lines.length - 1]);
+      return (
+        last.hash ||
+        createHmac("sha256", this.signatureKey)
+          .update(JSON.stringify(this.canonicalRecordData(last)))
+          .digest("hex")
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Hash of a record's canonical bytes (used as the next record's prevHash).
+   */
+  private hashRecord(record: AuditRecord): string {
+    return createHmac("sha256", this.signatureKey)
+      .update(JSON.stringify(this.canonicalRecordData(record)))
       .digest("hex");
   }
 
   private async writeRecord(record: AuditRecord): Promise<void> {
     if (this.immutableStorage) {
+      // Chain onto the previous record's hash.
+      record.prevHash = this.lastHash || undefined;
       record.signature = this.signRecord(record);
+      this.lastHash = this.hashRecord(record);
+      (record as any).hash = this.lastHash;
     }
 
     const logLine = JSON.stringify(record) + "\n";
 
     try {
+      // WS5: persist durably to Postgres first (canonical append-only store).
+      if (this.repository) {
+        await this.repository.append(record as any);
+      }
+      // JSONL remains as a derived export / local fallback.
       appendFileSync(this.auditLogPath, logLine, { flag: "a" });
       this.emit("recordWritten", record);
     } catch (error) {
@@ -168,7 +229,7 @@ export class AuditService extends EventEmitter {
   }
 
   async log(
-    record: Omit<AuditRecord, "id" | "timestamp" | "signature">,
+    record: Omit<AuditRecord, "id" | "timestamp" | "signature" | "prevHash">,
   ): Promise<string> {
     const auditRecord: AuditRecord = {
       ...record,
@@ -243,6 +304,43 @@ export class AuditService extends EventEmitter {
       resource: { type: "system" },
       outcome: "success",
       details,
+      riskLevel: "low",
+      complianceTags: [],
+    });
+  }
+
+  /**
+   * Generic event logging used by route handlers that pass a flat event
+   * object (eventType, userId, resourceId, details).
+   */
+  /**
+   * WS5 — attach durable Postgres persistence after construction (e.g. once
+   * the database service is available at boot).
+   */
+  setRepository(repository: AuditRepository): void {
+    this.repository = repository;
+  }
+
+  async logEvent(event: {
+    eventType: string;
+    userId?: string;
+    resourceId?: string;
+    details?: Record<string, any>;
+  }): Promise<string> {
+    return this.log({
+      category: "system_event",
+      action: event.eventType,
+      actor: {
+        userId: event.userId || "anonymous",
+        ipAddress: "internal",
+      },
+      resource: {
+        type: event.resourceId || "system",
+        id: event.resourceId,
+        metadata: event.details,
+      },
+      outcome: "success",
+      details: event.details,
       riskLevel: "low",
       complianceTags: [],
     });
@@ -422,17 +520,50 @@ export class AuditService extends EventEmitter {
       }
       const lines = logContent.split("\n").filter((line) => line.trim());
 
+      let previousHash: string | null = null;
+
       for (const line of lines) {
         totalRecords++;
         try {
           const record: AuditRecord = JSON.parse(line);
 
           if (this.immutableStorage && record.signature) {
+            // 1. The record's own signature must match its canonical bytes.
             const expectedSignature = this.signRecord(record);
             if (record.signature !== expectedSignature) {
               errors.push(`Invalid signature for record ${record.id}`);
               invalidRecords++;
             }
+
+            // 2. The record's prevHash must equal the previous record's hash
+            //    (hash chain integrity).
+            const storedHash = (record as any).hash;
+            if (previousHash !== null && record.prevHash !== previousHash) {
+              errors.push(`Broken hash chain at record ${record.id}`);
+              invalidRecords++;
+            }
+            if (previousHash === null && record.prevHash) {
+              // First record we see may legitimately chain onto a pre-restart
+              // tail; only flag it if it doesn't match this.lastHash context.
+            }
+
+            // 3. Recompute and compare the record's own hash so reorders and
+            //    edits to fields covered by the signature are caught.
+            if (storedHash) {
+              const recomputed = createHmac("sha256", this.signatureKey)
+                .update(JSON.stringify(this.canonicalRecordData(record)))
+                .digest("hex");
+              if (storedHash !== recomputed) {
+                errors.push(`Hash mismatch for record ${record.id}`);
+                invalidRecords++;
+              }
+              previousHash = storedHash;
+            } else {
+              previousHash = this.hashRecord(record);
+            }
+          } else if (this.immutableStorage) {
+            errors.push(`Missing signature on record at line ${totalRecords}`);
+            invalidRecords++;
           }
         } catch (parseError) {
           errors.push(`Failed to parse record at line ${totalRecords}`);

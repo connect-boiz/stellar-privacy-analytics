@@ -322,7 +322,7 @@ export class ServiceDiscovery extends EventEmitter {
     return await this.serviceMesh.getServiceHealth();
   }
 
-  getPrometheusMetrics(): string {
+  async getPrometheusMetrics(): Promise<string> {
     this.ensureInitialized();
     return this.healthMonitor.getPrometheusMetrics();
   }

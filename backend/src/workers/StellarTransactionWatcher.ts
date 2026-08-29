@@ -1,6 +1,6 @@
-import { Server } from "@stellar/stellar-sdk";
+import { rpc } from "@stellar/stellar-sdk";
 import { logger } from "../utils/logger";
-import { getRedisClient, connectRedis } from "../utils/redis";
+import { getRedisClient, initializeRedis } from "../config/redis";
 import { sandboxConfig } from "../config/sandboxConfig";
 import axios from "axios";
 
@@ -14,7 +14,7 @@ interface PermissionEvent {
 }
 
 export class StellarTransactionWatcher {
-  private rpcServer: Server;
+  private rpcServer: rpc.Server;
   private redisClient: any;
   private rpcUrl: string;
   private redisUrl: string;
@@ -34,7 +34,7 @@ export class StellarTransactionWatcher {
   ) {
     // Use sandbox configuration if available, otherwise fall back to parameters
     const stellarConfig = sandboxConfig.getStellarConfig();
-    this.rpcServer = new Server(rpcUrl || stellarConfig.rpcUrl);
+    this.rpcServer = new rpc.Server(rpcUrl || stellarConfig.rpcUrl);
 
     // Use the central Redis client
     this.redisClient = getRedisClient();
@@ -61,7 +61,7 @@ export class StellarTransactionWatcher {
 
     try {
       // Connect specifically for this watcher if not already connected
-      await connectRedis();
+      await initializeRedis();
       logger.info("Stellar Transaction Watcher started", {
         contractId: this.contractId,
       });

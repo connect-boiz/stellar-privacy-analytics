@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { randomBytes } from "crypto";
@@ -6,12 +6,140 @@ import { asyncHandler } from "../middleware/errorHandler";
 import { getDb } from "../config/database";
 import { getRedisClient } from "../config/redis";
 import { logger } from "../utils/logger";
+import { getJwtSecret } from "../utils/secrets";
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "stellar-privacy-jwt-secret-dev-only";
+const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRY = process.env.JWT_EXPIRY || "1h";
 const BCRYPT_ROUNDS = 12;
+
+// WS5: strict per-IP throttling on credential endpoints (brute-force
+// protection). In-memory fallback when Redis is unavailable (e.g. tests).
+const AUTH_MAX_ATTEMPTS = 5;
+const AUTH_WINDOW_MS = 60 * 1000; // 1 minute
+const LOCKOUT_THRESHOLD = 5;
+const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+const ipAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function clientIp(req: Request): string {
+  return req.ip || req.connection.remoteAddress || "unknown";
+}
+
+/**
+ * Per-IP throttle for /auth/login and /auth/register. Uses Redis when
+ * available (distributed), falls back to an in-process counter otherwise.
+ */
+async function authRateLimit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const ip = clientIp(req);
+  const now = Date.now();
+
+  try {
+    const redis = getRedisClient();
+    const key = `auth:ratelimit:${ip}`;
+    const multi = redis.multi();
+    multi.incr(key);
+    multi.pExpire(key, AUTH_WINDOW_MS);
+    const results = await multi.exec();
+    const count = Number((results?.[0] as any) ?? 1);
+    if (count > AUTH_MAX_ATTEMPTS) {
+      res.set("Retry-After", String(Math.ceil(AUTH_WINDOW_MS / 1000)));
+      res.status(429).json({
+        error: {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: "Too many authentication attempts. Try again later.",
+        },
+      });
+      return;
+    }
+    return next();
+  } catch {
+    // Redis unavailable — use in-process fallback
+    const entry = ipAttempts.get(ip);
+    if (entry && entry.resetAt > now) {
+      entry.count++;
+      if (entry.count > AUTH_MAX_ATTEMPTS) {
+        res.set("Retry-After", String(Math.ceil(AUTH_WINDOW_MS / 1000)));
+        res.status(429).json({
+          error: {
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many authentication attempts. Try again later.",
+          },
+        });
+        return;
+      }
+    } else {
+      ipAttempts.set(ip, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    }
+    return next();
+  }
+}
+
+/**
+ * Account lockout — after LOCKOUT_THRESHOLD consecutive failures, the
+ * account is locked for LOCKOUT_WINDOW_MS even with a correct password.
+ * Redis-backed when available; in-process fallback otherwise.
+ */
+async function checkLockout(email: string): Promise<boolean> {
+  const key = `auth:lockout:${email.toLowerCase()}`;
+  try {
+    const redis = getRedisClient();
+    const ttl = await redis.pTTL(key);
+    return ttl > 0;
+  } catch {
+    const entry = lockoutMap.get(email.toLowerCase());
+    return !!entry && entry.resetAt > Date.now();
+  }
+}
+
+const lockoutMap = new Map<string, { count: number; resetAt: number }>();
+
+async function recordFailedAttempt(email: string): Promise<void> {
+  const key = `auth:lockout:${email.toLowerCase()}`;
+  try {
+    const redis = getRedisClient();
+    await redis.incr(key);
+    await redis.pExpire(key, LOCKOUT_WINDOW_MS);
+  } catch {
+    const entry = lockoutMap.get(email.toLowerCase());
+    if (entry && entry.resetAt > Date.now()) {
+      entry.count++;
+      if (entry.count >= LOCKOUT_THRESHOLD) {
+        entry.resetAt = Date.now() + LOCKOUT_WINDOW_MS;
+      }
+    } else {
+      lockoutMap.set(email.toLowerCase(), {
+        count: 1,
+        resetAt: Date.now() + LOCKOUT_WINDOW_MS,
+      });
+    }
+  }
+}
+
+/**
+ * WS5 test hook: resets the in-process throttle/lockout counters so each
+ * unit test starts from a clean state. Call in beforeEach(). In production
+ * these counters live in Redis and need no reset.
+ */
+export function __resetAuthThrottleForTests(): void {
+  ipAttempts.clear();
+  lockoutMap.clear();
+}
+
+async function clearFailedAttempts(email: string): Promise<void> {
+  const key = `auth:lockout:${email.toLowerCase()}`;
+  try {
+    const redis = getRedisClient();
+    await redis.del(key);
+  } catch {
+    lockoutMap.delete(email.toLowerCase());
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -83,6 +211,7 @@ async function addToRevocationList(jti: string, exp: number): Promise<void> {
 
 router.post(
   "/register",
+  authRateLimit,
   asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
@@ -140,6 +269,7 @@ router.post(
 
 router.post(
   "/login",
+  authRateLimit,
   asyncHandler(async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
@@ -149,12 +279,24 @@ router.post(
       });
     }
 
+    // WS5: account lockout — reject even valid credentials while locked.
+    const isLocked = await checkLockout(String(email || ""));
+    if (isLocked) {
+      return res.status(429).json({
+        error: {
+          code: "ACCOUNT_LOCKED",
+          message: "Account temporarily locked due to too many failed attempts",
+        },
+      });
+    }
+
     const db = getDb();
     const user: UserRecord | undefined = await db("users")
       .where({ email })
       .first();
 
     if (!user) {
+      await recordFailedAttempt(String(email || ""));
       return res.status(401).json({
         error: { code: "UNAUTHORIZED", message: "Invalid email or password" },
       });
@@ -168,10 +310,14 @@ router.post(
 
     const passwordValid = await bcrypt.compare(password, user.password_hash);
     if (!passwordValid) {
+      await recordFailedAttempt(String(email || ""));
       return res.status(401).json({
         error: { code: "UNAUTHORIZED", message: "Invalid email or password" },
       });
     }
+
+    // Success — clear any accumulated failures
+    await clearFailedAttempts(String(email || ""));
 
     const token = signJwt(user);
 

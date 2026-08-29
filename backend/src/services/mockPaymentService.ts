@@ -143,7 +143,7 @@ export class MockPaymentService {
       const paginatedKeys = paymentKeys.slice(startIndex, endIndex + 1);
 
       if (paginatedKeys.length > 0) {
-        const paymentData = await this.redisClient.mGet(...paginatedKeys);
+        const paymentData = await this.redisClient.mGet(paginatedKeys);
         payments = paymentData
           .filter((payment) => payment !== null)
           .map((payment) => JSON.parse(payment))
@@ -379,7 +379,7 @@ export class MockPaymentService {
       const allKeys = [...paymentKeys, ...subscriptionKeys];
 
       if (allKeys.length > 0) {
-        await this.redisClient.del(...allKeys);
+        await this.redisClient.del(allKeys);
         logger.warn("All mock payment data cleared", {
           keyCount: allKeys.length,
         });

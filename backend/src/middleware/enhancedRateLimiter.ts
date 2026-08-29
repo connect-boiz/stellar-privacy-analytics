@@ -104,7 +104,7 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
           return next();
         }
 
-        // Check for emergency bypass
+        // Check for emergency bypass (WS5: only honoured with a real key)
         if ((this as any).checkEmergencyBypass(req)) {
           this._enhancedMetrics.bypassedRequests++;
           logger.warn("Emergency bypass used", {
@@ -217,19 +217,15 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
           userId: req.user?.id,
         });
 
-        // Fail-closed for production, fail-open for development
-        if (process.env.NODE_ENV === "production") {
-          res.status(503).json({
-            error: {
-              code: "RATE_LIMIT_SERVICE_UNAVAILABLE",
-              message: "Rate limiting service temporarily unavailable",
-            },
-            traceId: req.traceId,
-          });
-          return;
-        }
-
-        next();
+        // WS5: fail-closed in all environments — a rate-limiter outage must
+        // not silently disable DoS protection.
+        res.status(503).json({
+          error: {
+            code: "RATE_LIMIT_SERVICE_UNAVAILABLE",
+            message: "Rate limiting service temporarily unavailable",
+          },
+          traceId: req.traceId,
+        });
       }
     };
   };
@@ -342,17 +338,37 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
   }
 
   /**
-   * Check if IP is in CIDR range
+   * Check if IP is in CIDR range — proper prefix-length math (WS5.3), so
+   * e.g. 192.168.0.0/16 no longer matches 192.168.123.4 via naive octet
+   * prefixing.
    */
   private isIpInRange(ip: string, cidr: string): boolean {
-    // Simplified CIDR check - in production, use proper IP range library
-    const [network, prefixLength] = cidr.split("/");
-    return ip.startsWith(
-      network
-        .split(".")
-        .slice(0, Math.floor(parseInt(prefixLength) / 8))
-        .join("."),
-    );
+    try {
+      const [network, prefixLength] = cidr.split("/");
+      const prefix = parseInt(prefixLength, 10);
+      if (!network || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+        return false;
+      }
+
+      const ipParts = ip.split(".").map((p) => parseInt(p, 10));
+      const netParts = network.split(".").map((p) => parseInt(p, 10));
+      if (
+        ipParts.length !== 4 ||
+        netParts.length !== 4 ||
+        ipParts.some((p) => Number.isNaN(p) || p < 0 || p > 255) ||
+        netParts.some((p) => Number.isNaN(p) || p < 0 || p > 255)
+      ) {
+        return false;
+      }
+
+      // Compare only the bits covered by the prefix length.
+      const ipInt = ipParts.reduce((acc, p) => (acc << 8) | p, 0) >>> 0;
+      const netInt = netParts.reduce((acc, p) => (acc << 8) | p, 0) >>> 0;
+      const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+      return (ipInt & mask) === (netInt & mask);
+    } catch {
+      return false;
+    }
   }
 
   /**

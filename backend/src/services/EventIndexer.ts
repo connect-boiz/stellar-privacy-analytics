@@ -58,7 +58,7 @@ export class EventIndexer {
           filters: [
             {
               type: "contract",
-              topics: [xdr.ScVal.scvSymbol("analytics_ready")],
+              topics: [[xdr.ScVal.scvSymbol("analytics_ready").toXDR("base64")]],
             },
           ],
           limit: 100,
@@ -91,7 +91,22 @@ export class EventIndexer {
       id: event.id,
       contractId: event.contractId.toString(),
       ledger: event.ledger,
-      topic: event.topic.map((t) => t.value()?.toString() || ""),
+      topic: event.topic.map((t) => {
+        const value = t.value();
+        if (value === undefined || value === null) return "";
+        if (Array.isArray(value)) {
+          return value
+            .map((v) =>
+              typeof (v as any)?.toString === "function"
+                ? (v as any).toString()
+                : String(v),
+            )
+            .join(",");
+        }
+        return typeof (value as any)?.toString === "function"
+          ? (value as any).toString()
+          : String(value);
+      }),
       sanitizedData,
       timestamp: new Date().toISOString(),
     };

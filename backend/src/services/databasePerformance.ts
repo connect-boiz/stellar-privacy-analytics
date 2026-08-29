@@ -61,6 +61,7 @@ export interface PartitioningStrategy {
 
 export class DatabasePerformanceService {
   private queryHistory: QueryPlan[] = [];
+  private initialized: boolean = false;
   private performanceMetrics: PerformanceMetrics[] = [];
   private queryCache: Map<string, QueryCache> = new Map();
   private slowQueryThreshold: number = 1000; // 1 second
@@ -69,9 +70,15 @@ export class DatabasePerformanceService {
 
   constructor(
     private pool: Pool,
-    private redis: Redis,
+    private redis: Redis.RedisClientType,
   ) {
     this.initializeMonitoring();
+  }
+
+  private initializeMonitoring(): void {
+    if (this.initialized) return;
+    this.initialized = true;
+    logger.debug("Database performance monitoring initialized");
   }
 
   // Query optimization

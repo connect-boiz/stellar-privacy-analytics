@@ -199,6 +199,7 @@ export class HealthMonitor extends EventEmitter {
 
           // Update metrics
           this.updateServiceMetrics(instance.name, {
+            serviceName: instance.name,
             totalInstances: instances.length,
             healthyInstances: instances.filter((i) => i.health === "healthy")
               .length,
@@ -387,7 +388,7 @@ export class HealthMonitor extends EventEmitter {
     logger.info("Health monitoring stopped");
   }
 
-  getPrometheusMetrics(): string {
+  async getPrometheusMetrics(): Promise<string> {
     return promClient.register.metrics();
   }
 }

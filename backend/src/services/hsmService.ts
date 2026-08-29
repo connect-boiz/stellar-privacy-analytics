@@ -249,16 +249,23 @@ export class HSMService extends EventEmitter {
         wrappedKey: string;
         keyId: string;
         version: number;
+        tag?: string;
       }>("wrap", keyId, {
         plaintext: plaintextKey.toString("base64"),
         algorithm,
         iv: iv.toString("base64"),
       });
 
-      // Extract tag from response if using GCM
-      const tag = algorithm.includes("gcm")
-        ? randomBytes(16).toString("base64")
-        : "";
+      // WS2: the GCM authentication tag MUST come from the HSM's response.
+      // Fabricating a random tag client-side would break authentication on
+      // unwrap (or silently disable integrity). Fail closed when it is absent.
+      const isGcm = algorithm.includes("gcm");
+      if (isGcm && !response.tag) {
+        throw new Error(
+          "HSM did not return a GCM authentication tag for wrap operation",
+        );
+      }
+      const tag = response.tag || "";
 
       const wrappedKey: WrappedKey = {
         ciphertext: response.wrappedKey,
@@ -282,6 +289,110 @@ export class HSMService extends EventEmitter {
       return wrappedKey;
     } catch (error) {
       logger.error("Failed to wrap key:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * WS2 — HSM-side key generation.
+   *
+   * The HSM generates the key internally and returns ONLY the wrapped form
+   * plus a key ID; the plaintext never exists in application memory. This is
+   * the authoritative path for master-key creation.
+   */
+  async generateKey(
+    algorithm: string = "aes-256-gcm",
+  ): Promise<WrappedKey> {
+    try {
+      const response = await this.makeHSMRequest<{
+        wrappedKey: string;
+        keyId: string;
+        version: number;
+        algorithm: string;
+        tag?: string;
+      }>("generate", undefined, { algorithm });
+
+      const isGcm = algorithm.includes("gcm");
+      if (isGcm && !response.tag) {
+        throw new Error(
+          "HSM did not return a GCM authentication tag for generated key",
+        );
+      }
+
+      const iv = randomBytes(16);
+      const wrappedKey: WrappedKey = {
+        ciphertext: response.wrappedKey,
+        iv: iv.toString("base64"),
+        tag: response.tag || "",
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: response.algorithm || algorithm,
+      };
+
+      this.keyCache.set(response.keyId, {
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: response.algorithm || algorithm,
+        createdAt: new Date(),
+        status: "active",
+        usageCount: 0,
+      });
+
+      return wrappedKey;
+    } catch (error) {
+      logger.error("Failed to generate key in HSM:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * WS2 — HSM-side re-wrap.
+   *
+   * Re-wraps a wrapped key (previously wrapped under `oldKeyId`) under the
+   * new wrapping key. The HSM performs unwrap+rewrap internally; plaintext
+   * never reaches the application. Used to re-protect data keys after a
+   * master-key rotation.
+   */
+  async reWrapKey(
+    wrappedKey: WrappedKey,
+    newKeyId: string,
+  ): Promise<WrappedKey> {
+    try {
+      const response = await this.makeHSMRequest<{
+        wrappedKey: string;
+        keyId: string;
+        version: number;
+        tag?: string;
+      }>("re-wrap", wrappedKey.keyId, {
+        wrappedKey: wrappedKey.ciphertext,
+        oldKeyId: wrappedKey.keyId,
+        newKeyId,
+        tag: wrappedKey.tag,
+        algorithm: wrappedKey.algorithm,
+      });
+
+      const iv = randomBytes(16);
+      const reWrapped: WrappedKey = {
+        ciphertext: response.wrappedKey,
+        iv: iv.toString("base64"),
+        tag: response.tag || wrappedKey.tag,
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: wrappedKey.algorithm,
+      };
+
+      this.keyCache.set(response.keyId, {
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: wrappedKey.algorithm,
+        createdAt: new Date(),
+        status: "active",
+        usageCount: 0,
+      });
+
+      return reWrapped;
+    } catch (error) {
+      logger.error("Failed to re-wrap key in HSM:", error);
       throw error;
     }
   }

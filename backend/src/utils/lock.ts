@@ -1,4 +1,4 @@
-import { redisClient, ensureRedisConnection } from "./redis";
+import { getRedisClient } from "../config/redis";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "./logger";
 
@@ -30,7 +30,7 @@ export class DistributedLock {
    * Acquire the lock
    */
   async acquire(): Promise<boolean> {
-    await ensureRedisConnection();
+    const redisClient = getRedisClient();
 
     let retries = 0;
     while (retries < this.options.maxRetries) {
@@ -64,7 +64,7 @@ export class DistributedLock {
    * Release the lock
    */
   async release(): Promise<void> {
-    await ensureRedisConnection();
+    const redisClient = getRedisClient();
 
     try {
       // Use Lua script to ensure atomicity (only release if we own the lock)

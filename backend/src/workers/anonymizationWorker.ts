@@ -230,11 +230,8 @@ export class AnonymizationWorker {
       logger.error("Worker error:", err);
     });
 
-    this.worker.on("stalled", (job: Job) => {
-      logger.warn("Job stalled", {
-        jobId: job.id,
-        datasetId: job.data?.datasetId,
-      });
+    this.worker.on("stalled", (jobId: string, prev: string) => {
+      logger.warn("Job stalled", { jobId, prev });
     });
   }
 
@@ -255,22 +252,38 @@ export class AnonymizationWorker {
       this.validateJobData(job.data);
 
       // Process in sandbox if enabled
-      const result = this.sandboxManager.isEnabled()
+      const sandboxResult = this.sandboxManager.isEnabled()
         ? await this.sandboxManager.execute(async () => {
             return this.performAnonymization(jobId, datasetId, metadata);
           })
-        : await this.performAnonymization(jobId, datasetId, metadata);
+        : null;
 
-      // Store sanitized metadata
+      // Normalise: sandbox execution wraps the result; direct execution
+      // returns the AnonymizationResult itself.
+      let result: Omit<AnonymizationResult, "processingTime" | "processedAt">;
+      if (sandboxResult) {
+        if (!sandboxResult.success || !sandboxResult.result) {
+          throw new Error(
+            sandboxResult.error || "Sandboxed anonymization failed",
+          );
+        }
+        result = sandboxResult.result;
+      } else {
+        result = await this.performAnonymization(jobId, datasetId, metadata);
+      }
+
+      // Store sanitized metadata (with full audit trail)
+      const processingTime = Date.now() - startTime;
       await this.metadataRepository.storeSanitizedMetadata(
         datasetId,
         result.sanitizedMetadata,
+        metadata,
+        result.piiDetected,
+        processingTime,
       );
 
       // Update job progress
       await job.updateProgress(100);
-
-      const processingTime = Date.now() - startTime;
 
       logger.info("Anonymization job completed successfully", {
         jobId,

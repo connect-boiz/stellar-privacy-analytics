@@ -87,8 +87,9 @@ export class HSMIntegration extends EventEmitter {
       // Initialize audit service
       this.auditService = new AuditService({
         logPath: process.env.AUDIT_LOG_PATH || "./logs/audit.log",
-        signatureKey:
-          process.env.AUDIT_SIGNATURE_KEY || "default-signature-key",
+        // WS2: dev-only fallback centralised in utils/secrets; production is
+        // blocked by the boot-time secret audit.
+        signatureKey: process.env.AUDIT_SIGNATURE_KEY || undefined,
         immutableStorage: true,
         batchSize: 100,
       });

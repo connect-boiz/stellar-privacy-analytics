@@ -579,7 +579,7 @@ export class DeadLetterQueue extends EventEmitter {
       for (const job of jobs) {
         const row = [
           job.id,
-          job.originalJobId,
+          (job as any).originalJobId || job.originalJob?.id || "",
           job.error,
           job.failedAt.toISOString(),
           job.attempts,

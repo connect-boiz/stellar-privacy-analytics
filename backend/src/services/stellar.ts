@@ -1,11 +1,11 @@
 import {
-  _Server,
   TransactionBuilder,
   Networks,
   xdr,
   rpc,
   Keypair,
-  _Address,
+  Account,
+  Address as _Address,
   Contract,
 } from "@stellar/stellar-sdk";
 import { logger } from "../utils/logger";
@@ -54,7 +54,7 @@ export class StellarService {
       const contract = new Contract(contractId);
 
       // 1. Prepare the invocation
-      const tx = new TransactionBuilder(
+      let tx = new TransactionBuilder(
         await this.server.getAccount(sourceAddress),
         {
           fee: fee,
@@ -77,8 +77,8 @@ export class StellarService {
       }
 
       if (rpc.Api.isSimulationSuccess(simulation)) {
-        // Update transaction with simulation results
-        tx.assemble(simulation);
+        // Update transaction with simulation results (SDK v12 API)
+        tx = rpc.assembleTransaction(tx, simulation).build();
       }
 
       // 3. Sign and submit
@@ -87,6 +87,7 @@ export class StellarService {
       const submission = await this.server.sendTransaction(tx);
 
       if (submission.status !== "PENDING") {
+        void submission;
         logger.error(
           `Transaction submission failed for ${functionName}:`,
           submission,
@@ -106,7 +107,7 @@ export class StellarService {
       const maxRetries = timeout / pollInterval;
       let retries = 0;
 
-      while (response.status === "NOT_FOUND" || response.status === "PENDING") {
+      while (response.status === "NOT_FOUND") {
         if (retries >= maxRetries) {
           throw new Error("Transaction confirmation timed out");
         }
@@ -151,7 +152,7 @@ export class StellarService {
         sourceAddress ||
         "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF"; // Placeholder
 
-      const tx = new TransactionBuilder(new rpc.Account(address, "0"), {
+      const tx = new TransactionBuilder(new Account(address, "0"), {
         fee: "0",
         networkPassphrase: this.networkPassphrase,
       })

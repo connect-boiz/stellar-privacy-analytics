@@ -1,5 +1,5 @@
 import Redis from "redis";
-import LRUCache from "lru-cache";
+import { LRUCache } from "lru-cache";
 import { logger } from "../utils/logger";
 
 export interface CacheOptions {
@@ -21,6 +21,7 @@ export interface CacheStats {
 
 export class CacheService {
   private redisClient: Redis.RedisClientType | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private localCache: LRUCache<string, any> | null = null;
   private stats: CacheStats = {
     hits: 0,
