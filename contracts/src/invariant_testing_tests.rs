@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use soroban_sdk::{testutils::{Address as TestAddress, BytesN as TestBytesN}, Env};
+    use crate::*;
+    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::{Address, Env, Vec};
 
     #[test]
     fn test_noise_invariant_positive() {
@@ -59,7 +60,7 @@ mod tests {
         test_data.push_back(100);
         test_data.push_back(200);
         test_data.push_back(300);
-        
+
         let violations = InvariantTesting::run_fuzz_test(env.clone(), test_data).unwrap();
         assert_eq!(violations, 0);
     }
@@ -71,7 +72,7 @@ mod tests {
         test_data.push_back(100);
         test_data.push_back(0);
         test_data.push_back(-100);
-        
+
         let violations = InvariantTesting::run_fuzz_test(env.clone(), test_data).unwrap();
         assert_eq!(violations, 2);
     }
@@ -81,9 +82,9 @@ mod tests {
         let env = Env::default();
         let mut attackers = Vec::new(&env);
         for _ in 0..5 {
-            attackers.push_back(TestAddress::generate(&env));
+            attackers.push_back(Address::generate(&env));
         }
-        
+
         let result = InvariantTesting::simulate_sybil_attack(env.clone(), attackers, 1000000);
         assert!(result.is_ok());
         assert!(!result.unwrap());
@@ -94,10 +95,11 @@ mod tests {
         let env = Env::default();
         let mut attackers = Vec::new(&env);
         for _ in 0..100 {
-            attackers.push_back(TestAddress::generate(&env));
+            attackers.push_back(Address::generate(&env));
         }
-        
-        let result = InvariantTesting::simulate_sybil_attack(env.clone(), attackers, 1000000000000000000);
+
+        let result =
+            InvariantTesting::simulate_sybil_attack(env.clone(), attackers, 1000000000000000000);
         assert!(result.is_err());
     }
 }

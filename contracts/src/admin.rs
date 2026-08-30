@@ -1,12 +1,14 @@
-use soroban_sdk::contracttype;
+use soroban_sdk::contract;
 use soroban_sdk::contracterror;
 use soroban_sdk::contractimpl;
+use soroban_sdk::contracttype;
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::Address;
-use soroban_sdk::Env;
-use soroban_sdk::Vec;
-use soroban_sdk::String;
-use soroban_sdk::Map;
 use soroban_sdk::BytesN;
+use soroban_sdk::Env;
+use soroban_sdk::Map;
+use soroban_sdk::String;
+use soroban_sdk::Vec;
 
 // Contract state storage keys
 const OWNERS_KEY: &str = "OWNERS";
@@ -57,53 +59,59 @@ pub enum MultiSigError {
     AlreadyInitialized = 13,
 }
 
+#[contract]
 pub struct MultiSigAdmin;
 
 #[contractimpl]
 impl MultiSigAdmin {
     /// Initialize the multi-signature wallet with owners and threshold
-    pub fn initialize(env: Env, owners: Vec<Address>, threshold: u32) -> Result<(), MultiSigError> {
+    pub fn initialize_multisig(
+        env: Env,
+        owners: Vec<Address>,
+        threshold: u32,
+    ) -> Result<(), MultiSigError> {
         // Check if already initialized
-        if env.storage().instance().has(&String::from_str(&env, OWNERS_KEY)) {
+        if env
+            .storage()
+            .instance()
+            .has(&String::from_str(&env, OWNERS_KEY))
+        {
             return Err(MultiSigError::AlreadyInitialized);
         }
 
         // Validate owners
-        if owners.len() < MIN_OWNERS as usize || owners.len() > MAX_OWNERS as usize {
+        if owners.len() < MIN_OWNERS || owners.len() > MAX_OWNERS {
             return Err(MultiSigError::InvalidOwner);
         }
 
         // Validate threshold
-        if threshold < MIN_THRESHOLD || threshold > MAX_THRESHOLD || threshold > owners.len() as u32 {
+        if !(MIN_THRESHOLD..=MAX_THRESHOLD).contains(&threshold) || threshold > owners.len() {
             return Err(MultiSigError::InvalidThreshold);
         }
 
         // Check for duplicate owners
         let mut unique_owners = Vec::new(&env);
         for owner in owners.iter() {
-            if unique_owners.contains(owner) {
+            if unique_owners.contains(&owner) {
                 return Err(MultiSigError::OwnerExists);
             }
             unique_owners.push_back(owner);
         }
 
         // Set owners
-        env.storage().instance().set(
-            &String::from_str(&env, OWNERS_KEY),
-            &unique_owners,
-        );
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, OWNERS_KEY), &unique_owners);
 
         // Set threshold
-        env.storage().instance().set(
-            &String::from_str(&env, THRESHOLD_KEY),
-            &threshold,
-        );
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, THRESHOLD_KEY), &threshold);
 
         // Initialize nonce
-        env.storage().instance().set(
-            &String::from_str(&env, NONCE_KEY),
-            &0u64,
-        );
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, NONCE_KEY), &0u64);
 
         // Emit initialized event
         env.events().publish(
@@ -116,11 +124,16 @@ impl MultiSigAdmin {
 
     /// Get current owners
     pub fn get_owners(env: Env) -> Result<Vec<Address>, MultiSigError> {
-        if !env.storage().instance().has(&String::from_str(&env, OWNERS_KEY)) {
+        if !env
+            .storage()
+            .instance()
+            .has(&String::from_str(&env, OWNERS_KEY))
+        {
             return Err(MultiSigError::NotInitialized);
         }
 
-        Ok(env.storage()
+        Ok(env
+            .storage()
             .instance()
             .get(&String::from_str(&env, OWNERS_KEY))
             .unwrap())
@@ -128,51 +141,49 @@ impl MultiSigAdmin {
 
     /// Get current threshold
     pub fn get_threshold(env: Env) -> Result<u32, MultiSigError> {
-        if !env.storage().instance().has(&String::from_str(&env, THRESHOLD_KEY)) {
+        if !env
+            .storage()
+            .instance()
+            .has(&String::from_str(&env, THRESHOLD_KEY))
+        {
             return Err(MultiSigError::NotInitialized);
         }
 
-        Ok(env.storage()
+        Ok(env
+            .storage()
             .instance()
             .get(&String::from_str(&env, THRESHOLD_KEY))
             .unwrap())
     }
 
     /// Add a new owner (requires multi-sig)
-    pub fn add_owner(
-        env: Env,
-        new_owner: Address,
-        caller: Address,
-    ) -> Result<(), MultiSigError> {
+    pub fn add_owner(env: Env, new_owner: Address, caller: Address) -> Result<(), MultiSigError> {
         // Check if caller is owner
         if !Self::is_owner(env.clone(), caller)? {
             return Err(MultiSigError::NotOwner);
         }
 
         let mut owners = Self::get_owners(env.clone())?;
-        
+
         // Check if owner already exists
         if owners.contains(&new_owner) {
             return Err(MultiSigError::OwnerExists);
         }
 
         // Check max owners
-        if owners.len() >= MAX_OWNERS as usize {
+        if owners.len() >= MAX_OWNERS {
             return Err(MultiSigError::InvalidOwner);
         }
 
         // Add new owner
-        owners.push_back(new_owner);
-        env.storage().instance().set(
-            &String::from_str(&env, OWNERS_KEY),
-            &owners,
-        );
+        owners.push_back(new_owner.clone());
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, OWNERS_KEY), &owners);
 
         // Emit owner added event
-        env.events().publish(
-            (String::from_str(&env, "owner_added"),),
-            new_owner,
-        );
+        env.events()
+            .publish((String::from_str(&env, "owner_added"),), new_owner);
 
         Ok(())
     }
@@ -188,7 +199,7 @@ impl MultiSigAdmin {
             return Err(MultiSigError::NotOwner);
         }
 
-        let mut owners = Self::get_owners(env.clone())?;
+        let owners = Self::get_owners(env.clone())?;
         let threshold = Self::get_threshold(env.clone())?;
 
         // Find and remove owner
@@ -207,35 +218,31 @@ impl MultiSigAdmin {
         }
 
         // Check minimum owners
-        if new_owners.len() < MIN_OWNERS as usize {
+        if new_owners.len() < MIN_OWNERS {
             return Err(MultiSigError::InvalidOwner);
         }
 
         // Adjust threshold if necessary
-        let new_threshold = if threshold > new_owners.len() as u32 {
-            new_owners.len() as u32
+        let new_threshold = if threshold > new_owners.len() {
+            new_owners.len()
         } else {
             threshold
         };
 
         // Update owners and threshold
-        env.storage().instance().set(
-            &String::from_str(&env, OWNERS_KEY),
-            &new_owners,
-        );
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, OWNERS_KEY), &new_owners);
 
         if new_threshold != threshold {
-            env.storage().instance().set(
-                &String::from_str(&env, THRESHOLD_KEY),
-                &new_threshold,
-            );
+            env.storage()
+                .instance()
+                .set(&String::from_str(&env, THRESHOLD_KEY), &new_threshold);
         }
 
         // Emit owner removed event
-        env.events().publish(
-            (String::from_str(&env, "owner_removed"),),
-            owner_to_remove,
-        );
+        env.events()
+            .publish((String::from_str(&env, "owner_removed"),), owner_to_remove);
 
         Ok(())
     }
@@ -254,16 +261,14 @@ impl MultiSigAdmin {
         let owners = Self::get_owners(env.clone())?;
 
         // Validate new threshold
-        if new_threshold < MIN_THRESHOLD 
-            || new_threshold > MAX_THRESHOLD 
-            || new_threshold > owners.len() as u32 {
+        if !(MIN_THRESHOLD..=MAX_THRESHOLD).contains(&new_threshold) || new_threshold > owners.len()
+        {
             return Err(MultiSigError::InvalidThreshold);
         }
 
-        env.storage().instance().set(
-            &String::from_str(&env, THRESHOLD_KEY),
-            &new_threshold,
-        );
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, THRESHOLD_KEY), &new_threshold);
 
         // Emit threshold changed event
         env.events().publish(
@@ -288,7 +293,8 @@ impl MultiSigAdmin {
         }
 
         // Get current nonce
-        let nonce = env.storage()
+        let nonce = env
+            .storage()
             .instance()
             .get::<_, u64>(&String::from_str(&env, NONCE_KEY))
             .unwrap_or(0);
@@ -306,27 +312,26 @@ impl MultiSigAdmin {
         let transaction_hash = Self::hash_transaction(env.clone(), &transaction);
 
         // Store transaction
-        let mut executions = env.storage()
+        let mut executions = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Transaction>>(&String::from_str(&env, EXECUTIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
-        
-        executions.set(transaction_hash, transaction);
-        env.storage().instance().set(
-            &String::from_str(&env, EXECUTIONS_KEY),
-            &executions,
-        );
+
+        executions.set(transaction_hash.clone(), transaction);
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, EXECUTIONS_KEY), &executions);
 
         // Increment nonce
-        env.storage().instance().set(
-            &String::from_str(&env, NONCE_KEY),
-            &(nonce + 1),
-        );
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, NONCE_KEY), &(nonce + 1));
 
         // Emit transaction submitted event
         env.events().publish(
             (String::from_str(&env, "transaction_submitted"),),
-            (transaction_hash, destination, value, nonce),
+            (transaction_hash.clone(), destination, value, nonce),
         );
 
         Ok(transaction_hash)
@@ -339,17 +344,19 @@ impl MultiSigAdmin {
         caller: Address,
     ) -> Result<(), MultiSigError> {
         // Check if caller is owner
-        if !Self::is_owner(env.clone(), caller)? {
+        if !Self::is_owner(env.clone(), caller.clone())? {
             return Err(MultiSigError::NotOwner);
         }
 
         // Get transaction
-        let mut executions = env.storage()
+        let executions = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Transaction>>(&String::from_str(&env, EXECUTIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
-        let transaction = executions.get(transaction_hash)
+        let transaction = executions
+            .get(transaction_hash.clone())
             .ok_or(MultiSigError::TransactionNotFound)?;
 
         // Check if already executed
@@ -358,12 +365,14 @@ impl MultiSigAdmin {
         }
 
         // Get confirmations
-        let mut confirmations = env.storage()
+        let mut confirmations = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Vec<Address>>>(&String::from_str(&env, CONFIRMATIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
-        let mut tx_confirmations = confirmations.get(transaction_hash)
+        let mut tx_confirmations = confirmations
+            .get(transaction_hash.clone())
             .unwrap_or_else(|| Vec::new(&env));
 
         // Check if already confirmed
@@ -372,12 +381,11 @@ impl MultiSigAdmin {
         }
 
         // Add confirmation
-        tx_confirmations.push_back(caller);
-        confirmations.set(transaction_hash, tx_confirmations);
-        env.storage().instance().set(
-            &String::from_str(&env, CONFIRMATIONS_KEY),
-            &confirmations,
-        );
+        tx_confirmations.push_back(caller.clone());
+        confirmations.set(transaction_hash.clone(), tx_confirmations);
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, CONFIRMATIONS_KEY), &confirmations);
 
         // Emit confirmation event
         env.events().publish(
@@ -400,12 +408,14 @@ impl MultiSigAdmin {
         }
 
         // Get transaction
-        let mut executions = env.storage()
+        let mut executions = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Transaction>>(&String::from_str(&env, EXECUTIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
-        let mut transaction = executions.get(transaction_hash)
+        let mut transaction = executions
+            .get(transaction_hash.clone())
             .ok_or(MultiSigError::TransactionNotFound)?;
 
         // Check if already executed
@@ -414,27 +424,28 @@ impl MultiSigAdmin {
         }
 
         // Get confirmations
-        let confirmations = env.storage()
+        let confirmations = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Vec<Address>>>(&String::from_str(&env, CONFIRMATIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
-        let tx_confirmations = confirmations.get(transaction_hash)
+        let tx_confirmations = confirmations
+            .get(transaction_hash.clone())
             .unwrap_or_else(|| Vec::new(&env));
 
         // Check if enough confirmations
         let threshold = Self::get_threshold(env.clone())?;
-        if tx_confirmations.len() < threshold as usize {
+        if tx_confirmations.len() < threshold {
             return Err(MultiSigError::InsufficientConfirmations);
         }
 
         // Mark as executed
         transaction.executed = true;
-        executions.set(transaction_hash, transaction);
-        env.storage().instance().set(
-            &String::from_str(&env, EXECUTIONS_KEY),
-            &executions,
-        );
+        executions.set(transaction_hash.clone(), transaction.clone());
+        env.storage()
+            .instance()
+            .set(&String::from_str(&env, EXECUTIONS_KEY), &executions);
 
         // Emit execution event
         env.events().publish(
@@ -446,34 +457,49 @@ impl MultiSigAdmin {
     }
 
     /// Get transaction details
-    pub fn get_transaction(env: Env, transaction_hash: BytesN<32>) -> Result<Transaction, MultiSigError> {
-        let executions = env.storage()
+    pub fn get_transaction(
+        env: Env,
+        transaction_hash: BytesN<32>,
+    ) -> Result<Transaction, MultiSigError> {
+        let executions = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Transaction>>(&String::from_str(&env, EXECUTIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
-        executions.get(transaction_hash)
+        executions
+            .get(transaction_hash)
             .ok_or(MultiSigError::TransactionNotFound)
     }
 
     /// Get confirmations for a transaction
-    pub fn get_confirmations(env: Env, transaction_hash: BytesN<32>) -> Result<Vec<Address>, MultiSigError> {
-        let confirmations = env.storage()
+    pub fn get_confirmations(
+        env: Env,
+        transaction_hash: BytesN<32>,
+    ) -> Result<Vec<Address>, MultiSigError> {
+        let confirmations = env
+            .storage()
             .instance()
             .get::<_, Map<BytesN<32>, Vec<Address>>>(&String::from_str(&env, CONFIRMATIONS_KEY))
             .unwrap_or_else(|| Map::new(&env));
 
-        Ok(confirmations.get(transaction_hash)
+        Ok(confirmations
+            .get(transaction_hash)
             .unwrap_or_else(|| Vec::new(&env)))
     }
 
     /// Check if an address is an owner
     pub fn is_owner(env: Env, address: Address) -> Result<bool, MultiSigError> {
-        if !env.storage().instance().has(&String::from_str(&env, OWNERS_KEY)) {
+        if !env
+            .storage()
+            .instance()
+            .has(&String::from_str(&env, OWNERS_KEY))
+        {
             return Err(MultiSigError::NotInitialized);
         }
 
-        let owners = env.storage()
+        let owners = env
+            .storage()
             .instance()
             .get::<_, Vec<Address>>(&String::from_str(&env, OWNERS_KEY))
             .unwrap();
@@ -483,11 +509,16 @@ impl MultiSigAdmin {
 
     /// Get current nonce
     pub fn get_nonce(env: Env) -> Result<u64, MultiSigError> {
-        if !env.storage().instance().has(&String::from_str(&env, NONCE_KEY)) {
+        if !env
+            .storage()
+            .instance()
+            .has(&String::from_str(&env, NONCE_KEY))
+        {
             return Err(MultiSigError::NotInitialized);
         }
 
-        Ok(env.storage()
+        Ok(env
+            .storage()
             .instance()
             .get(&String::from_str(&env, NONCE_KEY))
             .unwrap())
@@ -495,15 +526,6 @@ impl MultiSigAdmin {
 
     /// Helper function to hash a transaction
     fn hash_transaction(env: Env, transaction: &Transaction) -> BytesN<32> {
-        use soroban_sdk::crypto::sha256;
-        
-        let mut data = Vec::new(&env);
-        data.push_back(transaction.destination.clone());
-        data.push_back(transaction.value.into());
-        data.push_back(transaction.data.clone());
-        data.push_back(transaction.nonce.into());
-        data.push_back(transaction.executed.into());
-        
-        sha256(&env, data.to_xdr(&env))
+        env.crypto().sha256(&transaction.clone().to_xdr(&env))
     }
 }
