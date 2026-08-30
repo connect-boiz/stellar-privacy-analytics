@@ -108,6 +108,7 @@ Cargo.lock
 # Stellar/Soroban
 *.wasm
 .wasm32-unknown-unknown/
+test_snapshots/
 
 # Docker
 .dockerignore

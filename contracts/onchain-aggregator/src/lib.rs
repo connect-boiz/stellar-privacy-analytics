@@ -32,11 +32,26 @@ pub enum AggregationOperation {
     Count,
 }
 
+/// A data point contributed by a provider.
+///
+/// IMPORTANT: this demonstration contract stores `value` as raw little-endian
+/// `i128` bytes. It is *not* encrypted and must never be treated as private by
+/// itself (the historical `EncryptedDataPoint::encrypted_value` naming was a
+/// misnomer, see issue #382). Privacy is enforced at the contract layer:
+/// only the recorded `provider_id` (or an address it explicitly grants access
+/// to via [`OnChainAggregator::grant_data_access`]) may reference the data
+/// point in an aggregation, and aggregation results are only readable by the
+/// requester, the admin, or a participant.
+///
+/// Production deployments must use real client-side encryption of `value`
+/// together with a homomorphic aggregation scheme; until then the plaintext
+/// values must only ever be handled through the access controls in this
+/// contract.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[contracttype]
-pub struct EncryptedDataPoint {
+pub struct DataPoint {
     pub data_id: BytesN<32>,
-    pub encrypted_value: Bytes,
+    pub value: Bytes,
     pub provider_id: Address,
     pub timestamp: u64,
     pub data_hash: BytesN<32>,
@@ -61,7 +76,10 @@ pub struct AggregationRequest {
 #[contracttype]
 pub struct AggregationResult {
     pub request_id: BytesN<32>,
-    pub encrypted_result: Bytes,
+    /// Aggregate result value. Like `DataPoint::value` this is the raw
+    /// little-endian i128 bytes of the plaintext aggregate (not encrypted),
+    /// so reads are gated behind requester/admin/participant authorization.
+    pub result_value: Bytes,
     pub result_hash: BytesN<32>,
     pub privacy_certificate_id: BytesN<32>,
     pub timestamp: u64,
@@ -116,6 +134,9 @@ pub enum AggregatorError {
     NotAuthorized = 9,
     RequestAlreadyCompleted = 10,
     StateInconsistent = 11,
+    /// The caller neither owns nor holds an explicit access grant for a
+    /// referenced data point (issue #382).
+    NotDataPointOwner = 12,
 }
 
 #[contract]
@@ -180,10 +201,16 @@ impl OnChainAggregator {
             return Err(AggregatorError::InsufficientCredits);
         }
 
-        // Verify all data points exist and are valid
+        // Verify every referenced data point exists AND that the authenticated
+        // requester owns it or holds an explicit access grant (issue #382).
+        // Without this check any caller could aggregate over arbitrary other
+        // users' data points and learn their exact private values.
         for data_id in data_point_ids.iter() {
             if !Self::data_point_exists(&env, &data_id) {
                 return Err(AggregatorError::DataPointNotFound);
+            }
+            if !Self::can_access_data_point(&env, &requester, &data_id) {
+                return Err(AggregatorError::NotDataPointOwner);
             }
         }
 
@@ -295,13 +322,13 @@ impl OnChainAggregator {
 
         // Validate inputs BEFORE mutating status so a failed validation leaves
         // the request untouched in "pending".
-        let mut encrypted_values = Vec::new(&env);
+        let mut agg_values = Vec::new(&env);
         let mut total_epsilon_spent = 0i128;
         let mut participants_count = 0u32;
 
         for data_id in request.data_points.iter() {
             if let Some(data_point) = Self::get_data_point(&env, &data_id) {
-                encrypted_values.push_back(data_point.encrypted_value.clone());
+                agg_values.push_back(data_point.value.clone());
                 total_epsilon_spent = total_epsilon_spent
                     .checked_add(data_point.epsilon_spent)
                     .ok_or(AggregatorError::OverflowError)?;
@@ -329,13 +356,13 @@ impl OnChainAggregator {
 
         // Perform aggregation based on operation; on failure restore status to
         // "pending" so the request can be retried rather than stuck.
-        let encrypted_result = match request.operation {
-            AggregationOperation::Sum => Self::perform_sum(&env, &encrypted_values),
-            AggregationOperation::Average => Self::perform_average(&env, &encrypted_values),
-            AggregationOperation::Count => Self::perform_count(&env, &encrypted_values),
+        let agg_result = match request.operation {
+            AggregationOperation::Sum => Self::perform_sum(&env, &agg_values),
+            AggregationOperation::Average => Self::perform_average(&env, &agg_values),
+            AggregationOperation::Count => Self::perform_count(&env, &agg_values),
         };
 
-        let encrypted_result = match encrypted_result {
+        let agg_result = match agg_result {
             Ok(result) => result,
             Err(err) => {
                 request.status = String::from_str(&env, "pending");
@@ -346,7 +373,7 @@ impl OnChainAggregator {
 
         // Generate privacy certificate
         let certificate_id = Self::generate_certificate_id(&env, &request_id);
-        let result_hash: BytesN<32> = env.crypto().sha256(&encrypted_result).into();
+        let result_hash: BytesN<32> = env.crypto().sha256(&agg_result).into();
 
         // WS3: the certificate must bind the result. The privacy_proofs nonce
         // commits to (request, result, processor, ledger timestamp) and the
@@ -391,7 +418,7 @@ impl OnChainAggregator {
         // Create result
         let result = AggregationResult {
             request_id: request_id.clone(),
-            encrypted_result: encrypted_result.clone(),
+            result_value: agg_result.clone(),
             result_hash,
             privacy_certificate_id: certificate_id.clone(),
             timestamp: env.ledger().timestamp(),
@@ -564,16 +591,122 @@ impl OnChainAggregator {
         Self::get_user_credits(&env, &user)
     }
 
+    /// Grant `grantee` read/delegated-aggregation access to the data point
+    /// owned by `owner`.
+    ///
+    /// Only the recorded `provider_id` of the data point (or the contract
+    /// admin) may grant access. The grantee is then permitted to reference the
+    /// data point in an aggregation request even though they do not own it
+    /// (issue #382 delegation mechanism).
+    pub fn grant_data_access(
+        env: Env,
+        owner: Address,
+        data_id: BytesN<32>,
+        grantee: Address,
+    ) -> Result<(), AggregatorError> {
+        owner.require_auth();
+
+        // Only the owner (or admin) may delegate access to their own data.
+        if !Self::can_access_data_point(&env, &owner, &data_id) {
+            return Err(AggregatorError::NotAuthorized);
+        }
+
+        Self::set_grant(&env, &data_id, &grantee, true);
+        Ok(())
+    }
+
+    /// Revoke a previously granted access for `grantee` on `owner`'s data
+    /// point. Only the owner (or admin) may revoke.
+    pub fn revoke_data_access(
+        env: Env,
+        owner: Address,
+        data_id: BytesN<32>,
+        grantee: Address,
+    ) -> Result<(), AggregatorError> {
+        owner.require_auth();
+
+        if !Self::can_access_data_point(&env, &owner, &data_id) {
+            return Err(AggregatorError::NotAuthorized);
+        }
+
+        Self::set_grant(&env, &data_id, &grantee, false);
+        Ok(())
+    }
+
     /// Get batch processing status including succeeded/failed breakdown
     pub fn get_batch_status(env: Env, batch_id: BytesN<32>) -> Option<BatchProcessing> {
         env.storage().persistent().get(&batch_id)
     }
 
-    /// Get aggregation result
-    pub fn get_aggregation_result(env: Env, request_id: BytesN<32>) -> Option<AggregationResult> {
+    /// Get aggregation result.
+    ///
+    /// NOTE: this unauthenticated getter is retained for internal state-
+    /// verification use (`verify_state`) and must NOT be exposed to untrusted
+    /// callers as a public read path. Use [`OnChainAggregator::get_aggregation_result_auth`]
+    /// for any caller-facing read, which enforces re-requester/admin/participant
+    /// authorization and closes the guessable-key read hole described in
+    /// issue #382.
+    fn get_aggregation_result(env: Env, request_id: BytesN<32>) -> Option<AggregationResult> {
         env.storage()
             .persistent()
             .get(&(Symbol::new(&env, "result_"), request_id.clone()))
+    }
+
+    /// Authenticated aggregation-result read.
+    ///
+    /// The `caller` must be the request's requester, the contract admin, or an
+    /// owner/grantee (participant) of at least one data point referenced by the
+    /// request. Unauthorized callers receive [`AggregatorError::NotAuthorized`].
+    /// This gates the previously-wide-open `get_aggregation_result` read path
+    /// (issue #382), preventing any user from reading another user's exact
+    /// aggregate values via an arbitrary request id.
+    pub fn get_aggregation_result_auth(
+        env: Env,
+        request_id: BytesN<32>,
+        caller: Address,
+    ) -> Result<AggregationResult, AggregatorError> {
+        caller.require_auth();
+
+        let result: AggregationResult = env
+            .storage()
+            .persistent()
+            .get(&(Symbol::new(&env, "result_"), request_id.clone()))
+            .ok_or(AggregatorError::RequestNotFound)?;
+
+        // Load the request to determine the authorized set.
+        let request = Self::get_aggregation_request(&env, &request_id)
+            .ok_or(AggregatorError::RequestNotFound)?;
+
+        // 1. The requester who paid for the aggregation may read it.
+        let mut authorized = caller == request.requester;
+
+        // 2. The contract admin may read any result.
+        if !authorized {
+            if let Some(admin) = env
+                .storage()
+                .instance()
+                .get::<_, Address>(&Symbol::new(&env, "admin"))
+            {
+                authorized = caller == admin;
+            }
+        }
+
+        // 3. A participant (owner or grantee of any referenced data point) may
+        //    read the aggregate of the group they contributed to.
+        if !authorized {
+            for data_id in request.data_points.iter() {
+                if Self::can_access_data_point(&env, &caller, &data_id) {
+                    authorized = true;
+                    break;
+                }
+            }
+        }
+
+        if !authorized {
+            return Err(AggregatorError::NotAuthorized);
+        }
+
+        Ok(result)
     }
 
     /// Get privacy certificate. Certificates that assert integrity they do
@@ -657,12 +790,49 @@ impl OnChainAggregator {
         env.storage().persistent().get(request_id)
     }
 
-    fn get_data_point(env: &Env, data_id: &BytesN<32>) -> Option<EncryptedDataPoint> {
+    fn get_data_point(env: &Env, data_id: &BytesN<32>) -> Option<DataPoint> {
         env.storage().persistent().get(data_id)
     }
 
     fn data_point_exists(env: &Env, data_id: &BytesN<32>) -> bool {
         env.storage().persistent().has(data_id)
+    }
+
+    /// Whether `address` owns `data_id` or holds an explicit access grant for it.
+    ///
+    /// Ownership is recorded in the data point's `provider_id`; delegation is
+    /// tracked separately in persistent storage, keyed by
+    /// `(Symbol "grant_", data_id, grantee)` (issue #382).
+    fn can_access_data_point(env: &Env, address: &Address, data_id: &BytesN<32>) -> bool {
+        if let Some(data_point) = Self::get_data_point(env, data_id) {
+            if data_point.provider_id == *address {
+                return true;
+            }
+        }
+        Self::has_grant(env, data_id, address)
+    }
+
+    fn grant_key(
+        env: &Env,
+        data_id: &BytesN<32>,
+        grantee: &Address,
+    ) -> (Symbol, BytesN<32>, Address) {
+        (Symbol::new(env, "grant_"), data_id.clone(), grantee.clone())
+    }
+
+    fn has_grant(env: &Env, data_id: &BytesN<32>, grantee: &Address) -> bool {
+        env.storage()
+            .persistent()
+            .has(&Self::grant_key(env, data_id, grantee))
+    }
+
+    fn set_grant(env: &Env, data_id: &BytesN<32>, grantee: &Address, granted: bool) {
+        let key = Self::grant_key(env, data_id, grantee);
+        if granted {
+            env.storage().persistent().set(&key, &true);
+        } else {
+            env.storage().persistent().remove(&key);
+        }
     }
 
     fn get_required_credits(_env: &Env, operation: &AggregationOperation, data_count: u32) -> i128 {
@@ -694,12 +864,12 @@ impl OnChainAggregator {
         Ok(())
     }
 
-    fn perform_sum(env: &Env, encrypted_values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
-        // Simplified homomorphic addition (in production, use proper homomorphic encryption)
+    fn perform_sum(env: &Env, values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
+        // Simplified placeholder aggregation over the plaintext little-endian i128
         let mut result = soroban_sdk::Bytes::new(env);
         let mut sum = 0i128;
 
-        for value in encrypted_values.iter() {
+        for value in values.iter() {
             // This is a placeholder - real implementation would use homomorphic encryption
             if value.len() >= 16 {
                 let mut bytes = [0u8; 16];
@@ -717,10 +887,10 @@ impl OnChainAggregator {
         Ok(result)
     }
 
-    fn perform_average(env: &Env, encrypted_values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
-        // Simplified average calculation
-        let sum_result = Self::perform_sum(env, encrypted_values)?;
-        let count = encrypted_values.len() as i128;
+    fn perform_average(env: &Env, values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
+        // Simplified average calculation over plaintext values
+        let sum_result = Self::perform_sum(env, values)?;
+        let count = values.len() as i128;
 
         if count == 0 {
             return Err(AggregatorError::InvalidOperation);
@@ -742,8 +912,8 @@ impl OnChainAggregator {
         Ok(result)
     }
 
-    fn perform_count(env: &Env, encrypted_values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
-        let count = encrypted_values.len() as i128;
+    fn perform_count(env: &Env, values: &Vec<Bytes>) -> Result<Bytes, AggregatorError> {
+        let count = values.len() as i128;
         let mut result = soroban_sdk::Bytes::new(env);
         result.append(&Bytes::from_slice(env, &count.to_le_bytes()));
         Ok(result)

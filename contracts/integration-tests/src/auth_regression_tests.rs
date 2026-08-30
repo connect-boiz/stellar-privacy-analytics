@@ -16,8 +16,7 @@ use soroban_sdk::{Address, BytesN, Env, IntoVal, String, Val, Vec};
 use access_control::{DataSovereigntyAccessControl, DataSovereigntyAccessControlClient};
 use admin::{MultiSigAdmin, MultiSigAdminClient};
 use onchain_aggregator::{
-    AggregationOperation, AggregationRequest, EncryptedDataPoint, OnChainAggregator,
-    OnChainAggregatorClient,
+    AggregationOperation, AggregationRequest, DataPoint, OnChainAggregator, OnChainAggregatorClient,
 };
 use privacy_oracle::{PrivacyOracle, PrivacyOracleClient};
 use stellar_analytics::{StellarAnalytics, StellarAnalyticsClient};
@@ -356,9 +355,9 @@ fn test_process_aggregation_requires_processor_signature() {
     // Seed a pending request + data point directly (no auth involved).
     let request_id = BytesN::<32>::from_array(&env, &[9u8; 32]);
     let data_id = BytesN::<32>::from_array(&env, &[8u8; 32]);
-    let data_point = EncryptedDataPoint {
+    let data_point = DataPoint {
         data_id: data_id.clone(),
-        encrypted_value: soroban_sdk::Bytes::from_slice(&env, &[1u8; 16]),
+        value: soroban_sdk::Bytes::from_slice(&env, &[1u8; 16]),
         provider_id: admin.clone(),
         timestamp: env.ledger().timestamp(),
         data_hash: BytesN::<32>::from_array(&env, &[7u8; 32]),

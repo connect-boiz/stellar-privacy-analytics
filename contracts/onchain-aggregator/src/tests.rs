@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::{
-        AggregationOperation, AggregationRequest, AggregatorError, EncryptedDataPoint,
+        AggregationOperation, AggregationRequest, AggregationResult, AggregatorError, DataPoint,
         OnChainAggregator, OnChainAggregatorClient,
     };
     use soroban_sdk::{
@@ -36,15 +36,15 @@ mod tests {
 
     fn create_data_point(env: &Env, contract_id: &Address, provider_id: Address) -> BytesN<32> {
         let data_id = random_bytesn32(env);
-        let mut encrypted_value = Bytes::new(env);
-        let value: i128 = 1000;
-        encrypted_value.append(&Bytes::from_slice(env, &value.to_le_bytes()));
+        let mut value = Bytes::new(env);
+        let value_i128: i128 = 1000;
+        value.append(&Bytes::from_slice(env, &value_i128.to_le_bytes()));
 
-        let data_hash: BytesN<32> = env.crypto().sha256(&encrypted_value).into();
+        let data_hash: BytesN<32> = env.crypto().sha256(&value).into();
 
-        let data_point = EncryptedDataPoint {
+        let data_point = DataPoint {
             data_id: data_id.clone(),
-            encrypted_value,
+            value,
             provider_id,
             timestamp: env.ledger().timestamp(),
             data_hash,
@@ -325,8 +325,13 @@ mod tests {
         let res = h.client.try_process_aggregation(&rid, &h.admin);
         assert_eq!(res, Err(Ok(AggregatorError::InsufficientPrivacyBudget)));
 
-        // No result may be stored.
-        assert!(h.client.get_aggregation_result(&rid).is_none());
+        // No result may be stored (read directly through contract storage).
+        let stored: Option<AggregationResult> = env.as_contract(&h.contract_id, || {
+            env.storage()
+                .persistent()
+                .get(&(Symbol::new(&env, "result_"), rid.clone()))
+        });
+        assert!(stored.is_none());
 
         // The request must remain pending (untouched) so it can be retried.
         let req: AggregationRequest = env.as_contract(&h.contract_id, || {
@@ -357,7 +362,9 @@ mod tests {
 
         let cert = h.client.process_aggregation(&rid, &h.admin);
         assert!(h.client.get_privacy_certificate(&cert).is_some());
-        let result = h.client.get_aggregation_result(&rid).unwrap();
+
+        // The requester (provider) can read the authenticated result.
+        let result = h.client.get_aggregation_result_auth(&rid, &provider);
         assert_eq!(result.total_epsilon_spent, 100);
     }
 
@@ -497,5 +504,174 @@ mod tests {
 
         let err = env.as_contract(&h.contract_id, || OnChainAggregator::verify_state(&env));
         assert_eq!(err, Err(AggregatorError::StateInconsistent));
+    }
+
+    /// Issue #382: the requester owns the data point, so the aggregation
+    /// submits successfully and the result is exactly their value.
+    #[test]
+    fn test_owner_can_aggregate_own_data() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let owner = generate_address(&env);
+
+        let data_id = create_data_point(&env, &h.contract_id, owner.clone());
+        h.client.add_compute_credits(&owner, &10_000_000i128);
+
+        let mut data_point_ids = Vec::new(&env);
+        data_point_ids.push_back(data_id);
+        let rid = h.client.submit_aggregation_request(
+            &owner,
+            &AggregationOperation::Sum,
+            &data_point_ids,
+            &1000i128,
+        );
+        h.client.process_aggregation(&rid, &h.admin);
+
+        let result = h.client.get_aggregation_result_auth(&rid, &owner);
+        assert_eq!(result.participants_count, 1);
+    }
+
+    /// Issue #382: an attacker referencing another user's data point is
+    /// rejected with NotDataPointOwner — no cross-user aggregation is possible
+    /// without an explicit grant.
+    #[test]
+    fn test_cross_user_aggregation_is_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let owner = generate_address(&env);
+        let attacker = generate_address(&env);
+
+        let data_id = create_data_point(&env, &h.contract_id, owner.clone());
+        h.client.add_compute_credits(&attacker, &10_000_000i128);
+
+        let mut data_point_ids = Vec::new(&env);
+        data_point_ids.push_back(data_id);
+        let res = h.client.try_submit_aggregation_request(
+            &attacker,
+            &AggregationOperation::Sum,
+            &data_point_ids,
+            &1000i128,
+        );
+        assert_eq!(res, Err(Ok(AggregatorError::NotDataPointOwner)));
+    }
+
+    /// Issue #382: after the owner grants access, the grantee can aggregate
+    /// the data point; revoking the grant removes that capability.
+    #[test]
+    fn test_grant_then_revoke_access() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let owner = generate_address(&env);
+        let analyst = generate_address(&env);
+
+        let data_id = create_data_point(&env, &h.contract_id, owner.clone());
+        h.client.add_compute_credits(&analyst, &10_000_000i128);
+
+        // Without a grant the analyst is rejected.
+        let mut data_point_ids = Vec::new(&env);
+        data_point_ids.push_back(data_id.clone());
+        assert_eq!(
+            h.client.try_submit_aggregation_request(
+                &analyst,
+                &AggregationOperation::Count,
+                &data_point_ids,
+                &1000i128,
+            ),
+            Err(Ok(AggregatorError::NotDataPointOwner))
+        );
+
+        // Grant access; now the analyst can aggregate.
+        h.client.grant_data_access(&owner, &data_id, &analyst);
+        let rid = h.client.submit_aggregation_request(
+            &analyst,
+            &AggregationOperation::Count,
+            &data_point_ids,
+            &1000i128,
+        );
+        h.client.process_aggregation(&rid, &h.admin);
+
+        // The analyst (a granted participant) can read the result.
+        let result = h.client.get_aggregation_result_auth(&rid, &analyst);
+        assert_eq!(result.total_epsilon_spent, 100);
+
+        // Revoke; a fresh submission by the analyst is rejected again.
+        h.client.revoke_data_access(&owner, &data_id, &analyst);
+        assert_eq!(
+            h.client.try_submit_aggregation_request(
+                &analyst,
+                &AggregationOperation::Count,
+                &data_point_ids,
+                &1000i128,
+            ),
+            Err(Ok(AggregatorError::NotDataPointOwner))
+        );
+    }
+
+    /// Issue #382: only the data-point owner (or admin) may grant or revoke
+    /// access; a stranger cannot.
+    #[test]
+    fn test_only_owner_can_grant_or_revoke() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let owner = generate_address(&env);
+        let stranger = generate_address(&env);
+        let analyst = generate_address(&env);
+
+        let data_id = create_data_point(&env, &h.contract_id, owner.clone());
+
+        // A stranger cannot grant or revoke access on the owner's data point.
+        assert_eq!(
+            h.client
+                .try_grant_data_access(&stranger, &data_id, &analyst),
+            Err(Ok(AggregatorError::NotAuthorized))
+        );
+        assert_eq!(
+            h.client
+                .try_revoke_data_access(&stranger, &data_id, &analyst),
+            Err(Ok(AggregatorError::NotAuthorized))
+        );
+    }
+
+    /// Issue #382: the authenticated aggregation-result read is gated. A
+    /// stranger cannot read a request's result, while the requester and the
+    /// admin can.
+    #[test]
+    fn test_aggregation_result_is_gated_behind_authorization() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let h = setup(&env);
+        let owner = generate_address(&env);
+        let stranger = generate_address(&env);
+
+        let data_id = create_data_point(&env, &h.contract_id, owner.clone());
+        h.client.add_compute_credits(&owner, &10_000_000i128);
+
+        let mut data_point_ids = Vec::new(&env);
+        data_point_ids.push_back(data_id);
+        let rid = h.client.submit_aggregation_request(
+            &owner,
+            &AggregationOperation::Sum,
+            &data_point_ids,
+            &1000i128,
+        );
+        h.client.process_aggregation(&rid, &h.admin);
+
+        // The stranger cannot read the result.
+        assert_eq!(
+            h.client.try_get_aggregation_result_auth(&rid, &stranger),
+            Err(Ok(AggregatorError::NotAuthorized))
+        );
+
+        // The requester (owner) can.
+        let requester_result = h.client.get_aggregation_result_auth(&rid, &owner);
+        assert_eq!(requester_result.participants_count, 1);
+
+        // The admin can read any result.
+        let admin_result = h.client.get_aggregation_result_auth(&rid, &h.admin);
+        assert_eq!(admin_result.participants_count, 1);
     }
 }
