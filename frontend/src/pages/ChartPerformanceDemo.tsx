@@ -10,23 +10,23 @@ const ChartPerformanceDemo: React.FC = () => {
 
   const generateTestData = async (size: number): Promise<DataPoint[]> => {
     setIsGenerating(true);
-    
+
     // Simulate async data generation
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const baseTime = Date.now() - size * 1000;
     const data: DataPoint[] = [];
-    
+
     for (let i = 0; i < size; i++) {
       data.push({
         timestamp: baseTime + i * 1000,
         value: Math.sin(i / 50) * 50 + 50 + Math.random() * 10,
         value2: Math.cos(i / 30) * 30 + 70 + Math.random() * 5,
         value3: Math.random() * 100,
-        category: i % 4 === 0 ? 'A' : i % 4 === 1 ? 'B' : i % 4 === 2 ? 'C' : 'D'
+        category: i % 4 === 0 ? 'A' : i % 4 === 1 ? 'B' : i % 4 === 2 ? 'C' : 'D',
       });
     }
-    
+
     setIsGenerating(false);
     return data;
   };
@@ -36,8 +36,8 @@ const ChartPerformanceDemo: React.FC = () => {
   }, [datasetSize]);
 
   const handlePerformanceMetrics = (metrics: any) => {
-    console.log('Chart Performance Metrics:', metrics);
-    
+    // Chart Performance Metrics collected
+
     if (metrics.memoryPressure === 'critical') {
       toast.error('Critical memory pressure detected!');
     } else if (metrics.memoryPressure === 'high') {
@@ -68,7 +68,7 @@ const ChartPerformanceDemo: React.FC = () => {
         {/* Controls */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Test Controls</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -92,9 +92,7 @@ const ChartPerformanceDemo: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quick Sizes
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quick Sizes</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleSizeChange(1000)}
@@ -121,9 +119,7 @@ const ChartPerformanceDemo: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <div className="flex items-center">
                 {isGenerating ? (
                   <>
@@ -152,7 +148,7 @@ const ChartPerformanceDemo: React.FC = () => {
             <div>
               <span className="font-medium">Estimated Memory:</span>
               <span className="ml-2 text-gray-600">
-                ~{(testData.length * 100 / 1024 / 1024).toFixed(2)} MB
+                ~{((testData.length * 100) / 1024 / 1024).toFixed(2)} MB
               </span>
             </div>
             <div>
@@ -169,9 +165,7 @@ const ChartPerformanceDemo: React.FC = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Primary Value Chart
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Primary Value Chart</h3>
             <MemoryEfficientChart
               data={testData}
               dataKey="value"
@@ -186,9 +180,7 @@ const ChartPerformanceDemo: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Secondary Value Chart
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Secondary Value Chart</h3>
             <MemoryEfficientChart
               data={testData}
               dataKey="value2"
@@ -196,7 +188,9 @@ const ChartPerformanceDemo: React.FC = () => {
               height={400}
               maxPoints={3000}
               enableProgressiveLoading={true}
-              onPerformanceMetrics={(metrics) => console.log('Secondary chart metrics:', metrics)}
+              onPerformanceMetrics={(_metrics) => {
+                // Secondary chart metrics collected
+              }}
               fallbackMode="simplified"
               memoryThreshold={0.7}
             />

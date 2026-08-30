@@ -1,11 +1,19 @@
 export class PrivacyQueryEngine {
-  constructor(private db: any, private accessControl: any, private auditLogger: any) {}
+  constructor(
+    private db: any,
+    private accessControl: any,
+    private auditLogger: any,
+  ) {}
 
-  public async executeQuery(query: string, userId: string, epsilon: number): Promise<any> {
+  public async executeQuery(
+    query: string,
+    userId: string,
+    epsilon: number,
+  ): Promise<any> {
     // 1. Access control integration with attribute-based encryption
     const hasAccess = await this.accessControl.checkAccess(userId, query);
     if (!hasAccess) {
-      throw new Error('Access denied: Insufficient privileges for this query.');
+      throw new Error("Access denied: Insufficient privileges for this query.");
     }
 
     // 2. SQL parser with privacy-aware optimization
@@ -17,7 +25,7 @@ export class PrivacyQueryEngine {
     // 4. Secure aggregation protocols (database execution)
     const rawResults = await this.db.execute(rewrittenQuery);
 
-    // 5. Apply noise for Differential Privacy 
+    // 5. Apply noise for Differential Privacy
     const noisedResults = this.applyLaplaceNoise(rawResults, epsilon);
 
     // 6. Query audit logging and compliance
@@ -37,13 +45,13 @@ export class PrivacyQueryEngine {
   }
 
   private applyLaplaceNoise(results: any[], epsilon: number): any[] {
-    const sensitivity = 1.0; 
+    const sensitivity = 1.0;
     const scale = sensitivity / epsilon;
-    
-    return results.map(row => {
+
+    return results.map((row) => {
       const noisyRow = { ...row };
       for (const key in noisyRow) {
-        if (typeof noisyRow[key] === 'number') {
+        if (typeof noisyRow[key] === "number") {
           // Laplace noise formula injection for Differential Privacy
           const u = Math.random() - 0.5;
           const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
@@ -54,7 +62,18 @@ export class PrivacyQueryEngine {
     });
   }
 
-  private async logQueryExecution(userId: string, query: string, epsilon: number) {
-    await this.auditLogger.logEvent('QUERY_EXECUTED', userId, 'query_engine', 'READ', 'SUCCESS', { query, epsilon });
+  private async logQueryExecution(
+    userId: string,
+    query: string,
+    epsilon: number,
+  ) {
+    await this.auditLogger.logEvent(
+      "QUERY_EXECUTED",
+      userId,
+      "query_engine",
+      "READ",
+      "SUCCESS",
+      { query, epsilon },
+    );
   }
 }

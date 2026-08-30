@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { Search, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import EmptyState from './ui/EmptyState';
 
 export interface Column<T> {
   key: keyof T;
@@ -42,7 +43,8 @@ function VirtualDataTable<T extends { id: string | number }>({
     }
     if (sortKey && sortDir) {
       rows = [...rows].sort((a, b) => {
-        const av = a[sortKey], bv = b[sortKey];
+        const av = a[sortKey],
+          bv = b[sortKey];
         const cmp = av < bv ? -1 : av > bv ? 1 : 0;
         return sortDir === 'asc' ? cmp : -cmp;
       });
@@ -50,11 +52,16 @@ function VirtualDataTable<T extends { id: string | number }>({
     return rows;
   }, [data, search, searchKeys, sortKey, sortDir]);
 
-  const toggleSort = useCallback((key: keyof T) => {
-    setSortKey(key);
-    setSortDir((prev) => (sortKey === key ? (prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc') : 'asc'));
-    listRef.current?.scrollTo(0);
-  }, [sortKey]);
+  const toggleSort = useCallback(
+    (key: keyof T) => {
+      setSortKey(key);
+      setSortDir((prev) =>
+        sortKey === key ? (prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc') : 'asc'
+      );
+      listRef.current?.scrollTo(0);
+    },
+    [sortKey]
+  );
 
   const toggleAll = () => {
     setSelected(selected.size === filtered.length ? new Set() : new Set(filtered.map((r) => r.id)));
@@ -71,7 +78,9 @@ function VirtualDataTable<T extends { id: string | number }>({
   const exportCSV = () => {
     const rows = filtered.filter((r) => selected.size === 0 || selected.has(r.id));
     const header = columns.map((c) => c.header).join(',');
-    const body = rows.map((r) => columns.map((c) => JSON.stringify(r[c.key] ?? '')).join(',')).join('\n');
+    const body = rows
+      .map((r) => columns.map((c) => JSON.stringify(r[c.key] ?? '')).join(','))
+      .join('\n');
     const blob = new Blob([header + '\n' + body], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -81,7 +90,11 @@ function VirtualDataTable<T extends { id: string | number }>({
 
   const SortIcon = ({ col }: { col: Column<T> }) => {
     if (sortKey !== col.key) return <ChevronsUpDown size={12} className="text-gray-300" />;
-    return sortDir === 'asc' ? <ChevronUp size={12} className="text-blue-500" /> : <ChevronDown size={12} className="text-blue-500" />;
+    return sortDir === 'asc' ? (
+      <ChevronUp size={12} className="text-blue-500" />
+    ) : (
+      <ChevronDown size={12} className="text-blue-500" />
+    );
   };
 
   const totalFlex = columns.reduce((s, c) => s + (c.width ?? 1), 0);
@@ -119,12 +132,18 @@ function VirtualDataTable<T extends { id: string | number }>({
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-gray-50">
         {searchKeys.length > 0 && (
           <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+            />
             <input
               type="text"
               placeholder="Search..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); listRef.current?.scrollTo(0); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                listRef.current?.scrollTo(0);
+              }}
               className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -168,20 +187,37 @@ function VirtualDataTable<T extends { id: string | number }>({
 
       {/* Virtual List */}
       {filtered.length === 0 ? (
-        <div className="flex items-center justify-center text-gray-400 text-sm" style={{ height }}>
-          No results found.
-        </div>
+        <EmptyState
+          variant={search ? 'no-search-results' : 'no-data'}
+          title={search ? 'No results found' : 'No data available'}
+          description={
+            search
+              ? 'Try adjusting your search term or clearing the filter.'
+              : 'Data will appear here once records are loaded.'
+          }
+          className="py-16"
+        />
       ) : (
-        <List ref={listRef} height={height} itemCount={filtered.length} itemSize={rowHeight} width="100%">
+        <List
+          ref={listRef}
+          height={height}
+          itemCount={filtered.length}
+          itemSize={rowHeight}
+          width="100%"
+        >
           {Row}
         </List>
       )}
 
       {/* Footer */}
       <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 flex justify-between">
-        <span>Showing {filtered.length.toLocaleString()} of {data.length.toLocaleString()} records</span>
+        <span>
+          Showing {filtered.length.toLocaleString()} of {data.length.toLocaleString()} records
+        </span>
         {selected.size > 0 && (
-          <button onClick={() => setSelected(new Set())} className="text-blue-600 hover:underline">Clear selection</button>
+          <button onClick={() => setSelected(new Set())} className="text-blue-600 hover:underline">
+            Clear selection
+          </button>
         )}
       </div>
     </div>

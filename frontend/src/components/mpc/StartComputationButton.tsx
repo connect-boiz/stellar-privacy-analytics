@@ -16,7 +16,7 @@ export const StartComputationButton: React.FC<StartComputationButtonProps> = ({
   hasStarted,
   onStartComputation,
   participantsCount,
-  readyCount
+  readyCount,
 }) => {
   const getButtonState = () => {
     if (hasStarted) {
@@ -24,7 +24,7 @@ export const StartComputationButton: React.FC<StartComputationButtonProps> = ({
         text: 'Computation Running',
         icon: <Loader2 className="w-4 h-4 animate-spin" />,
         className: 'bg-blue-600 text-white hover:bg-blue-700 cursor-not-allowed',
-        disabled: true
+        disabled: true,
       };
     }
 
@@ -33,7 +33,7 @@ export const StartComputationButton: React.FC<StartComputationButtonProps> = ({
         text: 'Starting Computation...',
         icon: <Loader2 className="w-4 h-4 animate-spin" />,
         className: 'bg-yellow-600 text-white hover:bg-yellow-700 cursor-not-allowed',
-        disabled: true
+        disabled: true,
       };
     }
 
@@ -42,7 +42,7 @@ export const StartComputationButton: React.FC<StartComputationButtonProps> = ({
         text: 'Invite Partners to Start',
         icon: <AlertTriangle className="w-4 h-4" />,
         className: 'bg-gray-400 text-white cursor-not-allowed',
-        disabled: true
+        disabled: true,
       };
     }
 
@@ -51,15 +51,16 @@ export const StartComputationButton: React.FC<StartComputationButtonProps> = ({
         text: `Waiting for ${participantsCount - readyCount} Participants`,
         icon: <AlertTriangle className="w-4 h-4" />,
         className: 'bg-yellow-500 text-white cursor-not-allowed',
-        disabled: true
+        disabled: true,
       };
     }
 
     return {
       text: 'Start Computation',
       icon: <Play className="w-4 h-4" />,
-      className: 'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200',
-      disabled: false
+      className:
+        'bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200',
+      disabled: false,
     };
   };
 
@@ -147,8 +148,8 @@ export const StartComputationButton: React.FC<StartComputationButtonProps> = ({
             <div className="flex-1">
               <h4 className="text-sm font-medium text-green-800">Privacy Protected</h4>
               <p className="text-xs text-green-600 mt-1">
-                Your data will be processed using secure multi-party computation. 
-                No participant can access raw data from other parties.
+                Your data will be processed using secure multi-party computation. No participant can
+                access raw data from other parties.
               </p>
             </div>
           </div>

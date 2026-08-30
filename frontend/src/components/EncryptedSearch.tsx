@@ -1,8 +1,22 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Search, FileText, Calendar, Filter, Download, X, Loader2, AlertCircle, Hash, EyeOff, Shield, Clock } from 'lucide-react';
+import {
+  Search,
+  FileText,
+  Calendar,
+  Filter,
+  Download,
+  X,
+  Loader2,
+  _AlertCircle,
+  Hash,
+  EyeOff,
+  Shield,
+  Clock,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import EmptyState from './ui/EmptyState';
 
 export interface EncryptedDataset {
   id: string;
@@ -60,7 +74,12 @@ const sampleDatasets: EncryptedDataset[] = [
     recordCount: 125000,
     privacyLevel: 'High',
     tags: ['customer', 'behavior', 'analytics'],
-    searchIndex: { id: 'idx-1', datasetId: 'ds-1', indexedAt: '2024-01-15T12:00:00Z', tokenCount: 45000 }
+    searchIndex: {
+      id: 'idx-1',
+      datasetId: 'ds-1',
+      indexedAt: '2024-01-15T12:00:00Z',
+      tokenCount: 45000,
+    },
   },
   {
     id: 'ds-2',
@@ -72,7 +91,12 @@ const sampleDatasets: EncryptedDataset[] = [
     recordCount: 45000,
     privacyLevel: 'Maximum',
     tags: ['sales', 'quarterly', 'revenue'],
-    searchIndex: { id: 'idx-2', datasetId: 'ds-2', indexedAt: '2024-01-10T11:00:00Z', tokenCount: 28000 }
+    searchIndex: {
+      id: 'idx-2',
+      datasetId: 'ds-2',
+      indexedAt: '2024-01-10T11:00:00Z',
+      tokenCount: 28000,
+    },
   },
   {
     id: 'ds-3',
@@ -84,7 +108,12 @@ const sampleDatasets: EncryptedDataset[] = [
     recordCount: 89000,
     privacyLevel: 'High',
     tags: ['marketing', 'campaign', 'metrics'],
-    searchIndex: { id: 'idx-3', datasetId: 'ds-3', indexedAt: '2024-01-08T16:00:00Z', tokenCount: 32000 }
+    searchIndex: {
+      id: 'idx-3',
+      datasetId: 'ds-3',
+      indexedAt: '2024-01-08T16:00:00Z',
+      tokenCount: 32000,
+    },
   },
   {
     id: 'ds-4',
@@ -96,8 +125,13 @@ const sampleDatasets: EncryptedDataset[] = [
     recordCount: 234000,
     privacyLevel: 'Maximum',
     tags: ['analytics', 'engagement', 'users'],
-    searchIndex: { id: 'idx-4', datasetId: 'ds-4', indexedAt: '2024-01-05T10:00:00Z', tokenCount: 65000 }
-  }
+    searchIndex: {
+      id: 'idx-4',
+      datasetId: 'ds-4',
+      indexedAt: '2024-01-05T10:00:00Z',
+      tokenCount: 65000,
+    },
+  },
 ];
 
 const sampleResults: SearchResult[] = [
@@ -110,7 +144,7 @@ const sampleResults: SearchResult[] = [
     score: 0.95,
     highlighted: true,
     createdAt: '2024-01-15T10:00:00Z',
-    privacyLevel: 'High'
+    privacyLevel: 'High',
   },
   {
     id: 'res-2',
@@ -121,7 +155,7 @@ const sampleResults: SearchResult[] = [
     score: 0.87,
     highlighted: true,
     createdAt: '2024-01-10T09:00:00Z',
-    privacyLevel: 'Maximum'
+    privacyLevel: 'Maximum',
   },
   {
     id: 'res-3',
@@ -132,14 +166,14 @@ const sampleResults: SearchResult[] = [
     score: 0.82,
     highlighted: true,
     createdAt: '2024-01-15T10:00:00Z',
-    privacyLevel: 'High'
-  }
+    privacyLevel: 'High',
+  },
 ];
 
-export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({ 
+export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
   datasets = sampleDatasets,
   onSearch,
-  onExport
+  onExport,
 }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -148,7 +182,10 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
-  const [searchMetadata, setSearchMetadata] = useState<{ totalResults: number; searchTime: number } | null>(null);
+  const [searchMetadata, setSearchMetadata] = useState<{
+    totalResults: number;
+    searchTime: number;
+  } | null>(null);
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('encrypted-search-history');
@@ -157,67 +194,74 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
     }
   }, []);
 
-  const saveToHistory = useCallback((searchQuery: string) => {
-    if (!searchQuery.trim()) return;
-    const newHistory = [searchQuery, ...history.filter(h => h !== searchQuery)].slice(0, 10);
-    setHistory(newHistory);
-    localStorage.setItem('encrypted-search-history', JSON.stringify(newHistory));
-  }, [history]);
+  const saveToHistory = useCallback(
+    (searchQuery: string) => {
+      if (!searchQuery.trim()) return;
+      const newHistory = [searchQuery, ...history.filter((h) => h !== searchQuery)].slice(0, 10);
+      setHistory(newHistory);
+      localStorage.setItem('encrypted-search-history', JSON.stringify(newHistory));
+    },
+    [history]
+  );
 
   const clearHistory = useCallback(() => {
     setHistory([]);
     localStorage.removeItem('encrypted-search-history');
   }, []);
 
-  const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      toast.error('Please enter a search query');
-      return;
-    }
-
-    setIsSearching(true);
-    setHasSearched(true);
-    setResults([]);
-
-    const startTime = performance.now();
-
-    try {
-      let searchResults: SearchResult[];
-
-      if (onSearch) {
-        searchResults = await onSearch(searchQuery, filters);
-      } else {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        searchResults = sampleResults.filter(r => 
-          r.matchText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.context.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.datasetName.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+  const performSearch = useCallback(
+    async (searchQuery: string) => {
+      if (!searchQuery.trim()) {
+        toast.error('Please enter a search query');
+        return;
       }
 
-      if (filters.privacyLevel) {
-        searchResults = searchResults.filter(r => r.privacyLevel === filters.privacyLevel);
-      }
+      setIsSearching(true);
+      setHasSearched(true);
+      setResults([]);
 
-      const searchTime = Math.round(performance.now() - startTime);
-      
-      setResults(searchResults);
-      setSearchMetadata({ totalResults: searchResults.length, searchTime });
-      saveToHistory(searchQuery);
-      
-      if (searchResults.length === 0) {
-        toast.error('No results found for your search');
-      } else {
-        toast.success(`Found ${searchResults.length} results in ${searchTime}ms`);
+      const startTime = performance.now();
+
+      try {
+        let searchResults: SearchResult[];
+
+        if (onSearch) {
+          searchResults = await onSearch(searchQuery, filters);
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          searchResults = sampleResults.filter(
+            (r) =>
+              r.matchText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              r.context.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              r.datasetName.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
+
+        if (filters.privacyLevel) {
+          searchResults = searchResults.filter((r) => r.privacyLevel === filters.privacyLevel);
+        }
+
+        const searchTime = Math.round(performance.now() - startTime);
+
+        setResults(searchResults);
+        setSearchMetadata({ totalResults: searchResults.length, searchTime });
+        saveToHistory(searchQuery);
+
+        if (searchResults.length === 0) {
+          toast.error('No results found for your search');
+        } else {
+          toast.success(`Found ${searchResults.length} results in ${searchTime}ms`);
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        toast.error('Search failed. Please try again.');
+      } finally {
+        setIsSearching(false);
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      toast.error('Search failed. Please try again.');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [filters, onSearch, saveToHistory]);
+    },
+    [filters, onSearch, saveToHistory]
+  );
 
   const handleQuerySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,16 +278,20 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
     const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
     return (
       <>
-        {parts.map((part, i) => 
-          part.toLowerCase() === highlight.toLowerCase() 
-            ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
-            : part
+        {parts.map((part, i) =>
+          part.toLowerCase() === highlight.toLowerCase() ? (
+            <mark key={i} className="bg-yellow-200 px-0.5 rounded">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
         )}
       </>
     );
   };
 
-  const formatSize = (bytes: number): string => {
+  const _formatSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
@@ -256,13 +304,15 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
     } else {
       const csvContent = [
         ['Dataset', 'Match', 'Context', 'Score', 'Date'].join(','),
-        ...results.map(r => [
-          `"${r.datasetName}"`,
-          `"${r.matchText}"`,
-          `"${r.context.replace(/"/g, '""')}"`,
-          r.score.toFixed(2),
-          r.createdAt
-        ].join(','))
+        ...results.map((r) =>
+          [
+            `"${r.datasetName}"`,
+            `"${r.matchText}"`,
+            `"${r.context.replace(/"/g, '""')}"`,
+            r.score.toFixed(2),
+            r.createdAt,
+          ].join(',')
+        ),
       ].join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -276,10 +326,7 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
     }
   };
 
-  const indexedDatasets = useMemo(() => 
-    datasets.filter(d => d.searchIndex).length, 
-    [datasets]
-  );
+  const indexedDatasets = useMemo(() => datasets.filter((d) => d.searchIndex).length, [datasets]);
 
   return (
     <div className="space-y-6">
@@ -291,7 +338,9 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Encrypted Dataset Search</h2>
-              <p className="text-sm text-gray-500">Search across encrypted datasets with privacy protection</p>
+              <p className="text-sm text-gray-500">
+                Search across encrypted datasets with privacy protection
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -328,7 +377,9 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
               type="button"
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-md border ${
-                showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                showFilters
+                  ? 'bg-blue-50 border-blue-300 text-blue-700'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
               }`}
             >
               <Filter className="h-4 w-4" />
@@ -357,10 +408,14 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
           {showFilters && (
             <div className="flex flex-wrap gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Privacy Level</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Privacy Level
+                </label>
                 <select
                   value={filters.privacyLevel || ''}
-                  onChange={(e) => setFilters({ ...filters, privacyLevel: e.target.value || undefined })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, privacyLevel: e.target.value || undefined })
+                  }
                   className="border border-gray-300 rounded-md py-1.5 px-3 text-sm"
                 >
                   <option value="">All Levels</option>
@@ -375,14 +430,24 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
                 <input
                   type="date"
                   value={filters.dateRange?.start || ''}
-                  onChange={(e) => setFilters({ ...filters, dateRange: { ...filters.dateRange!, start: e.target.value } })}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      dateRange: { ...filters.dateRange!, start: e.target.value },
+                    })
+                  }
                   className="border border-gray-300 rounded-md py-1.5 px-3 text-sm"
                 />
                 <span className="mx-2 text-gray-400">to</span>
                 <input
                   type="date"
                   value={filters.dateRange?.end || ''}
-                  onChange={(e) => setFilters({ ...filters, dateRange: { ...filters.dateRange!, end: e.target.value } })}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      dateRange: { ...filters.dateRange!, end: e.target.value },
+                    })
+                  }
                   className="border border-gray-300 rounded-md py-1.5 px-3 text-sm"
                 />
               </div>
@@ -395,10 +460,7 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-gray-700">Recent Searches</h3>
-            <button
-              onClick={clearHistory}
-              className="text-xs text-gray-500 hover:text-gray-700"
-            >
+            <button onClick={clearHistory} className="text-xs text-gray-500 hover:text-gray-700">
               Clear
             </button>
           </div>
@@ -456,11 +518,15 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
                   <div className="flex items-center space-x-2 mb-2">
                     <FileText className="h-4 w-4 text-blue-600" />
                     <span className="font-medium text-gray-900">{result.datasetName}</span>
-                    <span className={`px-2 py-0.5 text-xs rounded ${
-                      result.privacyLevel === 'Maximum' ? 'bg-purple-100 text-purple-700' :
-                      result.privacyLevel === 'High' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded ${
+                        result.privacyLevel === 'Maximum'
+                          ? 'bg-purple-100 text-purple-700'
+                          : result.privacyLevel === 'High'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
                       {result.privacyLevel}
                     </span>
                   </div>
@@ -479,11 +545,9 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
                   </div>
                 </div>
                 <div className="flex flex-col items-end space-y-2">
-                  <div className="text-xs text-gray-500">
-                    Match confidence
-                  </div>
+                  <div className="text-xs text-gray-500">Match confidence</div>
                   <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                    <div 
+                    <div
                       className="bg-blue-600 h-1.5 rounded-full"
                       style={{ width: `${result.score * 100}%` }}
                     />
@@ -496,32 +560,34 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
       )}
 
       {hasSearched && results.length === 0 && !isSearching && (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
-          <p className="text-gray-600 mb-4">
-            Try adjusting your search query or filters
-          </p>
-          <div className="flex justify-center space-x-2">
-            <button
-              onClick={() => handleQuickSearch('customer')}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              customer
-            </button>
-            <button
-              onClick={() => handleQuickSearch('sales')}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              sales
-            </button>
-            <button
-              onClick={() => handleQuickSearch('analytics')}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              analytics
-            </button>
-          </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <EmptyState
+            variant="no-search-results"
+            title="No results found"
+            description="Try adjusting your search query or filters."
+            action={
+              <div className="flex justify-center space-x-2">
+                <button
+                  onClick={() => handleQuickSearch('customer')}
+                  className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  customer
+                </button>
+                <button
+                  onClick={() => handleQuickSearch('sales')}
+                  className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  sales
+                </button>
+                <button
+                  onClick={() => handleQuickSearch('analytics')}
+                  className="px-3 py-1.5 text-sm bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  analytics
+                </button>
+              </div>
+            }
+          />
         </div>
       )}
 
@@ -531,9 +597,9 @@ export const EncryptedSearch: React.FC<EncryptedSearchProps> = ({
           <div>
             <h4 className="text-sm font-medium text-blue-900">Privacy-Protected Search</h4>
             <p className="text-sm text-blue-800 mt-1">
-              All searches are performed on encrypted data with zero-knowledge proofs. 
-              Search queries are never stored in plain text, and results are validated 
-              before being decrypted for display.
+              All searches are performed on encrypted data with zero-knowledge proofs. Search
+              queries are never stored in plain text, and results are validated before being
+              decrypted for display.
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
-import { QuerySensitivity, InvalidQueryException } from './types';
+import { QuerySensitivity, InvalidQueryException } from "./types";
 
 export interface ParsedQuery {
-  type: 'SELECT' | 'COUNT' | 'SUM' | 'AVERAGE' | 'MAX' | 'MIN';
+  type: "SELECT" | "COUNT" | "SUM" | "AVERAGE" | "MAX" | "MIN";
   columns: string[];
   table: string;
   groupBy: string[];
@@ -15,155 +15,184 @@ export class SensitivityAnalyzer {
     sum: 1,
     average: 1,
     max: 1,
-    min: 1
+    min: 1,
   };
 
   public analyzeQuery(query: string, maxDataValue?: number): QuerySensitivity {
     const parsed = this.parseQuery(query);
-    
+
     switch (parsed.type) {
-      case 'COUNT':
+      case "COUNT":
         return {
-          sensitivity: this.DEFAULT_SENSITIVITIES.count,
-          type: 'count',
-          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined
+          sensitivity: SensitivityAnalyzer.DEFAULT_SENSITIVITIES.count,
+          type: "count",
+          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
-      
-      case 'SUM':
+
+      case "SUM":
         if (!parsed.aggregateColumn) {
-          throw new InvalidQueryException('SUM query must specify column', query);
+          throw new InvalidQueryException(
+            "SUM query must specify column",
+            query,
+          );
         }
         return {
-          sensitivity: maxDataValue || this.DEFAULT_SENSITIVITIES.sum,
-          type: 'sum',
-          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined
+          sensitivity: maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.sum,
+          type: "sum",
+          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
-      
-      case 'AVERAGE':
+
+      case "AVERAGE":
         if (!parsed.aggregateColumn) {
-          throw new InvalidQueryException('AVERAGE query must specify column', query);
+          throw new InvalidQueryException(
+            "AVERAGE query must specify column",
+            query,
+          );
         }
         return {
-          sensitivity: (maxDataValue || this.DEFAULT_SENSITIVITIES.average) / 2,
-          type: 'average',
-          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined
+          sensitivity:
+            (maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.average) /
+            2,
+          type: "average",
+          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
-      
-      case 'MAX':
+
+      case "MAX":
         if (!parsed.aggregateColumn) {
-          throw new InvalidQueryException('MAX query must specify column', query);
+          throw new InvalidQueryException(
+            "MAX query must specify column",
+            query,
+          );
         }
         return {
-          sensitivity: maxDataValue || this.DEFAULT_SENSITIVITIES.max,
-          type: 'max',
-          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined
+          sensitivity: maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.max,
+          type: "max",
+          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
-      
-      case 'MIN':
+
+      case "MIN":
         if (!parsed.aggregateColumn) {
-          throw new InvalidQueryException('MIN query must specify column', query);
+          throw new InvalidQueryException(
+            "MIN query must specify column",
+            query,
+          );
         }
         return {
-          sensitivity: maxDataValue || this.DEFAULT_SENSITIVITIES.min,
-          type: 'min',
-          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined
+          sensitivity: maxDataValue || SensitivityAnalyzer.DEFAULT_SENSITIVITIES.min,
+          type: "min",
+          groupBy: parsed.groupBy.length > 0 ? parsed.groupBy : undefined,
         };
-      
+
       default:
-        throw new InvalidQueryException(`Unsupported query type: ${parsed.type}`, query);
+        throw new InvalidQueryException(
+          `Unsupported query type: ${parsed.type}`,
+          query,
+        );
     }
   }
 
   private parseQuery(query: string): ParsedQuery {
     const normalizedQuery = query.trim().toLowerCase();
-    
-    const countMatch = normalizedQuery.match(/select\s+count\(\*?\)\s+from\s+(\w+)/i);
+
+    const countMatch = normalizedQuery.match(
+      /select\s+count\(\*?\)\s+from\s+(\w+)/i,
+    );
     if (countMatch) {
       return {
-        type: 'COUNT',
-        columns: ['*'],
+        type: "COUNT",
+        columns: ["*"],
         table: countMatch[1],
-        groupBy: this.extractGroupBy(normalizedQuery)
+        groupBy: this.extractGroupBy(normalizedQuery),
       };
     }
 
-    const sumMatch = normalizedQuery.match(/select\s+sum\((\w+)\)\s+from\s+(\w+)/i);
+    const sumMatch = normalizedQuery.match(
+      /select\s+sum\((\w+)\)\s+from\s+(\w+)/i,
+    );
     if (sumMatch) {
       return {
-        type: 'SUM',
+        type: "SUM",
         columns: [sumMatch[1]],
         table: sumMatch[2],
         groupBy: this.extractGroupBy(normalizedQuery),
-        aggregateColumn: sumMatch[1]
+        aggregateColumn: sumMatch[1],
       };
     }
 
-    const avgMatch = normalizedQuery.match(/select\s+avg\((\w+)\)\s+from\s+(\w+)/i);
+    const avgMatch = normalizedQuery.match(
+      /select\s+avg\((\w+)\)\s+from\s+(\w+)/i,
+    );
     if (avgMatch) {
       return {
-        type: 'AVERAGE',
+        type: "AVERAGE",
         columns: [avgMatch[1]],
         table: avgMatch[2],
         groupBy: this.extractGroupBy(normalizedQuery),
-        aggregateColumn: avgMatch[1]
+        aggregateColumn: avgMatch[1],
       };
     }
 
-    const maxMatch = normalizedQuery.match(/select\s+max\((\w+)\)\s+from\s+(\w+)/i);
+    const maxMatch = normalizedQuery.match(
+      /select\s+max\((\w+)\)\s+from\s+(\w+)/i,
+    );
     if (maxMatch) {
       return {
-        type: 'MAX',
+        type: "MAX",
         columns: [maxMatch[1]],
         table: maxMatch[2],
         groupBy: this.extractGroupBy(normalizedQuery),
-        aggregateColumn: maxMatch[1]
+        aggregateColumn: maxMatch[1],
       };
     }
 
-    const minMatch = normalizedQuery.match(/select\s+min\((\w+)\)\s+from\s+(\w+)/i);
+    const minMatch = normalizedQuery.match(
+      /select\s+min\((\w+)\)\s+from\s+(\w+)/i,
+    );
     if (minMatch) {
       return {
-        type: 'MIN',
+        type: "MIN",
         columns: [minMatch[1]],
         table: minMatch[2],
         groupBy: this.extractGroupBy(normalizedQuery),
-        aggregateColumn: minMatch[1]
+        aggregateColumn: minMatch[1],
       };
     }
 
     const selectMatch = normalizedQuery.match(/select\s+(.+?)\s+from\s+(\w+)/i);
     if (selectMatch) {
       return {
-        type: 'SELECT',
-        columns: selectMatch[1].split(',').map(col => col.trim()),
+        type: "SELECT",
+        columns: selectMatch[1].split(",").map((col) => col.trim()),
         table: selectMatch[2],
-        groupBy: this.extractGroupBy(normalizedQuery)
+        groupBy: this.extractGroupBy(normalizedQuery),
       };
     }
 
-    throw new InvalidQueryException('Unable to parse query', query);
+    throw new InvalidQueryException("Unable to parse query", query);
   }
 
   private extractGroupBy(query: string): string[] {
-    const groupByMatch = query.match(/group\s+by\s+(.+?)(?:\s+order\s+by|\s+limit|\s*$)/i);
+    const groupByMatch = query.match(
+      /group\s+by\s+(.+?)(?:\s+order\s+by|\s+limit|\s*$)/i,
+    );
     if (!groupByMatch) {
       return [];
     }
 
-    return groupByMatch[1].split(',').map(col => col.trim());
+    return groupByMatch[1].split(",").map((col) => col.trim());
   }
 
   public calculateEpsilonCost(
-    sensitivity: QuerySensitivity, 
+    sensitivity: QuerySensitivity,
     numGroups: number = 1,
-    targetEpsilon: number = 1.0
+    targetEpsilon: number = 1.0,
   ): number {
     const baseCost = targetEpsilon / numGroups;
-    
-    if (sensitivity.type === 'average') {
+
+    if (sensitivity.type === "average") {
       return baseCost * 2;
     }
-    
+
     return baseCost;
   }
 
@@ -178,33 +207,33 @@ export class SensitivityAnalyzer {
 
   public estimateQueryComplexity(query: string): number {
     const parsed = this.parseQuery(query);
-    
+
     let complexity = 1;
-    
+
     if (parsed.groupBy.length > 0) {
       complexity *= parsed.groupBy.length;
     }
-    
+
     if (parsed.whereClause) {
       complexity *= 1.5;
     }
-    
+
     switch (parsed.type) {
-      case 'AVERAGE':
+      case "AVERAGE":
         complexity *= 1.2;
         break;
-      case 'SUM':
+      case "SUM":
         complexity *= 1.1;
         break;
-      case 'COUNT':
+      case "COUNT":
         complexity *= 1.0;
         break;
-      case 'MAX':
-      case 'MIN':
+      case "MAX":
+      case "MIN":
         complexity *= 1.3;
         break;
     }
-    
+
     return complexity;
   }
 }

@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable } from "@nestjs/common";
+import { Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
 
-import { SearchIndex } from './entities/index.entity';
-import { CreateIndexDto } from './dto/create-index.dto';
-import { IndexStorageService } from './storage/index-storage.service';
-import { InvertedIndexer } from './indexers/inverted.indexer';
-import { BloomIndexer } from './indexers/bloom.indexer';
-import { LSHIndexer } from './indexers/lsh.indexer';
+import { SearchIndex } from "./entities/index.entity";
+import { CreateIndexDto } from "./dto/create-index.dto";
+import { IndexStorageService } from "./storage/index-storage.service";
+import { InvertedIndexer } from "./indexers/inverted.indexer";
+import { BloomIndexer } from "./indexers/bloom.indexer";
+import { LSHIndexer } from "./indexers/lsh.indexer";
 
 @Injectable()
 export class SearchIndexService {
@@ -20,16 +20,16 @@ export class SearchIndexService {
   async create(dto: CreateIndexDto) {
     const index = await this.repo.save({
       ...dto,
-      status: 'building',
+      status: "building",
     });
 
-    const mockData = ['hello world', 'secure search', 'encrypted data'];
+    const mockData = ["hello world", "secure search", "encrypted data"];
 
     let built;
 
-    if (dto.type === 'inverted') {
+    if (dto.type === "inverted") {
       built = new InvertedIndexer().build(mockData);
-    } else if (dto.type === 'bloom') {
+    } else if (dto.type === "bloom") {
       built = new BloomIndexer().build(mockData);
     } else {
       built = new LSHIndexer().build(mockData);
@@ -37,7 +37,7 @@ export class SearchIndexService {
 
     const path = this.storage.save(index.id, built);
 
-    index.status = 'ready';
+    index.status = "ready";
     index.storagePath = path;
 
     return this.repo.save(index);
@@ -50,9 +50,9 @@ export class SearchIndexService {
 
     let result;
 
-    if (index.type === 'inverted') {
+    if (index.type === "inverted") {
       result = new InvertedIndexer().search(data, query);
-    } else if (index.type === 'bloom') {
+    } else if (index.type === "bloom") {
       result = new BloomIndexer().search(data, query);
     } else {
       result = new LSHIndexer().search(data, query);

@@ -6,10 +6,10 @@ import {
   SimulationScenario,
   SimulationResult,
   ScenarioComparison,
-  ComparisonResult,
+  _ComparisonResult,
   ComparisonInsight,
-  BudgetAllocation,
-  SimulationMetrics
+  _BudgetAllocation,
+  SimulationMetrics,
 } from '../types/privacyBudget';
 
 export interface HistoricalComparisonConfig {
@@ -148,10 +148,17 @@ export class HistoricalScenarioComparison {
         config = {
           maxHistoricalScenarios: 100,
           timeRange: 365,
-          comparisonMetrics: ['totalROI', 'riskScore', 'privacyScore', 'utilityScore', 'efficiency', 'complianceScore'],
+          comparisonMetrics: [
+            'totalROI',
+            'riskScore',
+            'privacyScore',
+            'utilityScore',
+            'efficiency',
+            'complianceScore',
+          ],
           trendAnalysisEnabled: true,
           patternRecognitionEnabled: true,
-          benchmarkingEnabled: true
+          benchmarkingEnabled: true,
         };
       }
       HistoricalScenarioComparison.instance = new HistoricalScenarioComparison(config);
@@ -164,57 +171,93 @@ export class HistoricalScenarioComparison {
       {
         metric: 'totalROI',
         industry: [
-          { value: 0.12, percentile: 50, rank: 5, source: 'industry_survey', timestamp: Date.now() },
-          { value: 0.15, percentile: 75, rank: 3, source: 'industry_survey', timestamp: Date.now() },
-          { value: 0.18, percentile: 90, rank: 1, source: 'industry_survey', timestamp: Date.now() }
+          {
+            value: 0.12,
+            percentile: 50,
+            rank: 5,
+            source: 'industry_survey',
+            timestamp: Date.now(),
+          },
+          {
+            value: 0.15,
+            percentile: 75,
+            rank: 3,
+            source: 'industry_survey',
+            timestamp: Date.now(),
+          },
+          {
+            value: 0.18,
+            percentile: 90,
+            rank: 1,
+            source: 'industry_survey',
+            timestamp: Date.now(),
+          },
         ],
         internal: [
-          { value: 0.10, percentile: 40, rank: 8, source: 'internal_data', timestamp: Date.now() },
-          { value: 0.14, percentile: 60, rank: 4, source: 'internal_data', timestamp: Date.now() }
+          { value: 0.1, percentile: 40, rank: 8, source: 'internal_data', timestamp: Date.now() },
+          { value: 0.14, percentile: 60, rank: 4, source: 'internal_data', timestamp: Date.now() },
         ],
         peers: [
           { value: 0.13, percentile: 55, rank: 6, source: 'peer_analysis', timestamp: Date.now() },
-          { value: 0.16, percentile: 80, rank: 2, source: 'peer_analysis', timestamp: Date.now() }
+          { value: 0.16, percentile: 80, rank: 2, source: 'peer_analysis', timestamp: Date.now() },
         ],
-        bestPractice: { value: 0.20, percentile: 95, rank: 1, source: 'best_practice', timestamp: Date.now() }
+        bestPractice: {
+          value: 0.2,
+          percentile: 95,
+          rank: 1,
+          source: 'best_practice',
+          timestamp: Date.now(),
+        },
       },
       {
         metric: 'riskScore',
         industry: [
           { value: 45, percentile: 50, rank: 5, source: 'industry_survey', timestamp: Date.now() },
           { value: 35, percentile: 75, rank: 3, source: 'industry_survey', timestamp: Date.now() },
-          { value: 25, percentile: 90, rank: 1, source: 'industry_survey', timestamp: Date.now() }
+          { value: 25, percentile: 90, rank: 1, source: 'industry_survey', timestamp: Date.now() },
         ],
         internal: [
           { value: 50, percentile: 35, rank: 9, source: 'internal_data', timestamp: Date.now() },
-          { value: 40, percentile: 55, rank: 4, source: 'internal_data', timestamp: Date.now() }
+          { value: 40, percentile: 55, rank: 4, source: 'internal_data', timestamp: Date.now() },
         ],
         peers: [
           { value: 42, percentile: 48, rank: 6, source: 'peer_analysis', timestamp: Date.now() },
-          { value: 38, percentile: 65, rank: 3, source: 'peer_analysis', timestamp: Date.now() }
+          { value: 38, percentile: 65, rank: 3, source: 'peer_analysis', timestamp: Date.now() },
         ],
-        bestPractice: { value: 20, percentile: 95, rank: 1, source: 'best_practice', timestamp: Date.now() }
+        bestPractice: {
+          value: 20,
+          percentile: 95,
+          rank: 1,
+          source: 'best_practice',
+          timestamp: Date.now(),
+        },
       },
       {
         metric: 'privacyScore',
         industry: [
           { value: 75, percentile: 50, rank: 5, source: 'industry_survey', timestamp: Date.now() },
           { value: 85, percentile: 75, rank: 3, source: 'industry_survey', timestamp: Date.now() },
-          { value: 92, percentile: 90, rank: 1, source: 'industry_survey', timestamp: Date.now() }
+          { value: 92, percentile: 90, rank: 1, source: 'industry_survey', timestamp: Date.now() },
         ],
         internal: [
           { value: 70, percentile: 40, rank: 8, source: 'internal_data', timestamp: Date.now() },
-          { value: 80, percentile: 60, rank: 4, source: 'internal_data', timestamp: Date.now() }
+          { value: 80, percentile: 60, rank: 4, source: 'internal_data', timestamp: Date.now() },
         ],
         peers: [
           { value: 78, percentile: 55, rank: 6, source: 'peer_analysis', timestamp: Date.now() },
-          { value: 88, percentile: 80, rank: 2, source: 'peer_analysis', timestamp: Date.now() }
+          { value: 88, percentile: 80, rank: 2, source: 'peer_analysis', timestamp: Date.now() },
         ],
-        bestPractice: { value: 95, percentile: 95, rank: 1, source: 'best_practice', timestamp: Date.now() }
-      }
+        bestPractice: {
+          value: 95,
+          percentile: 95,
+          rank: 1,
+          source: 'best_practice',
+          timestamp: Date.now(),
+        },
+      },
     ];
 
-    benchmarkData.forEach(benchmark => {
+    benchmarkData.forEach((benchmark) => {
       this.benchmarks.set(benchmark.metric, benchmark);
     });
   }
@@ -223,7 +266,7 @@ export class HistoricalScenarioComparison {
   public async compareWithHistorical(
     currentScenario: SimulationScenario,
     currentResult: SimulationResult,
-    comparisonType: 'trend' | 'benchmark' | 'pattern' | 'comprehensive' = 'comprehensive'
+    _comparisonType: 'trend' | 'benchmark' | 'pattern' | 'comprehensive' = 'comprehensive'
   ): Promise<{
     trends: HistoricalTrend[];
     benchmarks: BenchmarkData[];
@@ -235,16 +278,17 @@ export class HistoricalScenarioComparison {
     this.addToHistory(currentScenario, currentResult);
 
     // Generate trend analysis
-    const trends = this.config.trendAnalysisEnabled ? 
-      await this.analyzeTrends(currentResult) : [];
+    const trends = this.config.trendAnalysisEnabled ? await this.analyzeTrends(currentResult) : [];
 
     // Generate benchmark comparison
-    const benchmarks = this.config.benchmarkingEnabled ? 
-      this.compareWithBenchmarks(currentResult) : [];
+    const benchmarks = this.config.benchmarkingEnabled
+      ? this.compareWithBenchmarks(currentResult)
+      : [];
 
     // Generate pattern insights
-    const patterns = this.config.patternRecognitionEnabled ? 
-      await this.recognizePatterns(currentResult) : [];
+    const patterns = this.config.patternRecognitionEnabled
+      ? await this.recognizePatterns(currentResult)
+      : [];
 
     // Generate comprehensive insights
     const insights = this.generateHistoricalInsights(currentResult, trends, benchmarks, patterns);
@@ -257,7 +301,7 @@ export class HistoricalScenarioComparison {
       benchmarks,
       patterns,
       insights,
-      recommendations
+      recommendations,
     };
   }
 
@@ -277,7 +321,7 @@ export class HistoricalScenarioComparison {
       scenarioId,
       scenarioName: scenario.name,
       evolution: evolutionPoints,
-      overall: evolutionMetrics
+      overall: evolutionMetrics,
     };
   }
 
@@ -299,7 +343,7 @@ export class HistoricalScenarioComparison {
       timeline,
       trends,
       patterns,
-      forecasts
+      forecasts,
     };
   }
 
@@ -314,8 +358,12 @@ export class HistoricalScenarioComparison {
     insights: ComparisonInsight[];
     recommendations: ReportRecommendation[];
   }> {
-    const scenarios = scenarioIds.map(id => this.historicalScenarios.get(id)).filter(Boolean) as SimulationScenario[];
-    const results = scenarioIds.map(id => this.historicalResults.get(id)).filter(Boolean) as SimulationResult[];
+    const scenarios = scenarioIds
+      .map((id) => this.historicalScenarios.get(id))
+      .filter(Boolean) as SimulationScenario[];
+    const results = scenarioIds
+      .map((id) => this.historicalResults.get(id))
+      .filter(Boolean) as SimulationResult[];
 
     if (scenarios.length === 0 || results.length === 0) {
       throw new Error('No valid scenarios found for comparison');
@@ -345,7 +393,7 @@ export class HistoricalScenarioComparison {
       trends,
       benchmarks,
       insights,
-      recommendations
+      recommendations,
     };
   }
 
@@ -367,23 +415,23 @@ export class HistoricalScenarioComparison {
   }
 
   public getHistoricalScenarios(timeRange?: number): SimulationScenario[] {
-    const cutoffTime = timeRange ? Date.now() - (timeRange * 24 * 60 * 60 * 1000) : 0;
-    
+    const cutoffTime = timeRange ? Date.now() - timeRange * 24 * 60 * 60 * 1000 : 0;
+
     return Array.from(this.historicalScenarios.values())
-      .filter(scenario => scenario.createdAt >= cutoffTime)
+      .filter((scenario) => scenario.createdAt >= cutoffTime)
       .sort((a, b) => b.createdAt - a.createdAt);
   }
 
   public getHistoricalResults(timeRange?: number): SimulationResult[] {
-    const cutoffTime = timeRange ? Date.now() - (timeRange * 24 * 60 * 60 * 1000) : 0;
-    
+    const cutoffTime = timeRange ? Date.now() - timeRange * 24 * 60 * 60 * 1000 : 0;
+
     return Array.from(this.historicalResults.values())
-      .filter(result => result.timestamp >= cutoffTime)
+      .filter((result) => result.timestamp >= cutoffTime)
       .sort((a, b) => b.timestamp - a.timestamp);
   }
 
   // Trend analysis methods
-  private async analyzeTrends(currentResult: SimulationResult): Promise<HistoricalTrend[]> {
+  private async analyzeTrends(_currentResult: SimulationResult): Promise<HistoricalTrend[]> {
     const trends: HistoricalTrend[] = [];
     const results = this.getHistoricalResults(this.config.timeRange);
 
@@ -400,7 +448,7 @@ export class HistoricalScenarioComparison {
         trend: trendAnalysis,
         seasonality,
         changePoints,
-        forecast
+        forecast,
       });
     }
 
@@ -408,19 +456,21 @@ export class HistoricalScenarioComparison {
   }
 
   private extractTrendData(metric: string, results: SimulationResult[]): TrendDataPoint[] {
-    return results.map(result => {
-      const value = (result.metrics as any)[metric];
-      return {
-        timestamp: result.timestamp,
-        value: value || 0,
-        scenarioId: result.scenarioId,
-        scenarioName: this.historicalScenarios.get(result.scenarioId)?.name || 'Unknown',
-        metadata: {
-          status: result.status,
-          duration: result.duration
-        }
-      };
-    }).sort((a, b) => a.timestamp - b.timestamp);
+    return results
+      .map((result) => {
+        const value = (result.metrics as any)[metric];
+        return {
+          timestamp: result.timestamp,
+          value: value || 0,
+          scenarioId: result.scenarioId,
+          scenarioName: this.historicalScenarios.get(result.scenarioId)?.name || 'Unknown',
+          metadata: {
+            status: result.status,
+            duration: result.duration,
+          },
+        };
+      })
+      .sort((a, b) => a.timestamp - b.timestamp);
   }
 
   private calculateTrendAnalysis(dataPoints: TrendDataPoint[]): TrendAnalysis {
@@ -430,19 +480,19 @@ export class HistoricalScenarioComparison {
         slope: 0,
         correlation: 0,
         strength: 'weak',
-        volatility: 0
+        volatility: 0,
       };
     }
 
     // Calculate linear regression
     const n = dataPoints.length;
     const x = dataPoints.map((_, i) => i);
-    const y = dataPoints.map(p => p.value);
+    const y = dataPoints.map((p) => p.value);
 
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = y.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + (val * y[i]), 0);
-    const sumXX = x.reduce((sum, val) => sum + (val * val), 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const correlation = this.calculateCorrelation(x, y);
@@ -468,7 +518,7 @@ export class HistoricalScenarioComparison {
       slope,
       correlation,
       strength,
-      volatility
+      volatility,
     };
   }
 
@@ -497,7 +547,7 @@ export class HistoricalScenarioComparison {
 
   private detectSeasonality(dataPoints: TrendDataPoint[]): SeasonalityPattern[] {
     const patterns: SeasonalityPattern[] = [];
-    
+
     if (dataPoints.length < 12) return patterns; // Need at least 12 points for seasonality
 
     // Check for weekly patterns (7 days)
@@ -516,7 +566,7 @@ export class HistoricalScenarioComparison {
   }
 
   private checkPeriodPattern(dataPoints: TrendDataPoint[], period: number): SeasonalityPattern {
-    const values = dataPoints.map(p => p.value);
+    const values = dataPoints.map((p) => p.value);
     const n = values.length;
 
     if (n < period * 2) {
@@ -542,7 +592,7 @@ export class HistoricalScenarioComparison {
       period,
       amplitude,
       phase: bestPhase,
-      confidence: maxCorrelation
+      confidence: maxCorrelation,
     };
   }
 
@@ -575,33 +625,34 @@ export class HistoricalScenarioComparison {
     if (periodicValues.length < 2) return 0;
 
     const mean = periodicValues.reduce((sum, val) => sum + val, 0) / periodicValues.length;
-    const variance = periodicValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / periodicValues.length;
-    
+    const variance =
+      periodicValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / periodicValues.length;
+
     return Math.sqrt(variance);
   }
 
   private detectChangePoints(dataPoints: TrendDataPoint[]): ChangePoint[] {
     const changePoints: ChangePoint[] = [];
-    
+
     if (dataPoints.length < 5) return changePoints;
 
-    const values = dataPoints.map(p => p.value);
-    const timestamps = dataPoints.map(p => p.timestamp);
-    const scenarioIds = dataPoints.map(p => p.scenarioId);
+    const values = dataPoints.map((p) => p.value);
+    const timestamps = dataPoints.map((p) => p.timestamp);
+    const scenarioIds = dataPoints.map((p) => p.scenarioId);
 
     // Simple change point detection using moving average
     const windowSize = Math.max(3, Math.floor(dataPoints.length / 10));
-    
+
     for (let i = windowSize; i < values.length - windowSize; i++) {
       const beforeWindow = values.slice(i - windowSize, i);
       const afterWindow = values.slice(i, i + windowSize);
-      
+
       const beforeMean = beforeWindow.reduce((sum, val) => sum + val, 0) / beforeWindow.length;
       const afterMean = afterWindow.reduce((sum, val) => sum + val, 0) / afterWindow.length;
-      
+
       const change = Math.abs(afterMean - beforeMean);
       const threshold = this.calculateChangeThreshold(values, i);
-      
+
       if (change > threshold) {
         changePoints.push({
           timestamp: timestamps[i],
@@ -609,7 +660,7 @@ export class HistoricalScenarioComparison {
           magnitude: change,
           confidence: Math.min(0.9, change / threshold),
           description: `Significant change detected at ${new Date(timestamps[i]).toLocaleDateString()}`,
-          type: change > threshold * 2 ? 'sudden' : 'gradual'
+          type: change > threshold * 2 ? 'sudden' : 'gradual',
         });
       }
     }
@@ -621,65 +672,70 @@ export class HistoricalScenarioComparison {
     const windowSize = Math.max(3, Math.floor(values.length / 10));
     const start = Math.max(0, index - windowSize);
     const end = Math.min(values.length, index + windowSize);
-    
+
     const windowValues = values.slice(start, end);
     const mean = windowValues.reduce((sum, val) => sum + val, 0) / windowValues.length;
-    const variance = windowValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / windowValues.length;
-    
+    const variance =
+      windowValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / windowValues.length;
+
     return Math.sqrt(variance) * 2; // 2 standard deviations
   }
 
   private generateForecast(dataPoints: TrendDataPoint[]): ForecastData[] {
     const forecasts: ForecastData[] = [];
-    
+
     if (dataPoints.length < 3) return forecasts;
 
-    const values = dataPoints.map(p => p.value);
-    const timestamps = dataPoints.map(p => p.timestamp);
-    
+    const values = dataPoints.map((p) => p.value);
+    const timestamps = dataPoints.map((p) => p.timestamp);
+
     // Simple linear regression forecast
     const n = values.length;
     const x = dataPoints.map((_, i) => i);
     const y = values;
 
     const { slope, intercept } = this.calculateLinearRegression(x, y);
-    
+
     // Generate 12 future points
     const lastTimestamp = timestamps[timestamps.length - 1];
-    const timeInterval = timestamps.length > 1 ? 
-      (timestamps[timestamps.length - 1] - timestamps[timestamps.length - 2]) : 
-      24 * 60 * 60 * 1000; // 1 day default
+    const timeInterval =
+      timestamps.length > 1
+        ? timestamps[timestamps.length - 1] - timestamps[timestamps.length - 2]
+        : 24 * 60 * 60 * 1000; // 1 day default
 
     for (let i = 1; i <= 12; i++) {
       const futureX = n + i - 1;
       const futureValue = slope * futureX + intercept;
-      const futureTimestamp = lastTimestamp + (i * timeInterval);
-      
+      const futureTimestamp = lastTimestamp + i * timeInterval;
+
       // Calculate confidence bounds
       const variance = this.calculateForecastVariance(values, slope, intercept);
       const margin = Math.sqrt(variance) * 1.96; // 95% confidence
-      const confidence = Math.max(0.1, 1 - (variance / Math.pow(futureValue, 2)));
-      
+      const confidence = Math.max(0.1, 1 - variance / Math.pow(futureValue, 2));
+
       forecasts.push({
         timestamp: futureTimestamp,
         value: Math.max(0, futureValue),
         confidence,
         upperBound: Math.max(0, futureValue + margin),
-        lowerBound: Math.max(0, futureValue - margin)
+        lowerBound: Math.max(0, futureValue - margin),
       });
     }
 
     return forecasts;
   }
 
-  private calculateLinearRegression(x: number[], y: number[]): { slope: number; intercept: number } {
+  private calculateLinearRegression(
+    x: number[],
+    y: number[]
+  ): { slope: number; intercept: number } {
     const n = x.length;
     if (n < 2) return { slope: 0, intercept: 0 };
 
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = y.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + (val * y[i]), 0);
-    const sumXX = x.reduce((sum, val) => sum + (val * val), 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
@@ -714,7 +770,7 @@ export class HistoricalScenarioComparison {
           ...benchmarkData,
           currentValue,
           currentPercentile: this.calculatePercentile(currentValue, benchmarkData),
-          currentRank: this.calculateRank(currentValue, benchmarkData)
+          currentRank: this.calculateRank(currentValue, benchmarkData),
         });
       }
     }
@@ -724,10 +780,10 @@ export class HistoricalScenarioComparison {
 
   private calculatePercentile(value: number, benchmark: BenchmarkData): number {
     const allValues = [
-      ...benchmark.industry.map(b => b.value),
-      ...benchmark.internal.map(b => b.value),
-      ...benchmark.peers.map(b => b.value),
-      value
+      ...benchmark.industry.map((b) => b.value),
+      ...benchmark.internal.map((b) => b.value),
+      ...benchmark.peers.map((b) => b.value),
+      value,
     ].sort((a, b) => a - b);
 
     const index = allValues.indexOf(value);
@@ -736,10 +792,10 @@ export class HistoricalScenarioComparison {
 
   private calculateRank(value: number, benchmark: BenchmarkData): number {
     const allValues = [
-      ...benchmark.industry.map(b => b.value),
-      ...benchmark.internal.map(b => b.value),
-      ...benchmark.peers.map(b => b.value),
-      value
+      ...benchmark.industry.map((b) => b.value),
+      ...benchmark.internal.map((b) => b.value),
+      ...benchmark.peers.map((b) => b.value),
+      value,
     ].sort((a, b) => b - a);
 
     return allValues.indexOf(value) + 1;
@@ -771,17 +827,17 @@ export class HistoricalScenarioComparison {
 
   private analyzeRecurringPatterns(results: SimulationResult[]): PatternInsight[] {
     const patterns: PatternInsight[] = [];
-    
+
     // Look for patterns that repeat across multiple scenarios
     const patternFrequency = new Map<string, number>();
     const patternScenarios = new Map<string, string[]>();
 
-    results.forEach(result => {
+    results.forEach((result) => {
       const scenarioPatterns = this.extractScenarioPatterns(result);
-      scenarioPatterns.forEach(pattern => {
+      scenarioPatterns.forEach((pattern) => {
         const key = `${pattern.type}-${pattern.description}`;
         patternFrequency.set(key, (patternFrequency.get(key) || 0) + 1);
-        
+
         if (!patternScenarios.has(key)) {
           patternScenarios.set(key, []);
         }
@@ -794,7 +850,7 @@ export class HistoricalScenarioComparison {
       if (frequency >= 3) {
         const [type, description] = key.split('-');
         const relatedScenarios = patternScenarios.get(key) || [];
-        
+
         patterns.push({
           type: 'recurring',
           description,
@@ -802,7 +858,7 @@ export class HistoricalScenarioComparison {
           confidence: Math.min(0.9, frequency / results.length),
           impact: this.calculatePatternImpact(type, frequency),
           recommendations: this.generatePatternRecommendations(type, description),
-          relatedScenarios
+          relatedScenarios,
         });
       }
     });
@@ -810,23 +866,26 @@ export class HistoricalScenarioComparison {
     return patterns;
   }
 
-  private analyzeEmergingPatterns(results: SimulationResult[], currentResult: SimulationResult): PatternInsight[] {
+  private analyzeEmergingPatterns(
+    results: SimulationResult[],
+    _currentResult: SimulationResult
+  ): PatternInsight[] {
     const patterns: PatternInsight[] = [];
-    
+
     // Look for patterns that are increasing in frequency
     const recentResults = results.slice(-10); // Last 10 results
     const olderResults = results.slice(-20, -10); // Previous 10 results
 
     const recentPatterns = this.extractPatternsFromResults(recentResults);
-    const olderPatterns = this.extractPatternsFromResults(olderResults);
+    const _olderPatterns = this.extractPatternsFromResults(olderResults);
 
     const patternGrowth = new Map<string, number>();
-    
-    recentPatterns.forEach(pattern => {
+
+    recentPatterns.forEach((pattern) => {
       const key = `${pattern.type}-${pattern.description}`;
       const recentCount = this.countPatternOccurrences(key, recentResults);
       const olderCount = this.countPatternOccurrences(key, olderResults);
-      
+
       if (recentCount > olderCount) {
         const growthRate = (recentCount - olderCount) / Math.max(olderCount, 1);
         patternGrowth.set(key, growthRate);
@@ -838,7 +897,7 @@ export class HistoricalScenarioComparison {
       if (growthRate > 0.5) {
         const [type, description] = key.split('-');
         const recentCount = this.countPatternOccurrences(key, recentResults);
-        
+
         patterns.push({
           type: 'emerging',
           description,
@@ -846,7 +905,7 @@ export class HistoricalScenarioComparison {
           confidence: Math.min(0.8, growthRate),
           impact: this.calculatePatternImpact(type, recentCount),
           recommendations: this.generatePatternRecommendations(type, description),
-          relatedScenarios: recentResults.map(r => r.scenarioId)
+          relatedScenarios: recentResults.map((r) => r.scenarioId),
         });
       }
     });
@@ -856,21 +915,21 @@ export class HistoricalScenarioComparison {
 
   private analyzeDecliningPatterns(results: SimulationResult[]): PatternInsight[] {
     const patterns: PatternInsight[] = [];
-    
+
     // Look for patterns that are decreasing in frequency
     const recentResults = results.slice(-10);
     const olderResults = results.slice(-20, -10);
 
-    const recentPatterns = this.extractPatternsFromResults(recentResults);
+    const _recentPatterns = this.extractPatternsFromResults(recentResults);
     const olderPatterns = this.extractPatternsFromResults(olderResults);
 
     const patternDecline = new Map<string, number>();
-    
-    olderPatterns.forEach(pattern => {
+
+    olderPatterns.forEach((pattern) => {
       const key = `${pattern.type}-${pattern.description}`;
       const recentCount = this.countPatternOccurrences(key, recentResults);
       const olderCount = this.countPatternOccurrences(key, olderResults);
-      
+
       if (recentCount < olderCount) {
         const declineRate = (olderCount - recentCount) / Math.max(olderCount, 1);
         patternDecline.set(key, declineRate);
@@ -882,7 +941,7 @@ export class HistoricalScenarioComparison {
       if (declineRate > 0.5) {
         const [type, description] = key.split('-');
         const olderCount = this.countPatternOccurrences(key, olderResults);
-        
+
         patterns.push({
           type: 'declining',
           description,
@@ -890,7 +949,7 @@ export class HistoricalScenarioComparison {
           confidence: Math.min(0.8, declineRate),
           impact: this.calculatePatternImpact(type, olderCount),
           recommendations: this.generatePatternRecommendations(type, description),
-          relatedScenarios: olderResults.map(r => r.scenarioId)
+          relatedScenarios: olderResults.map((r) => r.scenarioId),
         });
       }
     });
@@ -898,17 +957,20 @@ export class HistoricalScenarioComparison {
     return patterns;
   }
 
-  private analyzeAnomalousPatterns(results: SimulationResult[], currentResult: SimulationResult): PatternInsight[] {
+  private analyzeAnomalousPatterns(
+    results: SimulationResult[],
+    currentResult: SimulationResult
+  ): PatternInsight[] {
     const patterns: PatternInsight[] = [];
-    
+
     // Look for patterns in current result that don't match historical patterns
     const currentPatterns = this.extractScenarioPatterns(currentResult);
-    const historicalPatterns = this.extractPatternsFromResults(results.slice(0, -1)); // Exclude current
+    const _historicalPatterns = this.extractPatternsFromResults(results.slice(0, -1)); // Exclude current
 
-    currentPatterns.forEach(currentPattern => {
+    currentPatterns.forEach((currentPattern) => {
       const key = `${currentPattern.type}-${currentPattern.description}`;
       const historicalFrequency = this.countPatternOccurrences(key, historicalResults);
-      
+
       // If pattern is new or very rare, it's anomalous
       if (historicalFrequency < 2) {
         patterns.push({
@@ -920,9 +982,9 @@ export class HistoricalScenarioComparison {
           recommendations: [
             'Investigate this unusual pattern',
             'Monitor for recurrence',
-            'Consider if it represents a new trend or an anomaly'
+            'Consider if it represents a new trend or an anomaly',
           ],
-          relatedScenarios: [currentResult.scenarioId]
+          relatedScenarios: [currentResult.scenarioId],
         });
       }
     });
@@ -930,53 +992,57 @@ export class HistoricalScenarioComparison {
     return patterns;
   }
 
-  private extractScenarioPatterns(result: SimulationResult): Array<{ type: string; description: string }> {
+  private extractScenarioPatterns(
+    result: SimulationResult
+  ): Array<{ type: string; description: string }> {
     const patterns: Array<{ type: string; description: string }> = [];
-    
+
     // Extract patterns based on metrics
     const metrics = result.metrics;
-    
+
     if (metrics.totalROI > 0.2) {
       patterns.push({ type: 'high_roi', description: 'Very high ROI achieved' });
     }
-    
+
     if (metrics.riskScore > 80) {
       patterns.push({ type: 'high_risk', description: 'Elevated risk levels' });
     }
-    
+
     if (metrics.privacyScore > 90) {
       patterns.push({ type: 'high_privacy', description: 'Excellent privacy protection' });
     }
-    
+
     if (metrics.efficiency > 85) {
       patterns.push({ type: 'high_efficiency', description: 'High operational efficiency' });
     }
-    
+
     return patterns;
   }
 
-  private extractPatternsFromResults(results: SimulationResult[]): Array<{ type: string; description: string }> {
+  private extractPatternsFromResults(
+    results: SimulationResult[]
+  ): Array<{ type: string; description: string }> {
     const allPatterns: Array<{ type: string; description: string }> = [];
-    
-    results.forEach(result => {
+
+    results.forEach((result) => {
       const patterns = this.extractScenarioPatterns(result);
       allPatterns.push(...patterns);
     });
-    
+
     return allPatterns;
   }
 
   private countPatternOccurrences(key: string, results: SimulationResult[]): number {
     let count = 0;
     const [type, description] = key.split('-');
-    
-    results.forEach(result => {
+
+    results.forEach((result) => {
       const patterns = this.extractScenarioPatterns(result);
-      if (patterns.some(p => p.type === type && p.description === description)) {
+      if (patterns.some((p) => p.type === type && p.description === description)) {
         count++;
       }
     });
-    
+
     return count;
   }
 
@@ -988,12 +1054,15 @@ export class HistoricalScenarioComparison {
     return 'low';
   }
 
-  private generatePatternRecommendations(type: string, description: string): string[] {
+  private generatePatternRecommendations(type: string, _description: string): string[] {
     const recommendations: string[] = [];
-    
+
     switch (type) {
       case 'high_roi':
-        recommendations.push('Analyze factors contributing to high ROI', 'Consider scaling successful approaches');
+        recommendations.push(
+          'Analyze factors contributing to high ROI',
+          'Consider scaling successful approaches'
+        );
         break;
       case 'high_risk':
         recommendations.push('Implement risk mitigation measures', 'Review privacy controls');
@@ -1007,7 +1076,7 @@ export class HistoricalScenarioComparison {
       default:
         recommendations.push('Monitor pattern evolution', 'Consider impact on planning');
     }
-    
+
     return recommendations;
   }
 
@@ -1021,27 +1090,27 @@ export class HistoricalScenarioComparison {
     const insights: ComparisonInsight[] = [];
 
     // Generate trend insights
-    trends.forEach(trend => {
+    trends.forEach((trend) => {
       if (trend.trend.strength === 'strong') {
         insights.push({
           type: 'trend',
           description: `Strong ${trend.trend.direction} trend detected in ${trend.metric}`,
           scenarios: [],
           impact: `${trend.trend.direction === 'increasing' ? 'Positive' : 'Negative'} impact on ${trend.metric}`,
-          recommendation: `Consider ${trend.trend.direction === 'increasing' ? 'leveraging' : 'addressing'} this trend in future planning`
+          recommendation: `Consider ${trend.trend.direction === 'increasing' ? 'leveraging' : 'addressing'} this trend in future planning`,
         });
       }
     });
 
     // Generate benchmark insights
-    benchmarks.forEach(benchmark => {
+    benchmarks.forEach((benchmark) => {
       if (benchmark.currentPercentile > 80) {
         insights.push({
           type: 'best_practice',
           description: `Outstanding performance in ${benchmark.metric} (${benchmark.currentPercentile.toFixed(1)}th percentile)`,
           scenarios: [],
           impact: 'Competitive advantage',
-          recommendation: 'Document and share best practices for this metric'
+          recommendation: 'Document and share best practices for this metric',
         });
       } else if (benchmark.currentPercentile < 20) {
         insights.push({
@@ -1049,20 +1118,20 @@ export class HistoricalScenarioComparison {
           description: `Significant improvement opportunity in ${benchmark.metric} (${benchmark.currentPercentile.toFixed(1)}th percentile)`,
           scenarios: [],
           impact: 'Performance gap',
-          recommendation: 'Focus improvement efforts on this metric'
+          recommendation: 'Focus improvement efforts on this metric',
         });
       }
     });
 
     // Generate pattern insights
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       if (pattern.type === 'emerging') {
         insights.push({
           type: 'opportunity',
           description: `Emerging pattern: ${pattern.description}`,
           scenarios: pattern.relatedScenarios,
           impact: 'New trend identified',
-          recommendation: 'Monitor and prepare for potential scaling'
+          recommendation: 'Monitor and prepare for potential scaling',
         });
       } else if (pattern.type === 'anomalous') {
         insights.push({
@@ -1070,7 +1139,7 @@ export class HistoricalScenarioComparison {
           description: `Anomalous pattern: ${pattern.description}`,
           scenarios: pattern.relatedScenarios,
           impact: 'Unusual behavior detected',
-          recommendation: 'Investigate root cause and monitor for recurrence'
+          recommendation: 'Investigate root cause and monitor for recurrence',
         });
       }
     });
@@ -1078,16 +1147,19 @@ export class HistoricalScenarioComparison {
     return insights;
   }
 
-  private generateHistoricalRecommendations(insights: ComparisonInsight[], patterns: PatternInsight[]): string[] {
+  private generateHistoricalRecommendations(
+    insights: ComparisonInsight[],
+    patterns: PatternInsight[]
+  ): string[] {
     const recommendations: string[] = [];
 
     // Generate recommendations based on insights
-    insights.forEach(insight => {
+    insights.forEach((insight) => {
       recommendations.push(insight.recommendation);
     });
 
     // Generate recommendations based on patterns
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       recommendations.push(...pattern.recommendations);
     });
 
@@ -1097,8 +1169,8 @@ export class HistoricalScenarioComparison {
 
   // Evolution analysis methods
   private getEvolutionPoints(scenarioId: string, timeRange?: number): EvolutionPoint[] {
-    const cutoffTime = timeRange ? Date.now() - (timeRange * 24 * 60 * 60 * 1000) : 0;
-    
+    const _cutoffTime = timeRange ? Date.now() - timeRange * 24 * 60 * 60 * 1000 : 0;
+
     // This would typically fetch historical versions of the scenario
     // For now, return a mock evolution
     return [
@@ -1108,28 +1180,40 @@ export class HistoricalScenarioComparison {
         metrics: this.generateMockMetrics(),
         changes: [],
         improvements: ['Initial baseline established'],
-        regressions: []
+        regressions: [],
       },
       {
         timestamp: Date.now() - 15 * 24 * 60 * 60 * 1000,
         version: '2.0',
         metrics: this.generateMockMetrics(),
         changes: [
-          { metric: 'totalROI', oldValue: 0.12, newValue: 0.15, changePercent: 25, significance: 'medium' }
+          {
+            metric: 'totalROI',
+            oldValue: 0.12,
+            newValue: 0.15,
+            changePercent: 25,
+            significance: 'medium',
+          },
         ],
         improvements: ['ROI increased by 25%'],
-        regressions: []
+        regressions: [],
       },
       {
         timestamp: Date.now(),
         version: '3.0',
         metrics: this.generateMockMetrics(),
         changes: [
-          { metric: 'riskScore', oldValue: 50, newValue: 40, changePercent: -20, significance: 'medium' }
+          {
+            metric: 'riskScore',
+            oldValue: 50,
+            newValue: 40,
+            changePercent: -20,
+            significance: 'medium',
+          },
         ],
         improvements: ['Risk reduced by 20%'],
-        regressions: []
-      }
+        regressions: [],
+      },
     ];
   }
 
@@ -1139,7 +1223,7 @@ export class HistoricalScenarioComparison {
         improvementRate: 0,
         stabilityScore: 0.5,
         adaptabilityScore: 0.5,
-        innovationIndex: 0.5
+        innovationIndex: 0.5,
       };
     }
 
@@ -1149,64 +1233,67 @@ export class HistoricalScenarioComparison {
     const improvementRate = (improvements - regressions) / evolutionPoints.length;
 
     // Calculate stability (inverse of volatility)
-    const metrics = evolutionPoints.map(point => point.metrics.totalROI);
+    const metrics = evolutionPoints.map((point) => point.metrics.totalROI);
     const mean = metrics.reduce((sum, val) => sum + val, 0) / metrics.length;
-    const variance = metrics.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / metrics.length;
-    const stabilityScore = Math.max(0, 1 - (Math.sqrt(variance) / mean));
+    const variance =
+      metrics.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / metrics.length;
+    const stabilityScore = Math.max(0, 1 - Math.sqrt(variance) / mean);
 
     // Calculate adaptability (based on number of changes)
     const totalChanges = evolutionPoints.reduce((sum, point) => sum + point.changes.length, 0);
     const adaptabilityScore = Math.min(1, totalChanges / evolutionPoints.length);
 
     // Calculate innovation index (based on significant changes)
-    const significantChanges = evolutionPoints.reduce((sum, point) => 
-      sum + point.changes.filter(c => c.significance === 'high').length, 0);
+    const significantChanges = evolutionPoints.reduce(
+      (sum, point) => sum + point.changes.filter((c) => c.significance === 'high').length,
+      0
+    );
     const innovationIndex = Math.min(1, significantChanges / evolutionPoints.length);
 
     return {
       improvementRate,
       stabilityScore,
       adaptabilityScore,
-      innovationIndex
+      innovationIndex,
     };
   }
 
   // Timeline analysis methods
   private generateTimeline(metric: string, timeRange: number): TimelineData[] {
     const results = this.getHistoricalResults(timeRange);
-    
-    return results.map(result => ({
+
+    return results.map((result) => ({
       timestamp: result.timestamp,
       scenarioId: result.scenarioId,
       scenarioName: this.historicalScenarios.get(result.scenarioId)?.name || 'Unknown',
       value: (result.metrics as any)[metric] || 0,
-      status: result.status
+      status: result.status,
     }));
   }
 
   private analyzeTimelineTrends(timeline: TimelineData[]): TrendAnalysis[] {
     // This would analyze trends across the timeline
     // For now, return a single trend analysis
-    const values = timeline.map(t => t.value);
+    const _values = timeline.map((t) => t.value);
     const trend = this.calculateTrendAnalysis(
-      timeline.map(t => ({
+      timeline.map((t) => ({
         timestamp: t.timestamp,
         value: t.value,
         scenarioId: t.scenarioId,
-        scenarioName: t.scenarioName
+        scenarioName: t.scenarioName,
       }))
     );
 
     return [trend];
   }
 
-  private recognizeTimelinePatterns(timeline: TimelineData[]): PatternInsight[] {
+  private recognizeTimelinePatterns(_timeline: TimelineData[]): PatternInsight[] {
     // This would recognize patterns in the timeline
     // For now, return empty array
     return [];
   }
 
-  private generateTimelineForecasts(timeline: TimelineData[]): ForecastData[] {
+  private generateTimelineForecasts(_timeline: TimelineData[]): ForecastData[] {
     // This would generate forecasts based on timeline data
     // For now, return empty array
     return [];
@@ -1219,7 +1306,7 @@ export class HistoricalScenarioComparison {
     reportType: string
   ): ReportSummary {
     const totalScenarios = scenarios.length;
-    const completedResults = results.filter(r => r.status === 'completed').length;
+    const completedResults = results.filter((r) => r.status === 'completed').length;
     const averageROI = results.reduce((sum, r) => sum + r.metrics.totalROI, 0) / results.length;
     const averageRisk = results.reduce((sum, r) => sum + r.metrics.riskScore, 0) / results.length;
 
@@ -1230,13 +1317,13 @@ export class HistoricalScenarioComparison {
       averageROI,
       averageRisk,
       generatedAt: Date.now(),
-      timeRange: this.config.timeRange
+      timeRange: this.config.timeRange,
     };
   }
 
   private async generateScenarioComparisons(
     scenarios: SimulationScenario[],
-    results: SimulationResult[]
+    _results: SimulationResult[]
   ): Promise<ScenarioComparison[]> {
     const comparisons: ScenarioComparison[] = [];
 
@@ -1254,22 +1341,22 @@ export class HistoricalScenarioComparison {
     return comparisons;
   }
 
-  private async analyzeComparativeTrends(results: SimulationResult[]): Promise<HistoricalTrend[]> {
+  private async analyzeComparativeTrends(_results: SimulationResult[]): Promise<HistoricalTrend[]> {
     // This would analyze trends across multiple results
     // For now, return empty array
     return [];
   }
 
-  private generateComparativeBenchmarks(results: SimulationResult[]): BenchmarkData[] {
+  private generateComparativeBenchmarks(_results: SimulationResult[]): BenchmarkData[] {
     // This would generate benchmarks for comparison
     // For now, return empty array
     return [];
   }
 
   private generateComparativeInsights(
-    comparisons: ScenarioComparison[],
-    trends: HistoricalTrend[],
-    benchmarks: BenchmarkData[]
+    _comparisons: ScenarioComparison[],
+    _trends: HistoricalTrend[],
+    _benchmarks: BenchmarkData[]
   ): ComparisonInsight[] {
     // This would generate insights from comparisons
     // For now, return empty array
@@ -1277,8 +1364,8 @@ export class HistoricalScenarioComparison {
   }
 
   private generateReportRecommendations(
-    insights: ComparisonInsight[],
-    reportType: string
+    _insights: ComparisonInsight[],
+    _reportType: string
   ): ReportRecommendation[] {
     // This would generate recommendations based on insights and report type
     // For now, return empty array
@@ -1300,12 +1387,12 @@ export class HistoricalScenarioComparison {
     return oldestKey;
   }
 
-  private updateTrends(result: SimulationResult): void {
+  private updateTrends(_result: SimulationResult): void {
     // Update trend analysis with new result
     // This would recalculate trends with the new data point
   }
 
-  private updatePatterns(result: SimulationResult): void {
+  private updatePatterns(_result: SimulationResult): void {
     // Update pattern recognition with new result
     // This would reanalyze patterns with the new data point
   }
@@ -1323,7 +1410,7 @@ export class HistoricalScenarioComparison {
       netPresentValue: 100000 + Math.random() * 50000,
       internalRateOfReturn: 0.15 + Math.random() * 0.1,
       paybackPeriod: 180 + Math.random() * 60,
-      breakEvenPoint: 165 + Math.random() * 45
+      breakEvenPoint: 165 + Math.random() * 45,
     };
   }
 
@@ -1347,7 +1434,7 @@ export class HistoricalScenarioComparison {
   public getPatterns(type?: string): PatternInsight[] {
     const patterns = Array.from(this.patterns.values());
     if (type) {
-      return patterns.filter(p => p.type === type);
+      return patterns.filter((p) => p.type === type);
     }
     return patterns;
   }

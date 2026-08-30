@@ -2,8 +2,8 @@ import {
   PrivacyMode,
   DifferentialPrivacyConfig,
   DPNoiseMechanism,
-  PrivacyBudgetConfig
-} from '@stellar/shared';
+  PrivacyBudgetConfig,
+} from "@stellar/shared";
 
 export interface PrivacyModeConfig {
   mode: PrivacyMode;
@@ -41,7 +41,7 @@ export class PrivacyModeManager {
       allowGroupByNoise: true,
       enableAdaptiveAllocation: false,
       minGroupSize: 5,
-      maxNoiseScale: Infinity
+      maxNoiseScale: Infinity,
     });
 
     configs.set(PrivacyMode.RELAXED, {
@@ -51,7 +51,7 @@ export class PrivacyModeManager {
       allowGroupByNoise: true,
       enableAdaptiveAllocation: true,
       minGroupSize: 3,
-      maxNoiseScale: 100
+      maxNoiseScale: 100,
     });
 
     return configs;
@@ -65,7 +65,9 @@ export class PrivacyModeManager {
     return this.currentMode;
   }
 
-  adaptConfigForMode(config: DifferentialPrivacyConfig): DifferentialPrivacyConfig {
+  adaptConfigForMode(
+    config: DifferentialPrivacyConfig,
+  ): DifferentialPrivacyConfig {
     const modeConfig = this.modeConfigs.get(this.currentMode);
     if (!modeConfig) {
       throw new Error(`Unsupported privacy mode: ${this.currentMode}`);
@@ -74,9 +76,11 @@ export class PrivacyModeManager {
     return {
       ...config,
       epsilon: config.epsilon * modeConfig.epsilonMultiplier,
-      sensitivity: config.sensitivity ? config.sensitivity * modeConfig.sensitivityMultiplier : undefined,
+      sensitivity: config.sensitivity
+        ? config.sensitivity * modeConfig.sensitivityMultiplier
+        : undefined,
       enableGroupByNoise: modeConfig.allowGroupByNoise,
-      mode: this.currentMode
+      mode: this.currentMode,
     };
   }
 
@@ -89,7 +93,8 @@ export class PrivacyModeManager {
     return {
       ...config,
       defaultEpsilon: config.defaultEpsilon * modeConfig.epsilonMultiplier,
-      maxEpsilonPerQuery: config.maxEpsilonPerQuery * modeConfig.epsilonMultiplier
+      maxEpsilonPerQuery:
+        config.maxEpsilonPerQuery * modeConfig.epsilonMultiplier,
     };
   }
 
@@ -113,28 +118,31 @@ export class PrivacyModeManager {
     return modeConfig?.maxNoiseScale ?? Infinity;
   }
 
-  validateModeTransition(newMode: PrivacyMode): { valid: boolean; warnings: string[] } {
+  validateModeTransition(newMode: PrivacyMode): {
+    valid: boolean;
+    warnings: string[];
+  } {
     const warnings: string[] = [];
 
     if (newMode === this.currentMode) {
-      return { valid: true, warnings: ['No mode change needed'] };
+      return { valid: true, warnings: ["No mode change needed"] };
     }
 
     const currentConfig = this.modeConfigs.get(this.currentMode);
     const newConfig = this.modeConfigs.get(newMode);
 
     if (!currentConfig || !newConfig) {
-      return { valid: false, warnings: ['Invalid mode configuration'] };
+      return { valid: false, warnings: ["Invalid mode configuration"] };
     }
 
     if (newMode === PrivacyMode.RELAXED) {
-      warnings.push('Switching to RELAXED mode reduces privacy guarantees');
-      warnings.push('Epsilon budget will be multiplied by 0.8');
-      warnings.push('Sensitivity calculations will be more conservative');
+      warnings.push("Switching to RELAXED mode reduces privacy guarantees");
+      warnings.push("Epsilon budget will be multiplied by 0.8");
+      warnings.push("Sensitivity calculations will be more conservative");
     } else if (newMode === PrivacyMode.STRICT) {
-      warnings.push('Switching to STRICT mode increases privacy protection');
-      warnings.push('May result in higher noise levels');
-      warnings.push('Group size requirements will be stricter');
+      warnings.push("Switching to STRICT mode increases privacy protection");
+      warnings.push("May result in higher noise levels");
+      warnings.push("Group size requirements will be stricter");
     }
 
     return { valid: true, warnings };
@@ -150,29 +158,32 @@ export class PrivacyModeManager {
       {
         mode: PrivacyMode.STRICT,
         config: this.modeConfigs.get(PrivacyMode.STRICT)!,
-        description: 'Maximum privacy protection with conservative parameters',
+        description: "Maximum privacy protection with conservative parameters",
         useCases: [
-          'Medical data analysis',
-          'Financial transactions',
-          'Personal identifiers',
-          'Regulatory compliance requirements'
-        ]
+          "Medical data analysis",
+          "Financial transactions",
+          "Personal identifiers",
+          "Regulatory compliance requirements",
+        ],
       },
       {
         mode: PrivacyMode.RELAXED,
         config: this.modeConfigs.get(PrivacyMode.RELAXED)!,
-        description: 'Balanced privacy with improved data utility',
+        description: "Balanced privacy with improved data utility",
         useCases: [
-          'Statistical research',
-          'Business analytics',
-          'A/B testing',
-          'Exploratory data analysis'
-        ]
-      }
+          "Statistical research",
+          "Business analytics",
+          "A/B testing",
+          "Exploratory data analysis",
+        ],
+      },
     ];
   }
 
-  updateModeConfig(mode: PrivacyMode, updates: Partial<PrivacyModeConfig>): void {
+  updateModeConfig(
+    mode: PrivacyMode,
+    updates: Partial<PrivacyModeConfig>,
+  ): void {
     const currentConfig = this.modeConfigs.get(mode);
     if (!currentConfig) {
       throw new Error(`Cannot update config for unknown mode: ${mode}`);
@@ -219,40 +230,41 @@ export class PrivacyModeManager {
     currentMode: PrivacyMode;
     modeConfig: PrivacyModeConfig;
     recommendations: string[];
-    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    riskLevel: "LOW" | "MEDIUM" | "HIGH";
   } {
     const modeConfig = this.modeConfigs.get(this.currentMode)!;
     const recommendations: string[] = [];
-    let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+    let riskLevel: "LOW" | "MEDIUM" | "HIGH" = "LOW";
 
     if (this.currentMode === PrivacyMode.RELAXED) {
-      recommendations.push('Consider using STRICT mode for sensitive data');
-      recommendations.push('Monitor privacy budget consumption closely');
-      riskLevel = 'MEDIUM';
+      recommendations.push("Consider using STRICT mode for sensitive data");
+      recommendations.push("Monitor privacy budget consumption closely");
+      riskLevel = "MEDIUM";
     } else {
-      recommendations.push('Privacy protection is maximized');
-      recommendations.push('Data utility may be reduced');
-      riskLevel = 'LOW';
+      recommendations.push("Privacy protection is maximized");
+      recommendations.push("Data utility may be reduced");
+      riskLevel = "LOW";
     }
 
     if (modeConfig.epsilonMultiplier < 0.5) {
-      recommendations.push('Epsilon budget is significantly reduced');
-      riskLevel = 'HIGH';
+      recommendations.push("Epsilon budget is significantly reduced");
+      riskLevel = "HIGH";
     }
 
     return {
       currentMode: this.currentMode,
       modeConfig,
       recommendations,
-      riskLevel
+      riskLevel,
     };
   }
 
   toggleMode(): PrivacyMode {
-    const newMode = this.currentMode === PrivacyMode.STRICT 
-      ? PrivacyMode.RELAXED 
-      : PrivacyMode.STRICT;
-    
+    const newMode =
+      this.currentMode === PrivacyMode.STRICT
+        ? PrivacyMode.RELAXED
+        : PrivacyMode.STRICT;
+
     this.setPrivacyMode(newMode);
     return newMode;
   }

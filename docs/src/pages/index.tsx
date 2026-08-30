@@ -1,18 +1,18 @@
-import { GetStaticProps } from 'next'
-import { motion } from 'framer-motion'
-import { SearchBar } from '@/components/search/SearchBar'
-import { LearningTracks } from '@/components/tracks/LearningTracks'
-import { QuickStart } from '@/components/home/QuickStart'
-import { FeaturedTopics } from '@/components/home/FeaturedTopics'
-import { RecentUpdates } from '@/components/home/RecentUpdates'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { GetStaticProps } from "next";
+import { motion } from "framer-motion";
+import { SearchBar } from "@/components/search/SearchBar";
+import { LearningTracks } from "@/components/tracks/LearningTracks";
+import { QuickStart } from "@/components/home/QuickStart";
+import { FeaturedTopics } from "@/components/home/FeaturedTopics";
+import { RecentUpdates } from "@/components/home/RecentUpdates";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <motion.div
@@ -27,8 +27,9 @@ export default function HomePage() {
             Documentation Portal
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Master differential privacy, secure multi-party computation, and zero-knowledge proofs 
-            with our comprehensive, beginner-friendly documentation.
+            Master differential privacy, secure multi-party computation, and
+            zero-knowledge proofs with our comprehensive, beginner-friendly
+            documentation.
           </p>
           <SearchBar />
         </motion.div>
@@ -81,7 +82,7 @@ export default function HomePage() {
 
       <Footer />
     </div>
-  )
+  );
 }
 
 export const getStaticProps: GetStaticProps = async () => {
@@ -91,5 +92,5 @@ export const getStaticProps: GetStaticProps = async () => {
       // Static props can be added here
     },
     revalidate: 3600, // Revalidate every hour
-  }
-}
+  };
+};

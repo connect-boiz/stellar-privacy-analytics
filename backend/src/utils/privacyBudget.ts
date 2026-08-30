@@ -1,10 +1,10 @@
-import { createClient, RedisClientType } from 'redis';
+import { createClient, RedisClientType } from "redis";
 import {
   PrivacyBudget,
   RedisPrivacyBudget,
   PrivacyBudgetConfig,
-  BudgetExhaustedException
-} from '@stellar/shared';
+  BudgetExhaustedException,
+} from "@stellar/shared";
 
 export class PrivacyBudgetManager {
   private redis: RedisClientType;
@@ -31,12 +31,15 @@ export class PrivacyBudgetManager {
     return `privacy_budget:${userId}:${datasetId}`;
   }
 
-  async initializeBudget(userId: string, datasetId: string): Promise<PrivacyBudget> {
+  async initializeBudget(
+    userId: string,
+    datasetId: string,
+  ): Promise<PrivacyBudget> {
     await this.connect();
-    
+
     const key = this.getBudgetKey(userId, datasetId);
     const existingBudget = await this.getBudget(userId, datasetId);
-    
+
     if (existingBudget) {
       return existingBudget;
     }
@@ -47,14 +50,14 @@ export class PrivacyBudgetManager {
       totalEpsilon: this.config.defaultEpsilon,
       remainingEpsilon: this.config.defaultEpsilon,
       lastUpdated: new Date(),
-      queriesCount: 0
+      queriesCount: 0,
     };
 
     await this.redis.hSet(key, {
       remainingEpsilon: newBudget.remainingEpsilon.toString(),
       totalEpsilon: newBudget.totalEpsilon.toString(),
       queriesCount: newBudget.queriesCount.toString(),
-      lastAccessed: Date.now().toString()
+      lastAccessed: Date.now().toString(),
     });
 
     await this.redis.expire(key, this.config.budgetResetInterval * 3600);
@@ -62,9 +65,12 @@ export class PrivacyBudgetManager {
     return newBudget;
   }
 
-  async getBudget(userId: string, datasetId: string): Promise<PrivacyBudget | null> {
+  async getBudget(
+    userId: string,
+    datasetId: string,
+  ): Promise<PrivacyBudget | null> {
     await this.connect();
-    
+
     const key = this.getBudgetKey(userId, datasetId);
     const budgetData = await this.redis.hGetAll(key);
 
@@ -75,17 +81,17 @@ export class PrivacyBudgetManager {
     return {
       userId,
       datasetId,
-      totalEpsilon: parseFloat(budgetData.totalEpsilon || '0'),
-      remainingEpsilon: parseFloat(budgetData.remainingEpsilon || '0'),
-      lastUpdated: new Date(parseInt(budgetData.lastAccessed || '0')),
-      queriesCount: parseInt(budgetData.queriesCount || '0')
+      totalEpsilon: parseFloat(budgetData.totalEpsilon || "0"),
+      remainingEpsilon: parseFloat(budgetData.remainingEpsilon || "0"),
+      lastUpdated: new Date(parseInt(budgetData.lastAccessed || "0")),
+      queriesCount: parseInt(budgetData.queriesCount || "0"),
     };
   }
 
   async consumeBudget(
     userId: string,
     datasetId: string,
-    epsilonRequested: number
+    epsilonRequested: number,
   ): Promise<PrivacyBudget> {
     await this.connect();
 
@@ -94,12 +100,12 @@ export class PrivacyBudgetManager {
         userId,
         datasetId,
         epsilonRequested,
-        this.config.maxEpsilonPerQuery
+        this.config.maxEpsilonPerQuery,
       );
     }
 
     const budget = await this.getBudget(userId, datasetId);
-    
+
     if (!budget) {
       await this.initializeBudget(userId, datasetId);
       return this.consumeBudget(userId, datasetId, epsilonRequested);
@@ -110,7 +116,7 @@ export class PrivacyBudgetManager {
         userId,
         datasetId,
         epsilonRequested,
-        budget.remainingEpsilon
+        budget.remainingEpsilon,
       );
     }
 
@@ -121,20 +127,20 @@ export class PrivacyBudgetManager {
     await this.redis.hSet(key, {
       remainingEpsilon: newRemainingEpsilon.toString(),
       queriesCount: newQueriesCount.toString(),
-      lastAccessed: Date.now().toString()
+      lastAccessed: Date.now().toString(),
     });
 
     return {
       ...budget,
       remainingEpsilon: newRemainingEpsilon,
       queriesCount: newQueriesCount,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
   async resetBudget(userId: string, datasetId: string): Promise<PrivacyBudget> {
     await this.connect();
-    
+
     const key = this.getBudgetKey(userId, datasetId);
     const resetBudget: PrivacyBudget = {
       userId,
@@ -142,14 +148,14 @@ export class PrivacyBudgetManager {
       totalEpsilon: this.config.defaultEpsilon,
       remainingEpsilon: this.config.defaultEpsilon,
       lastUpdated: new Date(),
-      queriesCount: 0
+      queriesCount: 0,
     };
 
     await this.redis.hSet(key, {
       remainingEpsilon: resetBudget.remainingEpsilon.toString(),
       totalEpsilon: resetBudget.totalEpsilon.toString(),
       queriesCount: resetBudget.queriesCount.toString(),
-      lastAccessed: Date.now().toString()
+      lastAccessed: Date.now().toString(),
     });
 
     await this.redis.expire(key, this.config.budgetResetInterval * 3600);
@@ -159,63 +165,69 @@ export class PrivacyBudgetManager {
 
   async getAllUserBudgets(userId: string): Promise<PrivacyBudget[]> {
     await this.connect();
-    
+
     const pattern = `privacy_budget:${userId}:*`;
     const keys = await this.redis.keys(pattern);
-    
+
     const budgets: PrivacyBudget[] = [];
-    
+
     for (const key of keys) {
-      const parts = key.split(':');
+      const parts = key.split(":");
       const datasetId = parts[2];
       const budget = await this.getBudget(userId, datasetId);
       if (budget) {
         budgets.push(budget);
       }
     }
-    
+
     return budgets;
   }
 
-  async getDatasetBudgetUsage(datasetId: string): Promise<{ totalEpsilon: number; usedEpsilon: number; userCount: number }> {
+  async getDatasetBudgetUsage(
+    datasetId: string,
+  ): Promise<{ totalEpsilon: number; usedEpsilon: number; userCount: number }> {
     await this.connect();
-    
+
     const pattern = `privacy_budget:*:${datasetId}`;
     const keys = await this.redis.keys(pattern);
-    
+
     let totalEpsilon = 0;
     let usedEpsilon = 0;
-    
+
     for (const key of keys) {
       const budgetData = await this.redis.hGetAll(key);
       if (Object.keys(budgetData).length) {
-        totalEpsilon += parseFloat(budgetData.totalEpsilon || '0');
-        usedEpsilon += (parseFloat(budgetData.totalEpsilon || '0') - parseFloat(budgetData.remainingEpsilon || '0'));
+        totalEpsilon += parseFloat(budgetData.totalEpsilon || "0");
+        usedEpsilon +=
+          parseFloat(budgetData.totalEpsilon || "0") -
+          parseFloat(budgetData.remainingEpsilon || "0");
       }
     }
-    
+
     return {
       totalEpsilon,
       usedEpsilon,
-      userCount: keys.length
+      userCount: keys.length,
     };
   }
 
   async checkBudgetAvailability(
     userId: string,
     datasetId: string,
-    epsilonRequired: number
+    epsilonRequired: number,
   ): Promise<boolean> {
     const budget = await this.getBudget(userId, datasetId);
-    
+
     if (!budget) {
       return epsilonRequired <= this.config.defaultEpsilon;
     }
-    
+
     return budget.remainingEpsilon >= epsilonRequired;
   }
 
-  async updateBudgetConfig(newConfig: Partial<PrivacyBudgetConfig>): Promise<void> {
+  async updateBudgetConfig(
+    newConfig: Partial<PrivacyBudgetConfig>,
+  ): Promise<void> {
     this.config = { ...this.config, ...newConfig };
   }
 

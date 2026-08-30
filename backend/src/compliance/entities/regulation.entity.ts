@@ -1,12 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-@Entity('regulations')
+@Entity("regulations")
 export class Regulation {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column()
-  name: 'GDPR' | 'CCPA' | 'HIPAA';
+  name: "GDPR" | "CCPA" | "HIPAA";
 
   @Column()
   description: string;

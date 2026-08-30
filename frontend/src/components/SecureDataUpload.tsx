@@ -10,13 +10,12 @@ import {
   X,
   FileText,
   Database,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from './ui/Modal';
 
 import { WebCryptoService, EncryptedFile, UploadProgress } from '../lib/webCrypto';
-import { ZKProofService, ZKProof } from '../lib/zkProof';
 import { StellarWalletService, StellarAccount, UploadReceipt } from '../lib/stellarWallet';
 
 interface SecureDataUploadProps {
@@ -28,21 +27,28 @@ interface SecureDataUploadProps {
 interface UploadState {
   isUploading: boolean;
   progress: UploadProgress | null;
-  stage: 'idle' | 'encrypting' | 'generating-proof' | 'uploading' | 'signing' | 'completed' | 'error';
+  stage:
+    | 'idle'
+    | 'encrypting'
+    | 'generating-proof'
+    | 'uploading'
+    | 'signing'
+    | 'completed'
+    | 'error';
   error?: string;
 }
 
 export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
   onUploadComplete,
   maxFileSize = 10 * 1024 * 1024 * 1024, // 10GB default
-  acceptedFormats = ['.csv', '.json', '.parquet']
+  acceptedFormats = ['.csv', '.json', '.parquet'],
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadState, setUploadState] = useState<UploadState>({
     isUploading: false,
     progress: null,
-    stage: 'idle'
+    stage: 'idle',
   });
   const [encryptionKey, setEncryptionKey] = useState<string>('');
   const [showReceipt, setShowReceipt] = useState<UploadReceipt | null>(null);
@@ -72,6 +78,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
     const files = Array.from(e.dataTransfer.files);
     handleFiles(files);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,10 +86,11 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
       const files = Array.from(e.target.files);
       handleFiles(files);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFiles = (files: File[]) => {
-    const validFiles = files.filter(file => {
+    const validFiles = files.filter((file) => {
       // Check file size
       if (file.size > maxFileSize) {
         toast.error(`File ${file.name} exceeds maximum size limit`);
@@ -99,7 +107,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
       return true;
     });
 
-    setSelectedFiles(prev => [...prev, ...validFiles]);
+    setSelectedFiles((prev) => [...prev, ...validFiles]);
 
     if (validFiles.length > 0) {
       toast.success(`${validFiles.length} file(s) added successfully`);
@@ -107,7 +115,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
   };
 
   const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const connectWallet = async () => {
@@ -142,14 +150,13 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
       setUploadState({ isUploading: false, progress: null, stage: 'completed' });
       toast.success('All files uploaded successfully');
-
     } catch (error) {
       console.error('Upload error:', error);
       setUploadState({
         isUploading: false,
         progress: null,
         stage: 'error',
-        error: error instanceof Error ? error.message : 'Upload failed'
+        error: error instanceof Error ? error.message : 'Upload failed',
       });
       toast.error('Upload failed');
     }
@@ -157,18 +164,14 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
   const processSingleFile = async (file: File) => {
     // Stage 1: Encrypt file
-    setUploadState(prev => ({ ...prev, stage: 'encrypting' }));
+    setUploadState((prev) => ({ ...prev, stage: 'encrypting' }));
 
-    const encryptedFile = await WebCryptoService.encryptFile(
-      file,
-      encryptionKey,
-      (progress) => {
-        setUploadState(prev => ({ ...prev, progress }));
-      }
-    );
+    const encryptedFile = await WebCryptoService.encryptFile(file, encryptionKey, (progress) => {
+      setUploadState((prev) => ({ ...prev, progress }));
+    });
 
     // Stage 2: Generate ZK-proof
-    setUploadState(prev => ({ ...prev, stage: 'generating-proof' }));
+    setUploadState((prev) => ({ ...prev, stage: 'generating-proof' }));
 
     const zkProof = await ZKProofService.generateFileIntegrityProof(
       file,
@@ -177,27 +180,24 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
     );
 
     // Stage 3: Simulate upload to storage (in real implementation, this would upload to IPFS/storage)
-    setUploadState(prev => ({ ...prev, stage: 'uploading' }));
+    setUploadState((prev) => ({ ...prev, stage: 'uploading' }));
 
     const dataCID = await simulateFileUpload(encryptedFile);
 
     // Stage 4: Sign transaction on Stellar
-    setUploadState(prev => ({ ...prev, stage: 'signing' }));
+    setUploadState((prev) => ({ ...prev, stage: 'signing' }));
 
-    const receipt = await StellarWalletService.signAndSubmitUploadTransaction(
-      stellarAccount!,
-      {
-        dataCID,
-        encryptedDataHash: encryptedFile.checksum,
-        zkProofHash: await ZKProofService.serializeProof(zkProof),
-        timestamp: Date.now(),
-        metadata: {
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type
-        }
-      }
-    );
+    const receipt = await StellarWalletService.signAndSubmitUploadTransaction(stellarAccount!, {
+      dataCID,
+      encryptedDataHash: encryptedFile.checksum,
+      zkProofHash: await ZKProofService.serializeProof(zkProof),
+      timestamp: Date.now(),
+      metadata: {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      },
+    });
 
     // Show receipt
     setShowReceipt(receipt);
@@ -213,16 +213,16 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
     while (uploaded < uploadSize) {
       uploaded = Math.min(uploaded + chunkSize, uploadSize);
 
-      setUploadState(prev => ({
+      setUploadState((prev) => ({
         ...prev,
         progress: {
           loaded: uploaded,
           total: uploadSize,
-          percentage: Math.round((uploaded / uploadSize) * 100)
-        }
+          percentage: Math.round((uploaded / uploadSize) * 100),
+        },
       }));
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Generate mock CID
@@ -289,10 +289,9 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
 
         {/* Drag and Drop Zone */}
         <div
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${isDragOver
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400'
-            } ${uploadState.isUploading ? 'pointer-events-none opacity-50' : ''}`}
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+            isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+          } ${uploadState.isUploading ? 'pointer-events-none opacity-50' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -423,9 +422,7 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
                 <span className="ml-2 font-medium text-gray-900">{getStageText()}</span>
               </div>
               {uploadState.progress && (
-                <span className="text-sm text-gray-500">
-                  {uploadState.progress.percentage}%
-                </span>
+                <span className="text-sm text-gray-500">{uploadState.progress.percentage}%</span>
               )}
             </div>
 
@@ -466,18 +463,24 @@ export const SecureDataUpload: React.FC<SecureDataUploadProps> = ({
         <div className="space-y-3">
           <div className="p-3 bg-green-50 rounded-lg">
             <CheckCircle className="h-5 w-5 text-green-600 mb-2" />
-            <p className="text-sm text-green-800">Your data has been securely uploaded to the Stellar blockchain</p>
+            <p className="text-sm text-green-800">
+              Your data has been securely uploaded to the Stellar blockchain
+            </p>
           </div>
 
           {showReceipt && (
             <div className="space-y-2 text-sm">
               <div>
                 <span className="font-medium text-gray-700">Transaction Hash:</span>
-                <div className="font-mono text-xs text-gray-600 break-all">{showReceipt.transactionHash}</div>
+                <div className="font-mono text-xs text-gray-600 break-all">
+                  {showReceipt.transactionHash}
+                </div>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Data CID:</span>
-                <div className="font-mono text-xs text-gray-600 break-all">{showReceipt.dataCID}</div>
+                <div className="font-mono text-xs text-gray-600 break-all">
+                  {showReceipt.dataCID}
+                </div>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Network:</span>

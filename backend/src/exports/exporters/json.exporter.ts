@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from "fs";
 
 export class JsonExporter {
   private path = `export-${Date.now()}.json`;
@@ -6,19 +6,19 @@ export class JsonExporter {
   private first = true;
 
   constructor() {
-    this.stream.write('[');
+    this.stream.write("[");
   }
 
   async write(rows: any[]) {
     for (const row of rows) {
-      if (!this.first) this.stream.write(',');
+      if (!this.first) this.stream.write(",");
       this.stream.write(JSON.stringify(row));
       this.first = false;
     }
   }
 
   async close() {
-    this.stream.write(']');
+    this.stream.write("]");
     this.stream.end();
     return this.path;
   }

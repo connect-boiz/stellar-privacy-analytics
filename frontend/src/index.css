@@ -18,7 +18,7 @@
   .btn-primary {
     @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
-  
+
   .btn-cyber {
     @apply bg-cyber-blue text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(0,240,255,0.4)] active:scale-95 disabled:opacity-50;
   }
@@ -26,7 +26,7 @@
   .btn-secondary {
     @apply bg-obsidian-200 text-obsidian-900 px-4 py-2 rounded-lg hover:bg-obsidian-300 transition-colors font-medium dark:bg-obsidian-800 dark:text-obsidian-100 dark:hover:bg-obsidian-700;
   }
-  
+
   .card {
     @apply bg-white rounded-xl shadow-lg p-6 dark:bg-obsidian-900 dark:border dark:border-obsidian-800;
   }
@@ -34,7 +34,7 @@
   .glass {
     @apply bg-white/70 backdrop-blur-md border border-white/20 dark:bg-obsidian-900/60 dark:border-obsidian-700/30;
   }
-  
+
   .input-field {
     @apply w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:bg-obsidian-800 dark:border-obsidian-700 dark:text-white dark:focus:ring-cyber-blue;
   }
@@ -59,3 +59,33 @@
   }
 }
 
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  a,
+  a:visited {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}

@@ -2,11 +2,11 @@
  * Compliance Status Monitoring Service
  */
 
-import { 
-  ComplianceStatus, 
-  ComplianceViolation, 
-  PrivacyMetric, 
-  DataAccessEvent 
+import {
+  ComplianceStatus,
+  ComplianceViolation,
+  PrivacyMetric,
+  DataAccessEvent,
 } from '../types/privacyMetrics';
 
 export interface ComplianceFramework {
@@ -115,7 +115,7 @@ export class ComplianceMonitor {
               description: 'Data must be encrypted both at rest and during transmission',
               type: 'technical',
               implementationStatus: 'implemented',
-              evidence: ['encryption-config', 'security-audit-2024']
+              evidence: ['encryption-config', 'security-audit-2024'],
             },
             {
               id: 'access-control',
@@ -123,11 +123,11 @@ export class ComplianceMonitor {
               description: 'Role-based access control with regular reviews',
               type: 'technical',
               implementationStatus: 'implemented',
-              evidence: ['rbac-config', 'access-review-2024']
-            }
+              evidence: ['rbac-config', 'access-review-2024'],
+            },
           ],
           weight: 0.3,
-          mandatory: true
+          mandatory: true,
         },
         {
           id: 'art25',
@@ -141,13 +141,13 @@ export class ComplianceMonitor {
               description: 'Automatic deletion of data after retention period',
               type: 'technical',
               implementationStatus: 'partial',
-              evidence: ['retention-policy-doc']
-            }
+              evidence: ['retention-policy-doc'],
+            },
           ],
           weight: 0.25,
-          mandatory: true
-        }
-      ]
+          mandatory: true,
+        },
+      ],
     };
 
     // CCPA Framework
@@ -168,13 +168,13 @@ export class ComplianceMonitor {
               description: 'Automated workflow for processing deletion requests',
               type: 'technical',
               implementationStatus: 'partial',
-              evidence: ['deletion-process-docs']
-            }
+              evidence: ['deletion-process-docs'],
+            },
           ],
           weight: 0.4,
-          mandatory: true
-        }
-      ]
+          mandatory: true,
+        },
+      ],
     };
 
     this.frameworks.set('GDPR', gdprFramework);
@@ -193,10 +193,10 @@ export class ComplianceMonitor {
           metric: 'access_frequency',
           operator: 'gt',
           threshold: 1000,
-          timeWindow: 3600000 // 1 hour
+          timeWindow: 3600000, // 1 hour
         },
         severity: 'medium',
-        action: 'alert'
+        action: 'alert',
       },
       {
         id: 'retention-policy',
@@ -208,11 +208,11 @@ export class ComplianceMonitor {
           metric: 'data_age',
           operator: 'gt',
           threshold: 2555, // 7 years in days
-          timeWindow: 86400000 // 24 hours
+          timeWindow: 86400000, // 24 hours
         },
         severity: 'high',
-        action: 'alert'
-      }
+        action: 'alert',
+      },
     ];
   }
 
@@ -232,8 +232,8 @@ export class ComplianceMonitor {
       requirements: [],
       violations: [],
       recommendations: [],
-      nextAssessment: Date.now() + (frameworkDef.assessmentFrequency * 24 * 60 * 60 * 1000),
-      assessor: 'system'
+      nextAssessment: Date.now() + frameworkDef.assessmentFrequency * 24 * 60 * 60 * 1000,
+      assessor: 'system',
     };
 
     // Assess each requirement
@@ -245,15 +245,17 @@ export class ComplianceMonitor {
       if (!assessment.categoryScores[requirement.category]) {
         assessment.categoryScores[requirement.category] = 0;
       }
-      assessment.categoryScores[requirement.category] += requirementStatus.score * requirement.weight;
+      assessment.categoryScores[requirement.category] +=
+        requirementStatus.score * requirement.weight;
     }
 
     // Calculate overall score
     const totalWeight = frameworkDef.requirements.reduce((sum, req) => sum + req.weight, 0);
-    assessment.overallScore = assessment.requirements.reduce((sum, req) => {
-      const requirement = frameworkDef.requirements.find(r => r.id === req.requirementId);
-      return sum + (req.score * (requirement?.weight || 0));
-    }, 0) / totalWeight;
+    assessment.overallScore =
+      assessment.requirements.reduce((sum, req) => {
+        const requirement = frameworkDef.requirements.find((r) => r.id === req.requirementId);
+        return sum + req.score * (requirement?.weight || 0);
+      }, 0) / totalWeight;
 
     // Generate recommendations
     assessment.recommendations = this.generateRecommendations(assessment);
@@ -267,9 +269,11 @@ export class ComplianceMonitor {
     return assessment;
   }
 
-  private async assessRequirement(requirement: ComplianceRequirement): Promise<ComplianceRequirementStatus> {
+  private async assessRequirement(
+    requirement: ComplianceRequirement
+  ): Promise<ComplianceRequirementStatus> {
     let totalScore = 0;
-    let implementedControls = 0;
+    let _implementedControls = 0;
     const gaps: string[] = [];
     const remediation: string[] = [];
 
@@ -279,7 +283,7 @@ export class ComplianceMonitor {
       switch (control.implementationStatus) {
         case 'implemented':
           controlScore = 100;
-          implementedControls++;
+          _implementedControls++;
           break;
         case 'partial':
           controlScore = 50;
@@ -295,7 +299,7 @@ export class ComplianceMonitor {
 
       // Check test results if available
       if (control.testResults) {
-        const testScores = control.testResults.map(test => test.score);
+        const testScores = control.testResults.map((test) => test.score);
         const avgTestScore = testScores.reduce((sum, score) => sum + score, 0) / testScores.length;
         controlScore = (controlScore + avgTestScore) / 2;
       }
@@ -303,7 +307,8 @@ export class ComplianceMonitor {
       totalScore += controlScore;
     }
 
-    const finalScore = requirement.controls.length > 0 ? totalScore / requirement.controls.length : 0;
+    const finalScore =
+      requirement.controls.length > 0 ? totalScore / requirement.controls.length : 0;
 
     let status: 'compliant' | 'non_compliant' | 'partial';
     if (finalScore >= 90) {
@@ -319,11 +324,14 @@ export class ComplianceMonitor {
       score: finalScore,
       status,
       gaps,
-      remediation
+      remediation,
     };
   }
 
-  public async monitorCompliance(metrics: PrivacyMetric[], accessEvents: DataAccessEvent[]): Promise<ComplianceViolation[]> {
+  public async monitorCompliance(
+    metrics: PrivacyMetric[],
+    accessEvents: DataAccessEvent[]
+  ): Promise<ComplianceViolation[]> {
     const violations: ComplianceViolation[] = [];
 
     for (const rule of this.monitoringRules) {
@@ -350,8 +358,8 @@ export class ComplianceMonitor {
 
     switch (condition.metric) {
       case 'access_frequency':
-        const recentAccess = accessEvents.filter(e => 
-          Date.now() - e.timestamp < condition.timeWindow
+        const recentAccess = accessEvents.filter(
+          (e) => Date.now() - e.timestamp < condition.timeWindow
         );
         actualValue = recentAccess.length;
         isViolation = this.evaluateCondition(actualValue, condition.operator, condition.threshold);
@@ -375,7 +383,7 @@ export class ComplianceMonitor {
         description,
         impact: `Potential compliance issue with ${rule.framework} - ${rule.name}`,
         remediation: `Review and address ${rule.name} according to ${rule.framework} requirements`,
-        status: 'open'
+        status: 'open',
       };
     }
 
@@ -384,13 +392,20 @@ export class ComplianceMonitor {
 
   private evaluateCondition(actual: number, operator: string, threshold: number): boolean {
     switch (operator) {
-      case 'gt': return actual > threshold;
-      case 'gte': return actual >= threshold;
-      case 'lt': return actual < threshold;
-      case 'lte': return actual <= threshold;
-      case 'eq': return actual === threshold;
-      case 'ne': return actual !== threshold;
-      default: return false;
+      case 'gt':
+        return actual > threshold;
+      case 'gte':
+        return actual >= threshold;
+      case 'lt':
+        return actual < threshold;
+      case 'lte':
+        return actual <= threshold;
+      case 'eq':
+        return actual === threshold;
+      case 'ne':
+        return actual !== threshold;
+      default:
+        return false;
     }
   }
 
@@ -408,7 +423,7 @@ export class ComplianceMonitor {
             description: `Address compliance gap for requirement ${requirementStatus.requirementId}`,
             effort: 'medium',
             impact: 'high',
-            dueDate: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
+            dueDate: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
           });
         }
       }
@@ -429,10 +444,12 @@ export class ComplianceMonitor {
 
       if (latestAssessment) {
         const frameworkDef = this.frameworks.get(fw)!;
-        
+
         for (const requirement of frameworkDef.requirements) {
-          const requirementStatus = latestAssessment.requirements.find(r => r.requirementId === requirement.id);
-          
+          const requirementStatus = latestAssessment.requirements.find(
+            (r) => r.requirementId === requirement.id
+          );
+
           if (requirementStatus) {
             statuses.push({
               id: `${fw}-${requirement.id}`,
@@ -445,7 +462,7 @@ export class ComplianceMonitor {
               nextAssessment: latestAssessment.nextAssessment,
               evidence: [],
               violations: [],
-              owner: 'compliance-team'
+              owner: 'compliance-team',
             });
           }
         }
@@ -455,20 +472,23 @@ export class ComplianceMonitor {
     return statuses;
   }
 
-  public getComplianceTrends(framework: string, days: number = 30): Array<{
+  public getComplianceTrends(
+    framework: string,
+    days: number = 30
+  ): Array<{
     date: number;
     score: number;
     violations: number;
   }> {
     const assessments = this.assessments.get(framework) || [];
-    const cutoffDate = Date.now() - (days * 24 * 60 * 60 * 1000);
-    
+    const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
+
     return assessments
-      .filter(a => a.timestamp > cutoffDate)
-      .map(a => ({
+      .filter((a) => a.timestamp > cutoffDate)
+      .map((a) => ({
         date: a.timestamp,
         score: a.overallScore,
-        violations: a.violations.length
+        violations: a.violations.length,
       }))
       .sort((a, b) => a.date - b.date);
   }
@@ -496,7 +516,7 @@ export class ComplianceMonitor {
   }
 
   public updateMonitoringRule(ruleId: string, updates: Partial<ComplianceMonitoringRule>): void {
-    const index = this.monitoringRules.findIndex(r => r.id === ruleId);
+    const index = this.monitoringRules.findIndex((r) => r.id === ruleId);
     if (index !== -1) {
       this.monitoringRules[index] = { ...this.monitoringRules[index], ...updates };
     }
@@ -550,21 +570,25 @@ export class ComplianceMonitor {
     for (const [framework, assessments] of this.assessments) {
       const latestAssessment = assessments[assessments.length - 1];
       if (latestAssessment) {
-        const criticalViolations = latestAssessment.violations.filter(v => v.severity === 'critical');
+        const criticalViolations = latestAssessment.violations.filter(
+          (v) => v.severity === 'critical'
+        );
         if (criticalViolations.length > 0) {
           riskFactors.push({
             factor: `${framework} Critical Violations`,
             level: 'critical',
-            description: `${criticalViolations.length} critical violations found`
+            description: `${criticalViolations.length} critical violations found`,
           });
         }
 
-        const nonCompliantRequirements = latestAssessment.requirements.filter(r => r.status === 'non_compliant');
+        const nonCompliantRequirements = latestAssessment.requirements.filter(
+          (r) => r.status === 'non_compliant'
+        );
         if (nonCompliantRequirements.length > 0) {
           riskFactors.push({
             factor: `${framework} Non-Compliant Requirements`,
             level: 'high',
-            description: `${nonCompliantRequirements.length} requirements are non-compliant`
+            description: `${nonCompliantRequirements.length} requirements are non-compliant`,
           });
         }
       }
@@ -572,10 +596,10 @@ export class ComplianceMonitor {
 
     // Determine overall risk level
     let overallRisk: 'low' | 'medium' | 'high' | 'critical' = 'low';
-    
-    if (riskFactors.some(f => f.level === 'critical')) {
+
+    if (riskFactors.some((f) => f.level === 'critical')) {
       overallRisk = 'critical';
-    } else if (riskFactors.some(f => f.level === 'high')) {
+    } else if (riskFactors.some((f) => f.level === 'high')) {
       overallRisk = 'high';
     } else if (overallScore < 70) {
       overallRisk = 'medium';
@@ -585,7 +609,7 @@ export class ComplianceMonitor {
 
     return {
       overallRisk,
-      riskFactors
+      riskFactors,
     };
   }
 }

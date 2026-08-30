@@ -1,5 +1,5 @@
 import React from 'react';
-import EncryptedSearch from './components/EncryptedSearch';
+import EncryptedSearch from '../components/EncryptedSearch';
 
 const SearchPage: React.FC = () => {
   return (

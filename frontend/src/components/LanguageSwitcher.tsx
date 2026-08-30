@@ -11,16 +11,17 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className = 
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentLanguage = supportedLanguages.find(lang => lang.code === i18n.language) || supportedLanguages[0];
+  const currentLanguage =
+    supportedLanguages.find((lang) => lang.code === i18n.language) || supportedLanguages[0];
 
   const handleLanguageChange = (languageCode: string) => {
     i18n.changeLanguage(languageCode);
     setIsOpen(false);
-    
+
     // Update document direction for RTL languages
     document.documentElement.dir = getDirection(languageCode);
     document.documentElement.lang = languageCode;
-    
+
     // Store preference
     localStorage.setItem('preferred-language', languageCode);
   };

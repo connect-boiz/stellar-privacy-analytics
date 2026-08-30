@@ -6,7 +6,7 @@ import {
   Plus,
   Trash2,
   Eye,
-  Save,
+  _Save,
   Play,
   AlertCircle,
   CheckCircle,
@@ -14,9 +14,9 @@ import {
   DollarSign,
   Star,
   ArrowRight,
-  Settings
+  Settings,
 } from 'lucide-react';
-import { AggregationType, AnalysisFilter } from '@stellar/shared/types/analytics';
+import { AggregationType } from '@stellar/shared/types/analytics';
 import { Modal } from './ui/Modal';
 
 interface DataField {
@@ -53,36 +53,36 @@ const mockDataFields: DataField[] = [
     name: 'User ID',
     type: 'string',
     description: 'Unique identifier for users',
-    sampleValues: ['user_123', 'user_456']
+    sampleValues: ['user_123', 'user_456'],
   },
   {
     id: 'transaction_amount',
     name: 'Transaction Amount',
     type: 'number',
     description: 'Amount of transaction in USD',
-    sampleValues: ['100.50', '250.00', '75.25']
+    sampleValues: ['100.50', '250.00', '75.25'],
   },
   {
     id: 'transaction_date',
     name: 'Transaction Date',
     type: 'date',
     description: 'Date when transaction occurred',
-    sampleValues: ['2024-01-15', '2024-01-16']
+    sampleValues: ['2024-01-15', '2024-01-16'],
   },
   {
     id: 'user_type',
     name: 'User Type',
     type: 'string',
     description: 'Category of user',
-    sampleValues: ['premium', 'basic', 'enterprise']
+    sampleValues: ['premium', 'basic', 'enterprise'],
   },
   {
     id: 'is_active',
     name: 'Active Status',
     type: 'boolean',
     description: 'Whether user is currently active',
-    sampleValues: ['true', 'false']
-  }
+    sampleValues: ['true', 'false'],
+  },
 ];
 
 const aggregationOptions = [
@@ -92,7 +92,7 @@ const aggregationOptions = [
   { value: AggregationType.MEDIAN, label: 'Median', description: 'Middle value' },
   { value: AggregationType.MIN, label: 'Minimum', description: 'Smallest value' },
   { value: AggregationType.MAX, label: 'Maximum', description: 'Largest value' },
-  { value: AggregationType.STD_DEV, label: 'Std Dev', description: 'Standard deviation' }
+  { value: AggregationType.STD_DEV, label: 'Std Dev', description: 'Standard deviation' },
 ];
 
 const filterOperators = [
@@ -103,12 +103,12 @@ const filterOperators = [
   { value: 'lt', label: 'Less Than', types: ['number', 'date'] },
   { value: 'lte', label: 'Less or Equal', types: ['number', 'date'] },
   { value: 'in', label: 'In List', types: ['string', 'number'] },
-  { value: 'contains', label: 'Contains', types: ['string'] }
+  { value: 'contains', label: 'Contains', types: ['string'] },
 ];
 
 export const QueryConstructor: React.FC = () => {
   const [querySteps, setQuerySteps] = useState<QueryStep[]>([]);
-  const [selectedField, setSelectedField] = useState<string>('');
+  const [_selectedField, setSelectedField] = useState<string>('');
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [favoriteQueries, setFavoriteQueries] = useState<FavoriteQuery[]>([]);
@@ -118,7 +118,7 @@ export const QueryConstructor: React.FC = () => {
 
   const calculatePrivacyCost = useCallback((steps: QueryStep[]) => {
     let cost = 0;
-    steps.forEach(step => {
+    steps.forEach((step) => {
       switch (step.type) {
         case 'select':
           cost += 0.1;
@@ -144,7 +144,7 @@ export const QueryConstructor: React.FC = () => {
       errors.push('Query must have at least one step');
     }
 
-    const hasSelect = steps.some(step => step.type === 'select');
+    const hasSelect = steps.some((step) => step.type === 'select');
     if (!hasSelect) {
       errors.push('Query must include at least one field selection');
     }
@@ -162,41 +162,48 @@ export const QueryConstructor: React.FC = () => {
     return errors.length === 0;
   }, []);
 
-  const addStep = useCallback((type: QueryStep['type'], field?: string) => {
-    const newStep: QueryStep = {
-      id: `step-${Date.now()}`,
-      type,
-      field: field || '',
-      label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${field || ''}`
-    };
+  const addStep = useCallback(
+    (type: QueryStep['type'], field?: string) => {
+      const newStep: QueryStep = {
+        id: `step-${Date.now()}`,
+        type,
+        field: field || '',
+        label: `${type.charAt(0).toUpperCase() + type.slice(1)} ${field || ''}`,
+      };
 
-    setQuerySteps(prev => {
-      const updated = [...prev, newStep];
-      setPrivacyCost(calculatePrivacyCost(updated));
-      validateQuery(updated);
-      return updated;
-    });
-  }, [calculatePrivacyCost, validateQuery]);
+      setQuerySteps((prev) => {
+        const updated = [...prev, newStep];
+        setPrivacyCost(calculatePrivacyCost(updated));
+        validateQuery(updated);
+        return updated;
+      });
+    },
+    [calculatePrivacyCost, validateQuery]
+  );
 
-  const removeStep = useCallback((stepId: string) => {
-    setQuerySteps(prev => {
-      const updated = prev.filter(step => step.id !== stepId);
-      setPrivacyCost(calculatePrivacyCost(updated));
-      validateQuery(updated);
-      return updated;
-    });
-  }, [calculatePrivacyCost, validateQuery]);
+  const removeStep = useCallback(
+    (stepId: string) => {
+      setQuerySteps((prev) => {
+        const updated = prev.filter((step) => step.id !== stepId);
+        setPrivacyCost(calculatePrivacyCost(updated));
+        validateQuery(updated);
+        return updated;
+      });
+    },
+    [calculatePrivacyCost, validateQuery]
+  );
 
-  const updateStep = useCallback((stepId: string, updates: Partial<QueryStep>) => {
-    setQuerySteps(prev => {
-      const updated = prev.map(step =>
-        step.id === stepId ? { ...step, ...updates } : step
-      );
-      setPrivacyCost(calculatePrivacyCost(updated));
-      validateQuery(updated);
-      return updated;
-    });
-  }, [calculatePrivacyCost, validateQuery]);
+  const updateStep = useCallback(
+    (stepId: string, updates: Partial<QueryStep>) => {
+      setQuerySteps((prev) => {
+        const updated = prev.map((step) => (step.id === stepId ? { ...step, ...updates } : step));
+        setPrivacyCost(calculatePrivacyCost(updated));
+        validateQuery(updated);
+        return updated;
+      });
+    },
+    [calculatePrivacyCost, validateQuery]
+  );
 
   const saveFavorite = useCallback(() => {
     if (!queryName.trim()) {
@@ -210,27 +217,29 @@ export const QueryConstructor: React.FC = () => {
       description: `Query with ${querySteps.length} steps`,
       steps: [...querySteps],
       privacyCost,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
-    setFavoriteQueries(prev => [...prev, favorite]);
+    setFavoriteQueries((prev) => [...prev, favorite]);
     setQueryName('');
     setValidationErrors([]);
   }, [queryName, querySteps, privacyCost]);
 
-  const loadFavorite = useCallback((favorite: FavoriteQuery) => {
-    setQuerySteps([...favorite.steps]);
-    setPrivacyCost(favorite.privacyCost);
-    validateQuery(favorite.steps);
-  }, [validateQuery]);
+  const loadFavorite = useCallback(
+    (favorite: FavoriteQuery) => {
+      setQuerySteps([...favorite.steps]);
+      setPrivacyCost(favorite.privacyCost);
+      validateQuery(favorite.steps);
+    },
+    [validateQuery]
+  );
 
   const executeQuery = useCallback(async () => {
     if (!validateQuery(querySteps)) {
       return;
     }
 
-    // Simulate query execution
-    console.log('Executing query:', querySteps);
+    // Execute query (simulated)
     // In real implementation, this would call the backend API
   }, [querySteps, validateQuery]);
 
@@ -246,8 +255,8 @@ export const QueryConstructor: React.FC = () => {
     e.preventDefault();
     if (!draggedStep || draggedStep === targetStepId) return;
 
-    const draggedIndex = querySteps.findIndex(step => step.id === draggedStep);
-    const targetIndex = querySteps.findIndex(step => step.id === targetStepId);
+    const draggedIndex = querySteps.findIndex((step) => step.id === draggedStep);
+    const targetIndex = querySteps.findIndex((step) => step.id === targetStepId);
 
     const newSteps = [...querySteps];
     const [removed] = newSteps.splice(draggedIndex, 1);
@@ -292,7 +301,7 @@ export const QueryConstructor: React.FC = () => {
                 <h2 className="text-lg font-semibold">Available Fields</h2>
               </div>
               <div className="space-y-2">
-                {mockDataFields.map(field => (
+                {mockDataFields.map((field) => (
                   <motion.div
                     key={field.id}
                     whileHover={{ scale: 1.02 }}
@@ -412,15 +421,19 @@ export const QueryConstructor: React.FC = () => {
                             {step.type === 'select' && (
                               <select
                                 value={step.field || ''}
-                                onChange={(e) => updateStep(step.id, {
-                                  field: e.target.value,
-                                  label: `Select ${e.target.value}`
-                                })}
+                                onChange={(e) =>
+                                  updateStep(step.id, {
+                                    field: e.target.value,
+                                    label: `Select ${e.target.value}`,
+                                  })
+                                }
                                 className="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Select field...</option>
-                                {mockDataFields.map(field => (
-                                  <option key={field.id} value={field.id}>{field.name}</option>
+                                {mockDataFields.map((field) => (
+                                  <option key={field.id} value={field.id}>
+                                    {field.name}
+                                  </option>
                                 ))}
                               </select>
                             )}
@@ -433,18 +446,24 @@ export const QueryConstructor: React.FC = () => {
                                   className="px-2 py-1 text-sm border border-gray-300 rounded-lg"
                                 >
                                   <option value="">Field...</option>
-                                  {mockDataFields.map(field => (
-                                    <option key={field.id} value={field.id}>{field.name}</option>
+                                  {mockDataFields.map((field) => (
+                                    <option key={field.id} value={field.id}>
+                                      {field.name}
+                                    </option>
                                   ))}
                                 </select>
                                 <select
                                   value={step.operator || ''}
-                                  onChange={(e) => updateStep(step.id, { operator: e.target.value })}
+                                  onChange={(e) =>
+                                    updateStep(step.id, { operator: e.target.value })
+                                  }
                                   className="px-2 py-1 text-sm border border-gray-300 rounded-lg"
                                 >
                                   <option value="">Op...</option>
-                                  {filterOperators.map(op => (
-                                    <option key={op.value} value={op.value}>{op.label}</option>
+                                  {filterOperators.map((op) => (
+                                    <option key={op.value} value={op.value}>
+                                      {op.label}
+                                    </option>
                                   ))}
                                 </select>
                                 <input
@@ -465,21 +484,29 @@ export const QueryConstructor: React.FC = () => {
                                   className="px-2 py-1 text-sm border border-gray-300 rounded-lg"
                                 >
                                   <option value="">Field...</option>
-                                  {mockDataFields.filter(f => f.type === 'number').map(field => (
-                                    <option key={field.id} value={field.id}>{field.name}</option>
-                                  ))}
+                                  {mockDataFields
+                                    .filter((f) => f.type === 'number')
+                                    .map((field) => (
+                                      <option key={field.id} value={field.id}>
+                                        {field.name}
+                                      </option>
+                                    ))}
                                 </select>
                                 <select
                                   value={step.aggregation || ''}
-                                  onChange={(e) => updateStep(step.id, {
-                                    aggregation: e.target.value as AggregationType,
-                                    label: `${e.target.value} of ${step.field || 'field'}`
-                                  })}
+                                  onChange={(e) =>
+                                    updateStep(step.id, {
+                                      aggregation: e.target.value as AggregationType,
+                                      label: `${e.target.value} of ${step.field || 'field'}`,
+                                    })
+                                  }
                                   className="px-2 py-1 text-sm border border-gray-300 rounded-lg"
                                 >
                                   <option value="">Function...</option>
-                                  {aggregationOptions.map(agg => (
-                                    <option key={agg.value} value={agg.value}>{agg.label}</option>
+                                  {aggregationOptions.map((agg) => (
+                                    <option key={agg.value} value={agg.value}>
+                                      {agg.label}
+                                    </option>
                                   ))}
                                 </select>
                               </div>
@@ -488,15 +515,19 @@ export const QueryConstructor: React.FC = () => {
                             {step.type === 'group' && (
                               <select
                                 value={step.field || ''}
-                                onChange={(e) => updateStep(step.id, {
-                                  field: e.target.value,
-                                  label: `Group by ${e.target.value}`
-                                })}
+                                onChange={(e) =>
+                                  updateStep(step.id, {
+                                    field: e.target.value,
+                                    label: `Group by ${e.target.value}`,
+                                  })
+                                }
                                 className="px-3 py-1 text-sm border border-gray-300 rounded-lg"
                               >
                                 <option value="">Select field...</option>
-                                {mockDataFields.map(field => (
-                                  <option key={field.id} value={field.id}>{field.name}</option>
+                                {mockDataFields.map((field) => (
+                                  <option key={field.id} value={field.id}>
+                                    {field.name}
+                                  </option>
                                 ))}
                               </select>
                             )}
@@ -568,7 +599,7 @@ export const QueryConstructor: React.FC = () => {
               <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
                 <h2 className="text-lg font-semibold mb-4">Favorite Queries</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {favoriteQueries.map(favorite => (
+                  {favoriteQueries.map((favorite) => (
                     <motion.div
                       key={favorite.id}
                       whileHover={{ scale: 1.02 }}
@@ -606,19 +637,27 @@ export const QueryConstructor: React.FC = () => {
             <div className="p-4 bg-gray-50 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">Generated Query</h4>
               <pre className="text-sm text-gray-700 overflow-x-auto">
-                {JSON.stringify({
-                  select: querySteps.filter(s => s.type === 'select').map(s => s.field),
-                  filter: querySteps.filter(s => s.type === 'filter').map(s => ({
-                    field: s.field,
-                    operator: s.operator,
-                    value: s.value
-                  })),
-                  aggregate: querySteps.filter(s => s.type === 'aggregate').map(s => ({
-                    field: s.field,
-                    function: s.aggregation
-                  })),
-                  groupBy: querySteps.filter(s => s.type === 'group').map(s => s.field)
-                }, null, 2)}
+                {JSON.stringify(
+                  {
+                    select: querySteps.filter((s) => s.type === 'select').map((s) => s.field),
+                    filter: querySteps
+                      .filter((s) => s.type === 'filter')
+                      .map((s) => ({
+                        field: s.field,
+                        operator: s.operator,
+                        value: s.value,
+                      })),
+                    aggregate: querySteps
+                      .filter((s) => s.type === 'aggregate')
+                      .map((s) => ({
+                        field: s.field,
+                        function: s.aggregation,
+                      })),
+                    groupBy: querySteps.filter((s) => s.type === 'group').map((s) => s.field),
+                  },
+                  null,
+                  2
+                )}
               </pre>
             </div>
 
@@ -631,9 +670,15 @@ export const QueryConstructor: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Risk Level:</span>
-                  <span className={`font-medium ${privacyCost < 2 ? 'text-green-600' :
-                      privacyCost < 5 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
+                  <span
+                    className={`font-medium ${
+                      privacyCost < 2
+                        ? 'text-green-600'
+                        : privacyCost < 5
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                    }`}
+                  >
                     {privacyCost < 2 ? 'Low' : privacyCost < 5 ? 'Medium' : 'High'}
                   </span>
                 </div>
@@ -650,7 +695,9 @@ export const QueryConstructor: React.FC = () => {
                 {querySteps.map((step, index) => (
                   <div key={step.id} className="flex items-center">
                     <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                    <span>Step {index + 1}: {step.label}</span>
+                    <span>
+                      Step {index + 1}: {step.label}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -77,7 +77,7 @@ export function useFormPersistence<T extends Record<string, unknown>>(
     onRecover,
     onAutoSave,
     expiryMs = 7 * 24 * 60 * 60 * 1000, // 7 days default
-    trackAbandonment = true
+    trackAbandonment = true,
   } = options;
 
   const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
@@ -89,7 +89,7 @@ export function useFormPersistence<T extends Record<string, unknown>>(
       if (stored) {
         const parsed: StoredFormData<T> = JSON.parse(stored);
         const savedAt = new Date(parsed.savedAt);
-        
+
         // Check if data has expired
         if (Date.now() - savedAt.getTime() < expiryMs) {
           if (onRecover) {
@@ -124,10 +124,12 @@ export function useFormPersistence<T extends Record<string, unknown>>(
         const parsed: StoredFormData<T> = JSON.parse(stored);
         return {
           savedAt: new Date(parsed.savedAt),
-          step: parsed.step || 0
+          step: parsed.step || 0,
         };
       }
-    } catch {}
+    } catch {
+      // Ignore invalid stored form metadata
+    }
     return null;
   });
   const [isAbandoned, setIsAbandoned] = useState(() => {
@@ -137,7 +139,9 @@ export function useFormPersistence<T extends Record<string, unknown>>(
         const parsed: StoredFormData<T> = JSON.parse(stored);
         return parsed.isAbandoned || false;
       }
-    } catch {}
+    } catch {
+      // Ignore invalid stored form metadata
+    }
     return false;
   });
 
@@ -149,21 +153,25 @@ export function useFormPersistence<T extends Record<string, unknown>>(
   const isDirty = JSON.stringify(values) !== JSON.stringify(defaultValuesRef.current);
 
   // Save to storage
-  const saveToStorage = useCallback((data: T, step?: number, abandoned?: boolean) => {
-    const toStore: StoredFormData<T> = {
-      values: data,
-      savedAt: new Date().toISOString(),
-      step,
-      isAbandoned: abandoned
-    };
-    storage.setItem(storageKey, JSON.stringify(toStore));
-    setLastSavedAt(new Date());
-    if (onAutoSave) {
-      onAutoSave(data);
-    }
-  }, [storage, storageKey, onAutoSave]);
+  const saveToStorage = useCallback(
+    (data: T, step?: number, abandoned?: boolean) => {
+      const toStore: StoredFormData<T> = {
+        values: data,
+        savedAt: new Date().toISOString(),
+        step,
+        isAbandoned: abandoned,
+      };
+      storage.setItem(storageKey, JSON.stringify(toStore));
+      setLastSavedAt(new Date());
+      if (onAutoSave) {
+        onAutoSave(data);
+      }
+    },
+    [storage, storageKey, onAutoSave]
+  );
 
   // Debounced auto-save
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSave = useCallback(
     debounce((data: T) => {
       setIsSaving(true);
@@ -192,7 +200,7 @@ export function useFormPersistence<T extends Record<string, unknown>>(
         // Mark as abandoned in storage
         saveToStorage(valuesRef.current, undefined, true);
         setIsAbandoned(true);
-        
+
         // Show confirmation dialog
         event.preventDefault();
         event.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
@@ -206,18 +214,19 @@ export function useFormPersistence<T extends Record<string, unknown>>(
 
   // Actions
   const setValues = useCallback((newValues: T | ((prev: T) => T)) => {
-    setValuesState(prev => {
-      const next = typeof newValues === 'function' ? (newValues as (prev: T) => T)(prev) : newValues;
+    setValuesState((prev) => {
+      const next =
+        typeof newValues === 'function' ? (newValues as (prev: T) => T)(prev) : newValues;
       return next;
     });
     setWasRecovered(false);
   }, []);
 
   const setFieldValue = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
-    setValuesState(prev => ({ ...prev, [field]: value }));
+    setValuesState((prev) => ({ ...prev, [field]: value }));
     setWasRecovered(false);
     // Clear error for this field
-    setErrors(prev => {
+    setErrors((prev) => {
       const next = { ...prev };
       delete next[field as string];
       return next;
@@ -271,7 +280,7 @@ export function useFormPersistence<T extends Record<string, unknown>>(
     lastSavedAt,
     isSaving,
     isAbandoned,
-    recoveryData
+    recoveryData,
   };
 
   const actions: FormPersistenceActions<T> = {
@@ -281,7 +290,7 @@ export function useFormPersistence<T extends Record<string, unknown>>(
     clear,
     reset,
     validate,
-    markSubmitted
+    markSubmitted,
   };
 
   return [state, actions];
@@ -317,20 +326,22 @@ export function useFormDrafts<T extends Record<string, unknown>>(prefix: string)
 
   const getDrafts = useCallback(() => {
     const keys = getDraftKeys();
-    return keys.map(key => {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          key,
-          savedAt: new Date(parsed.savedAt),
-          step: parsed.step,
-          isAbandoned: parsed.isAbandoned,
-          values: parsed.values as T
-        };
-      }
-      return null;
-    }).filter((draft): draft is NonNullable<typeof draft> => draft !== null);
+    return keys
+      .map((key) => {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return {
+            key,
+            savedAt: new Date(parsed.savedAt),
+            step: parsed.step,
+            isAbandoned: parsed.isAbandoned,
+            values: parsed.values as T,
+          };
+        }
+        return null;
+      })
+      .filter((draft): draft is NonNullable<typeof draft> => draft !== null);
   }, [getDraftKeys]);
 
   const clearDraft = useCallback((key: string) => {
@@ -339,13 +350,13 @@ export function useFormDrafts<T extends Record<string, unknown>>(prefix: string)
 
   const clearAllDrafts = useCallback(() => {
     const keys = getDraftKeys();
-    keys.forEach(key => localStorage.removeItem(key));
+    keys.forEach((key) => localStorage.removeItem(key));
   }, [getDraftKeys]);
 
   return {
     getDrafts,
     clearDraft,
-    clearAllDrafts
+    clearAllDrafts,
   };
 }
 

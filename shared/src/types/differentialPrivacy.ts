@@ -1,11 +1,11 @@
 export enum DPNoiseMechanism {
-  LAPLACE = 'laplace',
-  GAUSSIAN = 'gaussian'
+  LAPLACE = "laplace",
+  GAUSSIAN = "gaussian",
 }
 
 export enum PrivacyMode {
-  STRICT = 'strict',
-  RELAXED = 'relaxed'
+  STRICT = "strict",
+  RELAXED = "relaxed",
 }
 
 export interface DifferentialPrivacyConfig {
@@ -43,12 +43,12 @@ export interface SensitivityAnalysisResult {
 }
 
 export enum DPAggregationType {
-  COUNT = 'count',
-  SUM = 'sum',
-  AVERAGE = 'average',
-  MIN = 'min',
-  MAX = 'max',
-  VARIANCE = 'variance'
+  COUNT = "count",
+  SUM = "sum",
+  AVERAGE = "average",
+  MIN = "min",
+  MAX = "max",
+  VARIANCE = "variance",
 }
 
 export interface NoiseParameters {
@@ -79,10 +79,12 @@ export class BudgetExhaustedException extends Error {
     public userId: string,
     public datasetId: string,
     public requestedEpsilon: number,
-    public remainingEpsilon: number
+    public remainingEpsilon: number,
   ) {
-    super(`Privacy budget exhausted for user ${userId} on dataset ${datasetId}. Requested: ${requestedEpsilon}, Available: ${remainingEpsilon}`);
-    this.name = 'BudgetExhaustedException';
+    super(
+      `Privacy budget exhausted for user ${userId} on dataset ${datasetId}. Requested: ${requestedEpsilon}, Available: ${remainingEpsilon}`,
+    );
+    this.name = "BudgetExhaustedException";
   }
 }
 

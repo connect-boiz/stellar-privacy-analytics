@@ -3,22 +3,22 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-} from 'typeorm';
+} from "typeorm";
 
-export type ExportStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type ExportStatus = "pending" | "processing" | "completed" | "failed";
 
-@Entity('exports')
+@Entity("exports")
 export class ExportEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column()
   userId: string;
 
   @Column()
-  format: 'csv' | 'json' | 'parquet';
+  format: "csv" | "json" | "parquet";
 
-  @Column({ default: 'pending' })
+  @Column({ default: "pending" })
   status: ExportStatus;
 
   @Column({ nullable: true })

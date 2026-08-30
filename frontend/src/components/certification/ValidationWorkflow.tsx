@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { X, CheckCircle, AlertCircle, Clock, ExternalLink, FileText } from 'lucide-react';
+import { X, CheckCircle, Clock, ExternalLink, FileText } from 'lucide-react';
 import { Certification } from '../../services/certificationService';
 
 interface ValidationWorkflowProps {
@@ -9,11 +9,10 @@ interface ValidationWorkflowProps {
   onClose: () => void;
 }
 
-const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
-  certification,
-  onClose
-}) => {
-  const [selectedValidator, setSelectedValidator] = useState<'automated' | 'manual' | 'third_party'>('automated');
+const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({ certification, onClose }) => {
+  const [selectedValidator, setSelectedValidator] = useState<
+    'automated' | 'manual' | 'third_party'
+  >('automated');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validators = [
@@ -23,7 +22,7 @@ const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
       description: 'Quick automated compliance check using our AI-powered system',
       icon: CheckCircle,
       color: 'blue',
-      duration: '2-5 minutes'
+      duration: '2-5 minutes',
     },
     {
       type: 'manual' as const,
@@ -31,7 +30,7 @@ const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
       description: 'Detailed manual review by our privacy experts',
       icon: FileText,
       color: 'yellow',
-      duration: '1-2 business days'
+      duration: '1-2 business days',
     },
     {
       type: 'third_party' as const,
@@ -39,15 +38,15 @@ const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
       description: 'Independent third-party validation and certification',
       icon: ExternalLink,
       color: 'green',
-      duration: '3-5 business days'
-    }
+      duration: '3-5 business days',
+    },
   ];
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
       // Mock validation submission
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       toast.success(`Validation request submitted using ${selectedValidator} validator`);
       onClose();
     } catch (error) {
@@ -66,17 +65,12 @@ const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
       >
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Validation Workflow
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900">Validation Workflow</h2>
             <p className="text-gray-600 mt-1">
               Choose a validation method for {certification.certificationType} certification
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -120,11 +114,15 @@ const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
                 }`}
               >
                 <div className="flex items-center mb-3">
-                  <validator.icon className={`w-6 h-6 mr-2 ${
-                    validator.color === 'blue' ? 'text-blue-600' :
-                    validator.color === 'yellow' ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`} />
+                  <validator.icon
+                    className={`w-6 h-6 mr-2 ${
+                      validator.color === 'blue'
+                        ? 'text-blue-600'
+                        : validator.color === 'yellow'
+                          ? 'text-yellow-600'
+                          : 'text-green-600'
+                    }`}
+                  />
                   <h4 className="font-medium text-gray-900">{validator.name}</h4>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{validator.description}</p>
@@ -144,7 +142,7 @@ const ValidationWorkflow: React.FC<ValidationWorkflowProps> = ({
               'Initial compliance assessment',
               'Documentation review',
               'Technical validation',
-              'Final certification issuance'
+              'Final certification issuance',
             ].map((step, index) => (
               <div key={index} className="flex items-center">
                 <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mr-3">

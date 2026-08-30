@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events';
-import { logger } from '../../utils/logger';
+import { EventEmitter } from "events";
+import { logger } from "../../utils/logger";
 
 /**
  * Heartbeat Monitor for MPC participants
@@ -12,12 +12,16 @@ export class HeartbeatMonitor extends EventEmitter {
   private timeoutThreshold: number = 60000; // 60 seconds
   private monitoringInterval: any = null;
 
-  constructor(nodeId: string, heartbeatIntervalMs: number = 30000, timeoutThresholdMs: number = 60000) {
+  constructor(
+    nodeId: string,
+    heartbeatIntervalMs: number = 30000,
+    timeoutThresholdMs: number = 60000,
+  ) {
     super();
     this.nodeId = nodeId;
     this.heartbeatInterval = heartbeatIntervalMs;
     this.timeoutThreshold = timeoutThresholdMs;
-    
+
     logger.info(`Heartbeat monitor initialized for node ${nodeId}`);
   }
 
@@ -28,12 +32,12 @@ export class HeartbeatMonitor extends EventEmitter {
     if (!this.participants.has(participantId)) {
       this.participants.set(participantId, {
         id: participantId,
-        status: 'active',
+        status: "active",
         lastHeartbeat: new Date(),
         missedHeartbeats: 0,
-        totalHeartbeats: 0
+        totalHeartbeats: 0,
       });
-      
+
       logger.info(`Added participant ${participantId} to heartbeat monitoring`);
     }
   }
@@ -43,7 +47,9 @@ export class HeartbeatMonitor extends EventEmitter {
    */
   removeParticipant(participantId: string): void {
     if (this.participants.delete(participantId)) {
-      logger.info(`Removed participant ${participantId} from heartbeat monitoring`);
+      logger.info(
+        `Removed participant ${participantId} from heartbeat monitoring`,
+      );
     }
   }
 
@@ -59,7 +65,7 @@ export class HeartbeatMonitor extends EventEmitter {
       this.checkParticipants();
     }, this.heartbeatInterval);
 
-    logger.info('Heartbeat monitoring started');
+    logger.info("Heartbeat monitoring started");
   }
 
   /**
@@ -69,7 +75,7 @@ export class HeartbeatMonitor extends EventEmitter {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
-      logger.info('Heartbeat monitoring stopped');
+      logger.info("Heartbeat monitoring stopped");
     }
   }
 
@@ -82,9 +88,9 @@ export class HeartbeatMonitor extends EventEmitter {
       participant.lastHeartbeat = new Date();
       participant.totalHeartbeats++;
       participant.missedHeartbeats = 0;
-      participant.status = 'active';
-      
-      this.emit('heartbeatReceived', participantId);
+      participant.status = "active";
+
+      this.emit("heartbeatReceived", participantId);
       logger.debug(`Heartbeat received from ${participantId}`);
     }
   }
@@ -94,24 +100,25 @@ export class HeartbeatMonitor extends EventEmitter {
    */
   private checkParticipants(): void {
     const now = new Date();
-    
+
     for (const [participantId, participant] of this.participants) {
-      const timeSinceLastHeartbeat = now.getTime() - participant.lastHeartbeat.getTime();
-      
+      const timeSinceLastHeartbeat =
+        now.getTime() - participant.lastHeartbeat.getTime();
+
       if (timeSinceLastHeartbeat > this.timeoutThreshold) {
-        if (participant.status === 'active') {
-          participant.status = 'timeout';
+        if (participant.status === "active") {
+          participant.status = "timeout";
           participant.missedHeartbeats++;
-          
-          this.emit('participantTimeout', participantId);
+
+          this.emit("participantTimeout", participantId);
           logger.warn(`Participant ${participantId} timed out`);
         }
       } else if (timeSinceLastHeartbeat > this.heartbeatInterval) {
-        if (participant.status === 'active') {
-          participant.status = 'warning';
+        if (participant.status === "active") {
+          participant.status = "warning";
           participant.missedHeartbeats++;
-          
-          this.emit('participantWarning', participantId);
+
+          this.emit("participantWarning", participantId);
           logger.warn(`Participant ${participantId} missed heartbeat`);
         }
       }
@@ -136,7 +143,9 @@ export class HeartbeatMonitor extends EventEmitter {
    * Get active participants
    */
   getActiveParticipants(): ParticipantStatus[] {
-    return Array.from(this.participants.values()).filter(p => p.status === 'active');
+    return Array.from(this.participants.values()).filter(
+      (p) => p.status === "active",
+    );
   }
 
   /**
@@ -144,17 +153,17 @@ export class HeartbeatMonitor extends EventEmitter {
    */
   getStatistics(): HeartbeatStatistics {
     const participants = Array.from(this.participants.values());
-    const active = participants.filter(p => p.status === 'active').length;
-    const warning = participants.filter(p => p.status === 'warning').length;
-    const timeout = participants.filter(p => p.status === 'timeout').length;
-    
+    const active = participants.filter((p) => p.status === "active").length;
+    const warning = participants.filter((p) => p.status === "warning").length;
+    const timeout = participants.filter((p) => p.status === "timeout").length;
+
     return {
       totalParticipants: participants.length,
       activeParticipants: active,
       warningParticipants: warning,
       timeoutParticipants: timeout,
       heartbeatInterval: this.heartbeatInterval,
-      timeoutThreshold: this.timeoutThreshold
+      timeoutThreshold: this.timeoutThreshold,
     };
   }
 
@@ -164,7 +173,7 @@ export class HeartbeatMonitor extends EventEmitter {
   cleanup(): void {
     this.stopMonitoring();
     this.participants.clear();
-    logger.info('Heartbeat monitor cleaned up');
+    logger.info("Heartbeat monitor cleaned up");
   }
 }
 
@@ -173,7 +182,7 @@ export class HeartbeatMonitor extends EventEmitter {
  */
 interface ParticipantStatus {
   id: string;
-  status: 'active' | 'warning' | 'timeout' | 'disconnected';
+  status: "active" | "warning" | "timeout" | "disconnected";
   lastHeartbeat: Date;
   missedHeartbeats: number;
   totalHeartbeats: number;

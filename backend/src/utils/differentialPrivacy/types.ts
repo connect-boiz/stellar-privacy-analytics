@@ -1,11 +1,11 @@
 export enum NoiseDistribution {
-  LAPLACE = 'laplace',
-  GAUSSIAN = 'gaussian'
+  LAPLACE = "laplace",
+  GAUSSIAN = "gaussian",
 }
 
 export enum PrivacyMode {
-  STRICT = 'strict',
-  RELAXED = 'relaxed'
+  STRICT = "strict",
+  RELAXED = "relaxed",
 }
 
 export interface PrivacyBudget {
@@ -18,7 +18,7 @@ export interface PrivacyBudget {
 
 export interface QuerySensitivity {
   sensitivity: number;
-  type: 'count' | 'sum' | 'average' | 'max' | 'min';
+  type: "count" | "sum" | "average" | "max" | "min";
   groupBy?: string[];
 }
 
@@ -34,16 +34,19 @@ export class BudgetExhaustedException extends Error {
   constructor(
     message: string,
     public dataset: string,
-    public remainingBudget: number
+    public remainingBudget: number,
   ) {
     super(message);
-    this.name = 'BudgetExhaustedException';
+    this.name = "BudgetExhaustedException";
   }
 }
 
 export class InvalidQueryException extends Error {
-  constructor(message: string, public query: string) {
+  constructor(
+    message: string,
+    public query: string,
+  ) {
     super(message);
-    this.name = 'InvalidQueryException';
+    this.name = "InvalidQueryException";
   }
 }

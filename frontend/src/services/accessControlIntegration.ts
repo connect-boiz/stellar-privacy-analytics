@@ -3,16 +3,16 @@
  */
 
 import {
-  DatasetMetadata,
-  AccessMetadata,
+  _DatasetMetadata,
+  _AccessMetadata,
   AccessPermission,
   AccessRole,
   AccessPolicy,
   AccessRequest,
   AccessAudit,
   AccessRestriction,
-  PrivacyMetadata,
-  ComplianceFramework
+  _PrivacyMetadata,
+  _ComplianceFramework,
 } from '../types/dataCatalog';
 
 export interface AccessControlConfig {
@@ -125,7 +125,13 @@ export interface WorkflowStep {
 }
 
 export interface WorkflowAction {
-  type: 'send_email' | 'send_notification' | 'create_ticket' | 'update_permission' | 'log_audit' | 'custom';
+  type:
+    | 'send_email'
+    | 'send_notification'
+    | 'create_ticket'
+    | 'update_permission'
+    | 'log_audit'
+    | 'custom';
   parameters: Record<string, any>;
 }
 
@@ -284,7 +290,7 @@ export class AccessControlIntegration {
           integrationMode: 'standalone',
           externalSystems: [],
           defaultPolicies: [],
-          approvalWorkflows: []
+          approvalWorkflows: [],
         };
       }
       AccessControlIntegration.instance = new AccessControlIntegration(config);
@@ -304,7 +310,7 @@ export class AccessControlIntegration {
           resources: ['dataset:*'],
           principals: ['*'],
           actions: ['read'],
-          environments: ['*']
+          environments: ['*'],
         },
         rules: [
           {
@@ -315,11 +321,11 @@ export class AccessControlIntegration {
                 attribute: 'resource.privacy.level',
                 operator: 'equals',
                 value: 'public',
-                description: 'Resource must be public'
-              }
+                description: 'Resource must be public',
+              },
             ],
-            exceptions: []
-          }
+            exceptions: [],
+          },
         ],
         conditions: [],
         priority: 100,
@@ -327,7 +333,7 @@ export class AccessControlIntegration {
         createdAt: Date.now(),
         createdBy: 'system',
         lastModified: Date.now(),
-        modifiedBy: 'system'
+        modifiedBy: 'system',
       },
       {
         id: 'owner_full_access',
@@ -338,7 +344,7 @@ export class AccessControlIntegration {
           resources: ['dataset:*'],
           principals: ['*'],
           actions: ['*'],
-          environments: ['*']
+          environments: ['*'],
         },
         rules: [
           {
@@ -349,11 +355,11 @@ export class AccessControlIntegration {
                 attribute: 'user.id',
                 operator: 'equals',
                 value: 'resource.owner',
-                description: 'User must be the resource owner'
-              }
+                description: 'User must be the resource owner',
+              },
             ],
-            exceptions: []
-          }
+            exceptions: [],
+          },
         ],
         conditions: [],
         priority: 90,
@@ -361,7 +367,7 @@ export class AccessControlIntegration {
         createdAt: Date.now(),
         createdBy: 'system',
         lastModified: Date.now(),
-        modifiedBy: 'system'
+        modifiedBy: 'system',
       },
       {
         id: 'department_access',
@@ -372,7 +378,7 @@ export class AccessControlIntegration {
           resources: ['dataset:*'],
           principals: ['*'],
           actions: ['read', 'write'],
-          environments: ['*']
+          environments: ['*'],
         },
         rules: [
           {
@@ -383,17 +389,17 @@ export class AccessControlIntegration {
                 attribute: 'user.department',
                 operator: 'equals',
                 value: 'resource.department',
-                description: 'User must be in same department'
+                description: 'User must be in same department',
               },
               {
                 attribute: 'resource.privacy.level',
                 operator: 'in',
                 value: ['public', 'internal'],
-                description: 'Resource must be public or internal'
-              }
+                description: 'Resource must be public or internal',
+              },
             ],
-            exceptions: []
-          }
+            exceptions: [],
+          },
         ],
         conditions: [],
         priority: 80,
@@ -401,7 +407,7 @@ export class AccessControlIntegration {
         createdAt: Date.now(),
         createdBy: 'system',
         lastModified: Date.now(),
-        modifiedBy: 'system'
+        modifiedBy: 'system',
       },
       {
         id: 'restricted_approval',
@@ -412,7 +418,7 @@ export class AccessControlIntegration {
           resources: ['dataset:*'],
           principals: ['*'],
           actions: ['read', 'write'],
-          environments: ['*']
+          environments: ['*'],
         },
         rules: [
           {
@@ -423,8 +429,8 @@ export class AccessControlIntegration {
                 attribute: 'resource.privacy.level',
                 operator: 'in',
                 value: ['confidential', 'restricted'],
-                description: 'Resource must be confidential or restricted'
-              }
+                description: 'Resource must be confidential or restricted',
+              },
             ],
             exceptions: [
               {
@@ -432,13 +438,13 @@ export class AccessControlIntegration {
                   attribute: 'user.id',
                   operator: 'equals',
                   value: 'resource.owner',
-                  description: 'Owners bypass approval'
+                  description: 'Owners bypass approval',
                 },
                 effect: 'allow',
-                reason: 'Owner access'
-              }
-            ]
-          }
+                reason: 'Owner access',
+              },
+            ],
+          },
         ],
         conditions: [],
         priority: 70,
@@ -446,7 +452,7 @@ export class AccessControlIntegration {
         createdAt: Date.now(),
         createdBy: 'system',
         lastModified: Date.now(),
-        modifiedBy: 'system'
+        modifiedBy: 'system',
       },
       {
         id: 'deny_sensitive',
@@ -457,7 +463,7 @@ export class AccessControlIntegration {
           resources: ['dataset:*'],
           principals: ['*'],
           actions: ['*'],
-          environments: ['*']
+          environments: ['*'],
         },
         rules: [
           {
@@ -468,17 +474,17 @@ export class AccessControlIntegration {
                 attribute: 'resource.privacy.sensitivity',
                 operator: 'equals',
                 value: 'critical',
-                description: 'Resource has critical sensitivity'
+                description: 'Resource has critical sensitivity',
               },
               {
                 attribute: 'user.clearance',
                 operator: 'not_equals',
                 value: 'top_secret',
-                description: 'User does not have top secret clearance'
-              }
+                description: 'User does not have top secret clearance',
+              },
             ],
-            exceptions: []
-          }
+            exceptions: [],
+          },
         ],
         conditions: [],
         priority: 60,
@@ -486,11 +492,11 @@ export class AccessControlIntegration {
         createdAt: Date.now(),
         createdBy: 'system',
         lastModified: Date.now(),
-        modifiedBy: 'system'
-      }
+        modifiedBy: 'system',
+      },
     ];
 
-    defaultPolicies.forEach(policy => {
+    defaultPolicies.forEach((policy) => {
       this.policies.set(policy.id, policy);
     });
   }
@@ -508,9 +514,9 @@ export class AccessControlIntegration {
               attribute: 'resource.privacy.level',
               operator: 'in',
               value: ['confidential', 'restricted'],
-              description: 'Resource is confidential or restricted'
-            }
-          ]
+              description: 'Resource is confidential or restricted',
+            },
+          ],
         },
         steps: [
           {
@@ -524,12 +530,12 @@ export class AccessControlIntegration {
                 type: 'send_email',
                 parameters: {
                   template: 'access_request_approval',
-                  recipients: ['manager', 'requester']
-                }
-              }
+                  recipients: ['manager', 'requester'],
+                },
+              },
             ],
             timeout: 48,
-            required: true
+            required: true,
           },
           {
             id: 'owner_notification',
@@ -542,13 +548,13 @@ export class AccessControlIntegration {
                 type: 'send_notification',
                 parameters: {
                   message: 'Access request for your data has been approved',
-                  channel: 'slack'
-                }
-              }
+                  channel: 'slack',
+                },
+              },
             ],
             timeout: 24,
-            required: false
-          }
+            required: false,
+          },
         ],
         timeout: 72,
         autoApproveConditions: [
@@ -556,10 +562,10 @@ export class AccessControlIntegration {
             attribute: 'user.clearance',
             operator: 'equals',
             value: 'top_secret',
-            description: 'User has top secret clearance'
-          }
-        ]
-      }
+            description: 'User has top secret clearance',
+          },
+        ],
+      },
     ];
 
     // Store workflows (would be in a separate workflow service)
@@ -570,9 +576,12 @@ export class AccessControlIntegration {
     if (this.config.externalSystems.length === 0) return;
 
     // Sync with external systems periodically
-    setInterval(() => {
-      this.syncWithExternalSystems();
-    }, 60 * 60 * 1000); // Every hour
+    setInterval(
+      () => {
+        this.syncWithExternalSystems();
+      },
+      60 * 60 * 1000
+    ); // Every hour
   }
 
   // Main access control methods
@@ -609,7 +618,7 @@ export class AccessControlIntegration {
       // Cache decision
       if (this.config.cacheEnabled && decision.allowed) {
         const cacheKey = this.generateCacheKey(context);
-        const expiresAt = Date.now() + (this.config.cacheTTL * 1000);
+        const expiresAt = Date.now() + this.config.cacheTTL * 1000;
         this.cache.set(cacheKey, { ...decision, expiresAt });
       }
 
@@ -622,10 +631,9 @@ export class AccessControlIntegration {
       }
 
       return evaluation;
-
     } catch (error) {
       console.error('Access evaluation failed:', error);
-      
+
       const errorDecision: AccessDecision = {
         allowed: false,
         reason: 'Access evaluation error',
@@ -633,7 +641,7 @@ export class AccessControlIntegration {
         conditions: [],
         auditRequired: true,
         approvalRequired: false,
-        restrictions: []
+        restrictions: [],
       };
 
       return this.createEvaluation(context, errorDecision, startTime, false);
@@ -643,7 +651,7 @@ export class AccessControlIntegration {
   private getApplicablePolicies(context: AccessContext): AccessPolicy[] {
     const applicablePolicies: AccessPolicy[] = [];
 
-    this.policies.forEach(policy => {
+    this.policies.forEach((policy) => {
       if (!policy.enabled) return;
 
       // Check if policy applies to the context
@@ -663,26 +671,28 @@ export class AccessControlIntegration {
 
     // Check resource scope
     if (scope.resources.length > 0) {
-      const resourceMatches = scope.resources.some(pattern => 
-        this.matchesPattern(context.resource.id, pattern) ||
-        this.matchesPattern(context.resource.type, pattern)
+      const resourceMatches = scope.resources.some(
+        (pattern) =>
+          this.matchesPattern(context.resource.id, pattern) ||
+          this.matchesPattern(context.resource.type, pattern)
       );
       if (!resourceMatches) return false;
     }
 
     // Check principal scope
     if (scope.principals.length > 0) {
-      const principalMatches = scope.principals.some(pattern => 
-        this.matchesPattern(context.user.id, pattern) ||
-        context.user.roles.some(role => this.matchesPattern(role, pattern)) ||
-        context.user.groups.some(group => this.matchesPattern(group, pattern))
+      const principalMatches = scope.principals.some(
+        (pattern) =>
+          this.matchesPattern(context.user.id, pattern) ||
+          context.user.roles.some((role) => this.matchesPattern(role, pattern)) ||
+          context.user.groups.some((group) => this.matchesPattern(group, pattern))
       );
       if (!principalMatches) return false;
     }
 
     // Check action scope
     if (scope.actions.length > 0) {
-      const actionMatches = scope.actions.some(pattern => 
+      const actionMatches = scope.actions.some((pattern) =>
         this.matchesPattern(context.action, pattern)
       );
       if (!actionMatches) return false;
@@ -690,7 +700,7 @@ export class AccessControlIntegration {
 
     // Check environment scope
     if (scope.environments.length > 0) {
-      const environmentMatches = scope.environments.some(pattern => 
+      const environmentMatches = scope.environments.some((pattern) =>
         this.matchesPattern(context.environment, pattern)
       );
       if (!environmentMatches) return false;
@@ -708,7 +718,10 @@ export class AccessControlIntegration {
     return value === pattern;
   }
 
-  private async evaluatePolicies(policies: AccessPolicy[], context: AccessContext): Promise<AccessDecision> {
+  private async evaluatePolicies(
+    policies: AccessPolicy[],
+    context: AccessContext
+  ): Promise<AccessDecision> {
     let allowed = !this.config.enforceByDefault;
     let reason = '';
     const appliedPolicies: string[] = [];
@@ -724,7 +737,7 @@ export class AccessControlIntegration {
       approvalPolicies: 0,
       evaluationTime: 0,
       conflicts: [],
-      overrides: []
+      overrides: [],
     };
 
     for (const policy of policies) {
@@ -732,7 +745,7 @@ export class AccessControlIntegration {
 
       for (const rule of policy.rules) {
         const conditionsMet = await this.evaluateConditions(rule.conditions, context);
-        
+
         if (conditionsMet) {
           appliedPolicies.push(policy.id);
           appliedConditions.push(...rule.conditions);
@@ -756,7 +769,7 @@ export class AccessControlIntegration {
           }
 
           // Check for exceptions
-          const exceptionApplies = rule.exceptions.some(exception => 
+          const exceptionApplies = rule.exceptions.some((exception) =>
             this.evaluateCondition(exception.condition, context)
           );
 
@@ -783,15 +796,18 @@ export class AccessControlIntegration {
       expiresAt,
       restrictions: [],
       auditRequired: true,
-      approvalRequired
+      approvalRequired,
     };
   }
 
-  private async evaluateConditions(conditions: PolicyCondition[], context: AccessContext): Promise<boolean> {
+  private async evaluateConditions(
+    conditions: PolicyCondition[],
+    context: AccessContext
+  ): Promise<boolean> {
     if (conditions.length === 0) return true;
 
     for (const condition of conditions) {
-      if (!await this.evaluateCondition(condition, context)) {
+      if (!(await this.evaluateCondition(condition, context))) {
         return false;
       }
     }
@@ -799,20 +815,25 @@ export class AccessControlIntegration {
     return true;
   }
 
-  private async evaluateCondition(condition: PolicyCondition, context: AccessContext): Promise<boolean> {
+  private async evaluateCondition(
+    condition: PolicyCondition,
+    context: AccessContext
+  ): Promise<boolean> {
     const value = this.getAttributeValue(condition.attribute, context);
-    
+
     switch (condition.operator) {
       case 'equals':
         return value === condition.value;
       case 'not_equals':
         return value !== condition.value;
       case 'contains':
-        return Array.isArray(value) ? value.includes(condition.value) : 
-          String(value).includes(String(condition.value));
+        return Array.isArray(value)
+          ? value.includes(condition.value)
+          : String(value).includes(String(condition.value));
       case 'not_contains':
-        return Array.isArray(value) ? !value.includes(condition.value) : 
-          !String(value).includes(String(condition.value));
+        return Array.isArray(value)
+          ? !value.includes(condition.value)
+          : !String(value).includes(String(condition.value));
       case 'in':
         return Array.isArray(condition.value) ? condition.value.includes(value) : false;
       case 'not_in':
@@ -849,28 +870,30 @@ export class AccessControlIntegration {
     return value;
   }
 
-  private async checkApprovalRequirements(context: AccessContext, decision: AccessDecision): Promise<{ allowed: boolean; reason: string }> {
+  private async checkApprovalRequirements(
+    context: AccessContext,
+    decision: AccessDecision
+  ): Promise<{ allowed: boolean; reason: string }> {
     // Check if there's an existing approved request
     const existingRequest = await this.findExistingApprovalRequest(context);
     if (existingRequest && existingRequest.status === 'approved') {
       return {
         allowed: true,
-        reason: 'Access already approved'
+        reason: 'Access already approved',
       };
     }
 
     // Check auto-approval conditions
-    const autoApproveWorkflow = this.config.approvalWorkflows.find(wf => 
-      wf.trigger.type === 'access_request' &&
-      wf.autoApproveConditions.some(condition => 
-        this.evaluateCondition(condition, context)
-      )
+    const autoApproveWorkflow = this.config.approvalWorkflows.find(
+      (wf) =>
+        wf.trigger.type === 'access_request' &&
+        wf.autoApproveConditions.some((condition) => this.evaluateCondition(condition, context))
     );
 
     if (autoApproveWorkflow) {
       return {
         allowed: true,
-        reason: 'Auto-approved based on conditions'
+        reason: 'Auto-approved based on conditions',
       };
     }
 
@@ -879,29 +902,36 @@ export class AccessControlIntegration {
     if (request) {
       return {
         allowed: false,
-        reason: `Approval required. Request ID: ${request.id}`
+        reason: `Approval required. Request ID: ${request.id}`,
       };
     }
 
     return {
       allowed: false,
-      reason: 'Approval required but request creation failed'
+      reason: 'Approval required but request creation failed',
     };
   }
 
-  private async findExistingApprovalRequest(context: AccessContext): Promise<AccessRequest | undefined> {
+  private async findExistingApprovalRequest(
+    context: AccessContext
+  ): Promise<AccessRequest | undefined> {
     const requests = Array.from(this.requests.values());
-    
-    return requests.find(request => 
-      request.requester === context.user.id &&
-      request.resource === context.resource.id &&
-      request.actions.includes(context.action) &&
-      request.status === 'approved' &&
-      request.expiresAt && request.expiresAt > Date.now()
+
+    return requests.find(
+      (request) =>
+        request.requester === context.user.id &&
+        request.resource === context.resource.id &&
+        request.actions.includes(context.action) &&
+        request.status === 'approved' &&
+        request.expiresAt &&
+        request.expiresAt > Date.now()
     );
   }
 
-  private async createApprovalRequest(context: AccessContext, decision: AccessDecision): Promise<AccessRequest | undefined> {
+  private async createApprovalRequest(
+    context: AccessContext,
+    _decision: AccessDecision
+  ): Promise<AccessRequest | undefined> {
     const request: AccessRequest = {
       id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       requester: context.user.id,
@@ -912,7 +942,7 @@ export class AccessControlIntegration {
       duration: 7, // 7 days default
       status: 'pending',
       requestedAt: Date.now(),
-      accessGranted: false
+      accessGranted: false,
     };
 
     this.requests.set(request.id, request);
@@ -923,13 +953,15 @@ export class AccessControlIntegration {
     return request;
   }
 
-  private async triggerApprovalWorkflow(request: AccessRequest, context: AccessContext): Promise<void> {
+  private async triggerApprovalWorkflow(
+    request: AccessRequest,
+    context: AccessContext
+  ): Promise<void> {
     // Find applicable workflow
-    const workflow = this.config.approvalWorkflows.find(wf => 
-      wf.trigger.type === 'access_request' &&
-      wf.trigger.conditions.every(condition => 
-        this.evaluateCondition(condition, context)
-      )
+    const workflow = this.config.approvalWorkflows.find(
+      (wf) =>
+        wf.trigger.type === 'access_request' &&
+        wf.trigger.conditions.every((condition) => this.evaluateCondition(condition, context))
     );
 
     if (!workflow) return;
@@ -940,46 +972,57 @@ export class AccessControlIntegration {
     }
   }
 
-  private async executeWorkflowStep(step: WorkflowStep, request: AccessRequest, context: AccessContext): Promise<void> {
+  private async executeWorkflowStep(
+    step: WorkflowStep,
+    request: AccessRequest,
+    context: AccessContext
+  ): Promise<void> {
     switch (step.type) {
       case 'approval':
         // Would create approval task for assignee
-        console.log(`Creating approval task for ${step.assignee}`);
+        // Creating approval task for ${step.assignee}
         break;
       case 'notification':
         // Would send notification
-        step.actions.forEach(action => {
+        step.actions.forEach((action) => {
           this.executeWorkflowAction(action, request, context);
         });
         break;
       case 'verification':
         // Would perform verification
-        console.log(`Performing verification for step ${step.id}`);
+        // Performing verification for step ${step.id}
         break;
     }
   }
 
-  private executeWorkflowAction(action: WorkflowAction, request: AccessRequest, context: AccessContext): void {
+  private executeWorkflowAction(
+    action: WorkflowAction,
+    _request: AccessRequest,
+    _context: AccessContext
+  ): void {
     switch (action.type) {
       case 'send_email':
-        console.log(`Sending email with parameters:`, action.parameters);
+        // Sending email with parameters: action.parameters
         break;
       case 'send_notification':
-        console.log(`Sending notification with parameters:`, action.parameters);
+        // Sending notification with parameters: action.parameters
         break;
       case 'create_ticket':
-        console.log(`Creating ticket with parameters:`, action.parameters);
+        // Creating ticket with parameters: action.parameters
         break;
       case 'update_permission':
-        console.log(`Updating permission with parameters:`, action.parameters);
+        // Updating permission with parameters: action.parameters
         break;
       case 'log_audit':
-        console.log(`Logging audit with parameters:`, action.parameters);
+        // Logging audit with parameters: action.parameters
         break;
     }
   }
 
-  private async applyAccessRestrictions(context: AccessContext, decision: AccessDecision): Promise<AccessRestriction[]> {
+  private async applyAccessRestrictions(
+    context: AccessContext,
+    _decision: AccessDecision
+  ): Promise<AccessRestriction[]> {
     const restrictions: AccessRestriction[] = [];
 
     // Time-based restrictions
@@ -989,7 +1032,7 @@ export class AccessControlIntegration {
         description: 'Access restricted to specific hours',
         conditions: context.user.attributes.timeRestrictions.conditions,
         enforced: true,
-        bypassAllowed: false
+        bypassAllowed: false,
       });
     }
 
@@ -1000,7 +1043,7 @@ export class AccessControlIntegration {
         description: 'Access restricted to specific locations',
         conditions: context.user.attributes.geoRestrictions.conditions,
         enforced: true,
-        bypassAllowed: false
+        bypassAllowed: false,
       });
     }
 
@@ -1009,14 +1052,16 @@ export class AccessControlIntegration {
       restrictions.push({
         type: 'purpose_based',
         description: 'Access limited to specific purpose',
-        conditions: [{
-          type: 'purpose',
-          operator: 'equals',
-          value: context.requestMetadata.purpose,
-          description: 'Purpose must match'
-        }],
+        conditions: [
+          {
+            type: 'purpose',
+            operator: 'equals',
+            value: context.requestMetadata.purpose,
+            description: 'Purpose must match',
+          },
+        ],
         enforced: true,
-        bypassAllowed: false
+        bypassAllowed: false,
       });
     }
 
@@ -1025,24 +1070,31 @@ export class AccessControlIntegration {
       restrictions.push({
         type: 'custom',
         description: 'Data volume limit enforced',
-        conditions: [{
-          type: 'custom',
-          operator: 'less_than_or_equal',
-          value: context.resource.attributes.maxDataVolume,
-          description: 'Data volume must not exceed limit'
-        }],
+        conditions: [
+          {
+            type: 'custom',
+            operator: 'less_than_or_equal',
+            value: context.resource.attributes.maxDataVolume,
+            description: 'Data volume must not exceed limit',
+          },
+        ],
         enforced: true,
         bypassAllowed: true,
-        bypassReason: 'Manager approval required for volume override'
+        bypassReason: 'Manager approval required for volume override',
       });
     }
 
     return restrictions;
   }
 
-  private createEvaluation(context: AccessContext, decision: AccessDecision, startTime: number, fromCache: boolean): AccessEvaluation {
+  private createEvaluation(
+    context: AccessContext,
+    decision: AccessDecision,
+    startTime: number,
+    fromCache: boolean
+  ): AccessEvaluation {
     const evaluationTime = Date.now() - startTime;
-    
+
     const evaluation: EvaluationResult = {
       totalPolicies: decision.policies.length,
       matchedPolicies: decision.policies.length,
@@ -1051,7 +1103,7 @@ export class AccessControlIntegration {
       approvalPolicies: decision.approvalRequired ? 1 : 0,
       evaluationTime,
       conflicts: [],
-      overrides: []
+      overrides: [],
     };
 
     const audit: AuditEntry = {
@@ -1073,8 +1125,8 @@ export class AccessControlIntegration {
       metadata: {
         fromCache,
         approvalRequired: decision.approvalRequired,
-        restrictions: decision.restrictions.length
-      }
+        restrictions: decision.restrictions.length,
+      },
     };
 
     const recommendations = this.generateRecommendations(context, decision, evaluation);
@@ -1084,11 +1136,11 @@ export class AccessControlIntegration {
       decision,
       evaluation,
       audit,
-      recommendations
+      recommendations,
     };
   }
 
-  private calculateRiskScore(context: AccessContext, decision: AccessDecision): number {
+  private calculateRiskScore(context: AccessContext, _decision: AccessDecision): number {
     let riskScore = 0;
 
     // User risk factors
@@ -1122,7 +1174,11 @@ export class AccessControlIntegration {
     return Math.min(riskScore, 1.0);
   }
 
-  private generateRecommendations(context: AccessContext, decision: AccessDecision, evaluation: EvaluationResult): Recommendation[] {
+  private generateRecommendations(
+    context: AccessContext,
+    decision: AccessDecision,
+    evaluation: EvaluationResult
+  ): Recommendation[] {
     const recommendations: Recommendation[] = [];
 
     // Security recommendations
@@ -1135,12 +1191,13 @@ export class AccessControlIntegration {
         impact: 'Reduce access time for legitimate users',
         effort: 'medium',
         actions: ['Review approval criteria', 'Implement auto-approval rules'],
-        dueDate: Date.now() + (30 * 24 * 60 * 60 * 1000)
+        dueDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
       });
     }
 
     // Compliance recommendations
-    if (evaluation.evaluationTime > 1000) { // > 1 second
+    if (evaluation.evaluationTime > 1000) {
+      // > 1 second
       recommendations.push({
         type: 'compliance',
         priority: 'low',
@@ -1148,7 +1205,7 @@ export class AccessControlIntegration {
         description: 'Policy evaluation is taking longer than expected',
         impact: 'Improve system performance',
         effort: 'low',
-        actions: ['Review policy complexity', 'Enable caching optimizations']
+        actions: ['Review policy complexity', 'Enable caching optimizations'],
       });
     }
 
@@ -1161,7 +1218,7 @@ export class AccessControlIntegration {
         description: 'Large number of conditions may impact performance',
         impact: 'Faster access decisions',
         effort: 'low',
-        actions: ['Consolidate similar conditions', 'Use role-based access']
+        actions: ['Consolidate similar conditions', 'Use role-based access'],
       });
     }
 
@@ -1183,7 +1240,7 @@ export class AccessControlIntegration {
       ipAddress: evaluation.audit.ipAddress,
       userAgent: evaluation.audit.userAgent,
       sessionId: evaluation.audit.sessionId,
-      metadata: evaluation.audit.metadata
+      metadata: evaluation.audit.metadata,
     });
   }
 
@@ -1194,7 +1251,7 @@ export class AccessControlIntegration {
       action: context.action,
       environment: context.environment,
       userRoles: context.user.roles.sort(),
-      userGroups: context.user.groups.sort()
+      userGroups: context.user.groups.sort(),
     };
     return Buffer.from(JSON.stringify(key)).toString('base64');
   }
@@ -1212,8 +1269,8 @@ export class AccessControlIntegration {
   }
 
   private async syncWithSystem(system: ExternalSystemConfig): Promise<void> {
-    console.log(`Syncing with ${system.name}...`);
-    
+    // Syncing with ${system.name}...
+
     // Implementation would depend on system type
     switch (system.type) {
       case 'ldap':
@@ -1226,33 +1283,30 @@ export class AccessControlIntegration {
         await this.syncWithSAML(system);
         break;
       default:
-        console.log(`Sync not implemented for ${system.type}`);
+      // Sync not implemented for ${system.type}
     }
   }
 
-  private async syncWithLDAP(system: ExternalSystemConfig): Promise<void> {
+  private async syncWithLDAP(_system: ExternalSystemConfig): Promise<void> {
     // LDAP synchronization implementation
-    console.log('LDAP sync implementation');
   }
 
-  private async syncWithOAuth(system: ExternalSystemConfig): Promise<void> {
+  private async syncWithOAuth(_system: ExternalSystemConfig): Promise<void> {
     // OAuth synchronization implementation
-    console.log('OAuth sync implementation');
   }
 
-  private async syncWithSAML(system: ExternalSystemConfig): Promise<void> {
+  private async syncWithSAML(_system: ExternalSystemConfig): Promise<void> {
     // SAML synchronization implementation
-    console.log('SAML sync implementation');
   }
 
   // Permission management
   public async grantPermission(permission: AccessPermission): Promise<boolean> {
     try {
       this.permissions.set(permission.id, permission);
-      
+
       // Clear cache for affected users
       this.clearCacheForUser(permission.principal);
-      
+
       return true;
     } catch (error) {
       console.error('Failed to grant permission:', error);
@@ -1266,10 +1320,10 @@ export class AccessControlIntegration {
       if (!permission) return false;
 
       this.permissions.delete(permissionId);
-      
+
       // Clear cache for affected user
       this.clearCacheForUser(permission.principal);
-      
+
       return true;
     } catch (error) {
       console.error('Failed to revoke permission:', error);
@@ -1295,10 +1349,10 @@ export class AccessControlIntegration {
 
       const updatedRole = { ...role, ...updates, lastModified: Date.now() };
       this.roles.set(roleId, updatedRole);
-      
+
       // Clear cache for role members
-      role.members.forEach(member => this.clearCacheForUser(member));
-      
+      role.members.forEach((member) => this.clearCacheForUser(member));
+
       return true;
     } catch (error) {
       console.error('Failed to update role:', error);
@@ -1312,10 +1366,10 @@ export class AccessControlIntegration {
       if (!role) return false;
 
       this.roles.delete(roleId);
-      
+
       // Clear cache for role members
-      role.members.forEach(member => this.clearCacheForUser(member));
-      
+      role.members.forEach((member) => this.clearCacheForUser(member));
+
       return true;
     } catch (error) {
       console.error('Failed to delete role:', error);
@@ -1324,19 +1378,25 @@ export class AccessControlIntegration {
   }
 
   // Request management
-  public async createAccessRequest(request: Omit<AccessRequest, 'id' | 'requestedAt' | 'status'>): Promise<AccessRequest> {
+  public async createAccessRequest(
+    request: Omit<AccessRequest, 'id' | 'requestedAt' | 'status'>
+  ): Promise<AccessRequest> {
     const newRequest: AccessRequest = {
       ...request,
       id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       requestedAt: Date.now(),
-      status: 'pending'
+      status: 'pending',
     };
 
     this.requests.set(newRequest.id, newRequest);
     return newRequest;
   }
 
-  public async approveRequest(requestId: string, reviewer: string, comments?: string): Promise<boolean> {
+  public async approveRequest(
+    requestId: string,
+    reviewer: string,
+    comments?: string
+  ): Promise<boolean> {
     try {
       const request = this.requests.get(requestId);
       if (!request) return false;
@@ -1357,21 +1417,24 @@ export class AccessControlIntegration {
         conditions: [],
         grantedAt: Date.now(),
         grantedBy: reviewer,
-        expiresAt: Date.now() + (request.duration * 24 * 60 * 60 * 1000),
+        expiresAt: Date.now() + request.duration * 24 * 60 * 60 * 1000,
         status: 'active',
-        justification: `Approved via request ${requestId}`
+        justification: `Approved via request ${requestId}`,
       };
 
       await this.grantPermission(permission);
       return true;
-
     } catch (error) {
       console.error('Failed to approve request:', error);
       return false;
     }
   }
 
-  public async rejectRequest(requestId: string, reviewer: string, reason: string): Promise<boolean> {
+  public async rejectRequest(
+    requestId: string,
+    reviewer: string,
+    reason: string
+  ): Promise<boolean> {
     try {
       const request = this.requests.get(requestId);
       if (!request) return false;
@@ -1382,7 +1445,6 @@ export class AccessControlIntegration {
       request.reviewComments = reason;
 
       return true;
-
     } catch (error) {
       console.error('Failed to reject request:', error);
       return false;
@@ -1428,35 +1490,38 @@ export class AccessControlIntegration {
   }
 
   // Audit and reporting
-  public getAuditLogs(limit?: number, filters?: {
-    userId?: string;
-    action?: string;
-    resource?: string;
-    result?: 'allow' | 'deny' | 'error';
-    startTime?: number;
-    endTime?: number;
-  }): AccessAudit[] {
+  public getAuditLogs(
+    limit?: number,
+    filters?: {
+      userId?: string;
+      action?: string;
+      resource?: string;
+      result?: 'allow' | 'deny' | 'error';
+      startTime?: number;
+      endTime?: number;
+    }
+  ): AccessAudit[] {
     let logs = [...this.audits];
 
     // Apply filters
     if (filters) {
       if (filters.userId) {
-        logs = logs.filter(log => log.user === filters.userId);
+        logs = logs.filter((log) => log.user === filters.userId);
       }
       if (filters.action) {
-        logs = logs.filter(log => log.action === filters.action);
+        logs = logs.filter((log) => log.action === filters.action);
       }
       if (filters.resource) {
-        logs = logs.filter(log => log.resource === filters.resource);
+        logs = logs.filter((log) => log.resource === filters.resource);
       }
       if (filters.result) {
-        logs = logs.filter(log => log.result === filters.result);
+        logs = logs.filter((log) => log.result === filters.result);
       }
       if (filters.startTime) {
-        logs = logs.filter(log => log.timestamp >= filters.startTime!);
+        logs = logs.filter((log) => log.timestamp >= filters.startTime!);
       }
       if (filters.endTime) {
-        logs = logs.filter(log => log.timestamp <= filters.endTime!);
+        logs = logs.filter((log) => log.timestamp <= filters.endTime!);
       }
     }
 
@@ -1475,7 +1540,7 @@ export class AccessControlIntegration {
   } {
     const logs = this.getAuditLogs(undefined, {
       startTime: timeRange.start,
-      endTime: timeRange.end
+      endTime: timeRange.end,
     });
 
     const summary = this.generateAccessSummary(logs);
@@ -1489,17 +1554,17 @@ export class AccessControlIntegration {
       topUsers,
       topResources,
       deniedAttempts,
-      recommendations
+      recommendations,
     };
   }
 
   private generateAccessSummary(logs: AccessAudit[]): AccessReportSummary {
     const totalRequests = logs.length;
-    const allowedRequests = logs.filter(log => log.result === 'allow').length;
-    const deniedRequests = logs.filter(log => log.result === 'deny').length;
-    const errorRequests = logs.filter(log => log.result === 'error').length;
-    const uniqueUsers = new Set(logs.map(log => log.user)).size;
-    const uniqueResources = new Set(logs.map(log => log.resource)).size;
+    const allowedRequests = logs.filter((log) => log.result === 'allow').length;
+    const deniedRequests = logs.filter((log) => log.result === 'deny').length;
+    const errorRequests = logs.filter((log) => log.result === 'error').length;
+    const uniqueUsers = new Set(logs.map((log) => log.user)).size;
+    const uniqueResources = new Set(logs.map((log) => log.resource)).size;
     const avgResponseTime = logs.reduce((sum, log) => sum + log.duration, 0) / logs.length;
 
     return {
@@ -1512,27 +1577,30 @@ export class AccessControlIntegration {
       avgResponseTime,
       allowRate: totalRequests > 0 ? (allowedRequests / totalRequests) * 100 : 0,
       denyRate: totalRequests > 0 ? (deniedRequests / totalRequests) * 100 : 0,
-      errorRate: totalRequests > 0 ? (errorRequests / totalRequests) * 100 : 0
+      errorRate: totalRequests > 0 ? (errorRequests / totalRequests) * 100 : 0,
     };
   }
 
   private generateTopUsers(logs: AccessAudit[]): UserAccessSummary[] {
-    const userStats = new Map<string, {
-      requests: number;
-      allowed: number;
-      denied: number;
-      avgResponseTime: number;
-      riskScore: number;
-    }>();
+    const userStats = new Map<
+      string,
+      {
+        requests: number;
+        allowed: number;
+        denied: number;
+        avgResponseTime: number;
+        riskScore: number;
+      }
+    >();
 
-    logs.forEach(log => {
+    logs.forEach((log) => {
       if (!userStats.has(log.user)) {
         userStats.set(log.user, {
           requests: 0,
           allowed: 0,
           denied: 0,
           avgResponseTime: 0,
-          riskScore: 0
+          riskScore: 0,
         });
       }
 
@@ -1553,7 +1621,7 @@ export class AccessControlIntegration {
         denied: stats.denied,
         avgResponseTime: stats.avgResponseTime / stats.requests,
         riskScore: stats.riskScore / stats.requests,
-        allowRate: (stats.allowed / stats.requests) * 100
+        allowRate: (stats.allowed / stats.requests) * 100,
       });
     });
 
@@ -1561,20 +1629,23 @@ export class AccessControlIntegration {
   }
 
   private generateTopResources(logs: AccessAudit[]): ResourceAccessSummary[] {
-    const resourceStats = new Map<string, {
-      requests: number;
-      allowed: number;
-      denied: number;
-      uniqueUsers: Set<string>;
-    }>();
+    const resourceStats = new Map<
+      string,
+      {
+        requests: number;
+        allowed: number;
+        denied: number;
+        uniqueUsers: Set<string>;
+      }
+    >();
 
-    logs.forEach(log => {
+    logs.forEach((log) => {
       if (!resourceStats.has(log.resource)) {
         resourceStats.set(log.resource, {
           requests: 0,
           allowed: 0,
           denied: 0,
-          uniqueUsers: new Set()
+          uniqueUsers: new Set(),
         });
       }
 
@@ -1593,7 +1664,7 @@ export class AccessControlIntegration {
         allowed: stats.allowed,
         denied: stats.denied,
         uniqueUsers: stats.uniqueUsers.size,
-        allowRate: (stats.allowed / stats.requests) * 100
+        allowRate: (stats.allowed / stats.requests) * 100,
       });
     });
 
@@ -1601,10 +1672,10 @@ export class AccessControlIntegration {
   }
 
   private generateDeniedAttempts(logs: AccessAudit[]): DeniedAttemptSummary[] {
-    const deniedLogs = logs.filter(log => log.result === 'deny');
+    const deniedLogs = logs.filter((log) => log.result === 'deny');
     const reasonStats = new Map<string, number>();
 
-    deniedLogs.forEach(log => {
+    deniedLogs.forEach((log) => {
       const reason = log.reason || 'Unknown';
       reasonStats.set(reason, (reasonStats.get(reason) || 0) + 1);
     });
@@ -1614,7 +1685,7 @@ export class AccessControlIntegration {
       summaries.push({
         reason,
         count,
-        percentage: (count / deniedLogs.length) * 100
+        percentage: (count / deniedLogs.length) * 100,
       });
     });
 
@@ -1624,7 +1695,7 @@ export class AccessControlIntegration {
   private generateAccessRecommendations(logs: AccessAudit[]): string[] {
     const recommendations: string[] = [];
 
-    const denyRate = (logs.filter(log => log.result === 'deny').length / logs.length) * 100;
+    const denyRate = (logs.filter((log) => log.result === 'deny').length / logs.length) * 100;
     if (denyRate > 20) {
       recommendations.push('High deny rate detected. Review access policies and user training.');
     }
@@ -1634,7 +1705,7 @@ export class AccessControlIntegration {
       recommendations.push('Slow response times detected. Consider optimizing policy evaluation.');
     }
 
-    const errorRate = (logs.filter(log => log.result === 'error').length / logs.length) * 100;
+    const errorRate = (logs.filter((log) => log.result === 'error').length / logs.length) * 100;
     if (errorRate > 5) {
       recommendations.push('High error rate detected. Review system configuration and logs.');
     }
@@ -1649,14 +1720,14 @@ export class AccessControlIntegration {
 
   private clearCacheForUser(userId: string): void {
     const keysToDelete: string[] = [];
-    
+
     this.cache.forEach((decision, key) => {
       if (key.includes(userId)) {
         keysToDelete.push(key);
       }
     });
 
-    keysToDelete.forEach(key => this.cache.delete(key));
+    keysToDelete.forEach((key) => this.cache.delete(key));
   }
 
   // Configuration management
@@ -1683,7 +1754,7 @@ export class AccessControlIntegration {
 
   public getRequests(status?: 'pending' | 'approved' | 'rejected' | 'expired'): AccessRequest[] {
     const requests = Array.from(this.requests.values());
-    return status ? requests.filter(req => req.status === status) : requests;
+    return status ? requests.filter((req) => req.status === status) : requests;
   }
 
   public getCacheStats(): {
@@ -1693,7 +1764,7 @@ export class AccessControlIntegration {
   } {
     return {
       size: this.cache.size,
-      ttl: this.config.cacheTTL
+      ttl: this.config.cacheTTL,
     };
   }
 }

@@ -1,8 +1,7 @@
-import { logger } from '../utils/logger';
-import crypto from 'crypto';
+import { logger } from "../utils/logger";
 
 export interface AnonymizationConfig {
-  algorithm: 'k-anonymity' | 'l-diversity' | 't-closeness';
+  algorithm: "k-anonymity" | "l-diversity" | "t-closeness";
   k?: number; // For k-anonymity
   l?: number; // For l-diversity
   t?: number; // For t-closeness
@@ -51,7 +50,7 @@ export interface PrivacyAudit {
   originalRisk: number;
   anonymizedRisk: number;
   riskReduction: number;
-  complianceLevel: 'low' | 'medium' | 'high' | 'excellent';
+  complianceLevel: "low" | "medium" | "high" | "excellent";
   recommendations: string[];
 }
 
@@ -59,13 +58,13 @@ export class DataAnonymizationService {
   private auditHistory: Map<string, PrivacyAudit[]> = new Map();
 
   constructor() {
-    logger.info('Data Anonymization Service initialized');
+    logger.info("Data Anonymization Service initialized");
   }
 
   // Main anonymization method
   async anonymizeDataset(
     data: any[],
-    config: AnonymizationConfig
+    config: AnonymizationConfig,
   ): Promise<AnonymizationResult> {
     const startTime = Date.now();
 
@@ -75,17 +74,19 @@ export class DataAnonymizationService {
       let result: AnonymizationResult;
 
       switch (config.algorithm) {
-        case 'k-anonymity':
+        case "k-anonymity":
           result = await this.applyKAnonymity(data, config);
           break;
-        case 'l-diversity':
+        case "l-diversity":
           result = await this.applyLDiversity(data, config);
           break;
-        case 't-closeness':
+        case "t-closeness":
           result = await this.applyTCloseness(data, config);
           break;
         default:
-          throw new Error(`Unsupported anonymization algorithm: ${config.algorithm}`);
+          throw new Error(
+            `Unsupported anonymization algorithm: ${config.algorithm}`,
+          );
       }
 
       result.processingTime = Date.now() - startTime;
@@ -93,9 +94,8 @@ export class DataAnonymizationService {
 
       logger.info(`Anonymization completed in ${result.processingTime}ms`);
       return result;
-
     } catch (error) {
-      logger.error('Anonymization failed:', error);
+      logger.error("Anonymization failed:", error);
       throw error;
     }
   }
@@ -103,22 +103,25 @@ export class DataAnonymizationService {
   // K-Anonymity Implementation
   private async applyKAnonymity(
     data: any[],
-    config: AnonymizationConfig
+    config: AnonymizationConfig,
   ): Promise<AnonymizationResult> {
     const k = config.k || 5;
     const quasiIdentifiers = config.quasiIdentifiers;
-    const maxSuppressionRate = config.maxSuppressionRate || 0.1;
+    const _maxSuppressionRate = config.maxSuppressionRate || 0.1;
 
     logger.info(`Applying k-anonymity with k=${k}`);
 
     // Group records by quasi-identifier values
-    const equivalenceClasses = this.groupByQuasiIdentifiers(data, quasiIdentifiers);
+    const equivalenceClasses = this.groupByQuasiIdentifiers(
+      data,
+      quasiIdentifiers,
+    );
 
     // Apply generalization and suppression
     const anonymizedClasses: EquivalenceClass[] = [];
     let suppressedRecords = 0;
 
-    for (const [key, records] of equivalenceClasses) {
+    for (const [_key, records] of equivalenceClasses) {
       if (records.length < k) {
         // Suppress small equivalence classes
         suppressedRecords += records.length;
@@ -128,20 +131,20 @@ export class DataAnonymizationService {
       const anonymizedClass = await this.generalizeEquivalenceClass(
         records,
         quasiIdentifiers,
-        config
+        config,
       );
       anonymizedClasses.push(anonymizedClass);
     }
 
     // Flatten anonymized classes back to dataset
-    const anonymizedData = anonymizedClasses.flatMap(cls => cls.records);
+    const anonymizedData = anonymizedClasses.flatMap((cls) => cls.records);
 
     // Calculate metrics
     const metrics = this.calculateKAnonymityMetrics(
       anonymizedClasses,
       k,
       data.length,
-      suppressedRecords
+      suppressedRecords,
     );
 
     return {
@@ -150,14 +153,14 @@ export class DataAnonymizationService {
       config,
       processingTime: 0, // Will be set by caller
       suppressedRecords,
-      equivalenceClasses: anonymizedClasses
+      equivalenceClasses: anonymizedClasses,
     };
   }
 
   // L-Diversity Implementation
   private async applyLDiversity(
     data: any[],
-    config: AnonymizationConfig
+    config: AnonymizationConfig,
   ): Promise<AnonymizationResult> {
     const k = config.k || 5;
     const l = config.l || 3;
@@ -174,7 +177,7 @@ export class DataAnonymizationService {
     let suppressedRecords = 0;
 
     for (const eqClass of kAnonymityResult.equivalenceClasses) {
-      const sensitiveValues = eqClass.records.map(r => r[sensitiveAttribute]);
+      const sensitiveValues = eqClass.records.map((r) => r[sensitiveAttribute]);
       const uniqueSensitiveValues = new Set(sensitiveValues);
 
       if (uniqueSensitiveValues.size < l) {
@@ -185,7 +188,7 @@ export class DataAnonymizationService {
             eqClass,
             quasiIdentifiers,
             sensitiveAttribute,
-            l
+            l,
           );
           lDiverseClasses.push(generalizedClass);
         } else {
@@ -195,13 +198,13 @@ export class DataAnonymizationService {
       } else {
         lDiverseClasses.push({
           ...eqClass,
-          diversity: uniqueSensitiveValues.size
+          diversity: uniqueSensitiveValues.size,
         });
       }
     }
 
     // Flatten anonymized classes
-    const anonymizedData = lDiverseClasses.flatMap(cls => cls.records);
+    const anonymizedData = lDiverseClasses.flatMap((cls) => cls.records);
 
     // Calculate metrics
     const metrics = this.calculateLDiversityMetrics(
@@ -209,7 +212,7 @@ export class DataAnonymizationService {
       k,
       l,
       data.length,
-      suppressedRecords
+      suppressedRecords,
     );
 
     return {
@@ -218,14 +221,14 @@ export class DataAnonymizationService {
       config,
       processingTime: 0,
       suppressedRecords,
-      equivalenceClasses: lDiverseClasses
+      equivalenceClasses: lDiverseClasses,
     };
   }
 
   // T-Closeness Implementation
   private async applyTCloseness(
     data: any[],
-    config: AnonymizationConfig
+    config: AnonymizationConfig,
   ): Promise<AnonymizationResult> {
     const k = config.k || 5;
     const t = config.t || 0.2;
@@ -240,7 +243,7 @@ export class DataAnonymizationService {
     // Calculate distribution of sensitive attribute in original data
     const originalDistribution = this.calculateSensitiveAttributeDistribution(
       data,
-      sensitiveAttribute
+      sensitiveAttribute,
     );
 
     // Ensure t-closeness for each equivalence class
@@ -250,12 +253,12 @@ export class DataAnonymizationService {
     for (const eqClass of kAnonymityResult.equivalenceClasses) {
       const classDistribution = this.calculateSensitiveAttributeDistribution(
         eqClass.records,
-        sensitiveAttribute
+        sensitiveAttribute,
       );
 
       const distance = this.calculateDistributionDistance(
         originalDistribution,
-        classDistribution
+        classDistribution,
       );
 
       if (distance > t) {
@@ -265,9 +268,9 @@ export class DataAnonymizationService {
           originalDistribution,
           quasiIdentifiers,
           sensitiveAttribute,
-          t
+          t,
         );
-        
+
         if (adjustedClass) {
           tCloseClasses.push(adjustedClass);
         } else {
@@ -276,13 +279,13 @@ export class DataAnonymizationService {
       } else {
         tCloseClasses.push({
           ...eqClass,
-          risk: distance
+          risk: distance,
         });
       }
     }
 
     // Flatten anonymized classes
-    const anonymizedData = tCloseClasses.flatMap(cls => cls.records);
+    const anonymizedData = tCloseClasses.flatMap((cls) => cls.records);
 
     // Calculate metrics
     const metrics = this.calculateTClosenessMetrics(
@@ -290,7 +293,7 @@ export class DataAnonymizationService {
       k,
       t,
       data.length,
-      suppressedRecords
+      suppressedRecords,
     );
 
     return {
@@ -299,22 +302,20 @@ export class DataAnonymizationService {
       config,
       processingTime: 0,
       suppressedRecords,
-      equivalenceClasses: tCloseClasses
+      equivalenceClasses: tCloseClasses,
     };
   }
 
   // Helper methods
   private groupByQuasiIdentifiers(
     data: any[],
-    quasiIdentifiers: string[]
+    quasiIdentifiers: string[],
   ): Map<string, any[]> {
     const groups = new Map<string, any[]>();
 
     for (const record of data) {
-      const key = quasiIdentifiers
-        .map(qi => `${qi}=${record[qi]}`)
-        .join('|');
-      
+      const key = quasiIdentifiers.map((qi) => `${qi}=${record[qi]}`).join("|");
+
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -327,14 +328,14 @@ export class DataAnonymizationService {
   private async generalizeEquivalenceClass(
     records: any[],
     quasiIdentifiers: string[],
-    config: AnonymizationConfig
+    config: AnonymizationConfig,
   ): Promise<EquivalenceClass> {
     const generalizedRecords = [...records];
     const quasiIdentifierValues: Record<string, any> = {};
 
     // Apply generalization to each quasi-identifier
     for (const qi of quasiIdentifiers) {
-      const values = records.map(r => r[qi]);
+      const values = records.map((r) => r[qi]);
       const generalizedValue = this.generalizeValues(values, qi);
       quasiIdentifierValues[qi] = generalizedValue;
 
@@ -344,8 +345,8 @@ export class DataAnonymizationService {
       }
     }
 
-    const sensitiveValues = config.sensitiveAttribute 
-      ? records.map(r => r[config.sensitiveAttribute])
+    const sensitiveValues = config.sensitiveAttribute
+      ? records.map((r) => r[config.sensitiveAttribute])
       : [];
 
     return {
@@ -354,34 +355,34 @@ export class DataAnonymizationService {
       quasiIdentifierValues,
       sensitiveValues,
       diversity: new Set(sensitiveValues).size,
-      risk: this.calculateClassRisk(records.length, records.length)
+      risk: this.calculateClassRisk(records.length, records.length),
     };
   }
 
-  private generalizeValues(values: any[], attribute: string): any {
+  private generalizeValues(values: any[], _attribute: string): any {
     const uniqueValues = new Set(values);
-    
+
     if (uniqueValues.size === 1) {
       return values[0]; // Already uniform
     }
 
     // Check data type and apply appropriate generalization
     const sampleValue = values[0];
-    
-    if (typeof sampleValue === 'number') {
+
+    if (typeof sampleValue === "number") {
       const min = Math.min(...values);
       const max = Math.max(...values);
       return `[${min}-${max}]`;
-    } else if (typeof sampleValue === 'string') {
+    } else if (typeof sampleValue === "string") {
       // For categorical data, find common prefix or use hierarchy
       return this.generalizeCategoricalValues(values);
     } else if (sampleValue instanceof Date) {
-      const minDate = new Date(Math.min(...values.map(d => d.getTime())));
-      const maxDate = new Date(Math.max(...values.map(d => d.getTime())));
-      return `${minDate.toISOString().split('T')[0]} to ${maxDate.toISOString().split('T')[0]}`;
+      const minDate = new Date(Math.min(...values.map((d) => d.getTime())));
+      const maxDate = new Date(Math.max(...values.map((d) => d.getTime())));
+      return `${minDate.toISOString().split("T")[0]} to ${maxDate.toISOString().split("T")[0]}`;
     }
 
-    return '*'; // Default generalization
+    return "*"; // Default generalization
   }
 
   private generalizeCategoricalValues(values: string[]): string {
@@ -389,8 +390,8 @@ export class DataAnonymizationService {
     const sortedValues = [...values].sort();
     const first = sortedValues[0];
     const last = sortedValues[sortedValues.length - 1];
-    
-    let commonPrefix = '';
+
+    let commonPrefix = "";
     for (let i = 0; i < Math.min(first.length, last.length); i++) {
       if (first[i] === last[i]) {
         commonPrefix += first[i];
@@ -400,25 +401,25 @@ export class DataAnonymizationService {
     }
 
     if (commonPrefix.length > 1) {
-      return commonPrefix + '*';
+      return commonPrefix + "*";
     }
 
-    return '*'; // No common prefix, use wildcard
+    return "*"; // No common prefix, use wildcard
   }
 
   private async furtherGeneralizeForLDiversity(
     eqClass: EquivalenceClass,
     quasiIdentifiers: string[],
-    sensitiveAttribute: string,
-    l: number
+    _sensitiveAttribute: string,
+    _l: number,
   ): Promise<EquivalenceClass> {
     // Apply more aggressive generalization
     const generalizedRecords = [...eqClass.records];
-    
+
     for (const qi of quasiIdentifiers) {
-      const values = generalizedRecords.map(r => r[qi]);
+      const values = generalizedRecords.map((r) => r[qi]);
       const generalizedValue = this.generalizeValues(values, qi);
-      
+
       for (const record of generalizedRecords) {
         record[qi] = generalizedValue;
       }
@@ -428,8 +429,8 @@ export class DataAnonymizationService {
       ...eqClass,
       records: generalizedRecords,
       quasiIdentifierValues: Object.fromEntries(
-        quasiIdentifiers.map(qi => [qi, generalizedRecords[0][qi]])
-      )
+        quasiIdentifiers.map((qi) => [qi, generalizedRecords[0][qi]]),
+      ),
     };
   }
 
@@ -438,19 +439,19 @@ export class DataAnonymizationService {
     targetDistribution: Map<string, number>,
     quasiIdentifiers: string[],
     sensitiveAttribute: string,
-    t: number
+    t: number,
   ): Promise<EquivalenceClass | null> {
     // This is a simplified implementation
     // In practice, this would involve more sophisticated distribution matching
-    
+
     const currentDistribution = this.calculateSensitiveAttributeDistribution(
       eqClass.records,
-      sensitiveAttribute
+      sensitiveAttribute,
     );
 
     const distance = this.calculateDistributionDistance(
       targetDistribution,
-      currentDistribution
+      currentDistribution,
     );
 
     if (distance <= t) {
@@ -462,13 +463,13 @@ export class DataAnonymizationService {
       eqClass,
       quasiIdentifiers,
       sensitiveAttribute,
-      2 // Minimum l for diversity
+      2, // Minimum l for diversity
     );
   }
 
   private calculateSensitiveAttributeDistribution(
     records: any[],
-    sensitiveAttribute: string
+    sensitiveAttribute: string,
   ): Map<string, number> {
     const distribution = new Map<string, number>();
 
@@ -482,15 +483,21 @@ export class DataAnonymizationService {
 
   private calculateDistributionDistance(
     dist1: Map<string, number>,
-    dist2: Map<string, number>
+    dist2: Map<string, number>,
   ): number {
     // Calculate Earth Mover's Distance (simplified)
-    const total1 = Array.from(dist1.values()).reduce((sum, val) => sum + val, 0);
-    const total2 = Array.from(dist2.values()).reduce((sum, val) => sum + val, 0);
-    
+    const total1 = Array.from(dist1.values()).reduce(
+      (sum, val) => sum + val,
+      0,
+    );
+    const total2 = Array.from(dist2.values()).reduce(
+      (sum, val) => sum + val,
+      0,
+    );
+
     let distance = 0;
     const allValues = new Set([...dist1.keys(), ...dist2.keys()]);
-    
+
     for (const value of allValues) {
       const freq1 = (dist1.get(value) || 0) / total1;
       const freq2 = (dist2.get(value) || 0) / total2;
@@ -500,7 +507,7 @@ export class DataAnonymizationService {
     return distance;
   }
 
-  private calculateClassRisk(classSize: number, totalRecords: number): number {
+  private calculateClassRisk(classSize: number, _totalRecords: number): number {
     return 1 / classSize;
   }
 
@@ -508,12 +515,16 @@ export class DataAnonymizationService {
   private calculateKAnonymityMetrics(
     equivalenceClasses: EquivalenceClass[],
     k: number,
-    totalRecords: number,
-    suppressedRecords: number
+    _totalRecords: number,
+    _suppressedRecords: number,
   ): AnonymizationMetrics {
-    const avgClassSize = equivalenceClasses.reduce((sum, cls) => sum + cls.size, 0) / equivalenceClasses.length;
+    const avgClassSize =
+      equivalenceClasses.reduce((sum, cls) => sum + cls.size, 0) /
+      equivalenceClasses.length;
     const informationLoss = this.calculateInformationLoss(equivalenceClasses);
-    const disclosureRisk = Math.max(...equivalenceClasses.map(cls => cls.risk));
+    const disclosureRisk = Math.max(
+      ...equivalenceClasses.map((cls) => cls.risk),
+    );
     const reidentificationRisk = 1 / k;
 
     return {
@@ -526,7 +537,7 @@ export class DataAnonymizationService {
       anonymityLevel: Math.min(1, avgClassSize / k),
       dataUtilityScore: 1 - informationLoss,
       lValue: undefined,
-      tValue: undefined
+      tValue: undefined,
     };
   }
 
@@ -535,15 +546,22 @@ export class DataAnonymizationService {
     k: number,
     l: number,
     totalRecords: number,
-    suppressedRecords: number
+    suppressedRecords: number,
   ): AnonymizationMetrics {
-    const baseMetrics = this.calculateKAnonymityMetrics(equivalenceClasses, k, totalRecords, suppressedRecords);
-    const avgDiversity = equivalenceClasses.reduce((sum, cls) => sum + cls.diversity, 0) / equivalenceClasses.length;
+    const baseMetrics = this.calculateKAnonymityMetrics(
+      equivalenceClasses,
+      k,
+      totalRecords,
+      suppressedRecords,
+    );
+    const avgDiversity =
+      equivalenceClasses.reduce((sum, cls) => sum + cls.diversity, 0) /
+      equivalenceClasses.length;
 
     return {
       ...baseMetrics,
       lValue: l,
-      privacyUtility: baseMetrics.privacyUtility * (avgDiversity / l)
+      privacyUtility: baseMetrics.privacyUtility * (avgDiversity / l),
     };
   }
 
@@ -552,19 +570,28 @@ export class DataAnonymizationService {
     k: number,
     t: number,
     totalRecords: number,
-    suppressedRecords: number
+    suppressedRecords: number,
   ): AnonymizationMetrics {
-    const baseMetrics = this.calculateKAnonymityMetrics(equivalenceClasses, k, totalRecords, suppressedRecords);
-    const avgRisk = equivalenceClasses.reduce((sum, cls) => sum + cls.risk, 0) / equivalenceClasses.length;
+    const baseMetrics = this.calculateKAnonymityMetrics(
+      equivalenceClasses,
+      k,
+      totalRecords,
+      suppressedRecords,
+    );
+    const avgRisk =
+      equivalenceClasses.reduce((sum, cls) => sum + cls.risk, 0) /
+      equivalenceClasses.length;
 
     return {
       ...baseMetrics,
       tValue: t,
-      privacyUtility: baseMetrics.privacyUtility * (1 - avgRisk)
+      privacyUtility: baseMetrics.privacyUtility * (1 - avgRisk),
     };
   }
 
-  private calculateInformationLoss(equivalenceClasses: EquivalenceClass[]): number {
+  private calculateInformationLoss(
+    equivalenceClasses: EquivalenceClass[],
+  ): number {
     // Simplified information loss calculation
     let totalLoss = 0;
     let totalRecords = 0;
@@ -584,9 +611,9 @@ export class DataAnonymizationService {
 
     for (const qi of quasiIdentifiers) {
       const value = eqClass.quasiIdentifierValues[qi];
-      if (typeof value === 'string' && value.includes('*')) {
+      if (typeof value === "string" && value.includes("*")) {
         loss += 0.5; // Generalization loss
-      } else if (typeof value === 'string' && value.includes('-')) {
+      } else if (typeof value === "string" && value.includes("-")) {
         loss += 0.3; // Range generalization loss
       }
     }
@@ -598,22 +625,28 @@ export class DataAnonymizationService {
   async assessPrivacyRisk(
     originalData: any[],
     anonymizedData: any[],
-    quasiIdentifiers: string[]
+    quasiIdentifiers: string[],
   ): Promise<PrivacyAudit> {
-    const originalRisk = this.calculateDatasetRisk(originalData, quasiIdentifiers);
-    const anonymizedRisk = this.calculateDatasetRisk(anonymizedData, quasiIdentifiers);
+    const originalRisk = this.calculateDatasetRisk(
+      originalData,
+      quasiIdentifiers,
+    );
+    const anonymizedRisk = this.calculateDatasetRisk(
+      anonymizedData,
+      quasiIdentifiers,
+    );
     const riskReduction = (originalRisk - anonymizedRisk) / originalRisk;
 
-    let complianceLevel: 'low' | 'medium' | 'high' | 'excellent';
-    if (riskReduction >= 0.9) complianceLevel = 'excellent';
-    else if (riskReduction >= 0.7) complianceLevel = 'high';
-    else if (riskReduction >= 0.5) complianceLevel = 'medium';
-    else complianceLevel = 'low';
+    let complianceLevel: "low" | "medium" | "high" | "excellent";
+    if (riskReduction >= 0.9) complianceLevel = "excellent";
+    else if (riskReduction >= 0.7) complianceLevel = "high";
+    else if (riskReduction >= 0.5) complianceLevel = "medium";
+    else complianceLevel = "low";
 
     const recommendations = this.generatePrivacyRecommendations(
       originalRisk,
       anonymizedRisk,
-      complianceLevel
+      complianceLevel,
     );
 
     return {
@@ -621,17 +654,21 @@ export class DataAnonymizationService {
       anonymizedRisk,
       riskReduction,
       complianceLevel,
-      recommendations
+      recommendations,
     };
   }
 
-  private calculateDatasetRisk(data: any[], quasiIdentifiers: string[]): number {
+  private calculateDatasetRisk(
+    data: any[],
+    quasiIdentifiers: string[],
+  ): number {
     const groups = this.groupByQuasiIdentifiers(data, quasiIdentifiers);
     let totalRisk = 0;
     let totalRecords = 0;
 
     for (const records of groups.values()) {
-      totalRisk += records.length * this.calculateClassRisk(records.length, data.length);
+      totalRisk +=
+        records.length * this.calculateClassRisk(records.length, data.length);
       totalRecords += records.length;
     }
 
@@ -641,23 +678,29 @@ export class DataAnonymizationService {
   private generatePrivacyRecommendations(
     originalRisk: number,
     anonymizedRisk: number,
-    complianceLevel: string
+    complianceLevel: string,
   ): string[] {
     const recommendations: string[] = [];
 
     if (anonymizedRisk > 0.1) {
-      recommendations.push('Consider increasing k-value for better anonymity');
+      recommendations.push("Consider increasing k-value for better anonymity");
     }
 
     if (originalRisk - anonymizedRisk < 0.5) {
-      recommendations.push('Additional generalization may improve privacy protection');
+      recommendations.push(
+        "Additional generalization may improve privacy protection",
+      );
     }
 
-    if (complianceLevel === 'low' || complianceLevel === 'medium') {
-      recommendations.push('Review quasi-identifier selection for better privacy');
+    if (complianceLevel === "low" || complianceLevel === "medium") {
+      recommendations.push(
+        "Review quasi-identifier selection for better privacy",
+      );
     }
 
-    recommendations.push('Regular privacy audits recommended for continuous compliance');
+    recommendations.push(
+      "Regular privacy audits recommended for continuous compliance",
+    );
 
     return recommendations;
   }
@@ -666,7 +709,7 @@ export class DataAnonymizationService {
   async processBatchAnonymization(
     data: any[],
     config: AnonymizationConfig,
-    batchSize: number = 1000
+    batchSize: number = 1000,
   ): Promise<AnonymizationResult> {
     const batches = [];
     for (let i = 0; i < data.length; i += batchSize) {
@@ -692,8 +735,8 @@ export class DataAnonymizationService {
     }
 
     // Combine results
-    const combinedData = results.flatMap(r => r.anonymizedData);
-    const avgMetrics = this.combineMetrics(results.map(r => r.metrics));
+    const combinedData = results.flatMap((r) => r.anonymizedData);
+    const avgMetrics = this.combineMetrics(results.map((r) => r.metrics));
 
     return {
       anonymizedData: combinedData,
@@ -701,24 +744,34 @@ export class DataAnonymizationService {
       config,
       processingTime: results.reduce((sum, r) => sum + r.processingTime, 0),
       suppressedRecords: totalSuppressedRecords,
-      equivalenceClasses: allEquivalenceClasses
+      equivalenceClasses: allEquivalenceClasses,
     };
   }
 
-  private combineMetrics(metrics: AnonymizationMetrics[]): AnonymizationMetrics {
+  private combineMetrics(
+    metrics: AnonymizationMetrics[],
+  ): AnonymizationMetrics {
     const count = metrics.length;
-    
+
     return {
       kValue: metrics[0]?.kValue,
       lValue: metrics[0]?.lValue,
       tValue: metrics[0]?.tValue,
-      averageEquivalenceClassSize: metrics.reduce((sum, m) => sum + m.averageEquivalenceClassSize, 0) / count,
-      informationLoss: metrics.reduce((sum, m) => sum + m.informationLoss, 0) / count,
-      disclosureRisk: metrics.reduce((sum, m) => sum + m.disclosureRisk, 0) / count,
-      privacyUtility: metrics.reduce((sum, m) => sum + m.privacyUtility, 0) / count,
-      reidentificationRisk: metrics.reduce((sum, m) => sum + m.reidentificationRisk, 0) / count,
-      anonymityLevel: metrics.reduce((sum, m) => sum + m.anonymityLevel, 0) / count,
-      dataUtilityScore: metrics.reduce((sum, m) => sum + m.dataUtilityScore, 0) / count
+      averageEquivalenceClassSize:
+        metrics.reduce((sum, m) => sum + m.averageEquivalenceClassSize, 0) /
+        count,
+      informationLoss:
+        metrics.reduce((sum, m) => sum + m.informationLoss, 0) / count,
+      disclosureRisk:
+        metrics.reduce((sum, m) => sum + m.disclosureRisk, 0) / count,
+      privacyUtility:
+        metrics.reduce((sum, m) => sum + m.privacyUtility, 0) / count,
+      reidentificationRisk:
+        metrics.reduce((sum, m) => sum + m.reidentificationRisk, 0) / count,
+      anonymityLevel:
+        metrics.reduce((sum, m) => sum + m.anonymityLevel, 0) / count,
+      dataUtilityScore:
+        metrics.reduce((sum, m) => sum + m.dataUtilityScore, 0) / count,
     };
   }
 
@@ -727,7 +780,7 @@ export class DataAnonymizationService {
     if (datasetId) {
       return this.auditHistory.get(datasetId) || [];
     }
-    
+
     return Array.from(this.auditHistory.values()).flat();
   }
 
@@ -735,12 +788,12 @@ export class DataAnonymizationService {
     datasetId: string,
     originalData: any[],
     anonymizedData: any[],
-    config: AnonymizationConfig
+    config: AnonymizationConfig,
   ): Promise<any> {
     const audit = await this.assessPrivacyRisk(
       originalData,
       anonymizedData,
-      config.quasiIdentifiers
+      config.quasiIdentifiers,
     );
 
     // Store audit
@@ -762,8 +815,8 @@ export class DataAnonymizationService {
         algorithm: config.algorithm,
         complianceLevel: audit.complianceLevel,
         riskReduction: audit.riskReduction,
-        recommendations: audit.recommendations.length
-      }
+        recommendations: audit.recommendations.length,
+      },
     };
   }
 
@@ -772,18 +825,36 @@ export class DataAnonymizationService {
     data: any[],
     quasiIdentifiers: string[],
     sensitiveAttribute: string,
-    targetUtility: number = 0.8
+    targetUtility: number = 0.8,
   ): Promise<AnonymizationConfig> {
-    logger.info('Optimizing privacy-utility trade-off');
+    logger.info("Optimizing privacy-utility trade-off");
 
     // Test different parameter combinations
     const testConfigs: AnonymizationConfig[] = [
-      { algorithm: 'k-anonymity', k: 3, quasiIdentifiers },
-      { algorithm: 'k-anonymity', k: 5, quasiIdentifiers },
-      { algorithm: 'k-anonymity', k: 10, quasiIdentifiers },
-      { algorithm: 'l-diversity', k: 5, l: 2, quasiIdentifiers, sensitiveAttribute },
-      { algorithm: 'l-diversity', k: 5, l: 3, quasiIdentifiers, sensitiveAttribute },
-      { algorithm: 'l-diversity', k: 5, l: 5, quasiIdentifiers, sensitiveAttribute }
+      { algorithm: "k-anonymity", k: 3, quasiIdentifiers },
+      { algorithm: "k-anonymity", k: 5, quasiIdentifiers },
+      { algorithm: "k-anonymity", k: 10, quasiIdentifiers },
+      {
+        algorithm: "l-diversity",
+        k: 5,
+        l: 2,
+        quasiIdentifiers,
+        sensitiveAttribute,
+      },
+      {
+        algorithm: "l-diversity",
+        k: 5,
+        l: 3,
+        quasiIdentifiers,
+        sensitiveAttribute,
+      },
+      {
+        algorithm: "l-diversity",
+        k: 5,
+        l: 5,
+        quasiIdentifiers,
+        sensitiveAttribute,
+      },
     ];
 
     let bestConfig = testConfigs[0];
@@ -792,7 +863,7 @@ export class DataAnonymizationService {
     for (const config of testConfigs) {
       const result = await this.anonymizeDataset(data, config);
       const score = this.calculateUtilityScore(result.metrics, targetUtility);
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestConfig = config;
@@ -803,10 +874,13 @@ export class DataAnonymizationService {
     return bestConfig;
   }
 
-  private calculateUtilityScore(metrics: AnonymizationMetrics, targetUtility: number): number {
+  private calculateUtilityScore(
+    metrics: AnonymizationMetrics,
+    targetUtility: number,
+  ): number {
     const utilityDiff = Math.abs(metrics.dataUtilityScore - targetUtility);
     const privacyScore = metrics.privacyUtility;
-    
+
     // Weighted score favoring both utility and privacy
     return privacyScore * (1 - utilityDiff);
   }

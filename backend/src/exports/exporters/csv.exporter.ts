@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from "fs";
 
 export class CsvExporter {
   private path = `export-${Date.now()}.csv`;
@@ -6,7 +6,7 @@ export class CsvExporter {
 
   async write(rows: any[]) {
     for (const row of rows) {
-      this.stream.write(Object.values(row).join(',') + '\n');
+      this.stream.write(Object.values(row).join(",") + "\n");
     }
   }
 

@@ -17,9 +17,10 @@ import {
   AlertCircle,
   Send,
   RotateCcw,
-  Timer
+  Timer,
 } from 'lucide-react';
 import axios from 'axios';
+import { TrainingModuleSkeleton } from '@/components/skeletons';
 
 interface TrainingModule {
   id: string;
@@ -77,7 +78,13 @@ interface Assessment {
 
 interface AssessmentQuestion {
   id: string;
-  type: 'multiple_choice' | 'multiple_select' | 'true_false' | 'fill_blank' | 'matching' | 'ordering';
+  type:
+    | 'multiple_choice'
+    | 'multiple_select'
+    | 'true_false'
+    | 'fill_blank'
+    | 'matching'
+    | 'ordering';
   question: string;
   options?: { id: string; text: string }[];
   points: number;
@@ -99,17 +106,19 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 export function TrainingModulePage() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
-  
+
   const [module, setModule] = useState<TrainingModule | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<'content' | 'exercises' | 'assessment'>('content');
+  const [activeSection, setActiveSection] = useState<'content' | 'exercises' | 'assessment'>(
+    'content'
+  );
   const [currentContentIndex, setCurrentContentIndex] = useState(0);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showExerciseHint, setShowExerciseHint] = useState(false);
   const [exerciseAnswers, setExerciseAnswers] = useState<any>({});
   const [exerciseResult, setExerciseResult] = useState<any>(null);
-  
+
   // Assessment state
   const [assessmentStarted, setAssessmentStarted] = useState(false);
   const [assessmentAttempt, setAssessmentAttempt] = useState<any>(null);
@@ -120,13 +129,19 @@ export function TrainingModulePage() {
 
   useEffect(() => {
     fetchModuleData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (assessmentTimer !== null && assessmentTimer > 0 && assessmentStarted && !assessmentSubmitted) {
+    if (
+      assessmentTimer !== null &&
+      assessmentTimer > 0 &&
+      assessmentStarted &&
+      !assessmentSubmitted
+    ) {
       interval = setInterval(() => {
-        setAssessmentTimer(prev => {
+        setAssessmentTimer((prev) => {
           if (prev === null || prev <= 1) {
             submitAssessment();
             return 0;
@@ -136,6 +151,7 @@ export function TrainingModulePage() {
       }, 1000);
     }
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentTimer, assessmentStarted, assessmentSubmitted]);
 
   const fetchModuleData = async () => {
@@ -145,7 +161,7 @@ export function TrainingModulePage() {
 
       const [moduleRes, progressRes] = await Promise.all([
         axios.get(`${API_BASE}/training/modules/${moduleId}`, { headers }),
-        axios.get(`${API_BASE}/training/progress?moduleId=${moduleId}`, { headers })
+        axios.get(`${API_BASE}/training/progress?moduleId=${moduleId}`, { headers }),
       ]);
 
       setModule(moduleRes.data.data);
@@ -163,7 +179,7 @@ export function TrainingModulePage() {
         currentContentIndex: 0,
         completedExercises: [],
         exerciseResults: {},
-        bestScore: 0
+        bestScore: 0,
       });
     } finally {
       setLoading(false);
@@ -181,7 +197,7 @@ export function TrainingModulePage() {
       'Understand key privacy concepts and terminology',
       'Learn the principles of GDPR and data protection',
       'Apply privacy-by-design in daily work',
-      'Identify personal data and sensitive information'
+      'Identify personal data and sensitive information',
     ],
     content: [
       {
@@ -216,7 +232,7 @@ Organizations that prioritize privacy see:
 - Enhanced brand reputation
         `,
         duration: 10,
-        order: 1
+        order: 1,
       },
       {
         id: 'pf-content-2',
@@ -224,7 +240,7 @@ Organizations that prioritize privacy see:
         title: 'GDPR Principles Interactive Guide',
         content: 'interactive:gdpr-principles',
         duration: 15,
-        order: 2
+        order: 2,
       },
       {
         id: 'pf-content-3',
@@ -232,8 +248,8 @@ Organizations that prioritize privacy see:
         title: 'Privacy by Design in Practice',
         content: 'https://example.com/videos/privacy-by-design.mp4',
         duration: 20,
-        order: 3
-      }
+        order: 3,
+      },
     ],
     exercises: [
       {
@@ -249,15 +265,19 @@ Organizations that prioritize privacy see:
             { id: 'b', text: 'Aggregated sales statistics', isPersonalData: false },
             { id: 'c', text: 'IP address: 192.168.1.1', isPersonalData: true },
             { id: 'd', text: 'Company name: Acme Corp', isPersonalData: false },
-            { id: 'e', text: 'Cookie identifier: abc123xyz', isPersonalData: true }
-          ]
+            { id: 'e', text: 'Cookie identifier: abc123xyz', isPersonalData: true },
+          ],
         },
-        hints: ['Personal data can identify a person directly or indirectly', 'Even pseudonymous data can be personal data'],
+        hints: [
+          'Personal data can identify a person directly or indirectly',
+          'Even pseudonymous data can be personal data',
+        ],
         points: 10,
         feedback: {
           correct: 'Excellent! You correctly identified all personal data elements.',
-          incorrect: 'Remember: any data that can identify a person (directly or indirectly) is personal data.'
-        }
+          incorrect:
+            'Remember: any data that can identify a person (directly or indirectly) is personal data.',
+        },
       },
       {
         id: 'pf-ex-2',
@@ -265,7 +285,8 @@ Organizations that prioritize privacy see:
         title: 'Privacy Scenario: Data Collection',
         description: 'Navigate a realistic data collection scenario',
         difficulty: 'intermediate',
-        scenario: 'Your marketing team wants to collect customer email addresses for a newsletter. They plan to use a simple form without any consent explanation.',
+        scenario:
+          'Your marketing team wants to collect customer email addresses for a newsletter. They plan to use a simple form without any consent explanation.',
         instructions: 'Answer the questions to navigate this scenario correctly',
         data: {
           steps: [
@@ -276,9 +297,9 @@ Organizations that prioritize privacy see:
                 'No legal basis for processing',
                 'No privacy notice or consent',
                 'Both A and B',
-                'No concern - email collection is always allowed'
+                'No concern - email collection is always allowed',
               ],
-              correct: 2
+              correct: 2,
             },
             {
               id: 2,
@@ -287,19 +308,19 @@ Organizations that prioritize privacy see:
                 'A checkbox for consent',
                 'A privacy notice explaining the purpose',
                 'An unsubscribe link',
-                'All of the above'
+                'All of the above',
               ],
-              correct: 3
-            }
-          ]
+              correct: 3,
+            },
+          ],
         },
         hints: ['Consider GDPR requirements for consent', 'Transparency is key'],
         points: 15,
         feedback: {
           correct: 'Great job! You understand the requirements for lawful data collection.',
-          incorrect: 'Review the GDPR consent requirements and transparency principles.'
-        }
-      }
+          incorrect: 'Review the GDPR consent requirements and transparency principles.',
+        },
+      },
     ],
     assessment: {
       id: 'pf-assessment',
@@ -319,11 +340,11 @@ Organizations that prioritize privacy see:
             { id: 'a', text: 'To protect businesses from data breaches' },
             { id: 'b', text: 'To give individuals control over their personal data' },
             { id: 'c', text: 'To create a unified market for data sales' },
-            { id: 'd', text: 'To eliminate cross-border data transfers' }
+            { id: 'd', text: 'To eliminate cross-border data transfers' },
           ],
           points: 5,
           difficulty: 'beginner',
-          category: 'GDPR Basics'
+          category: 'GDPR Basics',
         },
         {
           id: 'pf-q2',
@@ -334,11 +355,11 @@ Organizations that prioritize privacy see:
             { id: 'b', text: 'Storage limitation' },
             { id: 'c', text: 'Profit maximization' },
             { id: 'd', text: 'Purpose limitation' },
-            { id: 'e', text: 'Data minimization' }
+            { id: 'e', text: 'Data minimization' },
           ],
           points: 10,
           difficulty: 'intermediate',
-          category: 'GDPR Basics'
+          category: 'GDPR Basics',
         },
         {
           id: 'pf-q3',
@@ -346,26 +367,30 @@ Organizations that prioritize privacy see:
           question: 'Pseudonymized data is no longer considered personal data under GDPR.',
           options: [
             { id: 'true', text: 'True' },
-            { id: 'false', text: 'False' }
+            { id: 'false', text: 'False' },
           ],
           points: 5,
           difficulty: 'intermediate',
-          category: 'Data Classification'
-        }
-      ]
+          category: 'Data Classification',
+        },
+      ],
     },
-    passingScore: 70
+    passingScore: 70,
   });
 
   const updateProgress = async (contentIndex?: number, timeSpent?: number) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_BASE}/training/progress/${moduleId}`, {
-        contentIndex,
-        timeSpent
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.put(
+        `${API_BASE}/training/progress/${moduleId}`,
+        {
+          contentIndex,
+          timeSpent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
     } catch (error) {
       console.error('Failed to update progress:', error);
     }
@@ -373,58 +398,71 @@ Organizations that prioritize privacy see:
 
   const handleContentNavigation = (direction: 'next' | 'prev') => {
     if (!module) return;
-    
-    const newIndex = direction === 'next' 
-      ? Math.min(currentContentIndex + 1, module.content.length - 1)
-      : Math.max(currentContentIndex - 1, 0);
-    
+
+    const newIndex =
+      direction === 'next'
+        ? Math.min(currentContentIndex + 1, module.content.length - 1)
+        : Math.max(currentContentIndex - 1, 0);
+
     setCurrentContentIndex(newIndex);
     updateProgress(newIndex, 1);
   };
 
   const submitExercise = async () => {
     if (!module || !module.exercises[currentExerciseIndex]) return;
-    
+
     const exercise = module.exercises[currentExerciseIndex];
-    
+
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE}/training/exercises/submit`, {
-        moduleId: module.id,
-        exerciseId: exercise.id,
-        answers: exerciseAnswers
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const response = await axios.post(
+        `${API_BASE}/training/exercises/submit`,
+        {
+          moduleId: module.id,
+          exerciseId: exercise.id,
+          answers: exerciseAnswers,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       setExerciseResult(response.data.data);
     } catch (error) {
       console.error('Failed to submit exercise:', error);
       // Demo result
-      const score = exercise.type === 'multiple_choice' 
-        ? Math.random() > 0.3 ? exercise.points : exercise.points * 0.5
-        : exercise.points * 0.8;
-      
+      const score =
+        exercise.type === 'multiple_choice'
+          ? Math.random() > 0.3
+            ? exercise.points
+            : exercise.points * 0.5
+          : exercise.points * 0.8;
+
       setExerciseResult({
         score,
         maxScore: exercise.points,
         passed: score >= exercise.points * 0.7,
-        feedback: score >= exercise.points * 0.7 ? exercise.feedback.correct : exercise.feedback.incorrect
+        feedback:
+          score >= exercise.points * 0.7 ? exercise.feedback.correct : exercise.feedback.incorrect,
       });
     }
   };
 
   const startAssessment = async () => {
     if (!module) return;
-    
+
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE}/training/assessment/start`, {
-        moduleId: module.id
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const response = await axios.post(
+        `${API_BASE}/training/assessment/start`,
+        {
+          moduleId: module.id,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       setAssessmentAttempt(response.data.data.attempt);
       setAssessmentTimer(module.assessment.timeLimit * 60);
       setAssessmentStarted(true);
@@ -439,20 +477,24 @@ Organizations that prioritize privacy see:
 
   const submitAssessment = async () => {
     if (!module || !assessmentAttempt) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       const timeSpent = module.assessment.timeLimit * 60 - (assessmentTimer || 0);
-      
-      const response = await axios.post(`${API_BASE}/training/assessment/submit`, {
-        moduleId: module.id,
-        attemptId: assessmentAttempt.id,
-        answers: assessmentAnswers,
-        timeSpent
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+
+      const response = await axios.post(
+        `${API_BASE}/training/assessment/submit`,
+        {
+          moduleId: module.id,
+          attemptId: assessmentAttempt.id,
+          answers: assessmentAnswers,
+          timeSpent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       setAssessmentResult(response.data.data);
       setAssessmentSubmitted(true);
     } catch (error) {
@@ -462,12 +504,12 @@ Organizations that prioritize privacy see:
       setAssessmentResult({
         score: Math.round(score),
         passed: score >= module.passingScore,
-        questionResults: module.assessment.questions.map(q => ({
+        questionResults: module.assessment.questions.map((q) => ({
           questionId: q.id,
           isCorrect: Math.random() > 0.3,
           points: Math.random() > 0.3 ? q.points : 0,
-          maxPoints: q.points
-        }))
+          maxPoints: q.points,
+        })),
       });
       setAssessmentSubmitted(true);
     }
@@ -481,28 +523,32 @@ Organizations that prioritize privacy see:
 
   const renderContent = () => {
     if (!module || !module.content[currentContentIndex]) return null;
-    
+
     const content = module.content[currentContentIndex];
-    
+
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-          {content.type === 'video' ? <Video className="w-4 h-4" /> : 
-           content.type === 'interactive' ? <PlayCircle className="w-4 h-4" /> : 
-           <FileText className="w-4 h-4" />}
+          {content.type === 'video' ? (
+            <Video className="w-4 h-4" />
+          ) : content.type === 'interactive' ? (
+            <PlayCircle className="w-4 h-4" />
+          ) : (
+            <FileText className="w-4 h-4" />
+          )}
           <span>{content.type.charAt(0).toUpperCase() + content.type.slice(1)}</span>
           <span>•</span>
           <span>{content.duration} min</span>
         </div>
-        
+
         <h2 className="text-xl font-bold text-gray-900 mb-4">{content.title}</h2>
-        
+
         {content.type === 'text' && (
           <div className="prose max-w-none">
             <pre className="whitespace-pre-wrap font-sans text-gray-700">{content.content}</pre>
           </div>
         )}
-        
+
         {content.type === 'video' && (
           <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
             <div className="text-center text-gray-500">
@@ -512,7 +558,7 @@ Organizations that prioritize privacy see:
             </div>
           </div>
         )}
-        
+
         {content.type === 'interactive' && (
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6">
             <div className="text-center">
@@ -522,7 +568,7 @@ Organizations that prioritize privacy see:
             </div>
           </div>
         )}
-        
+
         {/* Navigation */}
         <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
           <button
@@ -533,11 +579,11 @@ Organizations that prioritize privacy see:
             <ChevronLeft className="w-4 h-4" />
             Previous
           </button>
-          
+
           <span className="text-sm text-gray-500">
             {currentContentIndex + 1} of {module.content.length}
           </span>
-          
+
           <button
             onClick={() => handleContentNavigation('next')}
             disabled={currentContentIndex === module.content.length - 1}
@@ -553,18 +599,22 @@ Organizations that prioritize privacy see:
 
   const renderExercise = () => {
     if (!module || !module.exercises[currentExerciseIndex]) return null;
-    
+
     const exercise = module.exercises[currentExerciseIndex];
-    
+
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              exercise.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-              exercise.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-orange-100 text-orange-800'
-            }`}>
+            <span
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                exercise.difficulty === 'beginner'
+                  ? 'bg-green-100 text-green-800'
+                  : exercise.difficulty === 'intermediate'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-orange-100 text-orange-800'
+              }`}
+            >
               {exercise.difficulty}
             </span>
             <span className="text-sm text-gray-500">{exercise.points} points</span>
@@ -576,22 +626,22 @@ Organizations that prioritize privacy see:
             </span>
           )}
         </div>
-        
+
         <h2 className="text-xl font-bold text-gray-900 mb-2">{exercise.title}</h2>
         <p className="text-gray-600 mb-4">{exercise.description}</p>
-        
+
         {exercise.scenario && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <h4 className="font-semibold text-blue-900 mb-2">Scenario</h4>
             <p className="text-blue-800">{exercise.scenario}</p>
           </div>
         )}
-        
+
         <div className="bg-gray-50 rounded-lg p-4 mb-4">
           <h4 className="font-medium text-gray-900 mb-2">Instructions</h4>
           <p className="text-gray-700">{exercise.instructions}</p>
         </div>
-        
+
         {/* Exercise Content */}
         {!exerciseResult && (
           <>
@@ -601,8 +651,8 @@ Organizations that prioritize privacy see:
                   <label
                     key={option.id}
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      exerciseAnswers.selected === option.id 
-                        ? 'border-blue-500 bg-blue-50' 
+                      exerciseAnswers.selected === option.id
+                        ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -614,7 +664,9 @@ Organizations that prioritize privacy see:
                         if (e.target.checked) {
                           setExerciseAnswers({ selected: [...selected, option.id] });
                         } else {
-                          setExerciseAnswers({ selected: selected.filter((id: string) => id !== option.id) });
+                          setExerciseAnswers({
+                            selected: selected.filter((id: string) => id !== option.id),
+                          });
                         }
                       }}
                       className="w-4 h-4 text-blue-600"
@@ -624,7 +676,7 @@ Organizations that prioritize privacy see:
                 ))}
               </div>
             )}
-            
+
             {exercise.type === 'scenario' && (
               <div className="space-y-6">
                 {exercise.data.steps.map((step: any, index: number) => (
@@ -646,7 +698,9 @@ Organizations that prioritize privacy see:
                             type="radio"
                             name={step.id}
                             checked={exerciseAnswers[step.id] === optIndex}
-                            onChange={() => setExerciseAnswers({ ...exerciseAnswers, [step.id]: optIndex })}
+                            onChange={() =>
+                              setExerciseAnswers({ ...exerciseAnswers, [step.id]: optIndex })
+                            }
                             className="w-4 h-4 text-blue-600"
                           />
                           <span className="text-gray-700">{option}</span>
@@ -657,7 +711,7 @@ Organizations that prioritize privacy see:
                 ))}
               </div>
             )}
-            
+
             {/* Hints */}
             <div className="mt-4">
               <button
@@ -667,7 +721,7 @@ Organizations that prioritize privacy see:
                 <Lightbulb className="w-4 h-4" />
                 {showExerciseHint ? 'Hide Hints' : 'Show Hints'}
               </button>
-              
+
               {showExerciseHint && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
@@ -682,7 +736,7 @@ Organizations that prioritize privacy see:
                 </motion.div>
               )}
             </div>
-            
+
             {/* Submit Button */}
             <div className="mt-6 flex justify-end">
               <button
@@ -695,14 +749,16 @@ Organizations that prioritize privacy see:
             </div>
           </>
         )}
-        
+
         {/* Result */}
         {exerciseResult && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`mt-4 p-4 rounded-lg ${
-              exerciseResult.passed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+              exerciseResult.passed
+                ? 'bg-green-50 border border-green-200'
+                : 'bg-red-50 border border-red-200'
             }`}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -711,7 +767,9 @@ Organizations that prioritize privacy see:
               ) : (
                 <AlertCircle className="w-5 h-5 text-red-600" />
               )}
-              <span className={`font-medium ${exerciseResult.passed ? 'text-green-800' : 'text-red-800'}`}>
+              <span
+                className={`font-medium ${exerciseResult.passed ? 'text-green-800' : 'text-red-800'}`}
+              >
                 {exerciseResult.passed ? 'Correct!' : 'Not quite right'}
               </span>
             </div>
@@ -721,7 +779,7 @@ Organizations that prioritize privacy see:
             <p className="text-sm text-gray-600 mt-2">
               Score: {exerciseResult.score}/{exerciseResult.maxScore} points
             </p>
-            
+
             <button
               onClick={() => {
                 setExerciseResult(null);
@@ -735,7 +793,7 @@ Organizations that prioritize privacy see:
             </button>
           </motion.div>
         )}
-        
+
         {/* Exercise Navigation */}
         <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
           <button
@@ -750,14 +808,16 @@ Organizations that prioritize privacy see:
             <ChevronLeft className="w-4 h-4" />
             Previous Exercise
           </button>
-          
+
           <span className="text-sm text-gray-500">
             {currentExerciseIndex + 1} of {module.exercises.length}
           </span>
-          
+
           <button
             onClick={() => {
-              setCurrentExerciseIndex(Math.min(module.exercises.length - 1, currentExerciseIndex + 1));
+              setCurrentExerciseIndex(
+                Math.min(module.exercises.length - 1, currentExerciseIndex + 1)
+              );
               setExerciseResult(null);
               setExerciseAnswers({});
             }}
@@ -774,34 +834,40 @@ Organizations that prioritize privacy see:
 
   const renderAssessment = () => {
     if (!module) return null;
-    
+
     if (!assessmentStarted) {
       return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">{module.assessment.title}</h2>
           <p className="text-gray-600 mb-6">{module.assessment.description}</p>
-          
+
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center gap-2 text-gray-600 mb-1">
                 <Timer className="w-4 h-4" />
                 <span className="text-sm">Time Limit</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">{module.assessment.timeLimit} minutes</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {module.assessment.timeLimit} minutes
+              </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center gap-2 text-gray-600 mb-1">
                 <Award className="w-4 h-4" />
                 <span className="text-sm">Passing Score</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">{module.assessment.passingScore}%</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {module.assessment.passingScore}%
+              </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center gap-2 text-gray-600 mb-1">
                 <HelpCircle className="w-4 h-4" />
                 <span className="text-sm">Questions</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">{module.assessment.questions.length}</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {module.assessment.questions.length}
+              </p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center gap-2 text-gray-600 mb-1">
@@ -811,7 +877,7 @@ Organizations that prioritize privacy see:
               <p className="text-lg font-semibold text-gray-900">Unlimited</p>
             </div>
           </div>
-          
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <h4 className="font-medium text-yellow-800 mb-2">Before You Begin</h4>
             <ul className="text-sm text-yellow-700 space-y-1">
@@ -820,7 +886,7 @@ Organizations that prioritize privacy see:
               <li>• Review your answers before submitting</li>
             </ul>
           </div>
-          
+
           <button
             onClick={startAssessment}
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -830,7 +896,7 @@ Organizations that prioritize privacy see:
         </div>
       );
     }
-    
+
     if (assessmentSubmitted && assessmentResult) {
       return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -853,16 +919,18 @@ Organizations that prioritize privacy see:
               </>
             )}
           </div>
-          
+
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-1">Your Score</p>
-              <p className={`text-4xl font-bold ${assessmentResult.passed ? 'text-green-600' : 'text-red-600'}`}>
+              <p
+                className={`text-4xl font-bold ${assessmentResult.passed ? 'text-green-600' : 'text-red-600'}`}
+              >
                 {assessmentResult.score}%
               </p>
             </div>
           </div>
-          
+
           {assessmentResult.passed && assessmentResult.certificate && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
               <h4 className="font-medium text-yellow-800 mb-2">Certificate Earned!</h4>
@@ -877,7 +945,7 @@ Organizations that prioritize privacy see:
               </button>
             </div>
           )}
-          
+
           <div className="flex gap-4">
             <button
               onClick={() => {
@@ -900,21 +968,23 @@ Organizations that prioritize privacy see:
         </div>
       );
     }
-    
+
     // Assessment in progress
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {/* Timer */}
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">{module.assessment.title}</h2>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
-            (assessmentTimer || 0) < 300 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-          }`}>
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
+              (assessmentTimer || 0) < 300 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+            }`}
+          >
             <Timer className="w-4 h-4" />
             <span className="font-mono font-medium">{formatTime(assessmentTimer || 0)}</span>
           </div>
         </div>
-        
+
         {/* Questions */}
         <div className="space-y-6">
           {module.assessment.questions.map((question, index) => (
@@ -923,9 +993,9 @@ Organizations that prioritize privacy see:
                 <span className="text-sm text-gray-500">Question {index + 1}</span>
                 <span className="text-sm text-gray-500">{question.points} points</span>
               </div>
-              
+
               <p className="font-medium text-gray-900 mb-4">{question.question}</p>
-              
+
               {question.type === 'multiple_choice' && question.options && (
                 <div className="space-y-2">
                   {question.options.map((option) => (
@@ -941,7 +1011,9 @@ Organizations that prioritize privacy see:
                         type="radio"
                         name={question.id}
                         checked={assessmentAnswers[question.id] === option.id}
-                        onChange={() => setAssessmentAnswers({ ...assessmentAnswers, [question.id]: option.id })}
+                        onChange={() =>
+                          setAssessmentAnswers({ ...assessmentAnswers, [question.id]: option.id })
+                        }
                         className="w-4 h-4 text-blue-600"
                       />
                       <span className="text-gray-700">{option.text}</span>
@@ -949,7 +1021,7 @@ Organizations that prioritize privacy see:
                   ))}
                 </div>
               )}
-              
+
               {question.type === 'multiple_select' && question.options && (
                 <div className="space-y-2">
                   {question.options.map((option) => (
@@ -967,9 +1039,15 @@ Organizations that prioritize privacy see:
                         onChange={(e) => {
                           const selected = assessmentAnswers[question.id] || [];
                           if (e.target.checked) {
-                            setAssessmentAnswers({ ...assessmentAnswers, [question.id]: [...selected, option.id] });
+                            setAssessmentAnswers({
+                              ...assessmentAnswers,
+                              [question.id]: [...selected, option.id],
+                            });
                           } else {
-                            setAssessmentAnswers({ ...assessmentAnswers, [question.id]: selected.filter((id: string) => id !== option.id) });
+                            setAssessmentAnswers({
+                              ...assessmentAnswers,
+                              [question.id]: selected.filter((id: string) => id !== option.id),
+                            });
                           }
                         }}
                         className="w-4 h-4 text-blue-600"
@@ -979,7 +1057,7 @@ Organizations that prioritize privacy see:
                   ))}
                 </div>
               )}
-              
+
               {question.type === 'true_false' && question.options && (
                 <div className="flex gap-4">
                   {question.options.map((option) => (
@@ -995,7 +1073,9 @@ Organizations that prioritize privacy see:
                         type="radio"
                         name={question.id}
                         checked={assessmentAnswers[question.id] === option.id}
-                        onChange={() => setAssessmentAnswers({ ...assessmentAnswers, [question.id]: option.id })}
+                        onChange={() =>
+                          setAssessmentAnswers({ ...assessmentAnswers, [question.id]: option.id })
+                        }
                         className="w-4 h-4 text-blue-600"
                       />
                       <span className="text-gray-700">{option.text}</span>
@@ -1006,7 +1086,7 @@ Organizations that prioritize privacy see:
             </div>
           ))}
         </div>
-        
+
         {/* Submit Button */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <button
@@ -1016,7 +1096,8 @@ Organizations that prioritize privacy see:
             Submit Assessment
           </button>
           <p className="text-center text-sm text-gray-500 mt-2">
-            {Object.keys(assessmentAnswers).length} of {module.assessment.questions.length} questions answered
+            {Object.keys(assessmentAnswers).length} of {module.assessment.questions.length}{' '}
+            questions answered
           </p>
         </div>
       </div>
@@ -1024,15 +1105,7 @@ Organizations that prioritize privacy see:
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <TrainingModuleSkeleton />;
   }
 
   if (!module) {
@@ -1121,7 +1194,7 @@ Organizations that prioritize privacy see:
             </button>
           </nav>
         </div>
-        
+
         <div className="p-6">
           <AnimatePresence mode="wait">
             {activeSection === 'content' && (
@@ -1134,7 +1207,7 @@ Organizations that prioritize privacy see:
                 {renderContent()}
               </motion.div>
             )}
-            
+
             {activeSection === 'exercises' && (
               <motion.div
                 key="exercises"
@@ -1145,7 +1218,7 @@ Organizations that prioritize privacy see:
                 {renderExercise()}
               </motion.div>
             )}
-            
+
             {activeSection === 'assessment' && (
               <motion.div
                 key="assessment"

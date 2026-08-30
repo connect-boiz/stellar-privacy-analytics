@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { logger } from '../utils/logger';
-import { AuthenticatedRequest } from './stellarAuth';
+import { Request, Response, NextFunction } from "express";
+import { v4 as uuidv4 } from "uuid";
+import { logger } from "../utils/logger";
+import { AuthenticatedRequest } from "./stellarAuth";
 
 export interface TraceContext {
   traceId: string;
@@ -32,43 +32,47 @@ export class ObservabilityMiddleware {
 
   constructor(config: Partial<ObservabilityConfig> = {}) {
     this.config = {
-      serviceName: 'stellar-pql-api',
-      serviceVersion: '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
+      serviceName: "stellar-pql-api",
+      serviceVersion: "1.0.0",
+      environment: process.env.NODE_ENV || "development",
       enableTracing: true,
       enableMetrics: true,
       sampleRate: 1.0, // Sample all requests in development
-      ...config
+      ...config,
     };
   }
 
   /**
    * Main observability middleware
    */
-  observe = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+  observe = (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): void => {
     // Generate trace ID and span ID
     const traceId = this.generateTraceId();
     const spanId = this.generateSpanId();
-    
+
     // Check if we should sample this request
     const shouldSample = this.shouldSampleRequest(req);
-    
+
     // Create trace context
     const traceContext: TraceContext = {
       traceId,
       spanId,
       startTime: Date.now(),
       tags: {
-        'service.name': this.config.serviceName,
-        'service.version': this.config.serviceVersion,
-        'http.method': req.method,
-        'http.url': req.originalUrl,
-        'http.user_agent': req.headers['user-agent'] || 'unknown',
-        'http.remote_addr': req.ip || 'unknown',
-        'user.id': req.user?.id || 'anonymous',
-        'user.rate_limit_tier': req.user?.rateLimitTier || 'basic'
+        "service.name": this.config.serviceName,
+        "service.version": this.config.serviceVersion,
+        "http.method": req.method,
+        "http.url": req.originalUrl,
+        "http.user_agent": req.headers["user-agent"] || "unknown",
+        "http.remote_addr": req.ip || "unknown",
+        "user.id": req.user?.id || "anonymous",
+        "user.rate_limit_tier": req.user?.rateLimitTier || "basic",
       },
-      logs: []
+      logs: [],
     };
 
     // Add trace context to request
@@ -81,31 +85,31 @@ export class ObservabilityMiddleware {
     }
 
     // Add trace headers to response
-    res.setHeader('X-Trace-Id', traceId);
-    res.setHeader('X-Span-Id', spanId);
+    res.setHeader("X-Trace-Id", traceId);
+    res.setHeader("X-Span-Id", spanId);
 
     // Log request start
-    this.logEvent(traceContext, 'info', 'Request started', {
+    this.logEvent(traceContext, "info", "Request started", {
       method: req.method,
       url: req.originalUrl,
-      userAgent: req.headers['user-agent'],
-      userId: req.user?.id
+      userAgent: req.headers["user-agent"],
+      userId: req.user?.id,
     });
 
     // Override res.end to capture response completion
-    const originalEnd = res.end;
-    res.end = (chunk?: any, encoding?: any) => {
+    const originalEnd = res.end.bind(res);
+    res.end = ((chunk?: any, encoding?: any) => {
       const duration = Date.now() - traceContext.startTime;
-      
+
       // Update trace context with response info
-      traceContext.tags['http.status_code'] = res.statusCode.toString();
-      traceContext.tags['http.duration_ms'] = duration.toString();
-      
+      traceContext.tags["http.status_code"] = res.statusCode.toString();
+      traceContext.tags["http.duration_ms"] = duration.toString();
+
       // Log request completion
-      this.logEvent(traceContext, 'info', 'Request completed', {
+      this.logEvent(traceContext, "info", "Request completed", {
         statusCode: res.statusCode,
         duration,
-        contentLength: res.get('content-length')
+        contentLength: res.get("content-length"),
       });
 
       // Record metrics
@@ -117,13 +121,13 @@ export class ObservabilityMiddleware {
       this.activeTraces.delete(traceId);
 
       // Call original end
-      originalEnd.call(res, chunk, encoding);
-    };
+      return originalEnd.call(res, chunk, encoding);
+    }) as any;
 
     // Handle errors
-    res.on('error', (error) => {
-      this.logEvent(traceContext, 'error', 'Response error', {
-        error: error.message
+    res.on("error", (error) => {
+      this.logEvent(traceContext, "error", "Response error", {
+        error: error.message,
       });
     });
 
@@ -134,14 +138,14 @@ export class ObservabilityMiddleware {
    * Generate trace ID
    */
   private generateTraceId(): string {
-    return uuidv4().replace(/-/g, '');
+    return uuidv4().replace(/-/g, "");
   }
 
   /**
    * Generate span ID
    */
-  private generateSpanId(): string {
-    return uuidv4().replace(/-/g, '').substring(0, 16);
+  generateSpanId(): string {
+    return uuidv4().replace(/-/g, "").substring(0, 16);
   }
 
   /**
@@ -153,7 +157,10 @@ export class ObservabilityMiddleware {
     }
 
     // Always sample health checks and metrics endpoints
-    if (req.originalUrl.includes('/health') || req.originalUrl.includes('/metrics')) {
+    if (
+      req.originalUrl.includes("/health") ||
+      req.originalUrl.includes("/metrics")
+    ) {
       return false;
     }
 
@@ -168,13 +175,13 @@ export class ObservabilityMiddleware {
     traceContext: TraceContext,
     level: string,
     message: string,
-    fields?: Record<string, any>
+    fields?: Record<string, any>,
   ): void {
     const logEntry = {
       timestamp: Date.now(),
       level,
       message,
-      fields
+      fields,
     };
 
     traceContext.logs.push(logEntry);
@@ -183,20 +190,20 @@ export class ObservabilityMiddleware {
     const logData = {
       traceId: traceContext.traceId,
       spanId: traceContext.spanId,
-      ...fields
+      ...fields,
     };
 
     switch (level) {
-      case 'error':
+      case "error":
         logger.error(message, logData);
         break;
-      case 'warn':
+      case "warn":
         logger.warn(message, logData);
         break;
-      case 'info':
+      case "info":
         logger.info(message, logData);
         break;
-      case 'debug':
+      case "debug":
         logger.debug(message, logData);
         break;
       default:
@@ -210,17 +217,17 @@ export class ObservabilityMiddleware {
   private recordMetrics(req: Request, res: Response, duration: number): void {
     // This would integrate with your metrics system (Prometheus, etc.)
     // For now, we'll just log the metrics
-    
+
     const metricData = {
       method: req.method,
       route: this.getRoutePattern(req),
       statusCode: res.statusCode,
       duration,
       userId: (req as AuthenticatedRequest).user?.id,
-      rateLimitTier: (req as AuthenticatedRequest).user?.rateLimitTier
+      rateLimitTier: (req as AuthenticatedRequest).user?.rateLimitTier,
     };
 
-    logger.info('Request metrics', metricData);
+    logger.info("Request metrics", metricData);
 
     // In production, you would send these to Prometheus/DataDog/etc.
     // Example:
@@ -235,15 +242,15 @@ export class ObservabilityMiddleware {
     // This would ideally come from your router (Express doesn't expose this easily)
     // For now, we'll use a simplified approach
     const url = req.originalUrl;
-    
+
     // Common patterns
-    if (url.includes('/query/')) return '/query/{id}';
-    if (url.includes('/query')) return '/query';
-    if (url.includes('/privacy/budget')) return '/privacy/budget';
-    if (url.includes('/schemas')) return '/schemas';
-    if (url.includes('/query/history')) return '/query/history';
-    
-    return url.split('?')[0]; // Remove query parameters
+    if (url.includes("/query/")) return "/query/{id}";
+    if (url.includes("/query")) return "/query";
+    if (url.includes("/privacy/budget")) return "/privacy/budget";
+    if (url.includes("/schemas")) return "/schemas";
+    if (url.includes("/query/history")) return "/query/history";
+
+    return url.split("?")[0]; // Remove query parameters
   }
 
   /**
@@ -270,7 +277,7 @@ export class ObservabilityMiddleware {
     traceId: string,
     level: string,
     message: string,
-    fields?: Record<string, any>
+    fields?: Record<string, any>,
   ): void {
     const trace = this.activeTraces.get(traceId);
     if (trace) {
@@ -319,8 +326,8 @@ export class ObservabilityMiddleware {
       service: {
         name: this.config.serviceName,
         version: this.config.serviceVersion,
-        environment: this.config.environment
-      }
+        environment: this.config.environment,
+      },
     };
   }
 
@@ -335,7 +342,7 @@ export class ObservabilityMiddleware {
     return {
       activeTraces: this.activeTraces.size,
       sampleRate: this.config.sampleRate,
-      config: { ...this.config }
+      config: { ...this.config },
     };
   }
 }
@@ -343,9 +350,11 @@ export class ObservabilityMiddleware {
 /**
  * Middleware factory function
  */
-export function createObservability(config?: Partial<ObservabilityConfig>): ObservabilityMiddleware {
+export function createObservability(
+  config?: Partial<ObservabilityConfig>,
+): ObservabilityMiddleware {
   const middleware = new ObservabilityMiddleware(config);
-  
+
   // Set up cleanup interval
   setInterval(() => {
     middleware.cleanup();
@@ -358,18 +367,22 @@ export function createObservability(config?: Partial<ObservabilityConfig>): Obse
  * Default observability middleware instance
  */
 export const observability = createObservability({
-  serviceName: 'stellar-pql-api',
-  serviceVersion: '1.0.0',
-  environment: process.env.NODE_ENV || 'development',
-  enableTracing: process.env.ENABLE_TRACING !== 'false',
-  enableMetrics: process.env.ENABLE_METRICS !== 'false',
-  sampleRate: parseFloat(process.env.TRACE_SAMPLE_RATE || '1.0')
+  serviceName: "stellar-pql-api",
+  serviceVersion: "1.0.0",
+  environment: process.env.NODE_ENV || "development",
+  enableTracing: process.env.ENABLE_TRACING !== "false",
+  enableMetrics: process.env.ENABLE_METRICS !== "false",
+  sampleRate: parseFloat(process.env.TRACE_SAMPLE_RATE || "1.0"),
 });
 
 /**
  * Helper functions for adding trace information
  */
-export function addTraceTag(req: AuthenticatedRequest, key: string, value: string): void {
+export function addTraceTag(
+  req: AuthenticatedRequest,
+  key: string,
+  value: string,
+): void {
   if (req.traceId) {
     observability.addTraceTag(req.traceId, key, value);
   }
@@ -379,7 +392,7 @@ export function addTraceLog(
   req: AuthenticatedRequest,
   level: string,
   message: string,
-  fields?: Record<string, any>
+  fields?: Record<string, any>,
 ): void {
   if (req.traceId) {
     observability.addTraceLog(req.traceId, level, message, fields);
@@ -390,35 +403,41 @@ export function addTraceLog(
  * Performance monitoring decorator
  */
 export function monitorPerformance(operationName: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const req = args.find(arg => arg && arg.traceId) as AuthenticatedRequest;
-      const traceId = req?.traceId || 'unknown';
-      
+      const req = args.find(
+        (arg) => arg && arg.traceId,
+      ) as AuthenticatedRequest;
+      const _traceId = req?.traceId || "unknown";
+
       const startTime = Date.now();
-      
+
       if (req) {
-        addTraceLog(req, 'info', `Starting ${operationName}`);
+        addTraceLog(req, "info", `Starting ${operationName}`);
       }
 
       try {
         const result = await method.apply(this, args);
         const duration = Date.now() - startTime;
-        
+
         if (req) {
-          addTraceLog(req, 'info', `Completed ${operationName}`, { duration });
+          addTraceLog(req, "info", `Completed ${operationName}`, { duration });
         }
 
         return result;
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         if (req) {
-          addTraceLog(req, 'error', `Failed ${operationName}`, {
+          addTraceLog(req, "error", `Failed ${operationName}`, {
             duration,
-            error: error.message
+            error: error.message,
           });
         }
 
@@ -434,35 +453,53 @@ export function monitorPerformance(operationName: string) {
  * Query execution tracer
  */
 export class QueryTracer {
-  constructor(private traceId: string, private observability: ObservabilityMiddleware) {}
+  constructor(
+    private traceId: string,
+    private observability: ObservabilityMiddleware,
+  ) {}
 
   startStep(stepName: string): string {
     const spanId = this.observability.generateSpanId();
-    
-    this.observability.addTraceLog(this.traceId, 'info', `Starting ${stepName}`, {
-      spanId,
-      stepName
-    });
+
+    this.observability.addTraceLog(
+      this.traceId,
+      "info",
+      `Starting ${stepName}`,
+      {
+        spanId,
+        stepName,
+      },
+    );
 
     return spanId;
   }
 
   endStep(spanId: string, stepName: string, result?: any): void {
-    this.observability.addTraceLog(this.traceId, 'info', `Completed ${stepName}`, {
-      spanId,
-      stepName,
-      success: true,
-      result: result ? 'success' : 'undefined'
-    });
+    this.observability.addTraceLog(
+      this.traceId,
+      "info",
+      `Completed ${stepName}`,
+      {
+        spanId,
+        stepName,
+        success: true,
+        result: result ? "success" : "undefined",
+      },
+    );
   }
 
   failStep(spanId: string, stepName: string, error: Error): void {
-    this.observability.addTraceLog(this.traceId, 'error', `Failed ${stepName}`, {
-      spanId,
-      stepName,
-      error: error.message,
-      stack: error.stack
-    });
+    this.observability.addTraceLog(
+      this.traceId,
+      "error",
+      `Failed ${stepName}`,
+      {
+        spanId,
+        stepName,
+        error: error.message,
+        stack: error.stack,
+      },
+    );
   }
 
   addTag(key: string, value: string): void {
@@ -477,7 +514,9 @@ export class QueryTracer {
 /**
  * Create query tracer from request
  */
-export function createQueryTracer(req: AuthenticatedRequest): QueryTracer | null {
+export function createQueryTracer(
+  req: AuthenticatedRequest,
+): QueryTracer | null {
   if (!req.traceId) {
     return null;
   }
@@ -492,5 +531,5 @@ export default {
   addTraceLog,
   monitorPerformance,
   QueryTracer,
-  createQueryTracer
+  createQueryTracer,
 };

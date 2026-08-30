@@ -1,13 +1,13 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { ExportRepository } from './export.repository';
-import { chunkReader } from './utils/chunk-reader';
-import { decrypt } from './utils/encryption.util';
-import { CsvExporter } from './exporters/csv.exporter';
-import { JsonExporter } from './exporters/json.exporter';
-import { ParquetExporter } from './exporters/parquet.exporter';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
+import { ExportRepository } from "./export.repository";
+import { chunkReader } from "./utils/chunk-reader";
+import { decrypt } from "./utils/encryption.util";
+import { CsvExporter } from "./exporters/csv.exporter";
+import { JsonExporter } from "./exporters/json.exporter";
+import { ParquetExporter } from "./exporters/parquet.exporter";
 
-@Processor('export-queue')
+@Processor("export-queue")
 export class ExportWorker extends WorkerHost {
   constructor(private readonly repo: ExportRepository) {
     super();
@@ -21,7 +21,7 @@ export class ExportWorker extends WorkerHost {
     if (!exportJob) return;
 
     try {
-      exportJob.status = 'processing';
+      exportJob.status = "processing";
       await this.repo.save(exportJob);
 
       const writer = this.getWriter(exportJob.format);
@@ -44,12 +44,12 @@ export class ExportWorker extends WorkerHost {
 
       const filePath = await writer.close();
 
-      exportJob.status = 'completed';
+      exportJob.status = "completed";
       exportJob.filePath = filePath;
 
       await this.repo.save(exportJob);
     } catch (err) {
-      exportJob.status = 'failed';
+      exportJob.status = "failed";
       exportJob.error = err.message;
 
       await this.repo.save(exportJob);
@@ -58,8 +58,8 @@ export class ExportWorker extends WorkerHost {
   }
 
   private getWriter(format: string) {
-    if (format === 'csv') return new CsvExporter();
-    if (format === 'json') return new JsonExporter();
+    if (format === "csv") return new CsvExporter();
+    if (format === "json") return new JsonExporter();
     return new ParquetExporter();
   }
 }

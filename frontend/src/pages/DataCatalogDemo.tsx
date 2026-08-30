@@ -11,15 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Search, 
-  Database, 
-  Shield, 
-  TrendingUp, 
-  Users, 
-  CheckCircle, 
+import {
+  Search,
+  Database,
+  Shield,
+  TrendingUp,
+  Users,
+  CheckCircle,
   AlertTriangle,
   Clock,
   Filter,
@@ -37,7 +36,7 @@ import {
   RefreshCw,
   ChevronRight,
   Info,
-  Zap
+  Zap,
 } from 'lucide-react';
 
 // Import services
@@ -57,7 +56,7 @@ import {
   UsageMetrics,
   QualityAssessment,
   AccessEvaluation,
-  LineageGraph
+  LineageGraph,
 } from '../types/dataCatalog';
 
 // Sample data
@@ -69,8 +68,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
       description: 'Comprehensive customer demographic and behavioral data',
       owner: 'data_team@company.com',
       department: 'Marketing',
-      createdAt: Date.now() - (90 * 24 * 60 * 60 * 1000),
-      updatedAt: Date.now() - (2 * 24 * 60 * 60 * 1000),
+      createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+      updatedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
       version: '2.1.0',
       status: 'active',
       tags: ['customer', 'demographics', 'behavioral', 'pii'],
@@ -88,7 +87,7 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             sensitivity: 'high',
             retentionPeriod: 2555,
             processingPurpose: 'marketing_analysis',
-            legalBasis: 'consent'
+            legalBasis: 'consent',
           },
           {
             type: 'behavioral',
@@ -97,15 +96,15 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             sensitivity: 'medium',
             retentionPeriod: 730,
             processingPurpose: 'personalization',
-            legalBasis: 'legitimate_interest'
-          }
+            legalBasis: 'legitimate_interest',
+          },
         ],
         retentionPolicy: {
           minimumRetention: 730,
           maximumRetention: 2555,
           autoDelete: true,
           archivalRequired: true,
-          complianceRequirements: ['GDPR', 'CCPA']
+          complianceRequirements: ['GDPR', 'CCPA'],
         },
         consentRequirements: [
           {
@@ -116,32 +115,50 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             legalBasis: 'consent',
             duration: 365,
             withdrawalAllowed: true,
-            granular: true
-          }
+            granular: true,
+          },
         ],
         privacyImpactAssessment: {
           id: 'pia_001',
-          assessedAt: Date.now() - (30 * 24 * 60 * 60 * 1000),
+          assessedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
           assessedBy: 'privacy_officer@company.com',
           riskLevel: 'medium',
           findings: ['Data contains PII', 'Cross-border transfers required'],
           recommendations: ['Implement additional encryption', 'Update consent mechanisms'],
           mitigationMeasures: ['Field-level encryption', 'Access logging'],
-          approvalStatus: 'approved'
+          approvalStatus: 'approved',
         },
         gdprCompliance: {
           lawfulBasis: 'consent',
           dataSubjectRights: [
-            { right: 'access', enabled: true, process: 'automated_portal', timeframe: 30, contact: 'dpo@company.com' },
-            { right: 'rectification', enabled: true, process: 'manual_review', timeframe: 30, contact: 'dpo@company.com' },
-            { right: 'erasure', enabled: true, process: 'automated_deletion', timeframe: 30, contact: 'dpo@company.com' }
+            {
+              right: 'access',
+              enabled: true,
+              process: 'automated_portal',
+              timeframe: 30,
+              contact: 'dpo@company.com',
+            },
+            {
+              right: 'rectification',
+              enabled: true,
+              process: 'manual_review',
+              timeframe: 30,
+              contact: 'dpo@company.com',
+            },
+            {
+              right: 'erasure',
+              enabled: true,
+              process: 'automated_deletion',
+              timeframe: 30,
+              contact: 'dpo@company.com',
+            },
           ],
           crossBorderTransfer: true,
           dpiaRequired: true,
           dpiaCompleted: true,
           recordOfProcessing: true,
-          breachNotificationRequired: true
-        }
+          breachNotificationRequired: true,
+        },
       },
       schema: {
         version: '2.1',
@@ -159,11 +176,21 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
               anonymizationMethod: 'hashing',
               anonymizationLevel: 0.9,
               accessRestricted: true,
-              consentRequired: true
+              consentRequired: true,
             },
             constraints: [
-              { type: 'not_null', value: null, description: 'Customer ID cannot be null', enforced: true },
-              { type: 'unique', value: null, description: 'Customer ID must be unique', enforced: true }
+              {
+                type: 'not_null',
+                value: null,
+                description: 'Customer ID cannot be null',
+                enforced: true,
+              },
+              {
+                type: 'unique',
+                value: null,
+                description: 'Customer ID must be unique',
+                enforced: true,
+              },
             ],
             statistics: {
               distinctCount: 1000000,
@@ -172,16 +199,16 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 type: 'uniform',
                 parameters: {},
                 histogram: [],
-                outliers: []
+                outliers: [],
               },
-              lastUpdated: Date.now() - (2 * 24 * 60 * 60 * 1000)
+              lastUpdated: Date.now() - 2 * 24 * 60 * 60 * 1000,
             },
             lineage: {
               sourceFields: ['legacy_customer_id'],
               transformation: 'hashing',
-              derivedAt: Date.now() - (90 * 24 * 60 * 60 * 1000),
-              confidence: 0.95
-            }
+              derivedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+              confidence: 0.95,
+            },
           },
           {
             name: 'email',
@@ -195,10 +222,15 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
               anonymizationMethod: 'tokenization',
               anonymizationLevel: 0.8,
               accessRestricted: true,
-              consentRequired: true
+              consentRequired: true,
             },
             constraints: [
-              { type: 'regex', value: '^[^@]+@[^@]+\\.[^@]+$', description: 'Valid email format', enforced: true }
+              {
+                type: 'regex',
+                value: '^[^@]+@[^@]+\\.[^@]+$',
+                description: 'Valid email format',
+                enforced: true,
+              },
             ],
             statistics: {
               distinctCount: 950000,
@@ -207,23 +239,23 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 type: 'categorical',
                 parameters: {},
                 histogram: [],
-                outliers: []
+                outliers: [],
               },
-              lastUpdated: Date.now() - (2 * 24 * 60 * 60 * 1000)
+              lastUpdated: Date.now() - 2 * 24 * 60 * 60 * 1000,
             },
             lineage: {
               sourceFields: ['customer_email'],
               transformation: 'tokenization',
-              derivedAt: Date.now() - (90 * 24 * 60 * 60 * 1000),
-              confidence: 0.9
-            }
-          }
+              derivedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
+              confidence: 0.9,
+            },
+          },
         ],
         relationships: [],
         constraints: [],
         indexes: [],
         partitions: [],
-        evolution: []
+        evolution: [],
       },
       lineage: {
         upstream: [
@@ -233,9 +265,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'source',
             connectionType: 'direct',
             strength: 0.9,
-            lastUpdated: Date.now() - (90 * 24 * 60 * 60 * 1000),
-            metadata: { source: 'oracle_db', table: 'customers' }
-          }
+            lastUpdated: Date.now() - 90 * 24 * 60 * 60 * 1000,
+            metadata: { source: 'oracle_db', table: 'customers' },
+          },
         ],
         downstream: [
           {
@@ -244,8 +276,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'intermediate',
             connectionType: 'direct',
             strength: 0.8,
-            lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            metadata: { purpose: 'segmentation' }
+            lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            metadata: { purpose: 'segmentation' },
           },
           {
             datasetId: 'customer_analytics',
@@ -253,9 +285,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'target',
             connectionType: 'indirect',
             strength: 0.6,
-            lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            metadata: { purpose: 'analytics' }
-          }
+            lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            metadata: { purpose: 'analytics' },
+          },
         ],
         transformations: [
           {
@@ -267,9 +299,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             targetDatasets: ['customer_data_001'],
             logic: 'Remove duplicates, standardize formats, validate emails',
             parameters: { removeDuplicates: true, validateEmails: true },
-            timestamp: Date.now() - (90 * 24 * 60 * 60 * 1000),
-            owner: 'data_engineering'
-          }
+            timestamp: Date.now() - 90 * 24 * 60 * 60 * 1000,
+            owner: 'data_engineering',
+          },
         ],
         graph: {
           nodes: [],
@@ -277,7 +309,7 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           layout: {
             algorithm: 'force',
             parameters: {},
-            optimized: false
+            optimized: false,
           },
           metadata: {
             generatedAt: Date.now(),
@@ -285,24 +317,24 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             nodeCount: 0,
             edgeCount: 0,
             depth: 0,
-            cycles: 0
-          }
+            cycles: 0,
+          },
         },
         impact: {
           criticality: 'high',
           downstreamCount: 5,
           consumerCount: 12,
           businessImpact: 'Critical for marketing operations',
-          riskFactors: ['Contains PII', 'High usage volume']
-        }
+          riskFactors: ['Contains PII', 'High usage volume'],
+        },
       },
       quality: {
         overall: {
           value: 87.5,
           grade: 'B',
-          lastAssessed: Date.now() - (1 * 24 * 60 * 60 * 1000),
+          lastAssessed: Date.now() - 1 * 24 * 60 * 60 * 1000,
           trend: 'improving',
-          confidence: 0.92
+          confidence: 0.92,
         },
         dimensions: [
           {
@@ -319,11 +351,11 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 status: 'warning',
                 description: 'Overall dataset completeness',
                 formula: 'average(field_completeness)',
-                lastCalculated: Date.now() - (1 * 24 * 60 * 60 * 1000)
-              }
+                lastCalculated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+              },
             ],
-            lastAssessed: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            trend: 'stable'
+            lastAssessed: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            trend: 'stable',
           },
           {
             name: 'accuracy',
@@ -339,12 +371,12 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 status: 'warning',
                 description: 'Overall dataset accuracy',
                 formula: 'average(field_accuracy)',
-                lastCalculated: Date.now() - (1 * 24 * 60 * 60 * 1000)
-              }
+                lastCalculated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+              },
             ],
-            lastAssessed: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            trend: 'improving'
-          }
+            lastAssessed: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            trend: 'improving',
+          },
         ],
         issues: [
           {
@@ -355,13 +387,13 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             description: '5% of records have missing email addresses',
             affectedFields: ['email'],
             affectedRecords: 50000,
-            detectedAt: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            status: 'open'
-          }
+            detectedAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            status: 'open',
+          },
         ],
         assessments: [],
         trends: [],
-        benchmarks: []
+        benchmarks: [],
       },
       usage: {
         statistics: {
@@ -372,8 +404,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           dataVolumeAccessed: 2500000000, // 2.5GB
           avgResponseTime: 1250, // ms
           errorRate: 0.02,
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000),
-          period: 'day'
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+          period: 'day',
         },
         patterns: [
           {
@@ -382,8 +414,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             frequency: 0.85,
             confidence: 0.9,
             description: 'High usage during business hours (9AM-5PM)',
-            metadata: { peakHours: [9, 10, 11, 14, 15, 16] }
-          }
+            metadata: { peakHours: [9, 10, 11, 14, 15, 16] },
+          },
         ],
         consumers: [
           {
@@ -392,12 +424,12 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'team',
             department: 'Marketing',
             accessLevel: 'read',
-            firstAccess: Date.now() - (90 * 24 * 60 * 60 * 1000),
-            lastAccess: Date.now() - (2 * 24 * 60 * 60 * 1000),
+            firstAccess: Date.now() - 90 * 24 * 60 * 60 * 1000,
+            lastAccess: Date.now() - 2 * 24 * 60 * 60 * 1000,
             queryCount: 8900,
             dataVolume: 1500000000,
             favorite: true,
-            tags: ['power_users']
+            tags: ['power_users'],
           },
           {
             id: 'analytics_team',
@@ -405,13 +437,13 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'team',
             department: 'Analytics',
             accessLevel: 'read',
-            firstAccess: Date.now() - (60 * 24 * 60 * 60 * 1000),
-            lastAccess: Date.now() - (1 * 24 * 60 * 60 * 1000),
+            firstAccess: Date.now() - 60 * 24 * 60 * 60 * 1000,
+            lastAccess: Date.now() - 1 * 24 * 60 * 60 * 1000,
             queryCount: 6520,
             dataVolume: 1000000000,
             favorite: false,
-            tags: []
-          }
+            tags: [],
+          },
         ],
         queries: [],
         access: [],
@@ -424,9 +456,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           concurrency: 12,
           errorRate: 0.02,
           availability: 99.8,
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
         },
-        trends: []
+        trends: [],
       },
       access: {
         permissions: [
@@ -438,21 +470,21 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             resourceType: 'dataset',
             actions: [
               { action: 'read', granted: true },
-              { action: 'write', granted: false }
+              { action: 'write', granted: false },
             ],
             conditions: [
               {
                 type: 'time',
                 operator: 'between',
                 value: ['09:00', '17:00'],
-                description: 'Business hours only'
-              }
+                description: 'Business hours only',
+              },
             ],
-            grantedAt: Date.now() - (90 * 24 * 60 * 60 * 1000),
+            grantedAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
             grantedBy: 'data_admin',
             status: 'active',
-            justification: 'Marketing operations'
-          }
+            justification: 'Marketing operations',
+          },
         ],
         roles: [],
         policies: [],
@@ -467,13 +499,13 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 type: 'time',
                 operator: 'between',
                 value: ['09:00', '17:00'],
-                description: 'Business hours only'
-              }
+                description: 'Business hours only',
+              },
             ],
             enforced: true,
-            bypassAllowed: false
-          }
-        ]
+            bypassAllowed: false,
+          },
+        ],
       },
       location: {
         source: {
@@ -485,15 +517,15 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             protocol: 'https',
             ssl: true,
             timeout: 30,
-            poolSize: 10
+            poolSize: 10,
           },
           credentials: {
             type: 'service_account',
             encrypted: true,
             rotationRequired: true,
-            lastRotated: Date.now() - (30 * 24 * 60 * 60 * 1000)
+            lastRotated: Date.now() - 30 * 24 * 60 * 60 * 1000,
           },
-          properties: { region: 'us-west-2', bucket: 'customer-data' }
+          properties: { region: 'us-west-2', bucket: 'customer-data' },
         },
         storage: {
           provider: 'AWS',
@@ -506,26 +538,26 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             keyId: 'arn:aws:kms:us-west-2:123456789012:key/12345678-1234-1234-1234-123456789012',
             keyRotation: true,
             atRest: true,
-            inTransit: true
+            inTransit: true,
           },
           compression: {
             enabled: true,
             algorithm: 'snappy',
             ratio: 0.3,
-            level: 6
+            level: 6,
           },
           indexing: {
             enabled: true,
             type: 'btree',
             fields: ['customer_id', 'email'],
-            refreshInterval: 3600
-          }
+            refreshInterval: 3600,
+          },
         },
         format: {
           type: 'parquet',
           version: '1.0',
           compression: 'snappy',
-          encoding: 'utf-8'
+          encoding: 'utf-8',
         },
         size: {
           total: 5000000000, // 5GB
@@ -533,7 +565,7 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           available: 2500000000, // 2.5GB
           unit: 'bytes',
           estimated: false,
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
         },
         partitions: [],
         replication: {
@@ -542,17 +574,17 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           factor: 2,
           regions: ['us-east-1', 'eu-west-1'],
           lag: 300,
-          status: 'active'
+          status: 'active',
         },
         backup: {
           enabled: true,
           frequency: 'daily',
           retention: 30,
-          lastBackup: Date.now() - (1 * 24 * 60 * 60 * 1000),
-          nextBackup: Date.now() + (23 * 60 * 60 * 1000),
+          lastBackup: Date.now() - 1 * 24 * 60 * 60 * 1000,
+          nextBackup: Date.now() + 23 * 60 * 60 * 1000,
           size: 2500000000,
           location: 's3://backups/customer-data/',
-          encrypted: true
+          encrypted: true,
         },
         retention: {
           policy: 'compliance_driven',
@@ -560,18 +592,18 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           maximumAge: 2555,
           autoDelete: true,
           archivalRequired: true,
-          archivalLocation: 's3://archive/customer-data/'
+          archivalLocation: 's3://archive/customer-data/',
         },
         cost: {
-          storage: 125.50,
+          storage: 125.5,
           compute: 89.25,
           transfer: 15.75,
-          operations: 8.50,
-          total: 239.00,
+          operations: 8.5,
+          total: 239.0,
           currency: 'USD',
           period: 'month',
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
-        }
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+        },
       },
       processing: {
         pipelines: [
@@ -597,19 +629,19 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                   throughput: 27.8,
                   memoryUsage: 2048,
                   cpuUsage: 45,
-                  lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
-                }
-              }
+                  lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+                },
+              },
             ],
             sources: ['crm_system', 'web_analytics'],
             targets: ['customer_data_001'],
             parameters: { batchSize: 1000, compression: 'snappy' },
             status: 'active',
-            createdAt: Date.now() - (90 * 24 * 60 * 60 * 1000),
+            createdAt: Date.now() - 90 * 24 * 60 * 60 * 1000,
             createdBy: 'data_engineering',
-            lastRun: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            nextRun: Date.now() + (23 * 60 * 60 * 1000)
-          }
+            lastRun: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            nextRun: Date.now() + 23 * 60 * 60 * 1000,
+          },
         ],
         jobs: [],
         schedules: [],
@@ -619,8 +651,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           alerts: [],
           dashboards: [],
           metrics: [],
-          healthChecks: []
-        }
+          healthChecks: [],
+        },
       },
       compliance: {
         frameworks: [
@@ -633,19 +665,23 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             maturity: {
               level: 4,
               description: 'Advanced compliance implementation',
-              characteristics: ['Automated monitoring', 'Regular assessments', 'Documentation maintained'],
+              characteristics: [
+                'Automated monitoring',
+                'Regular assessments',
+                'Documentation maintained',
+              ],
               gaps: ['Cross-border transfer documentation'],
-              recommendations: ['Update transfer documentation']
+              recommendations: ['Update transfer documentation'],
             },
-            lastAssessed: Date.now() - (30 * 24 * 60 * 60 * 1000)
-          }
+            lastAssessed: Date.now() - 30 * 24 * 60 * 60 * 1000,
+          },
         ],
         assessments: [],
         controls: [],
         evidences: [],
         reports: [],
-        certifications: []
-      }
+        certifications: [],
+      },
     },
     {
       id: 'transaction_data_002',
@@ -653,8 +689,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
       description: 'Financial transaction data and payment records',
       owner: 'finance_team@company.com',
       department: 'Finance',
-      createdAt: Date.now() - (180 * 24 * 60 * 60 * 1000),
-      updatedAt: Date.now() - (1 * 24 * 60 * 60 * 1000),
+      createdAt: Date.now() - 180 * 24 * 60 * 60 * 1000,
+      updatedAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
       version: '3.2.1',
       status: 'active',
       tags: ['transaction', 'financial', 'payment', 'sensitive'],
@@ -672,38 +708,44 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             sensitivity: 'critical',
             retentionPeriod: 3650,
             processingPurpose: 'financial_reporting',
-            legalBasis: 'legal_obligation'
-          }
+            legalBasis: 'legal_obligation',
+          },
         ],
         retentionPolicy: {
           minimumRetention: 2555,
           maximumRetention: 3650,
           autoDelete: false,
           archivalRequired: true,
-          complianceRequirements: ['SOX', 'PCI-DSS', 'GDPR']
+          complianceRequirements: ['SOX', 'PCI-DSS', 'GDPR'],
         },
         consentRequirements: [],
         privacyImpactAssessment: {
           id: 'pia_002',
-          assessedAt: Date.now() - (60 * 24 * 60 * 60 * 1000),
+          assessedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
           assessedBy: 'privacy_officer@company.com',
           riskLevel: 'critical',
           findings: ['Contains sensitive financial data', 'Subject to multiple regulations'],
           recommendations: ['Implement additional security controls', 'Enhanced monitoring'],
           mitigationMeasures: ['Field-level encryption', 'Access logging', 'Regular audits'],
-          approvalStatus: 'approved'
+          approvalStatus: 'approved',
         },
         gdprCompliance: {
           lawfulBasis: 'legal_obligation',
           dataSubjectRights: [
-            { right: 'access', enabled: true, process: 'manual_review', timeframe: 45, contact: 'dpo@company.com' }
+            {
+              right: 'access',
+              enabled: true,
+              process: 'manual_review',
+              timeframe: 45,
+              contact: 'dpo@company.com',
+            },
           ],
           crossBorderTransfer: false,
           dpiaRequired: true,
           dpiaCompleted: true,
           recordOfProcessing: true,
-          breachNotificationRequired: true
-        }
+          breachNotificationRequired: true,
+        },
       },
       schema: {
         version: '3.2',
@@ -721,11 +763,21 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
               anonymizationMethod: 'none',
               anonymizationLevel: 0,
               accessRestricted: false,
-              consentRequired: false
+              consentRequired: false,
             },
             constraints: [
-              { type: 'not_null', value: null, description: 'Transaction ID cannot be null', enforced: true },
-              { type: 'unique', value: null, description: 'Transaction ID must be unique', enforced: true }
+              {
+                type: 'not_null',
+                value: null,
+                description: 'Transaction ID cannot be null',
+                enforced: true,
+              },
+              {
+                type: 'unique',
+                value: null,
+                description: 'Transaction ID must be unique',
+                enforced: true,
+              },
             ],
             statistics: {
               distinctCount: 5000000,
@@ -734,16 +786,16 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 type: 'uniform',
                 parameters: {},
                 histogram: [],
-                outliers: []
+                outliers: [],
               },
-              lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
+              lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
             },
             lineage: {
               sourceFields: [],
               transformation: 'generated',
-              derivedAt: Date.now() - (180 * 24 * 60 * 60 * 1000),
-              confidence: 1.0
-            }
+              derivedAt: Date.now() - 180 * 24 * 60 * 60 * 1000,
+              confidence: 1.0,
+            },
           },
           {
             name: 'amount',
@@ -757,38 +809,43 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
               anonymizationMethod: 'aggregation',
               anonymizationLevel: 0.8,
               accessRestricted: true,
-              consentRequired: false
+              consentRequired: false,
             },
             constraints: [
-              { type: 'range', value: { min: 0, max: 1000000 }, description: 'Amount must be positive', enforced: true }
+              {
+                type: 'range',
+                value: { min: 0, max: 1000000 },
+                description: 'Amount must be positive',
+                enforced: true,
+              },
             ],
             statistics: {
               distinctCount: 100000,
               nullCount: 0,
               min: 0.01,
               max: 999999.99,
-              avg: 125.50,
+              avg: 125.5,
               distribution: {
                 type: 'exponential',
                 parameters: { lambda: 0.008 },
                 histogram: [],
-                outliers: []
+                outliers: [],
               },
-              lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
+              lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
             },
             lineage: {
               sourceFields: ['raw_amount'],
               transformation: 'currency_conversion',
-              derivedAt: Date.now() - (180 * 24 * 60 * 60 * 1000),
-              confidence: 0.95
-            }
-          }
+              derivedAt: Date.now() - 180 * 24 * 60 * 60 * 1000,
+              confidence: 0.95,
+            },
+          },
         ],
         relationships: [],
         constraints: [],
         indexes: [],
         partitions: [],
-        evolution: []
+        evolution: [],
       },
       lineage: {
         upstream: [
@@ -798,9 +855,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'source',
             connectionType: 'direct',
             strength: 0.95,
-            lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            metadata: { source: 'payment_processor', table: 'transactions' }
-          }
+            lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            metadata: { source: 'payment_processor', table: 'transactions' },
+          },
         ],
         downstream: [
           {
@@ -809,9 +866,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'target',
             connectionType: 'direct',
             strength: 0.9,
-            lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            metadata: { purpose: 'reporting' }
-          }
+            lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            metadata: { purpose: 'reporting' },
+          },
         ],
         transformations: [
           {
@@ -823,9 +880,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             targetDatasets: ['transaction_data_002'],
             logic: 'Validate amounts, detect fraud, enrich with metadata',
             parameters: { fraudDetection: true, enrichment: true },
-            timestamp: Date.now() - (180 * 24 * 60 * 60 * 1000),
-            owner: 'finance_team'
-          }
+            timestamp: Date.now() - 180 * 24 * 60 * 60 * 1000,
+            owner: 'finance_team',
+          },
         ],
         graph: {
           nodes: [],
@@ -833,7 +890,7 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           layout: {
             algorithm: 'hierarchical',
             parameters: {},
-            optimized: false
+            optimized: false,
           },
           metadata: {
             generatedAt: Date.now(),
@@ -841,24 +898,24 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             nodeCount: 0,
             edgeCount: 0,
             depth: 0,
-            cycles: 0
-          }
+            cycles: 0,
+          },
         },
         impact: {
           criticality: 'critical',
           downstreamCount: 3,
           consumerCount: 8,
           businessImpact: 'Critical for financial operations and compliance',
-          riskFactors: ['Contains sensitive financial data', 'Regulatory requirements']
-        }
+          riskFactors: ['Contains sensitive financial data', 'Regulatory requirements'],
+        },
       },
       quality: {
         overall: {
           value: 94.2,
           grade: 'A',
-          lastAssessed: Date.now() - (1 * 24 * 60 * 60 * 1000),
+          lastAssessed: Date.now() - 1 * 24 * 60 * 60 * 1000,
           trend: 'stable',
-          confidence: 0.96
+          confidence: 0.96,
         },
         dimensions: [
           {
@@ -875,17 +932,17 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 status: 'pass',
                 description: 'Overall dataset accuracy',
                 formula: 'average(field_accuracy)',
-                lastCalculated: Date.now() - (1 * 24 * 60 * 60 * 1000)
-              }
+                lastCalculated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+              },
             ],
-            lastAssessed: Date.now() - (1 * 24 * 60 * 60 * 1000),
-            trend: 'stable'
-          }
+            lastAssessed: Date.now() - 1 * 24 * 60 * 60 * 1000,
+            trend: 'stable',
+          },
         ],
         issues: [],
         assessments: [],
         trends: [],
-        benchmarks: []
+        benchmarks: [],
       },
       usage: {
         statistics: {
@@ -896,8 +953,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           dataVolumeAccessed: 1800000000, // 1.8GB
           avgResponseTime: 980, // ms
           errorRate: 0.01,
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000),
-          period: 'day'
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+          period: 'day',
         },
         patterns: [
           {
@@ -906,8 +963,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             frequency: 0.75,
             confidence: 0.85,
             description: 'Higher usage at end of month for reporting',
-            metadata: { peakDays: [28, 29, 30, 31] }
-          }
+            metadata: { peakDays: [28, 29, 30, 31] },
+          },
         ],
         consumers: [
           {
@@ -916,13 +973,13 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'team',
             department: 'Finance',
             accessLevel: 'read',
-            firstAccess: Date.now() - (180 * 24 * 60 * 60 * 1000),
-            lastAccess: Date.now() - (1 * 24 * 60 * 60 * 1000),
+            firstAccess: Date.now() - 180 * 24 * 60 * 60 * 1000,
+            lastAccess: Date.now() - 1 * 24 * 60 * 60 * 1000,
             queryCount: 5400,
             dataVolume: 1200000000,
             favorite: true,
-            tags: ['power_users']
-          }
+            tags: ['power_users'],
+          },
         ],
         queries: [],
         access: [],
@@ -935,9 +992,9 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           concurrency: 8,
           errorRate: 0.01,
           availability: 99.9,
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
         },
-        trends: []
+        trends: [],
       },
       access: {
         permissions: [
@@ -949,21 +1006,21 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             resourceType: 'dataset',
             actions: [
               { action: 'read', granted: true },
-              { action: 'write', granted: false }
+              { action: 'write', granted: false },
             ],
             conditions: [
               {
                 type: 'purpose',
                 operator: 'in',
                 value: ['financial_reporting', 'audit', 'compliance'],
-                description: 'Access limited to financial purposes'
-              }
+                description: 'Access limited to financial purposes',
+              },
             ],
-            grantedAt: Date.now() - (180 * 24 * 60 * 60 * 1000),
+            grantedAt: Date.now() - 180 * 24 * 60 * 60 * 1000,
             grantedBy: 'data_admin',
             status: 'active',
-            justification: 'Financial operations'
-          }
+            justification: 'Financial operations',
+          },
         ],
         roles: [],
         policies: [],
@@ -978,13 +1035,13 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                 type: 'purpose',
                 operator: 'in',
                 value: ['financial_reporting', 'audit', 'compliance'],
-                description: 'Financial purposes only'
-              }
+                description: 'Financial purposes only',
+              },
             ],
             enforced: true,
-            bypassAllowed: false
-          }
-        ]
+            bypassAllowed: false,
+          },
+        ],
       },
       location: {
         source: {
@@ -996,15 +1053,15 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             protocol: 'postgresql',
             ssl: true,
             timeout: 30,
-            poolSize: 20
+            poolSize: 20,
           },
           credentials: {
             type: 'service_account',
             encrypted: true,
             rotationRequired: true,
-            lastRotated: Date.now() - (15 * 24 * 60 * 60 * 1000)
+            lastRotated: Date.now() - 15 * 24 * 60 * 60 * 1000,
           },
-          properties: { database: 'finance', schema: 'transactions' }
+          properties: { database: 'finance', schema: 'transactions' },
         },
         storage: {
           provider: 'AWS',
@@ -1017,26 +1074,26 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             keyId: 'arn:aws:kms:us-east-1:123456789012:key/23456789-2345-2345-2345-234567890123',
             keyRotation: true,
             atRest: true,
-            inTransit: true
+            inTransit: true,
           },
           compression: {
             enabled: true,
             algorithm: 'gzip',
             ratio: 0.4,
-            level: 9
+            level: 9,
           },
           indexing: {
             enabled: true,
             type: 'btree',
             fields: ['transaction_id', 'amount', 'date'],
-            refreshInterval: 1800
-          }
+            refreshInterval: 1800,
+          },
         },
         format: {
           type: 'parquet',
           version: '1.0',
           compression: 'gzip',
-          encoding: 'utf-8'
+          encoding: 'utf-8',
         },
         size: {
           total: 8000000000, // 8GB
@@ -1044,7 +1101,7 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           available: 6200000000, // 6.2GB
           unit: 'bytes',
           estimated: false,
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
         },
         partitions: [
           {
@@ -1052,8 +1109,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             type: 'range',
             columns: ['transaction_date'],
             partitions: 365,
-            sizeDistribution: []
-          }
+            sizeDistribution: [],
+          },
         ],
         replication: {
           enabled: true,
@@ -1061,17 +1118,17 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           factor: 3,
           regions: ['us-east-1', 'us-west-2', 'eu-west-1'],
           lag: 60,
-          status: 'active'
+          status: 'active',
         },
         backup: {
           enabled: true,
           frequency: 'hourly',
           retention: 90,
-          lastBackup: Date.now() - (1 * 60 * 60 * 1000),
-          nextBackup: Date.now() + (59 * 60 * 1000),
+          lastBackup: Date.now() - 1 * 60 * 60 * 1000,
+          nextBackup: Date.now() + 59 * 60 * 1000,
           size: 1800000000,
           location: 's3://backups/finance-data/',
-          encrypted: true
+          encrypted: true,
         },
         retention: {
           policy: 'regulatory_compliance',
@@ -1079,18 +1136,18 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           maximumAge: 3650,
           autoDelete: false,
           archivalRequired: true,
-          archivalLocation: 's3://archive/finance-data/'
+          archivalLocation: 's3://archive/finance-data/',
         },
         cost: {
           storage: 285.75,
           compute: 156.25,
-          transfer: 22.50,
+          transfer: 22.5,
           operations: 12.75,
           total: 477.25,
           currency: 'USD',
           period: 'month',
-          lastUpdated: Date.now() - (1 * 24 * 60 * 60 * 1000)
-        }
+          lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+        },
       },
       processing: {
         pipelines: [
@@ -1116,19 +1173,19 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
                   throughput: 200,
                   memoryUsage: 1024,
                   cpuUsage: 25,
-                  lastUpdated: Date.now() - (1 * 60 * 60 * 1000)
-                }
-              }
+                  lastUpdated: Date.now() - 1 * 60 * 60 * 1000,
+                },
+              },
             ],
             sources: ['payment_gateway', 'pos_system'],
             targets: ['transaction_data_002'],
             parameters: { batchSize: 100, validation: 'strict' },
             status: 'active',
-            createdAt: Date.now() - (180 * 24 * 60 * 60 * 1000),
+            createdAt: Date.now() - 180 * 24 * 60 * 60 * 1000,
             createdBy: 'finance_engineering',
-            lastRun: Date.now() - (1 * 60 * 60 * 1000),
-            nextRun: Date.now() + (5 * 60 * 1000)
-          }
+            lastRun: Date.now() - 1 * 60 * 60 * 1000,
+            nextRun: Date.now() + 5 * 60 * 1000,
+          },
         ],
         jobs: [],
         schedules: [],
@@ -1138,8 +1195,8 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
           alerts: [],
           dashboards: [],
           metrics: [],
-          healthChecks: []
-        }
+          healthChecks: [],
+        },
       },
       compliance: {
         frameworks: [
@@ -1152,11 +1209,15 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
             maturity: {
               level: 5,
               description: 'Optimized compliance implementation',
-              characteristics: ['Automated controls', 'Real-time monitoring', 'Continuous compliance'],
+              characteristics: [
+                'Automated controls',
+                'Real-time monitoring',
+                'Continuous compliance',
+              ],
               gaps: [],
-              recommendations: []
+              recommendations: [],
             },
-            lastAssessed: Date.now() - (30 * 24 * 60 * 60 * 1000)
+            lastAssessed: Date.now() - 30 * 24 * 60 * 60 * 1000,
           },
           {
             name: 'PCI-DSS',
@@ -1169,18 +1230,18 @@ const generateSampleDatasets = (): DatasetMetadata[] => {
               description: 'Optimized compliance implementation',
               characteristics: ['Strong encryption', 'Access controls', 'Regular testing'],
               gaps: [],
-              recommendations: []
+              recommendations: [],
             },
-            lastAssessed: Date.now() - (30 * 24 * 60 * 60 * 1000)
-          }
+            lastAssessed: Date.now() - 30 * 24 * 60 * 60 * 1000,
+          },
         ],
         assessments: [],
         controls: [],
         evidences: [],
         reports: [],
-        certifications: []
-      }
-    }
+        certifications: [],
+      },
+    },
   ];
 };
 
@@ -1198,21 +1259,21 @@ const DataCatalogDemo: React.FC = () => {
   const [lineageGraph, setLineageGraph] = useState<LineageGraph | null>(null);
 
   // Initialize services
-  const [privacyDiscovery] = useState(() => PrivacyPreservingDiscovery.getInstance());
+  const [_privacyDiscovery] = useState(() => PrivacyPreservingDiscovery.getInstance());
   const [metadataSearch] = useState(() => MetadataManagementSearch.getInstance());
   const [lineageVisualization] = useState(() => DataLineageVisualization.getInstance());
   const [usageAnalytics] = useState(() => UsageAnalyticsStatistics.getInstance());
   const [accessControl] = useState(() => AccessControlIntegration.getInstance());
   const [qualityAssessment] = useState(() => DataQualityAssessment.getInstance());
-  const [datasetManagement] = useState(() => DatasetManagementIntegration.getInstance());
+  const [_datasetManagement] = useState(() => DatasetManagementIntegration.getInstance());
 
   // Initialize sample data
   useEffect(() => {
     const sampleDatasets = generateSampleDatasets();
     setDatasets(sampleDatasets);
-    
+
     // Add sample datasets to metadata search
-    sampleDatasets.forEach(dataset => {
+    sampleDatasets.forEach((dataset) => {
       metadataSearch.addDataset(dataset);
     });
   }, [metadataSearch]);
@@ -1234,8 +1295,8 @@ const DataCatalogDemo: React.FC = () => {
           level: 'internal',
           anonymizeResults: true,
           maskSensitiveFields: true,
-          requireConsent: false
-        }
+          requireConsent: false,
+        },
       };
 
       const results = await metadataSearch.search(searchRequest);
@@ -1264,7 +1325,10 @@ const DataCatalogDemo: React.FC = () => {
         setUsageMetrics(metrics);
 
         // Load quality assessment
-        const assessment = await qualityAssessment.assessDatasetQuality(selectedDataset.id, selectedDataset);
+        const assessment = await qualityAssessment.assessDatasetQuality(
+          selectedDataset.id,
+          selectedDataset
+        );
         setQualityAssessment(assessment);
 
         // Load access evaluation
@@ -1281,13 +1345,13 @@ const DataCatalogDemo: React.FC = () => {
             attributes: {},
             sessionInfo: {
               id: 'session_123',
-              startTime: Date.now() - (2 * 60 * 60 * 1000),
+              startTime: Date.now() - 2 * 60 * 60 * 1000,
               lastActivity: Date.now(),
               ipAddress: '192.168.1.100',
               userAgent: 'Mozilla/5.0...',
               mfaVerified: true,
-              riskScore: 0.1
-            }
+              riskScore: 0.1,
+            },
           },
           resource: {
             id: selectedDataset.id,
@@ -1299,23 +1363,25 @@ const DataCatalogDemo: React.FC = () => {
             sensitivity: selectedDataset.privacy.sensitivity,
             tags: selectedDataset.tags,
             attributes: {},
-            lineage: []
+            lineage: [],
           },
           action: 'read',
           environment: 'production',
           timestamp: Date.now(),
           ipAddress: '192.168.1.100',
           userAgent: 'Mozilla/5.0...',
-          sessionId: 'session_123'
+          sessionId: 'session_123',
         };
 
         const evaluation = await accessControl.evaluateAccess(accessContext);
         setAccessEvaluation(evaluation);
 
         // Load lineage graph
-        const lineage = await lineageVisualization.generateLineageGraph(selectedDataset.id, selectedDataset);
+        const lineage = await lineageVisualization.generateLineageGraph(
+          selectedDataset.id,
+          selectedDataset
+        );
         setLineageGraph(lineage);
-
       } catch (error) {
         console.error('Failed to load dataset details:', error);
       }
@@ -1330,7 +1396,7 @@ const DataCatalogDemo: React.FC = () => {
       public: 'bg-green-100 text-green-800',
       internal: 'bg-blue-100 text-blue-800',
       confidential: 'bg-orange-100 text-orange-800',
-      restricted: 'bg-red-100 text-red-800'
+      restricted: 'bg-red-100 text-red-800',
     };
     return (
       <Badge className={colors[level as keyof typeof colors]}>
@@ -1345,22 +1411,24 @@ const DataCatalogDemo: React.FC = () => {
       B: 'bg-blue-100 text-blue-800',
       C: 'bg-yellow-100 text-yellow-800',
       D: 'bg-orange-100 text-orange-800',
-      F: 'bg-red-100 text-red-800'
+      F: 'bg-red-100 text-red-800',
     };
-    return (
-      <Badge className={colors[grade as keyof typeof colors]}>
-        Grade {grade}
-      </Badge>
-    );
+    return <Badge className={colors[grade as keyof typeof colors]}>Grade {grade}</Badge>;
   };
 
   const renderDatasetCard = (dataset: DatasetMetadata) => (
-    <Card key={dataset.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleDatasetSelect(dataset)}>
+    <Card
+      key={dataset.id}
+      className="cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={() => handleDatasetSelect(dataset)}
+    >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <CardTitle className="text-lg">{dataset.name}</CardTitle>
-            <CardDescription className="text-sm text-gray-600">{dataset.description}</CardDescription>
+            <CardDescription className="text-sm text-gray-600">
+              {dataset.description}
+            </CardDescription>
           </div>
           <div className="flex flex-col gap-2">
             {renderPrivacyBadge(dataset.privacy.level)}
@@ -1370,8 +1438,10 @@ const DataCatalogDemo: React.FC = () => {
       </CardHeader>
       <CardContent className="pt-0">
         <div className="flex flex-wrap gap-2 mb-3">
-          {dataset.tags.slice(0, 3).map(tag => (
-            <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+          {dataset.tags.slice(0, 3).map((tag) => (
+            <Badge key={tag} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
@@ -1402,7 +1472,9 @@ const DataCatalogDemo: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Data Catalog</h1>
-          <p className="text-gray-600 mt-1">Searchable data catalog with privacy-preserving discovery</p>
+          <p className="text-gray-600 mt-1">
+            Searchable data catalog with privacy-preserving discovery
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -1431,7 +1503,11 @@ const DataCatalogDemo: React.FC = () => {
               />
             </div>
             <Button onClick={handleSearch} disabled={loading}>
-              {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+              {loading ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4 mr-2" />
+              )}
               Search
             </Button>
             <Button variant="outline">
@@ -1515,9 +1591,7 @@ const DataCatalogDemo: React.FC = () => {
           {searchResults ? (
             <div>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">
-                  Found {searchResults.total} datasets
-                </h2>
+                <h2 className="text-xl font-semibold">Found {searchResults.total} datasets</h2>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm">
                     <Download className="w-4 h-4 mr-2" />
@@ -1529,15 +1603,21 @@ const DataCatalogDemo: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {searchResults.datasets.map(result => (
-                  <Card key={result.dataset.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleDatasetSelect(result.dataset)}>
+                {searchResults.datasets.map((result) => (
+                  <Card
+                    key={result.dataset.id}
+                    className="cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => handleDatasetSelect(result.dataset)}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <CardTitle className="text-lg">{result.dataset.name}</CardTitle>
-                          <CardDescription className="text-sm text-gray-600">{result.dataset.description}</CardDescription>
+                          <CardDescription className="text-sm text-gray-600">
+                            {result.dataset.description}
+                          </CardDescription>
                         </div>
                         <div className="text-sm text-blue-600">
                           Score: {result.score.toFixed(2)}
@@ -1546,8 +1626,10 @@ const DataCatalogDemo: React.FC = () => {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {result.dataset.tags.slice(0, 3).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                        {result.dataset.tags.slice(0, 3).map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
                         ))}
                       </div>
                       <div className="text-sm text-gray-600">
@@ -1579,12 +1661,16 @@ const DataCatalogDemo: React.FC = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-2xl">{selectedDataset.name}</CardTitle>
-                      <CardDescription className="text-lg mt-2">{selectedDataset.description}</CardDescription>
+                      <CardDescription className="text-lg mt-2">
+                        {selectedDataset.description}
+                      </CardDescription>
                     </div>
                     <div className="flex gap-2">
                       {renderPrivacyBadge(selectedDataset.privacy.level)}
                       {renderQualityGrade(selectedDataset.quality.overall.grade)}
-                      <Badge variant={selectedDataset.status === 'active' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={selectedDataset.status === 'active' ? 'default' : 'secondary'}
+                      >
                         {selectedDataset.status}
                       </Badge>
                     </div>
@@ -1606,14 +1692,18 @@ const DataCatalogDemo: React.FC = () => {
                     </div>
                     <div>
                       <span className="font-medium">Updated:</span>
-                      <p className="text-gray-600">{new Date(selectedDataset.updatedAt).toLocaleDateString()}</p>
+                      <p className="text-gray-600">
+                        {new Date(selectedDataset.updatedAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4">
                     <span className="font-medium">Tags:</span>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {selectedDataset.tags.map(tag => (
-                        <Badge key={tag} variant="outline">{tag}</Badge>
+                      {selectedDataset.tags.map((tag) => (
+                        <Badge key={tag} variant="outline">
+                          {tag}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -1642,13 +1732,14 @@ const DataCatalogDemo: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600">{accessEvaluation.decision.reason}</p>
-                      
+
                       {accessEvaluation.decision.approvalRequired && (
                         <Alert>
                           <AlertTriangle className="w-4 h-4" />
                           <AlertTitle>Approval Required</AlertTitle>
                           <AlertDescription>
-                            This dataset requires approval for access. Submit an access request to proceed.
+                            This dataset requires approval for access. Submit an access request to
+                            proceed.
                           </AlertDescription>
                         </Alert>
                       )}
@@ -1670,7 +1761,9 @@ const DataCatalogDemo: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-gray-600">Total Queries</p>
-                        <p className="text-xl font-bold">{usageMetrics.totalQueries.toLocaleString()}</p>
+                        <p className="text-xl font-bold">
+                          {usageMetrics.totalQueries.toLocaleString()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Unique Users</p>
@@ -1682,7 +1775,9 @@ const DataCatalogDemo: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Data Volume</p>
-                        <p className="text-xl font-bold">{(usageMetrics.dataVolumeAccessed / 1024 / 1024 / 1024).toFixed(1)}GB</p>
+                        <p className="text-xl font-bold">
+                          {(usageMetrics.dataVolumeAccessed / 1024 / 1024 / 1024).toFixed(1)}GB
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -1697,7 +1792,7 @@ const DataCatalogDemo: React.FC = () => {
                 <CardContent>
                   <ScrollArea className="h-64">
                     <div className="space-y-4">
-                      {selectedDataset.schema.fields.slice(0, 5).map(field => (
+                      {selectedDataset.schema.fields.slice(0, 5).map((field) => (
                         <div key={field.name} className="border rounded-lg p-3">
                           <div className="flex justify-between items-start">
                             <div>
@@ -1706,15 +1801,27 @@ const DataCatalogDemo: React.FC = () => {
                               <p className="text-sm text-gray-500 mt-1">{field.description}</p>
                             </div>
                             <div className="flex gap-1">
-                              {field.privacy.isPersonal && <Badge variant="outline" className="text-xs">Personal</Badge>}
-                              {field.privacy.isSensitive && <Badge variant="outline" className="text-xs">Sensitive</Badge>}
-                              {field.privacy.accessRestricted && <Badge variant="outline" className="text-xs">Restricted</Badge>}
+                              {field.privacy.isPersonal && (
+                                <Badge variant="outline" className="text-xs">
+                                  Personal
+                                </Badge>
+                              )}
+                              {field.privacy.isSensitive && (
+                                <Badge variant="outline" className="text-xs">
+                                  Sensitive
+                                </Badge>
+                              )}
+                              {field.privacy.accessRestricted && (
+                                <Badge variant="outline" className="text-xs">
+                                  Restricted
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           {field.statistics && (
                             <div className="mt-2 text-xs text-gray-500">
-                              Distinct: {field.statistics.distinctCount.toLocaleString()} | 
-                              Null: {field.statistics.nullCount.toLocaleString()}
+                              Distinct: {field.statistics.distinctCount.toLocaleString()} | Null:{' '}
+                              {field.statistics.nullCount.toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -1729,7 +1836,9 @@ const DataCatalogDemo: React.FC = () => {
               <CardContent className="pt-6 text-center">
                 <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Dataset Selected</h3>
-                <p className="text-gray-600">Select a dataset from the search results to view details</p>
+                <p className="text-gray-600">
+                  Select a dataset from the search results to view details
+                </p>
               </CardContent>
             </Card>
           )}
@@ -1765,10 +1874,12 @@ const DataCatalogDemo: React.FC = () => {
                         <p className="font-bold">{lineageGraph.metadata.nodeCount}</p>
                       </div>
                     </div>
-                    <p className="text-gray-600">Interactive lineage visualization would be rendered here</p>
+                    <p className="text-gray-600">
+                      Interactive lineage visualization would be rendered here
+                    </p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Graph depth: {lineageGraph.metadata.depth} | 
-                      Cycles detected: {lineageGraph.metadata.cycles}
+                      Graph depth: {lineageGraph.metadata.depth} | Cycles detected:{' '}
+                      {lineageGraph.metadata.cycles}
                     </p>
                   </div>
                 </div>
@@ -1798,7 +1909,7 @@ const DataCatalogDemo: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>User Activity</CardTitle>
@@ -1817,15 +1928,22 @@ const DataCatalogDemo: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {selectedDataset?.usage.consumers.slice(0, 5).map(consumer => (
-                  <div key={consumer.id} className="flex justify-between items-center p-3 border rounded">
+                {selectedDataset?.usage.consumers.slice(0, 5).map((consumer) => (
+                  <div
+                    key={consumer.id}
+                    className="flex justify-between items-center p-3 border rounded"
+                  >
                     <div>
                       <p className="font-medium">{consumer.name}</p>
-                      <p className="text-sm text-gray-600">{consumer.type} • {consumer.department}</p>
+                      <p className="text-sm text-gray-600">
+                        {consumer.type} • {consumer.department}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{consumer.queryCount.toLocaleString()} queries</p>
-                      <p className="text-sm text-gray-600">{(consumer.dataVolume / 1024 / 1024 / 1024).toFixed(1)} GB</p>
+                      <p className="text-sm text-gray-600">
+                        {(consumer.dataVolume / 1024 / 1024 / 1024).toFixed(1)} GB
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -1850,20 +1968,28 @@ const DataCatalogDemo: React.FC = () => {
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-medium">Overall Score</span>
-                        <span className="font-bold text-lg">{qualityAssessment.scores.overall_score?.toFixed(1)}%</span>
+                        <span className="font-bold text-lg">
+                          {qualityAssessment.scores.overall_score?.toFixed(1)}%
+                        </span>
                       </div>
-                      <Progress value={qualityAssessment.scores.overall_score || 0} className="h-2" />
+                      <Progress
+                        value={qualityAssessment.scores.overall_score || 0}
+                        className="h-2"
+                      />
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {Object.entries(qualityAssessment.scores).map(([key, value]) => (
-                        key !== 'overall_score' && (
-                          <div key={key} className="text-center">
-                            <p className="text-sm text-gray-600 capitalize">{key.replace('_', ' ')}</p>
-                            <p className="text-lg font-bold">{(value as number).toFixed(1)}%</p>
-                          </div>
-                        )
-                      ))}
+                      {Object.entries(qualityAssessment.scores).map(
+                        ([key, value]) =>
+                          key !== 'overall_score' && (
+                            <div key={key} className="text-center">
+                              <p className="text-sm text-gray-600 capitalize">
+                                {key.replace('_', ' ')}
+                              </p>
+                              <p className="text-lg font-bold">{(value as number).toFixed(1)}%</p>
+                            </div>
+                          )
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -1876,12 +2002,13 @@ const DataCatalogDemo: React.FC = () => {
                 <CardContent>
                   {selectedDataset?.quality.issues.length ? (
                     <div className="space-y-3">
-                      {selectedDataset.quality.issues.map(issue => (
+                      {selectedDataset.quality.issues.map((issue) => (
                         <Alert key={issue.id}>
                           <AlertTriangle className="w-4 h-4" />
                           <AlertTitle className="capitalize">{issue.type} Issue</AlertTitle>
                           <AlertDescription>
-                            {issue.description} - {issue.affectedRecords.toLocaleString()} records affected
+                            {issue.description} - {issue.affectedRecords.toLocaleString()} records
+                            affected
                           </AlertDescription>
                         </Alert>
                       ))}

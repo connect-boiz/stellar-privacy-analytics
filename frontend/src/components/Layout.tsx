@@ -5,7 +5,7 @@ import {
   BarChart3,
   Database,
   Shield,
-  Settings,
+  _Settings,
   Menu,
   X,
   Lock,
@@ -16,13 +16,14 @@ import {
   Sliders,
   GraduationCap,
   Target,
-  Key
+  Key,
+  Wallet,
 } from 'lucide-react';
 import { NetworkStatusIndicator } from './NetworkStatusIndicator';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
-export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+export const Layout: React.FC<{ _children?: React.ReactNode }> = ({ _children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { t } = useTranslation();
@@ -35,6 +36,7 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     { name: t('navigation.privacy'), href: '/privacy', icon: Shield },
     { name: 'Key Management', href: '/key-management', icon: Key },
     { name: 'Search', href: '/search', icon: Search },
+    { name: 'Wallet', href: '/wallet', icon: Wallet },
     { name: 'Consent', href: '/consent', icon: Users },
     { name: 'Performance', href: '/performance', icon: Sliders },
     { name: 'Training', href: '/training', icon: GraduationCap },
@@ -46,7 +48,10 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
         <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
@@ -69,10 +74,11 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${isActive(item.href)
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } touch-target`}
+                    className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${
+                      isActive(item.href)
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    } touch-target`}
                     onClick={() => setSidebarOpen(false)}
                   >
                     <Icon className="mr-3 h-5 w-5" />
@@ -102,10 +108,11 @@ export const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) =
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${isActive(item.href)
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        } touch-target`}
+                      className={`group flex items-center px-3 py-3 text-base font-medium rounded-md min-h-[44px] transition-colors ${
+                        isActive(item.href)
+                          ? 'bg-blue-100 text-blue-900'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      } touch-target`}
                     >
                       <Icon className="mr-3 h-5 w-5" />
                       {item.name}

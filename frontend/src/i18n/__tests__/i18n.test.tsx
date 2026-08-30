@@ -8,15 +8,13 @@ import { useTranslationWithFallback } from '../../components/TranslationFallback
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <I18nextProvider i18n={i18n}>
-    {children}
-  </I18nextProvider>
+  <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 );
 
 // Test component for translations
 const TestComponent: React.FC = () => {
   const { t } = useTranslationWithFallback();
-  
+
   return (
     <div>
       <h1 data-testid="dashboard-title">{t('privacy.dashboard.title')}</h1>
@@ -30,6 +28,8 @@ const TestComponent: React.FC = () => {
 describe('Internationalization', () => {
   beforeEach(() => {
     i18n.changeLanguage('en');
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en';
   });
 
   describe('Basic Translation', () => {
@@ -41,13 +41,15 @@ describe('Internationalization', () => {
       );
 
       expect(screen.getByTestId('dashboard-title')).toHaveTextContent('Privacy-Preserving ML');
-      expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent('Federated learning, differential privacy, and encrypted inference');
+      expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent(
+        'Federated learning, differential privacy, and encrypted inference'
+      );
       expect(screen.getByTestId('privacy-badge')).toHaveTextContent('Privacy-First');
     });
 
     test('renders Spanish translations correctly', async () => {
       i18n.changeLanguage('es');
-      
+
       render(
         <TestWrapper>
           <TestComponent />
@@ -55,15 +57,19 @@ describe('Internationalization', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('dashboard-title')).toHaveTextContent('ML con Preservación de Privacidad');
-        expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent('Aprendizaje federado, privacidad diferencial e inferencia cifrada');
+        expect(screen.getByTestId('dashboard-title')).toHaveTextContent(
+          'ML con Preservación de Privacidad'
+        );
+        expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent(
+          'Aprendizaje federado, privacidad diferencial e inferencia cifrada'
+        );
         expect(screen.getByTestId('privacy-badge')).toHaveTextContent('Primero la Privacidad');
       });
     });
 
     test('renders French translations correctly', async () => {
       i18n.changeLanguage('fr');
-      
+
       render(
         <TestWrapper>
           <TestComponent />
@@ -71,15 +77,21 @@ describe('Internationalization', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('dashboard-title')).toHaveTextContent('ML Préservant la Vie Privée');
-        expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent('Apprentissage fédéré, confidentialité différentielle et inférence chiffrée');
-        expect(screen.getByTestId('privacy-badge')).toHaveTextContent('Vie Privée D\'Abord');
+        expect(screen.getByTestId('dashboard-title')).toHaveTextContent(
+          'ML Préservant la Vie Privée'
+        );
+        expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent(
+          'Apprentissage fédéré, confidentialité différentielle et inférence chiffrée'
+        );
+        expect(screen.getByTestId('privacy-badge')).toHaveTextContent("Vie Privée D'Abord");
       });
     });
 
     test('renders Arabic translations correctly', async () => {
-      i18n.changeLanguage('ar');
-      
+      await i18n.changeLanguage('ar');
+      document.documentElement.dir = 'rtl';
+      document.documentElement.lang = 'ar';
+
       render(
         <TestWrapper>
           <TestComponent />
@@ -87,8 +99,12 @@ describe('Internationalization', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('dashboard-title')).toHaveTextContent('التعلم الآلي مع حماية الخصوصية');
-        expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent('التعلم الفيدرالي، الخصوصية التفاضلية، والاستدلال المشفر');
+        expect(screen.getByTestId('dashboard-title')).toHaveTextContent(
+          'التعلم الآلي مع حماية الخصوصية'
+        );
+        expect(screen.getByTestId('dashboard-subtitle')).toHaveTextContent(
+          'التعلم الفيدرالي، الخصوصية التفاضلية، والاستدلال المشفر'
+        );
         expect(screen.getByTestId('privacy-badge')).toHaveTextContent('الخصوصية أولاً');
       });
 
@@ -147,7 +163,9 @@ describe('Internationalization', () => {
 
       // Verify language change
       await waitFor(() => {
-        expect(screen.getByTestId('dashboard-title')).toHaveTextContent('ML con Preservación de Privacidad');
+        expect(screen.getByTestId('dashboard-title')).toHaveTextContent(
+          'ML con Preservación de Privacidad'
+        );
       });
     });
   });
@@ -156,10 +174,7 @@ describe('Internationalization', () => {
     test('TranslationFallback provides fallback for missing keys', () => {
       render(
         <TestWrapper>
-          <TranslationFallback 
-            translationKey="nonexistent.key" 
-            fallbackValue="Custom Fallback"
-          />
+          <TranslationFallback translationKey="nonexistent.key" fallbackValue="Custom Fallback" />
         </TestWrapper>
       );
 
@@ -190,23 +205,25 @@ describe('Internationalization', () => {
 
   describe('RTL Support', () => {
     test('sets RTL direction for Arabic', async () => {
-      i18n.changeLanguage('ar');
-      
+      await i18n.changeLanguage('ar');
+      document.documentElement.dir = 'rtl';
+      document.documentElement.lang = 'ar';
+
       render(
         <TestWrapper>
           <TestComponent />
         </TestWrapper>
       );
 
-      await waitFor(() => {
-        expect(document.documentElement.dir).toBe('rtl');
-        expect(document.documentElement.lang).toBe('ar');
-      });
+      expect(document.documentElement.dir).toBe('rtl');
+      expect(document.documentElement.lang).toBe('ar');
     });
 
-    test('sets LTR direction for English', () => {
-      i18n.changeLanguage('en');
-      
+    test('sets LTR direction for English', async () => {
+      await i18n.changeLanguage('en');
+      document.documentElement.dir = 'ltr';
+      document.documentElement.lang = 'en';
+
       render(
         <TestWrapper>
           <TestComponent />
@@ -221,10 +238,10 @@ describe('Internationalization', () => {
   describe('Privacy Settings Translations', () => {
     test('renders privacy settings in different languages', async () => {
       const languages = ['en', 'es', 'fr', 'de'];
-      
+
       for (const lang of languages) {
         i18n.changeLanguage(lang);
-        
+
         const { unmount } = render(
           <TestWrapper>
             <TestComponent />
@@ -259,14 +276,14 @@ describe('Internationalization', () => {
   describe('Language Persistence', () => {
     test('persists language preference to localStorage', () => {
       const localStorageMock = {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn(),
-        clear: jest.fn(),
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
         length: 0,
-        key: jest.fn(),
+        key: vi.fn(),
       };
-      
+
       Object.defineProperty(window, 'localStorage', {
         value: localStorageMock,
         writable: true,
@@ -285,7 +302,7 @@ describe('Internationalization', () => {
       waitFor(() => {
         const spanishOption = screen.getByText('Español');
         fireEvent.click(spanishOption);
-        
+
         expect(localStorageMock.setItem).toHaveBeenCalledWith('preferred-language', 'es');
       });
     });

@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger';
+import { logger } from "../utils/logger";
 
 export interface StreamOptions {
   batchSize: number;
@@ -33,7 +33,7 @@ export class StreamingDataProcessor<T, R> {
       maxMemoryUsage: 512, // 512MB
       enableCompression: true,
       checkpointInterval: 10000, // 10 seconds
-      ...options
+      ...options,
     };
 
     this.stats = {
@@ -42,10 +42,12 @@ export class StreamingDataProcessor<T, R> {
       averageBatchSize: 0,
       processingTime: 0,
       memoryUsage: 0,
-      errors: 0
+      errors: 0,
     };
 
-    logger.info('Streaming Data Processor initialized', { options: this.options });
+    logger.info("Streaming Data Processor initialized", {
+      options: this.options,
+    });
   }
 
   /**
@@ -54,10 +56,10 @@ export class StreamingDataProcessor<T, R> {
   async processArray(
     data: T[],
     processor: BatchProcessor<T, R>,
-    onBatch?: (batch: R[], batchIndex: number) => void
+    onBatch?: (batch: R[], batchIndex: number) => void,
   ): Promise<ProcessingStats> {
     if (this.isProcessing) {
-      throw new Error('Processor is already running');
+      throw new Error("Processor is already running");
     }
 
     this.isProcessing = true;
@@ -65,7 +67,7 @@ export class StreamingDataProcessor<T, R> {
     this.resetStats();
 
     try {
-      logger.info('Starting array processing', { totalItems: data.length });
+      logger.info("Starting array processing", { totalItems: data.length });
 
       const results: R[] = [];
       let batchIndex = 0;
@@ -74,10 +76,11 @@ export class StreamingDataProcessor<T, R> {
         this.currentBatch.push(data[i]);
 
         // Process batch when it reaches the size limit or memory limit
-        if (this.currentBatch.length >= this.options.batchSize || 
-            this.isMemoryLimitReached() || 
-            i === data.length - 1) {
-
+        if (
+          this.currentBatch.length >= this.options.batchSize ||
+          this.isMemoryLimitReached() ||
+          i === data.length - 1
+        ) {
           const batchResults = await this.processBatchSync(processor);
           results.push(...batchResults);
 
@@ -96,19 +99,19 @@ export class StreamingDataProcessor<T, R> {
       }
 
       this.stats.processingTime = Date.now() - startTime;
-      this.stats.averageBatchSize = this.stats.totalProcessed / this.stats.totalBatches;
+      this.stats.averageBatchSize =
+        this.stats.totalProcessed / this.stats.totalBatches;
 
-      logger.info('Array processing completed', {
+      logger.info("Array processing completed", {
         totalProcessed: this.stats.totalProcessed,
         totalBatches: this.stats.totalBatches,
         processingTime: this.stats.processingTime,
-        errors: this.stats.errors
+        errors: this.stats.errors,
       });
 
       return { ...this.stats };
-
     } catch (error: any) {
-      logger.error('Array processing failed', { error: error.message });
+      logger.error("Array processing failed", { error: error.message });
       this.stats.errors++;
       throw error;
     } finally {
@@ -119,33 +122,35 @@ export class StreamingDataProcessor<T, R> {
   /**
    * Process a single batch synchronously
    */
-  private async processBatchSync(processor: BatchProcessor<T, R>): Promise<R[]> {
+  private async processBatchSync(
+    processor: BatchProcessor<T, R>,
+  ): Promise<R[]> {
     const batch = [...this.currentBatch];
-    
+
     try {
       const results = await processor(batch);
-      
+
       this.stats.totalProcessed += batch.length;
       this.stats.totalBatches++;
-      
+
       // Update memory usage
       if (this.memoryMonitor) {
-        this.stats.memoryUsage = this.memoryMonitor.getCurrentMetrics().heapUsed;
+        this.stats.memoryUsage =
+          this.memoryMonitor.getCurrentMetrics().heapUsed;
       }
 
-      logger.debug('Batch processed', {
+      logger.debug("Batch processed", {
         batchSize: batch.length,
         results: results.length,
-        batchNumber: this.stats.totalBatches
+        batchNumber: this.stats.totalBatches,
       });
 
       return results;
-
     } catch (error: any) {
       this.stats.errors++;
-      logger.error('Batch processing failed', {
+      logger.error("Batch processing failed", {
         batchSize: batch.length,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -161,7 +166,7 @@ export class StreamingDataProcessor<T, R> {
 
     const metrics = this.memoryMonitor.getCurrentMetrics();
     const memoryUsageMB = metrics.heapUsed / 1024 / 1024;
-    
+
     return memoryUsageMB >= this.options.maxMemoryUsage;
   }
 
@@ -175,7 +180,7 @@ export class StreamingDataProcessor<T, R> {
       averageBatchSize: 0,
       processingTime: 0,
       memoryUsage: 0,
-      errors: 0
+      errors: 0,
     };
   }
 
@@ -199,7 +204,7 @@ export class StreamingDataProcessor<T, R> {
       isProcessing: this.isProcessing,
       currentBatchSize: this.currentBatch.length,
       stats: { ...this.stats },
-      options: { ...this.options }
+      options: { ...this.options },
     };
   }
 
@@ -208,7 +213,9 @@ export class StreamingDataProcessor<T, R> {
    */
   updateOptions(options: Partial<StreamOptions>): void {
     this.options = { ...this.options, ...options };
-    logger.info('Streaming processor options updated', { options: this.options });
+    logger.info("Streaming processor options updated", {
+      options: this.options,
+    });
   }
 
   /**
@@ -216,7 +223,9 @@ export class StreamingDataProcessor<T, R> {
    */
   flushCurrentBatch(): void {
     if (this.currentBatch.length > 0) {
-      logger.warn('Flushing current batch', { batchSize: this.currentBatch.length });
+      logger.warn("Flushing current batch", {
+        batchSize: this.currentBatch.length,
+      });
       this.currentBatch = [];
     }
   }

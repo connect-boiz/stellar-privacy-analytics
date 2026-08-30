@@ -1,0 +1,979 @@
+openapi: 3.0.3
+info:
+  title: Stellar Privacy Analytics API
+  description: |
+    Privacy-first analytics API for the Stellar ecosystem that provides secure data analysis with built-in differential privacy and comprehensive audit logging.
+    
+    ## Features
+    - 🔐 JWT-based authentication with role-based access control
+    📊 Privacy-preserving analytics with differential privacy
+    🔍 Advanced query capabilities with noise injection
+    📋 Comprehensive audit logging
+    🚀 Real-time data processing
+    🛡️ Enterprise-grade security
+    
+    ## Authentication
+    This API uses JWT tokens for authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limiting
+    API requests are rate-limited based on your subscription tier:
+    - Basic: 100 requests per 15 minutes
+    - Premium: 500 requests per 15 minutes  
+    - Enterprise: 2000 requests per 15 minutes
+    
+    ## Privacy Budget
+    Each query consumes privacy budget measured in epsilon (ε). The system automatically adds noise to protect individual privacy while maintaining statistical accuracy.
+  version: 1.0.0
+  contact:
+    name: Stellar Privacy Analytics Team
+    email: support@stellar-privacy.com
+    url: https://stellar-privacy.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: https://api.stellar-privacy.com/v1
+    description: Production server
+  - url: https://staging-api.stellar-privacy.com/v1
+    description: Staging server
+  - url: http://localhost:3001/v1
+    description: Development server
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns the current health status of the API service
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email and password
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT token
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate the current session/token
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get all analyses
+      description: Retrieve list of all user's analytics analyses
+      operationId: getAnalyses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          description: Filter by analysis status
+          schema:
+            type: string
+            enum: [pending, running, completed, failed]
+      responses:
+        '200':
+          description: Analyses retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Analytics
+      summary: Create new analysis
+      description: Create a new privacy-preserving analysis
+      operationId: createAnalysis
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnalysisRequest'
+      responses:
+        '201':
+          description: Analysis created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAnalysisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/{id}:
+    get:
+      tags:
+        - Analytics
+      summary: Get analysis by ID
+      description: Retrieve details of a specific analysis
+      operationId: getAnalysis
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Analysis ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analysis retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/{id}/run:
+    post:
+      tags:
+        - Analytics
+      summary: Run analysis
+      description: Execute a previously created analysis
+      operationId: runAnalysis
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Analysis ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Analysis started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunAnalysisResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /query/schema:
+    get:
+      tags:
+        - Query
+      summary: Get data schema
+      description: Retrieve available data fields and their types
+      operationId: getDataSchema
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Schema retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSchemaResponse'
+
+  /query/validate:
+    post:
+      tags:
+        - Query
+      summary: Validate query
+      description: Validate a privacy query structure without executing it
+      operationId: validateQuery
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateQueryRequest'
+      responses:
+        '200':
+          description: Query validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateQueryResponse'
+
+  /query/privacy-cost:
+    post:
+      tags:
+        - Query
+      summary: Calculate privacy cost
+      description: Calculate the privacy budget cost for a query
+      operationId: calculatePrivacyCost
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyCostRequest'
+      responses:
+        '200':
+          description: Privacy cost calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacyCostResponse'
+
+  /query/execute:
+    post:
+      tags:
+        - Query
+      summary: Execute privacy query
+      description: Execute a privacy-preserving query with noise injection
+      operationId: executeQuery
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteQueryRequest'
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteQueryResponse'
+
+  /query/favorites:
+    get:
+      tags:
+        - Query
+      summary: Get favorite queries
+      description: Retrieve user's saved favorite queries
+      operationId: getFavoriteQueries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          description: User ID (optional, defaults to current user)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Favorite queries retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteQueriesResponse'
+
+    post:
+      tags:
+        - Query
+      summary: Save favorite query
+      description: Save a query as a favorite for future use
+      operationId: saveFavoriteQuery
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveFavoriteRequest'
+      responses:
+        '201':
+          description: Query saved as favorite
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveFavoriteResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: 1.0.0
+        environment:
+          type: string
+          example: production
+        rateLimiting:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              example: true
+            type:
+              type: string
+              example: enhanced
+            metrics:
+              type: object
+              properties:
+                totalRequests:
+                  type: integer
+                  example: 1250
+                blockedRequests:
+                  type: integer
+                  example: 15
+                blockRate:
+                  type: number
+                  example: 0.012
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - confirmPassword
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          description: User password (minimum 8 characters)
+          example: SecurePass123!
+        confirmPassword:
+          type: string
+          description: Password confirmation
+          example: SecurePass123!
+        organizationId:
+          type: string
+          description: Optional organization ID
+          example: org-123
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: User registered successfully
+        userId:
+          type: string
+          example: user-abc123
+        email:
+          type: string
+          example: user@example.com
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          description: User password
+          example: SecurePass123!
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT authentication token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/User'
+        expiresIn:
+          type: integer
+          description: Token expiration time in seconds
+          example: 3600
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user-abc123
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        rateLimitTier:
+          type: string
+          enum: [basic, premium, enterprise]
+          example: premium
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ["read:analytics", "write:queries"]
+        organizationId:
+          type: string
+          example: org-123
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Operation completed successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Invalid input parameters
+            details:
+              type: object
+        traceId:
+          type: string
+          example: trace_abc123def456
+
+    AnalysesResponse:
+      type: object
+      properties:
+        analyses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Analysis'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        message:
+          type: string
+          example: Analyses retrieved successfully
+
+    Analysis:
+      type: object
+      properties:
+        id:
+          type: string
+          example: analysis-123
+        name:
+          type: string
+          example: User Activity Analysis
+        description:
+          type: string
+          example: Analysis of user activity patterns
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+          example: completed
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        privacyBudget:
+          type: number
+          example: 2.5
+        results:
+          type: object
+          description: Analysis results (available when completed)
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        totalPages:
+          type: integer
+          example: 8
+
+    CreateAnalysisRequest:
+      type: object
+      required:
+        - name
+        - query
+      properties:
+        name:
+          type: string
+          description: Analysis name
+          example: Monthly Revenue Analysis
+        description:
+          type: string
+          description: Analysis description
+          example: Analysis of monthly revenue trends
+        query:
+          $ref: '#/components/schemas/PrivacyQuery'
+        privacySettings:
+          $ref: '#/components/schemas/PrivacySettings'
+
+    CreateAnalysisResponse:
+      type: object
+      properties:
+        analysisId:
+          type: string
+          example: analysis-abc123
+        status:
+          type: string
+          example: pending
+        message:
+          type: string
+          example: Analysis created successfully
+
+    AnalysisResponse:
+      type: object
+      properties:
+        analysis:
+          $ref: '#/components/schemas/Analysis'
+        message:
+          type: string
+          example: Analysis retrieved successfully
+
+    RunAnalysisResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Analysis started
+        jobId:
+          type: string
+          example: job-xyz789
+        estimatedDuration:
+          type: integer
+          description: Estimated completion time in seconds
+          example: 120
+
+    DataSchemaResponse:
+      type: object
+      properties:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataField'
+        message:
+          type: string
+          example: Data schema retrieved successfully
+
+    DataField:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user_id
+        name:
+          type: string
+          example: User ID
+        type:
+          type: string
+          enum: [string, number, date, boolean]
+          example: string
+        description:
+          type: string
+          example: Unique identifier for users
+
+    PrivacyQuery:
+      type: object
+      required:
+        - steps
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryStep'
+          description: Array of query processing steps
+
+    QueryStep:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [select, filter, aggregate, group]
+          example: filter
+        field:
+          type: string
+          example: transaction_amount
+        operator:
+          type: string
+          enum: [eq, gt, lt, gte, lte, contains, in]
+          example: gt
+        value:
+          description: Filter value (varies by type)
+          example: 100
+        aggregation:
+          type: string
+          enum: [count, sum, average, min, max]
+          example: sum
+
+    ValidateQueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          $ref: '#/components/schemas/PrivacyQuery'
+
+    ValidateQueryResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        errors:
+          type: array
+          items:
+            type: string
+          example: []
+        message:
+          type: string
+          example: Query is valid
+
+    PrivacyCostRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          $ref: '#/components/schemas/PrivacyQuery'
+
+    PrivacyCostResponse:
+      type: object
+      properties:
+        cost:
+          type: number
+          example: 2.5
+        breakdown:
+          type: object
+          properties:
+            base:
+              type: number
+              example: 3.0
+            final:
+              type: number
+              example: 2.5
+            hasAggregation:
+              type: boolean
+              example: true
+            stepsCount:
+              type: integer
+              example: 3
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+          example: medium
+        epsilon:
+          type: string
+          example: "0.25"
+        message:
+          type: string
+          example: Privacy cost calculated successfully
+
+    ExecuteQueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          $ref: '#/components/schemas/PrivacyQuery'
+        walletSignature:
+          type: string
+          description: Optional wallet signature for verification
+          example: sig_abc123...
+
+    ExecuteQueryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        jobId:
+          type: string
+          example: job-def456
+        status:
+          type: string
+          example: completed
+        results:
+          type: object
+          properties:
+            summary:
+              type: object
+            data:
+              type: array
+              items:
+                type: object
+        privacyMetrics:
+          $ref: '#/components/schemas/PrivacyMetrics'
+        executionTime:
+          type: integer
+          description: Execution time in milliseconds
+          example: 2340
+        message:
+          type: string
+          example: Query executed successfully with privacy preservation
+
+    PrivacyMetrics:
+      type: object
+      properties:
+        cost:
+          type: number
+          example: 2.5
+        epsilon:
+          type: string
+          example: "0.25"
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+          example: medium
+        noiseAdded:
+          type: boolean
+          example: true
+        anonymizationStrength:
+          type: number
+          example: 0.85
+
+    FavoriteQueriesResponse:
+      type: object
+      properties:
+        favorites:
+          type: array
+          items:
+            $ref: '#/components/schemas/FavoriteQuery'
+        message:
+          type: string
+          example: Favorite queries retrieved successfully
+
+    FavoriteQuery:
+      type: object
+      properties:
+        id:
+          type: string
+          example: fav-123
+        name:
+          type: string
+          example: High Value Transactions
+        description:
+          type: string
+          example: Find transactions over $500
+        userId:
+          type: string
+          example: user-abc123
+        createdAt:
+          type: string
+          format: date-time
+        privacyCost:
+          type: number
+          example: 2.5
+        query:
+          $ref: '#/components/schemas/PrivacyQuery'
+
+    SaveFavoriteRequest:
+      type: object
+      required:
+        - name
+        - query
+      properties:
+        name:
+          type: string
+          description: Favorite query name
+          example: Monthly Revenue
+        description:
+          type: string
+          description: Query description
+          example: Monthly revenue analysis
+        query:
+          $ref: '#/components/schemas/PrivacyQuery'
+        userId:
+          type: string
+          description: User ID (optional, defaults to authenticated user)
+          example: user-abc123
+
+    SaveFavoriteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        favorite:
+          $ref: '#/components/schemas/FavoriteQuery'
+        message:
+          type: string
+          example: Favorite query saved successfully
+
+    PrivacySettings:
+      type: object
+      properties:
+        epsilon:
+          type: number
+          description: Privacy budget epsilon value
+          example: 1.0
+        delta:
+          type: number
+          description: Privacy budget delta value
+          example: 0.00001
+        noiseMechanism:
+          type: string
+          enum: [laplace, gaussian]
+          example: laplace
+        sensitivity:
+          type: number
+          description: Query sensitivity
+          example: 1.0
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized - authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Conflict:
+      description: Resource conflict (e.g., duplicate email)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Health
+    description: Health check and status endpoints
+  - name: Authentication
+    description: User authentication and session management
+  - name: Analytics
+    description: Privacy-preserving analytics operations
+  - name: Query
+    description: Privacy query execution and management

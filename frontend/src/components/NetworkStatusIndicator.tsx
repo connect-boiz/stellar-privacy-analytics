@@ -14,14 +14,14 @@ interface NetworkStatus {
   queuedRequests: number;
 }
 
-export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({ 
-  className = '' 
+export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
+  className = '',
 }) => {
   const [status, setStatus] = useState<NetworkStatus>({
     isOnline: navigator.onLine,
     isSlow: false,
     lastChecked: new Date(),
-    queuedRequests: 0
+    queuedRequests: 0,
   });
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -31,7 +31,7 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
     updateNetworkStatus();
 
     // Listen for network status changes
-    const handleStatusChange = (online: boolean) => {
+    const handleStatusChange = (_online: boolean) => {
       updateNetworkStatus();
     };
 
@@ -47,11 +47,11 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
 
   const updateNetworkStatus = () => {
     const diagnostics = api.getErrorDiagnostics();
-    setStatus(prev => ({
+    setStatus((prev) => ({
       ...prev,
       isOnline: diagnostics.isOnline,
       queuedRequests: diagnostics.queuedRequests,
-      lastChecked: new Date()
+      lastChecked: new Date(),
     }));
   };
 
@@ -59,16 +59,16 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
     setIsTesting(true);
     try {
       const isOnline = await api.testConnection();
-      setStatus(prev => ({
+      setStatus((prev) => ({
         ...prev,
         isOnline,
-        lastChecked: new Date()
+        lastChecked: new Date(),
       }));
     } catch (error) {
-      setStatus(prev => ({
+      setStatus((prev) => ({
         ...prev,
         isOnline: false,
-        lastChecked: new Date()
+        lastChecked: new Date(),
       }));
     } finally {
       setIsTesting(false);
@@ -108,7 +108,7 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
         <span className="text-sm font-medium">{getStatusText()}</span>
         <motion.div
           animate={{ rotate: isTesting ? 360 : 0 }}
-          transition={{ duration: 1, repeat: isTesting ? Infinity : 0, ease: "linear" }}
+          transition={{ duration: 1, repeat: isTesting ? Infinity : 0, ease: 'linear' }}
         >
           {isTesting && <RefreshCw className="w-3 h-3" />}
         </motion.div>
@@ -126,23 +126,17 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">Connection Status</span>
-                <span className={`text-sm font-bold ${getStatusColor()}`}>
-                  {getStatusText()}
-                </span>
+                <span className={`text-sm font-bold ${getStatusColor()}`}>{getStatusText()}</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Cached Items</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {api.getCacheSize()}
-                </span>
+                <span className="text-sm font-medium text-gray-900">{api.getCacheSize()}</span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Queued Requests</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {status.queuedRequests}
-                </span>
+                <span className="text-sm font-medium text-gray-900">{status.queuedRequests}</span>
               </div>
 
               <div className="flex items-center justify-between">
@@ -172,7 +166,8 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
               {!status.isOnline && (
                 <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-md">
                   <p className="text-xs text-yellow-800">
-                    You're currently offline. Some features may be limited. Cached data will be displayed where available.
+                    You're currently offline. Some features may be limited. Cached data will be
+                    displayed where available.
                   </p>
                 </div>
               )}

@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events';
-import { logger } from '../../utils/logger';
+import { EventEmitter } from "events";
+import { logger } from "../../utils/logger";
 
 /**
  * Timeout Policy for MPC participants
@@ -15,14 +15,14 @@ export class TimeoutPolicy extends EventEmitter {
     super();
     this.nodeId = nodeId;
     this.defaultConfig = {
-      heartbeatTimeout: 60000,      // 60 seconds
-      operationTimeout: 300000,     // 5 minutes
+      heartbeatTimeout: 60000, // 60 seconds
+      operationTimeout: 300000, // 5 minutes
       shareDistributionTimeout: 120000, // 2 minutes
-      computationTimeout: 600000,   // 10 minutes
-      revealTimeout: 180000,         // 3 minutes
+      computationTimeout: 600000, // 10 minutes
+      revealTimeout: 180000, // 3 minutes
       maxRetries: 3,
-      retryDelay: 5000,              // 5 seconds
-      action: 'warn_and_continue'
+      retryDelay: 5000, // 5 seconds
+      action: "warn_and_continue",
     };
 
     if (defaultConfig) {
@@ -38,7 +38,7 @@ export class TimeoutPolicy extends EventEmitter {
   setPolicy(sessionId: string, config: Partial<TimeoutConfig>): void {
     const policy: TimeoutConfig = { ...this.defaultConfig, ...config };
     this.policies.set(sessionId, policy);
-    
+
     logger.info(`Timeout policy set for session ${sessionId}`);
   }
 
@@ -52,14 +52,22 @@ export class TimeoutPolicy extends EventEmitter {
   /**
    * Start timeout for a specific operation
    */
-  startTimeout(sessionId: string, operation: TimeoutOperation, participantId?: string): string {
+  startTimeout(
+    sessionId: string,
+    operation: TimeoutOperation,
+    participantId?: string,
+  ): string {
     const policy = this.getPolicy(sessionId);
     const timeoutMs = this.getTimeoutForOperation(operation, policy);
-    const timeoutId = this.generateTimeoutId(sessionId, operation, participantId);
-    
+    const timeoutId = this.generateTimeoutId(
+      sessionId,
+      operation,
+      participantId,
+    );
+
     // Clear existing timeout if any
     this.clearTimeout(timeoutId);
-    
+
     const timeoutInfo: TimeoutInfo = {
       id: timeoutId,
       sessionId,
@@ -68,18 +76,18 @@ export class TimeoutPolicy extends EventEmitter {
       startTime: new Date(),
       timeoutMs,
       retries: 0,
-      status: 'active'
+      status: "active",
     };
-    
+
     this.activeTimeouts.set(timeoutId, timeoutInfo);
-    
+
     // Set the actual timeout
     const timeoutHandle = setTimeout(() => {
       this.handleTimeout(timeoutInfo);
     }, timeoutMs);
-    
+
     timeoutInfo.handle = timeoutHandle;
-    
+
     logger.info(`Timeout started: ${timeoutId} (${timeoutMs}ms)`);
     return timeoutId;
   }
@@ -105,14 +113,14 @@ export class TimeoutPolicy extends EventEmitter {
     const timeoutInfo = this.activeTimeouts.get(timeoutId);
     if (timeoutInfo && timeoutInfo.handle) {
       clearTimeout(timeoutInfo.handle);
-      
+
       const timeoutHandle = setTimeout(() => {
         this.handleTimeout(timeoutInfo);
       }, timeoutInfo.timeoutMs);
-      
+
       timeoutInfo.handle = timeoutHandle;
       timeoutInfo.startTime = new Date();
-      
+
       logger.debug(`Timeout reset: ${timeoutId}`);
       return true;
     }
@@ -124,25 +132,25 @@ export class TimeoutPolicy extends EventEmitter {
    */
   private handleTimeout(timeoutInfo: TimeoutInfo): void {
     const policy = this.getPolicy(timeoutInfo.sessionId);
-    timeoutInfo.status = 'triggered';
-    
+    timeoutInfo.status = "triggered";
+
     logger.warn(`Timeout triggered: ${timeoutInfo.id}`);
-    
+
     // Emit timeout event
-    this.emit('timeout', timeoutInfo);
-    
+    this.emit("timeout", timeoutInfo);
+
     // Apply policy action
     switch (policy.action) {
-      case 'warn_and_continue':
+      case "warn_and_continue":
         this.handleWarnAndContinue(timeoutInfo, policy);
         break;
-      case 'retry':
+      case "retry":
         this.handleRetry(timeoutInfo, policy);
         break;
-      case 'fail_session':
+      case "fail_session":
         this.handleFailSession(timeoutInfo, policy);
         break;
-      case 'remove_participant':
+      case "remove_participant":
         this.handleRemoveParticipant(timeoutInfo, policy);
         break;
       default:
@@ -153,16 +161,21 @@ export class TimeoutPolicy extends EventEmitter {
   /**
    * Handle warn and continue action
    */
-  private handleWarnAndContinue(timeoutInfo: TimeoutInfo, policy: TimeoutConfig): void {
-    logger.warn(`Timeout warning for ${timeoutInfo.operation} in session ${timeoutInfo.sessionId}`);
-    
-    this.emit('timeoutWarning', {
+  private handleWarnAndContinue(
+    timeoutInfo: TimeoutInfo,
+    _policy: TimeoutConfig,
+  ): void {
+    logger.warn(
+      `Timeout warning for ${timeoutInfo.operation} in session ${timeoutInfo.sessionId}`,
+    );
+
+    this.emit("timeoutWarning", {
       sessionId: timeoutInfo.sessionId,
       operation: timeoutInfo.operation,
       participantId: timeoutInfo.participantId,
-      message: `Operation ${timeoutInfo.operation} timed out but continuing`
+      message: `Operation ${timeoutInfo.operation} timed out but continuing`,
     });
-    
+
     // Clear the timeout since we're continuing
     this.clearTimeout(timeoutInfo.id);
   }
@@ -173,23 +186,29 @@ export class TimeoutPolicy extends EventEmitter {
   private handleRetry(timeoutInfo: TimeoutInfo, policy: TimeoutConfig): void {
     if (timeoutInfo.retries < policy.maxRetries) {
       timeoutInfo.retries++;
-      timeoutInfo.status = 'retrying';
-      
-      logger.info(`Retrying timeout ${timeoutInfo.id} (attempt ${timeoutInfo.retries}/${policy.maxRetries})`);
-      
-      this.emit('timeoutRetry', {
+      timeoutInfo.status = "retrying";
+
+      logger.info(
+        `Retrying timeout ${timeoutInfo.id} (attempt ${timeoutInfo.retries}/${policy.maxRetries})`,
+      );
+
+      this.emit("timeoutRetry", {
         sessionId: timeoutInfo.sessionId,
         operation: timeoutInfo.operation,
         participantId: timeoutInfo.participantId,
         retry: timeoutInfo.retries,
-        maxRetries: policy.maxRetries
+        maxRetries: policy.maxRetries,
       });
-      
+
       // Schedule retry after delay
       setTimeout(() => {
-        this.startTimeout(timeoutInfo.sessionId, timeoutInfo.operation, timeoutInfo.participantId);
+        this.startTimeout(
+          timeoutInfo.sessionId,
+          timeoutInfo.operation,
+          timeoutInfo.participantId,
+        );
       }, policy.retryDelay);
-      
+
       // Clear current timeout
       this.clearTimeout(timeoutInfo.id);
     } else {
@@ -201,17 +220,22 @@ export class TimeoutPolicy extends EventEmitter {
   /**
    * Handle fail session action
    */
-  private handleFailSession(timeoutInfo: TimeoutInfo, policy: TimeoutConfig): void {
-    logger.error(`Session ${timeoutInfo.sessionId} failed due to timeout: ${timeoutInfo.operation}`);
-    
-    this.emit('sessionFailed', {
+  private handleFailSession(
+    timeoutInfo: TimeoutInfo,
+    policy: TimeoutConfig,
+  ): void {
+    logger.error(
+      `Session ${timeoutInfo.sessionId} failed due to timeout: ${timeoutInfo.operation}`,
+    );
+
+    this.emit("sessionFailed", {
       sessionId: timeoutInfo.sessionId,
       operation: timeoutInfo.operation,
       participantId: timeoutInfo.participantId,
-      reason: 'timeout',
-      message: `Operation ${timeoutInfo.operation} timed out after ${policy.maxRetries} retries`
+      reason: "timeout",
+      message: `Operation ${timeoutInfo.operation} timed out after ${policy.maxRetries} retries`,
     });
-    
+
     // Clear all timeouts for this session
     this.clearSessionTimeouts(timeoutInfo.sessionId);
   }
@@ -219,17 +243,22 @@ export class TimeoutPolicy extends EventEmitter {
   /**
    * Handle remove participant action
    */
-  private handleRemoveParticipant(timeoutInfo: TimeoutInfo, policy: TimeoutConfig): void {
+  private handleRemoveParticipant(
+    timeoutInfo: TimeoutInfo,
+    policy: TimeoutConfig,
+  ): void {
     if (timeoutInfo.participantId) {
-      logger.warn(`Removing participant ${timeoutInfo.participantId} due to timeout`);
-      
-      this.emit('participantRemoved', {
+      logger.warn(
+        `Removing participant ${timeoutInfo.participantId} due to timeout`,
+      );
+
+      this.emit("participantRemoved", {
         sessionId: timeoutInfo.sessionId,
         participantId: timeoutInfo.participantId,
         operation: timeoutInfo.operation,
-        reason: 'timeout'
+        reason: "timeout",
       });
-      
+
       // Clear timeout for this participant
       this.clearTimeout(timeoutInfo.id);
     } else {
@@ -241,17 +270,20 @@ export class TimeoutPolicy extends EventEmitter {
   /**
    * Get timeout duration for operation
    */
-  private getTimeoutForOperation(operation: TimeoutOperation, policy: TimeoutConfig): number {
+  private getTimeoutForOperation(
+    operation: TimeoutOperation,
+    policy: TimeoutConfig,
+  ): number {
     switch (operation) {
-      case 'heartbeat':
+      case "heartbeat":
         return policy.heartbeatTimeout;
-      case 'share_distribution':
+      case "share_distribution":
         return policy.shareDistributionTimeout;
-      case 'computation':
+      case "computation":
         return policy.computationTimeout;
-      case 'reveal':
+      case "reveal":
         return policy.revealTimeout;
-      case 'operation':
+      case "operation":
         return policy.operationTimeout;
       default:
         return policy.operationTimeout;
@@ -261,12 +293,16 @@ export class TimeoutPolicy extends EventEmitter {
   /**
    * Generate timeout ID
    */
-  private generateTimeoutId(sessionId: string, operation: TimeoutOperation, participantId?: string): string {
+  private generateTimeoutId(
+    sessionId: string,
+    operation: TimeoutOperation,
+    participantId?: string,
+  ): string {
     const parts = [sessionId, operation];
     if (participantId) {
       parts.push(participantId);
     }
-    return parts.join('_');
+    return parts.join("_");
   }
 
   /**
@@ -274,17 +310,17 @@ export class TimeoutPolicy extends EventEmitter {
    */
   clearSessionTimeouts(sessionId: string): void {
     const timeoutsToClear: string[] = [];
-    
+
     for (const [timeoutId, timeoutInfo] of this.activeTimeouts) {
       if (timeoutInfo.sessionId === sessionId) {
         timeoutsToClear.push(timeoutId);
       }
     }
-    
+
     for (const timeoutId of timeoutsToClear) {
       this.clearTimeout(timeoutId);
     }
-    
+
     logger.info(`Cleared all timeouts for session ${sessionId}`);
   }
 
@@ -299,7 +335,9 @@ export class TimeoutPolicy extends EventEmitter {
    * Get timeouts for a session
    */
   getSessionTimeouts(sessionId: string): TimeoutInfo[] {
-    return Array.from(this.activeTimeouts.values()).filter(t => t.sessionId === sessionId);
+    return Array.from(this.activeTimeouts.values()).filter(
+      (t) => t.sessionId === sessionId,
+    );
   }
 
   /**
@@ -307,16 +345,16 @@ export class TimeoutPolicy extends EventEmitter {
    */
   getStatistics(): TimeoutStatistics {
     const timeouts = Array.from(this.activeTimeouts.values());
-    const active = timeouts.filter(t => t.status === 'active').length;
-    const triggered = timeouts.filter(t => t.status === 'triggered').length;
-    const retrying = timeouts.filter(t => t.status === 'retrying').length;
-    
+    const active = timeouts.filter((t) => t.status === "active").length;
+    const triggered = timeouts.filter((t) => t.status === "triggered").length;
+    const retrying = timeouts.filter((t) => t.status === "retrying").length;
+
     return {
       totalTimeouts: timeouts.length,
       activeTimeouts: active,
       triggeredTimeouts: triggered,
       retryingTimeouts: retrying,
-      sessionsWithTimeouts: new Set(timeouts.map(t => t.sessionId)).size
+      sessionsWithTimeouts: new Set(timeouts.map((t) => t.sessionId)).size,
     };
   }
 
@@ -328,11 +366,11 @@ export class TimeoutPolicy extends EventEmitter {
     for (const timeoutId of this.activeTimeouts.keys()) {
       this.clearTimeout(timeoutId);
     }
-    
+
     this.activeTimeouts.clear();
     this.policies.clear();
-    
-    logger.info('Timeout policy cleaned up');
+
+    logger.info("Timeout policy cleaned up");
   }
 }
 
@@ -353,12 +391,21 @@ interface TimeoutConfig {
 /**
  * Timeout operation types
  */
-type TimeoutOperation = 'heartbeat' | 'share_distribution' | 'computation' | 'reveal' | 'operation';
+type TimeoutOperation =
+  | "heartbeat"
+  | "share_distribution"
+  | "computation"
+  | "reveal"
+  | "operation";
 
 /**
  * Timeout actions
  */
-type TimeoutAction = 'warn_and_continue' | 'retry' | 'fail_session' | 'remove_participant';
+type TimeoutAction =
+  | "warn_and_continue"
+  | "retry"
+  | "fail_session"
+  | "remove_participant";
 
 /**
  * Timeout information interface
@@ -371,7 +418,7 @@ interface TimeoutInfo {
   startTime: Date;
   timeoutMs: number;
   retries: number;
-  status: 'active' | 'triggered' | 'retrying';
+  status: "active" | "triggered" | "retrying";
   handle?: any;
 }
 

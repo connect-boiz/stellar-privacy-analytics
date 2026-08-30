@@ -3,8 +3,8 @@
  */
 
 import {
-  DatasetMetadata,
-  UsageMetadata,
+  _DatasetMetadata,
+  _UsageMetadata,
   UsageStatistics,
   UsagePattern,
   DataConsumer,
@@ -15,10 +15,10 @@ import {
   TrendDataPoint,
   TrendAnalysis,
   SeasonalityPattern,
-  ChangePoint,
+  _ChangePoint,
   TrendForecast,
   TrendAnomaly,
-  GeoLocation
+  GeoLocation,
 } from '../types/dataCatalog';
 
 export interface UsageAnalyticsConfig {
@@ -255,7 +255,7 @@ export class UsageAnalyticsStatistics {
           privacyMode: true,
           anonymizeUserData: true,
           geoTrackingEnabled: true,
-          performanceMonitoring: true
+          performanceMonitoring: true,
         };
       }
       UsageAnalyticsStatistics.instance = new UsageAnalyticsStatistics(config);
@@ -266,19 +266,28 @@ export class UsageAnalyticsStatistics {
   private initializeTracking(): void {
     if (this.config.trackingEnabled) {
       // Start periodic aggregation
-      setInterval(() => {
-        this.aggregateUsageData();
-      }, this.config.aggregationInterval * 60 * 1000);
+      setInterval(
+        () => {
+          this.aggregateUsageData();
+        },
+        this.config.aggregationInterval * 60 * 1000
+      );
 
       // Start insight generation
-      setInterval(() => {
-        this.generateInsights();
-      }, 60 * 60 * 1000); // Every hour
+      setInterval(
+        () => {
+          this.generateInsights();
+        },
+        60 * 60 * 1000
+      ); // Every hour
 
       // Clean up old data
-      setInterval(() => {
-        this.cleanupOldData();
-      }, 24 * 60 * 60 * 1000); // Every day
+      setInterval(
+        () => {
+          this.cleanupOldData();
+        },
+        24 * 60 * 60 * 1000
+      ); // Every day
     }
   }
 
@@ -288,8 +297,7 @@ export class UsageAnalyticsStatistics {
 
     try {
       // Anonymize user data if privacy mode is enabled
-      const anonymizedQuery = this.config.anonymizeUserData ? 
-        this.anonymizeQuery(query) : query;
+      const anonymizedQuery = this.config.anonymizeUserData ? this.anonymizeQuery(query) : query;
 
       // Store query data
       const datasetQueries = this.usageData.get(anonymizedQuery.user) || [];
@@ -317,8 +325,9 @@ export class UsageAnalyticsStatistics {
     if (!this.config.trackingEnabled) return false;
 
     try {
-      const anonymizedAccess = this.config.anonymizeUserData ? 
-        this.anonymizeAccess(access) : access;
+      const anonymizedAccess = this.config.anonymizeUserData
+        ? this.anonymizeAccess(access)
+        : access;
 
       const userAccessLogs = this.accessLogs.get(anonymizedAccess.user) || [];
       userAccessLogs.push(anonymizedAccess);
@@ -346,8 +355,8 @@ export class UsageAnalyticsStatistics {
 
     // Calculate basic metrics
     const totalQueries = allQueries.length;
-    const uniqueUsers = new Set(allQueries.map(q => q.user)).size;
-    const activeDatasets = new Set(allQueries.map(q => q.tables)).size;
+    const uniqueUsers = new Set(allQueries.map((q) => q.user)).size;
+    const activeDatasets = new Set(allQueries.map((q) => q.tables)).size;
     const avgQueriesPerUser = uniqueUsers > 0 ? totalQueries / uniqueUsers : 0;
     const avgQueriesPerDataset = activeDatasets > 0 ? totalQueries / activeDatasets : 0;
 
@@ -357,10 +366,12 @@ export class UsageAnalyticsStatistics {
 
     // Calculate volume and performance
     const dataVolumeAccessed = allQueries.reduce((sum, q) => sum + q.dataVolume, 0);
-    const avgResponseTime = allQueries.length > 0 ? 
-      allQueries.reduce((sum, q) => sum + q.duration, 0) / allQueries.length : 0;
-    const errorRate = allQueries.length > 0 ? 
-      allQueries.filter(q => !q.success).length / allQueries.length : 0;
+    const avgResponseTime =
+      allQueries.length > 0
+        ? allQueries.reduce((sum, q) => sum + q.duration, 0) / allQueries.length
+        : 0;
+    const errorRate =
+      allQueries.length > 0 ? allQueries.filter((q) => !q.success).length / allQueries.length : 0;
 
     // Calculate satisfaction (simplified)
     const userSatisfaction = this.calculateUserSatisfaction(allQueries);
@@ -391,7 +402,7 @@ export class UsageAnalyticsStatistics {
       datasetPopularity,
       userActivity,
       temporalPatterns,
-      geographicDistribution
+      geographicDistribution,
     };
   }
 
@@ -413,7 +424,7 @@ export class UsageAnalyticsStatistics {
       trend,
       forecast,
       seasonality,
-      anomalies
+      anomalies,
     };
   }
 
@@ -435,7 +446,7 @@ export class UsageAnalyticsStatistics {
       activity,
       expertise,
       patterns,
-      recommendations
+      recommendations,
     };
   }
 
@@ -448,7 +459,7 @@ export class UsageAnalyticsStatistics {
     recommendations: string[];
   }> {
     const allQueries = this.getAllQueries();
-    const datasetQueries = allQueries.filter(q => q.tables.includes(datasetId));
+    const datasetQueries = allQueries.filter((q) => q.tables.includes(datasetId));
 
     const popularity = this.calculateDatasetPopularity(datasetQueries);
     const usage = this.calculateDatasetUsage(datasetQueries);
@@ -463,7 +474,7 @@ export class UsageAnalyticsStatistics {
       consumers,
       trends,
       quality,
-      recommendations
+      recommendations,
     };
   }
 
@@ -496,8 +507,8 @@ export class UsageAnalyticsStatistics {
     this.insights.push(...newInsights);
 
     // Keep only recent insights (last 30 days)
-    const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    this.insights = this.insights.filter(insight => insight.generatedAt > cutoffTime);
+    const cutoffTime = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    this.insights = this.insights.filter((insight) => insight.generatedAt > cutoffTime);
 
     return newInsights;
   }
@@ -516,14 +527,16 @@ export class UsageAnalyticsStatistics {
 
     // Generate report sections based on type
     const sections = this.generateReportSections(reportType, timeRange, options);
-    
+
     // Generate visualizations
-    const visualizations = options?.includeVisualizations ? 
-      this.generateReportVisualizations(sections) : [];
+    const visualizations = options?.includeVisualizations
+      ? this.generateReportVisualizations(sections)
+      : [];
 
     // Generate recommendations
-    const recommendations = options?.includeRecommendations ? 
-      this.generateReportRecommendations(reportType, sections) : [];
+    const recommendations = options?.includeRecommendations
+      ? this.generateReportRecommendations(reportType, sections)
+      : [];
 
     // Generate summary
     const summary = this.generateReportSummary(sections, recommendations);
@@ -538,7 +551,7 @@ export class UsageAnalyticsStatistics {
       summary,
       sections,
       visualizations,
-      recommendations
+      recommendations,
     };
 
     this.reports.set(reportId, report);
@@ -549,24 +562,24 @@ export class UsageAnalyticsStatistics {
   private getAllQueries(timeRange?: { start: number; end: number }, filters?: any): UsageQuery[] {
     let allQueries: UsageQuery[] = [];
 
-    this.usageData.forEach(queries => {
+    this.usageData.forEach((queries) => {
       allQueries.push(...queries);
     });
 
     // Apply time range filter
     if (timeRange) {
-      allQueries = allQueries.filter(q => 
-        q.timestamp >= timeRange.start && q.timestamp <= timeRange.end
+      allQueries = allQueries.filter(
+        (q) => q.timestamp >= timeRange.start && q.timestamp <= timeRange.end
       );
     }
 
     // Apply other filters
     if (filters) {
       if (filters.datasetId) {
-        allQueries = allQueries.filter(q => q.tables.includes(filters.datasetId));
+        allQueries = allQueries.filter((q) => q.tables.includes(filters.datasetId));
       }
       if (filters.userId) {
-        allQueries = allQueries.filter(q => q.user === filters.userId);
+        allQueries = allQueries.filter((q) => q.user === filters.userId);
       }
       if (filters.department) {
         // Would filter by department if available
@@ -579,17 +592,17 @@ export class UsageAnalyticsStatistics {
     return allQueries;
   }
 
-  private getAllAccesses(timeRange?: { start: number; end: number }, filters?: any): UsageAccess[] {
+  private getAllAccesses(timeRange?: { start: number; end: number }, _filters?: any): UsageAccess[] {
     let allAccesses: UsageAccess[] = [];
 
-    this.accessLogs.forEach(accesses => {
+    this.accessLogs.forEach((accesses) => {
       allAccesses.push(...accesses);
     });
 
     // Apply time range filter
     if (timeRange) {
-      allAccesses = allAccesses.filter(a => 
-        a.timestamp >= timeRange.start && a.timestamp <= timeRange.end
+      allAccesses = allAccesses.filter(
+        (a) => a.timestamp >= timeRange.start && a.timestamp <= timeRange.end
       );
     }
 
@@ -600,7 +613,7 @@ export class UsageAnalyticsStatistics {
     return {
       ...query,
       user: this.hashUserId(query.user),
-      ipAddress: query.ipAddress ? this.hashIpAddress(query.ipAddress) : undefined
+      ipAddress: query.ipAddress ? this.hashIpAddress(query.ipAddress) : undefined,
     };
   }
 
@@ -608,7 +621,7 @@ export class UsageAnalyticsStatistics {
     return {
       ...access,
       user: this.hashUserId(access.user),
-      ipAddress: access.ipAddress ? this.hashIpAddress(access.ipAddress) : undefined
+      ipAddress: access.ipAddress ? this.hashIpAddress(access.ipAddress) : undefined,
     };
   }
 
@@ -623,8 +636,8 @@ export class UsageAnalyticsStatistics {
 
   private calculateHourlyQueries(queries: UsageQuery[]): number[] {
     const hourlyCounts = new Array(24).fill(0);
-    
-    queries.forEach(query => {
+
+    queries.forEach((query) => {
       const hour = new Date(query.timestamp).getHours();
       hourlyCounts[hour]++;
     });
@@ -634,35 +647,38 @@ export class UsageAnalyticsStatistics {
 
   private calculateUserSatisfaction(queries: UsageQuery[]): number {
     // Simplified satisfaction calculation based on success rate and response time
-    const successRate = queries.length > 0 ? 
-      queries.filter(q => q.success).length / queries.length : 0;
-    const avgResponseTime = queries.length > 0 ? 
-      queries.reduce((sum, q) => sum + q.duration, 0) / queries.length : 0;
-    
+    const successRate =
+      queries.length > 0 ? queries.filter((q) => q.success).length / queries.length : 0;
+    const avgResponseTime =
+      queries.length > 0 ? queries.reduce((sum, q) => sum + q.duration, 0) / queries.length : 0;
+
     // Normalize response time (lower is better)
-    const normalizedResponseTime = Math.max(0, 1 - (avgResponseTime / 10000)); // 10s as max
-    
+    const normalizedResponseTime = Math.max(0, 1 - avgResponseTime / 10000); // 10s as max
+
     return (successRate * 0.7 + normalizedResponseTime * 0.3) * 100;
   }
 
   private calculateDatasetPopularity(queries: UsageQuery[]): DatasetPopularity[] {
-    const datasetStats = new Map<string, {
-      queryCount: number;
-      uniqueUsers: Set<string>;
-      dataVolume: number;
-      responseTimes: number[];
-      errors: number;
-    }>();
+    const datasetStats = new Map<
+      string,
+      {
+        queryCount: number;
+        uniqueUsers: Set<string>;
+        dataVolume: number;
+        responseTimes: number[];
+        errors: number;
+      }
+    >();
 
-    queries.forEach(query => {
-      query.tables.forEach(table => {
+    queries.forEach((query) => {
+      query.tables.forEach((table) => {
         if (!datasetStats.has(table)) {
           datasetStats.set(table, {
             queryCount: 0,
             uniqueUsers: new Set(),
             dataVolume: 0,
             responseTimes: [],
-            errors: 0
+            errors: 0,
           });
         }
 
@@ -677,10 +693,12 @@ export class UsageAnalyticsStatistics {
 
     const popularity: DatasetPopularity[] = [];
     datasetStats.forEach((stats, datasetId) => {
-      const avgResponseTime = stats.responseTimes.length > 0 ? 
-        stats.responseTimes.reduce((sum, rt) => sum + rt, 0) / stats.responseTimes.length : 0;
+      const avgResponseTime =
+        stats.responseTimes.length > 0
+          ? stats.responseTimes.reduce((sum, rt) => sum + rt, 0) / stats.responseTimes.length
+          : 0;
       const errorRate = stats.queryCount > 0 ? stats.errors / stats.queryCount : 0;
-      const satisfaction = Math.max(0, 100 - (errorRate * 50) - (avgResponseTime / 100));
+      const satisfaction = Math.max(0, 100 - errorRate * 50 - avgResponseTime / 100);
 
       popularity.push({
         datasetId,
@@ -693,7 +711,7 @@ export class UsageAnalyticsStatistics {
         satisfaction,
         trend: 'stable', // Would calculate based on historical data
         rank: 0, // Will be calculated after sorting
-        percentile: 0 // Will be calculated after sorting
+        percentile: 0, // Will be calculated after sorting
       });
     });
 
@@ -708,18 +726,21 @@ export class UsageAnalyticsStatistics {
   }
 
   private calculateUserActivity(queries: UsageQuery[], accesses: UsageAccess[]): UserActivity[] {
-    const userStats = new Map<string, {
-      queryCount: number;
-      uniqueDatasets: Set<string>;
-      dataVolume: number;
-      sessionDurations: number[];
-      lastActivity: number;
-      favoriteDatasets: Set<string>;
-      datasetQueries: Map<string, number>;
-    }>();
+    const userStats = new Map<
+      string,
+      {
+        queryCount: number;
+        uniqueDatasets: Set<string>;
+        dataVolume: number;
+        sessionDurations: number[];
+        lastActivity: number;
+        favoriteDatasets: Set<string>;
+        datasetQueries: Map<string, number>;
+      }
+    >();
 
     // Process queries
-    queries.forEach(query => {
+    queries.forEach((query) => {
       if (!userStats.has(query.user)) {
         userStats.set(query.user, {
           queryCount: 0,
@@ -728,7 +749,7 @@ export class UsageAnalyticsStatistics {
           sessionDurations: [],
           lastActivity: 0,
           favoriteDatasets: new Set(),
-          datasetQueries: new Map()
+          datasetQueries: new Map(),
         });
       }
 
@@ -736,11 +757,11 @@ export class UsageAnalyticsStatistics {
       stats.queryCount++;
       stats.dataVolume += query.dataVolume;
       stats.lastActivity = Math.max(stats.lastActivity, query.timestamp);
-      
-      query.tables.forEach(table => {
+
+      query.tables.forEach((table) => {
         stats.uniqueDatasets.add(table);
         stats.datasetQueries.set(table, (stats.datasetQueries.get(table) || 0) + 1);
-        
+
         // Mark as favorite if queried frequently
         if (stats.datasetQueries.get(table)! >= 10) {
           stats.favoriteDatasets.add(table);
@@ -749,7 +770,7 @@ export class UsageAnalyticsStatistics {
     });
 
     // Process accesses for session duration
-    accesses.forEach(access => {
+    accesses.forEach((access) => {
       if (userStats.has(access.user)) {
         const stats = userStats.get(access.user)!;
         stats.sessionDurations.push(access.sessionDuration);
@@ -758,8 +779,11 @@ export class UsageAnalyticsStatistics {
 
     const userActivity: UserActivity[] = [];
     userStats.forEach((stats, userId) => {
-      const avgSessionDuration = stats.sessionDurations.length > 0 ?
-        stats.sessionDurations.reduce((sum, duration) => sum + duration, 0) / stats.sessionDurations.length : 0;
+      const avgSessionDuration =
+        stats.sessionDurations.length > 0
+          ? stats.sessionDurations.reduce((sum, duration) => sum + duration, 0) /
+            stats.sessionDurations.length
+          : 0;
 
       userActivity.push({
         userId,
@@ -778,8 +802,8 @@ export class UsageAnalyticsStatistics {
           collaboratedDatasets: 0,
           teamMembers: [],
           influenceScore: 0,
-          knowledgeSharing: 0
-        }
+          knowledgeSharing: 0,
+        },
       });
     });
 
@@ -810,8 +834,8 @@ export class UsageAnalyticsStatistics {
 
   private calculateHourlyPattern(queries: UsageQuery[]): TemporalPattern {
     const hourlyCounts = new Array(24).fill(0);
-    
-    queries.forEach(query => {
+
+    queries.forEach((query) => {
       const hour = new Date(query.timestamp).getHours();
       hourlyCounts[hour]++;
     });
@@ -826,14 +850,14 @@ export class UsageAnalyticsStatistics {
       peaks,
       trends,
       seasonality: [],
-      anomalies
+      anomalies,
     };
   }
 
   private calculateDailyPattern(queries: UsageQuery[]): TemporalPattern {
     const dailyCounts = new Array(7).fill(0);
-    
-    queries.forEach(query => {
+
+    queries.forEach((query) => {
       const day = new Date(query.timestamp).getDay();
       dailyCounts[day]++;
     });
@@ -848,15 +872,15 @@ export class UsageAnalyticsStatistics {
       peaks,
       trends,
       seasonality: [],
-      anomalies
+      anomalies,
     };
   }
 
   private calculateWeeklyPattern(queries: UsageQuery[]): TemporalPattern {
     // Simplified weekly pattern calculation
     const weeklyCounts = [0, 0, 0, 0]; // 4 weeks
-    
-    queries.forEach(query => {
+
+    queries.forEach((query) => {
       const week = Math.floor((Date.now() - query.timestamp) / (7 * 24 * 60 * 60 * 1000));
       if (week < 4) {
         weeklyCounts[week]++;
@@ -873,15 +897,15 @@ export class UsageAnalyticsStatistics {
       peaks,
       trends,
       seasonality: [],
-      anomalies
+      anomalies,
     };
   }
 
   private calculateMonthlyPattern(queries: UsageQuery[]): TemporalPattern {
     // Simplified monthly pattern calculation
     const monthlyCounts = [0, 0, 0, 0, 0, 0]; // 6 months
-    
-    queries.forEach(query => {
+
+    queries.forEach((query) => {
       const month = Math.floor((Date.now() - query.timestamp) / (30 * 24 * 60 * 60 * 1000));
       if (month < 6) {
         monthlyCounts[month]++;
@@ -898,7 +922,7 @@ export class UsageAnalyticsStatistics {
       peaks,
       trends,
       seasonality: [],
-      anomalies
+      anomalies,
     };
   }
 
@@ -914,7 +938,7 @@ export class UsageAnalyticsStatistics {
           value,
           type: 'peak',
           significance: value / Math.max(...pattern),
-          description: `${period} peak at index ${index}`
+          description: `${period} peak at index ${index}`,
         });
       }
     });
@@ -922,9 +946,9 @@ export class UsageAnalyticsStatistics {
     return peaks;
   }
 
-  private calculatePatternTrends(pattern: number[], period: string): PatternTrend[] {
+  private calculatePatternTrends(pattern: number[], _period: string): PatternTrend[] {
     const trends: PatternTrend[] = [];
-    
+
     // Simple linear regression
     const n = pattern.length;
     if (n < 2) return trends;
@@ -934,8 +958,8 @@ export class UsageAnalyticsStatistics {
 
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = y.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + (val * y[i]), 0);
-    const sumXX = x.reduce((sum, val) => sum + (val * val), 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const correlation = this.calculateCorrelation(x, y);
@@ -950,7 +974,7 @@ export class UsageAnalyticsStatistics {
       slope,
       correlation,
       confidence: Math.abs(correlation),
-      period: n
+      period: n,
     });
 
     return trends;
@@ -969,7 +993,7 @@ export class UsageAnalyticsStatistics {
       if (deviation > threshold) {
         const timestamp = this.getTimestampForPeriodIndex(index, period);
         let severity: PatternAnomaly['severity'] = 'low';
-        
+
         if (deviation > 3 * stdDev) severity = 'critical';
         else if (deviation > 2.5 * stdDev) severity = 'high';
         else if (deviation > 2 * stdDev) severity = 'medium';
@@ -980,7 +1004,7 @@ export class UsageAnalyticsStatistics {
           expectedValue: mean,
           deviation,
           severity,
-          description: `${period} anomaly at index ${index}`
+          description: `${period} anomaly at index ${index}`,
         });
       }
     });
@@ -990,16 +1014,16 @@ export class UsageAnalyticsStatistics {
 
   private getTimestampForPeriodIndex(index: number, period: string): number {
     const now = Date.now();
-    
+
     switch (period) {
       case 'hourly':
-        return now - ((23 - index) * 60 * 60 * 1000);
+        return now - (23 - index) * 60 * 60 * 1000;
       case 'daily':
-        return now - ((6 - index) * 24 * 60 * 60 * 1000);
+        return now - (6 - index) * 24 * 60 * 60 * 1000;
       case 'weekly':
-        return now - ((3 - index) * 7 * 24 * 60 * 60 * 1000);
+        return now - (3 - index) * 7 * 24 * 60 * 60 * 1000;
       case 'monthly':
-        return now - ((5 - index) * 30 * 24 * 60 * 60 * 1000);
+        return now - (5 - index) * 30 * 24 * 60 * 60 * 1000;
       default:
         return now;
     }
@@ -1029,19 +1053,23 @@ export class UsageAnalyticsStatistics {
   }
 
   private calculateGeographicDistribution(accesses: UsageAccess[]): GeographicDistribution[] {
-    const locationStats = new Map<string, {
-      queryCount: number;
-      uniqueUsers: Set<string>;
-      dataVolume: number;
-      responseTimes: number[];
-      errorCount: number;
-      userTypes: Map<string, number>;
-      popularDatasets: Map<string, number>;
-    }>();
+    const locationStats = new Map<
+      string,
+      {
+        queryCount: number;
+        uniqueUsers: Set<string>;
+        dataVolume: number;
+        responseTimes: number[];
+        errorCount: number;
+        userTypes: Map<string, number>;
+        popularDatasets: Map<string, number>;
+      }
+    >();
 
-    accesses.forEach(access => {
-      const locationKey = access.location ? 
-        `${access.location.country}-${access.location.region}` : 'unknown';
+    accesses.forEach((access) => {
+      const locationKey = access.location
+        ? `${access.location.country}-${access.location.region}`
+        : 'unknown';
 
       if (!locationStats.has(locationKey)) {
         locationStats.set(locationKey, {
@@ -1051,14 +1079,14 @@ export class UsageAnalyticsStatistics {
           responseTimes: [],
           errorCount: 0,
           userTypes: new Map(),
-          popularDatasets: new Map()
+          popularDatasets: new Map(),
         });
       }
 
       const stats = locationStats.get(locationKey)!;
       stats.queryCount++;
       stats.uniqueUsers.add(access.user);
-      
+
       // Would add data volume, response time, error tracking
       // For now, simplified implementation
 
@@ -1070,16 +1098,19 @@ export class UsageAnalyticsStatistics {
     const distribution: GeographicDistribution[] = [];
     locationStats.forEach((stats, locationKey) => {
       const [country, region] = locationKey.split('-');
-      
+
       const userTypes: UserTypeDistribution[] = [];
-      const totalUsers = Array.from(stats.userTypes.values()).reduce((sum, count) => sum + count, 0);
-      
+      const totalUsers = Array.from(stats.userTypes.values()).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+
       stats.userTypes.forEach((count, type) => {
         userTypes.push({
           userType: type as any,
           count,
           percentage: (count / totalUsers) * 100,
-          avgQueriesPerUser: count / stats.uniqueUsers.size
+          avgQueriesPerUser: count / stats.uniqueUsers.size,
         });
       });
 
@@ -1089,16 +1120,18 @@ export class UsageAnalyticsStatistics {
           region: region || 'unknown',
           city: 'unknown',
           latitude: 0,
-          longitude: 0
+          longitude: 0,
         },
         queryCount: stats.queryCount,
         uniqueUsers: stats.uniqueUsers.size,
         dataVolume: stats.dataVolume,
-        avgResponseTime: stats.responseTimes.length > 0 ? 
-          stats.responseTimes.reduce((sum, rt) => sum + rt, 0) / stats.responseTimes.length : 0,
+        avgResponseTime:
+          stats.responseTimes.length > 0
+            ? stats.responseTimes.reduce((sum, rt) => sum + rt, 0) / stats.responseTimes.length
+            : 0,
         errorRate: stats.queryCount > 0 ? stats.errorCount / stats.queryCount : 0,
         userTypes,
-        popularDatasets: Array.from(stats.popularDatasets.keys()).slice(0, 5)
+        popularDatasets: Array.from(stats.popularDatasets.keys()).slice(0, 5),
       });
     });
 
@@ -1114,7 +1147,7 @@ export class UsageAnalyticsStatistics {
     return 'internal';
   }
 
-  private async updateRealTimeMetrics(query: UsageQuery): Promise<void> {
+  private async updateRealTimeMetrics(_query: UsageQuery): Promise<void> {
     // Update real-time metrics cache
     // This would update a real-time dashboard or monitoring system
   }
@@ -1130,7 +1163,7 @@ export class UsageAnalyticsStatistics {
       throughput: 1,
       concurrency: 1,
       errorRate: query.success ? 0 : 1,
-      availability: query.success ? 1 : 0
+      availability: query.success ? 1 : 0,
     });
     this.performanceData.set(query.user, performanceData);
   }
@@ -1141,11 +1174,11 @@ export class UsageAnalyticsStatistics {
   }
 
   private cleanupOldData(): void {
-    const cutoffTime = Date.now() - (this.config.retentionPeriod * 24 * 60 * 60 * 1000);
-    
+    const cutoffTime = Date.now() - this.config.retentionPeriod * 24 * 60 * 60 * 1000;
+
     // Clean up old query data
     this.usageData.forEach((queries, userId) => {
-      const filteredQueries = queries.filter(q => q.timestamp > cutoffTime);
+      const filteredQueries = queries.filter((q) => q.timestamp > cutoffTime);
       if (filteredQueries.length === 0) {
         this.usageData.delete(userId);
       } else {
@@ -1155,7 +1188,7 @@ export class UsageAnalyticsStatistics {
 
     // Clean up old access data
     this.accessLogs.forEach((accesses, userId) => {
-      const filteredAccesses = accesses.filter(a => a.timestamp > cutoffTime);
+      const filteredAccesses = accesses.filter((a) => a.timestamp > cutoffTime);
       if (filteredAccesses.length === 0) {
         this.accessLogs.delete(userId);
       } else {
@@ -1165,7 +1198,7 @@ export class UsageAnalyticsStatistics {
 
     // Clean up old performance data
     this.performanceData.forEach((data, userId) => {
-      const filteredData = data.filter(d => d.timestamp > cutoffTime);
+      const filteredData = data.filter((d) => d.timestamp > cutoffTime);
       if (filteredData.length === 0) {
         this.performanceData.delete(userId);
       } else {
@@ -1175,53 +1208,61 @@ export class UsageAnalyticsStatistics {
   }
 
   // Placeholder methods for more complex analytics
-  private calculateTimeSeries(queries: UsageQuery[], metric: string, granularity: string): TrendDataPoint[] {
+  private calculateTimeSeries(
+    _queries: UsageQuery[],
+    _metric: string,
+    _granularity: string
+  ): TrendDataPoint[] {
     // Implementation would calculate time series data for the specified metric
     return [];
   }
 
-  private calculateTrendAnalysis(timeSeries: TrendDataPoint[]): TrendAnalysis {
+  private calculateTrendAnalysis(_timeSeries: TrendDataPoint[]): TrendAnalysis {
     // Implementation would analyze trends in the time series data
     return {
       direction: 'stable',
       slope: 0,
       correlation: 0,
       seasonality: [],
-      changePoints: []
+      changePoints: [],
     };
   }
 
-  private generateForecast(timeSeries: TrendDataPoint[], trend: TrendAnalysis): TrendForecast[] {
+  private generateForecast(_timeSeries: TrendDataPoint[], _trend: TrendAnalysis): TrendForecast[] {
     // Implementation would generate forecasts based on historical data
     return [];
   }
 
-  private detectSeasonality(timeSeries: TrendDataPoint[]): SeasonalityPattern[] {
+  private detectSeasonality(_timeSeries: TrendDataPoint[]): SeasonalityPattern[] {
     // Implementation would detect seasonal patterns
     return [];
   }
 
-  private detectAnomalies(timeSeries: TrendDataPoint[], trend: TrendAnalysis): TrendAnomaly[] {
+  private detectAnomalies(_timeSeries: TrendDataPoint[], _trend: TrendAnalysis): TrendAnomaly[] {
     // Implementation would detect anomalies in the time series
     return [];
   }
 
-  private calculateUsagePatterns(queries: UsageQuery[]): UsagePattern[] {
+  private calculateUsagePatterns(_queries: UsageQuery[]): UsagePattern[] {
     // Implementation would identify usage patterns
     return [];
   }
 
-  private calculateUserExpertise(userId: string, queries: UsageQuery[]): UserExpertise[] {
+  private calculateUserExpertise(_userId: string, _queries: UsageQuery[]): UserExpertise[] {
     // Implementation would calculate user expertise levels
     return [];
   }
 
-  private generateUserRecommendations(activity: UserActivity, expertise: UserExpertise[], patterns: UsagePattern[]): string[] {
+  private generateUserRecommendations(
+    _activity: UserActivity,
+    _expertise: UserExpertise[],
+    _patterns: UsagePattern[]
+  ): string[] {
     // Implementation would generate personalized recommendations
     return [];
   }
 
-  private calculateDatasetConsumers(datasetId: string, queries: UsageQuery[]): DataConsumer[] {
+  private calculateDatasetConsumers(_datasetId: string, _queries: UsageQuery[]): DataConsumer[] {
     // Implementation would calculate dataset consumer information
     return [];
   }
@@ -1230,22 +1271,25 @@ export class UsageAnalyticsStatistics {
     // Implementation would calculate usage statistics for a dataset
     return {
       totalQueries: queries.length,
-      uniqueUsers: new Set(queries.map(q => q.user)).size,
+      uniqueUsers: new Set(queries.map((q) => q.user)).size,
       avgQueriesPerDay: 0,
       peakQueriesPerHour: 0,
       dataVolumeAccessed: queries.reduce((sum, q) => sum + q.dataVolume, 0),
       avgResponseTime: queries.reduce((sum, q) => sum + q.duration, 0) / queries.length,
-      errorRate: queries.filter(q => !q.success).length / queries.length,
-      period: 'day'
+      errorRate: queries.filter((q) => !q.success).length / queries.length,
+      period: 'day',
     };
   }
 
-  private calculateDatasetTrends(datasetId: string, queries: UsageQuery[]): UsageTrend[] {
+  private calculateDatasetTrends(_datasetId: string, _queries: UsageQuery[]): UsageTrend[] {
     // Implementation would calculate usage trends for a dataset
     return [];
   }
 
-  private calculateDatasetQualityMetrics(datasetId: string, queries: UsageQuery[]): DatasetQualityMetrics {
+  private calculateDatasetQualityMetrics(
+    _datasetId: string,
+    _queries: UsageQuery[]
+  ): DatasetQualityMetrics {
     // Implementation would calculate quality metrics
     return {
       accuracy: 0,
@@ -1253,36 +1297,43 @@ export class UsageAnalyticsStatistics {
       consistency: 0,
       timeliness: 0,
       reliability: 0,
-      usability: 0
+      usability: 0,
     };
   }
 
-  private generateDatasetRecommendations(popularity: DatasetPopularity, usage: UsageStatistics, quality: DatasetQualityMetrics): string[] {
+  private generateDatasetRecommendations(
+    _popularity: DatasetPopularity,
+    _usage: UsageStatistics,
+    _quality: DatasetQualityMetrics
+  ): string[] {
     // Implementation would generate dataset-specific recommendations
     return [];
   }
 
-  private generateTrendInsights(queries: UsageQuery[]): UsageInsight[] {
+  private generateTrendInsights(_queries: UsageQuery[]): UsageInsight[] {
     // Implementation would generate trend-based insights
     return [];
   }
 
-  private generateAnomalyInsights(queries: UsageQuery[]): UsageInsight[] {
+  private generateAnomalyInsights(_queries: UsageQuery[]): UsageInsight[] {
     // Implementation would generate anomaly-based insights
     return [];
   }
 
-  private generateOpportunityInsights(queries: UsageQuery[], accesses: UsageAccess[]): UsageInsight[] {
+  private generateOpportunityInsights(
+    _queries: UsageQuery[],
+    _accesses: UsageAccess[]
+  ): UsageInsight[] {
     // Implementation would generate opportunity-based insights
     return [];
   }
 
-  private generateRiskInsights(queries: UsageQuery[], accesses: UsageAccess[]): UsageInsight[] {
+  private generateRiskInsights(_queries: UsageQuery[], _accesses: UsageAccess[]): UsageInsight[] {
     // Implementation would generate risk-based insights
     return [];
   }
 
-  private generateEfficiencyInsights(queries: UsageQuery[]): UsageInsight[] {
+  private generateEfficiencyInsights(_queries: UsageQuery[]): UsageInsight[] {
     // Implementation would generate efficiency-based insights
     return [];
   }
@@ -1290,34 +1341,44 @@ export class UsageAnalyticsStatistics {
   private parsePeriod(period: string): { start: number; end: number } {
     // Implementation would parse period string (e.g., "last-30-days", "2024-Q1")
     const now = Date.now();
-    
+
     if (period === 'last-7-days') {
-      return { start: now - (7 * 24 * 60 * 60 * 1000), end: now };
+      return { start: now - 7 * 24 * 60 * 60 * 1000, end: now };
     } else if (period === 'last-30-days') {
-      return { start: now - (30 * 24 * 60 * 60 * 1000), end: now };
+      return { start: now - 30 * 24 * 60 * 60 * 1000, end: now };
     } else if (period === 'last-90-days') {
-      return { start: now - (90 * 24 * 60 * 60 * 1000), end: now };
+      return { start: now - 90 * 24 * 60 * 60 * 1000, end: now };
     }
-    
-    return { start: now - (30 * 24 * 60 * 60 * 1000), end: now };
+
+    return { start: now - 30 * 24 * 60 * 60 * 1000, end: now };
   }
 
-  private generateReportSections(reportType: string, timeRange: any, options?: any): ReportSection[] {
+  private generateReportSections(
+    _reportType: string,
+    _timeRange: any,
+    _options?: any
+  ): ReportSection[] {
     // Implementation would generate report sections based on type
     return [];
   }
 
-  private generateReportVisualizations(sections: ReportSection[]): ReportVisualization[] {
+  private generateReportVisualizations(_sections: ReportSection[]): ReportVisualization[] {
     // Implementation would generate visualizations for report sections
     return [];
   }
 
-  private generateReportRecommendations(reportType: string, sections: ReportSection[]): ReportRecommendation[] {
+  private generateReportRecommendations(
+    _reportType: string,
+    _sections: ReportSection[]
+  ): ReportRecommendation[] {
     // Implementation would generate recommendations based on report type and sections
     return [];
   }
 
-  private generateReportSummary(sections: ReportSection[], recommendations: ReportRecommendation[]): ReportSummary {
+  private generateReportSummary(
+    _sections: ReportSection[],
+    _recommendations: ReportRecommendation[]
+  ): ReportSummary {
     // Implementation would generate executive summary
     return {
       totalQueries: 0,
@@ -1326,7 +1387,7 @@ export class UsageAnalyticsStatistics {
       overallTrend: 'stable',
       keyInsights: [],
       topPerformers: [],
-      areasForImprovement: []
+      areasForImprovement: [],
     };
   }
 

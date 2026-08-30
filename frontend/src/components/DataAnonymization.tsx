@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Shield, 
-  Users, 
-  Eye, 
-  BarChart3, 
+import {
+  Shield,
+  Users,
+  Eye,
+  BarChart3,
   Settings,
   Download,
   Upload,
@@ -12,7 +12,7 @@ import {
   CheckCircle,
   Clock,
   Database,
-  Filter
+  Filter,
 } from 'lucide-react';
 
 interface AnonymizationConfig {
@@ -63,13 +63,13 @@ export const DataAnonymization: React.FC = () => {
     t: 0.2,
     quasiIdentifiers: ['age', 'zip_code', 'gender'],
     sensitiveAttribute: 'diagnosis',
-    maxSuppressionRate: 0.1
+    maxSuppressionRate: 0.1,
   });
   const [sampleData, setSampleData] = useState<any[]>([]);
   const [result, setResult] = useState<AnonymizationResult | null>(null);
   const [algorithms, setAlgorithms] = useState<Record<string, AlgorithmInfo>>({});
   const [processing, setProcessing] = useState(false);
-  const [dataFile, setDataFile] = useState<File | null>(null);
+  const [_dataFile, setDataFile] = useState<File | null>(null);
 
   useEffect(() => {
     // Load sample data
@@ -83,7 +83,7 @@ export const DataAnonymization: React.FC = () => {
       { age: 29, zip_code: '10001', gender: 'M', diagnosis: 'Asthma', income: 55000 },
       { age: 41, zip_code: '10002', gender: 'F', diagnosis: 'Hypertension', income: 68000 },
       { age: 36, zip_code: '10003', gender: 'M', diagnosis: 'Heart Disease', income: 75000 },
-      { age: 27, zip_code: '10001', gender: 'F', diagnosis: 'Diabetes', income: 46000 }
+      { age: 27, zip_code: '10001', gender: 'F', diagnosis: 'Diabetes', income: 46000 },
     ];
     setSampleData(sample);
 
@@ -93,7 +93,9 @@ export const DataAnonymization: React.FC = () => {
 
   const fetchAlgorithms = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/algorithms`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/algorithms`
+      );
       const data = await response.json();
       setAlgorithms(data.algorithms);
     } catch (error) {
@@ -110,21 +112,24 @@ export const DataAnonymization: React.FC = () => {
       reader.onload = (e) => {
         try {
           const text = e.target?.result as string;
-          const lines = text.split('\n').filter(line => line.trim());
+          const lines = text.split('\n').filter((line) => line.trim());
           const headers = lines[0].split(',');
-          const data = lines.slice(1).map(line => {
-            const values = line.split(',');
-            const record: any = {};
-            headers.forEach((header, index) => {
-              record[header.trim()] = values[index]?.trim();
-            });
-            return record;
-          }).filter(record => Object.keys(record).length > 1);
-          
+          const data = lines
+            .slice(1)
+            .map((line) => {
+              const values = line.split(',');
+              const record: any = {};
+              headers.forEach((header, index) => {
+                record[header.trim()] = values[index]?.trim();
+              });
+              return record;
+            })
+            .filter((record) => Object.keys(record).length > 1);
+
           setSampleData(data);
-          setConfig(prev => ({
+          setConfig((prev) => ({
             ...prev,
-            quasiIdentifiers: headers.filter(h => h !== 'diagnosis' && h !== 'income')
+            quasiIdentifiers: headers.filter((h) => h !== 'diagnosis' && h !== 'income'),
           }));
         } catch (error) {
           console.error('Failed to parse CSV:', error);
@@ -136,14 +141,17 @@ export const DataAnonymization: React.FC = () => {
 
   const validateConfig = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/validate-config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config, sampleSize: sampleData.length })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/validate-config`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config, sampleSize: sampleData.length }),
+        }
+      );
 
       const data = await response.json();
-      
+
       if (data.validation.isValid) {
         alert('Configuration is valid!');
       } else {
@@ -160,11 +168,14 @@ export const DataAnonymization: React.FC = () => {
     setActiveTab('process');
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/anonymize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: sampleData, config })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/anonymize`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: sampleData, config }),
+        }
+      );
 
       const data = await response.json();
       setResult(data.result);
@@ -181,16 +192,19 @@ export const DataAnonymization: React.FC = () => {
     setProcessing(true);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/optimize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          data: sampleData,
-          quasiIdentifiers: config.quasiIdentifiers,
-          sensitiveAttribute: config.sensitiveAttribute,
-          targetUtility: 0.8
-        })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/anonymization/optimize`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            data: sampleData,
+            quasiIdentifiers: config.quasiIdentifiers,
+            sensitiveAttribute: config.sensitiveAttribute,
+            targetUtility: 0.8,
+          }),
+        }
+      );
 
       const data = await response.json();
       setConfig(data.optimalConfig);
@@ -210,9 +224,7 @@ export const DataAnonymization: React.FC = () => {
     const headers = Object.keys(result.anonymizedData[0] || {});
     const csvContent = [
       headers.join(','),
-      ...result.anonymizedData.map(row => 
-        headers.map(header => row[header]).join(',')
-      )
+      ...result.anonymizedData.map((row) => headers.map((header) => row[header]).join(',')),
     ].join('\n');
 
     // Download file
@@ -225,7 +237,7 @@ export const DataAnonymization: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getAlgorithmDescription = (algorithm: string) => {
+  const _getAlgorithmDescription = (algorithm: string) => {
     return algorithms[algorithm]?.description || '';
   };
 
@@ -241,7 +253,7 @@ export const DataAnonymization: React.FC = () => {
                 min="2"
                 max="100"
                 value={config.k}
-                onChange={(e) => setConfig(prev => ({ ...prev, k: parseInt(e.target.value) }))}
+                onChange={(e) => setConfig((prev) => ({ ...prev, k: parseInt(e.target.value) }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-500">Minimum group size for anonymity (2-100)</p>
@@ -258,7 +270,7 @@ export const DataAnonymization: React.FC = () => {
                 min="2"
                 max="100"
                 value={config.k}
-                onChange={(e) => setConfig(prev => ({ ...prev, k: parseInt(e.target.value) }))}
+                onChange={(e) => setConfig((prev) => ({ ...prev, k: parseInt(e.target.value) }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -269,17 +281,21 @@ export const DataAnonymization: React.FC = () => {
                 min="2"
                 max="50"
                 value={config.l}
-                onChange={(e) => setConfig(prev => ({ ...prev, l: parseInt(e.target.value) }))}
+                onChange={(e) => setConfig((prev) => ({ ...prev, l: parseInt(e.target.value) }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <p className="mt-1 text-xs text-gray-500">Minimum distinct sensitive values per group (2-50)</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Minimum distinct sensitive values per group (2-50)
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Sensitive Attribute</label>
               <input
                 type="text"
                 value={config.sensitiveAttribute}
-                onChange={(e) => setConfig(prev => ({ ...prev, sensitiveAttribute: e.target.value }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({ ...prev, sensitiveAttribute: e.target.value }))
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -295,7 +311,7 @@ export const DataAnonymization: React.FC = () => {
                 min="2"
                 max="100"
                 value={config.k}
-                onChange={(e) => setConfig(prev => ({ ...prev, k: parseInt(e.target.value) }))}
+                onChange={(e) => setConfig((prev) => ({ ...prev, k: parseInt(e.target.value) }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -307,7 +323,7 @@ export const DataAnonymization: React.FC = () => {
                 max="1"
                 step="0.1"
                 value={config.t}
-                onChange={(e) => setConfig(prev => ({ ...prev, t: parseFloat(e.target.value) }))}
+                onChange={(e) => setConfig((prev) => ({ ...prev, t: parseFloat(e.target.value) }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
               <p className="mt-1 text-xs text-gray-500">Maximum distribution distance (0-1)</p>
@@ -317,7 +333,9 @@ export const DataAnonymization: React.FC = () => {
               <input
                 type="text"
                 value={config.sensitiveAttribute}
-                onChange={(e) => setConfig(prev => ({ ...prev, sensitiveAttribute: e.target.value }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({ ...prev, sensitiveAttribute: e.target.value }))
+                }
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -351,7 +369,7 @@ export const DataAnonymization: React.FC = () => {
             {[
               { id: 'configure', name: 'Configure', icon: Settings },
               { id: 'process', name: 'Process', icon: Database },
-              { id: 'results', name: 'Results', icon: BarChart3 }
+              { id: 'results', name: 'Results', icon: BarChart3 },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -388,14 +406,18 @@ export const DataAnonymization: React.FC = () => {
                     {Object.entries(algorithms).map(([algorithm, info]) => (
                       <div
                         key={algorithm}
-                        onClick={() => setConfig(prev => ({ ...prev, algorithm: algorithm as any }))}
+                        onClick={() =>
+                          setConfig((prev) => ({ ...prev, algorithm: algorithm as any }))
+                        }
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                           config.algorithm === algorithm
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        <h4 className="font-medium text-gray-900 capitalize">{algorithm.replace('-', ' ')}</h4>
+                        <h4 className="font-medium text-gray-900 capitalize">
+                          {algorithm.replace('-', ' ')}
+                        </h4>
                         <p className="text-sm text-gray-600 mt-2">{info.description}</p>
                       </div>
                     ))}
@@ -404,7 +426,9 @@ export const DataAnonymization: React.FC = () => {
 
                 {/* Configuration Parameters */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Configuration Parameters</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Configuration Parameters
+                  </h3>
                   {getParameterControls()}
                 </div>
 
@@ -413,7 +437,9 @@ export const DataAnonymization: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Data Source</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Upload CSV File</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Upload CSV File
+                      </label>
                       <input
                         type="file"
                         accept=".csv"
@@ -422,14 +448,18 @@ export const DataAnonymization: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Quasi-Identifiers</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Quasi-Identifiers
+                      </label>
                       <input
                         type="text"
                         value={config.quasiIdentifiers.join(', ')}
-                        onChange={(e) => setConfig(prev => ({ 
-                          ...prev, 
-                          quasiIdentifiers: e.target.value.split(',').map(s => s.trim()) 
-                        }))}
+                        onChange={(e) =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            quasiIdentifiers: e.target.value.split(',').map((s) => s.trim()),
+                          }))
+                        }
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         placeholder="age, zip_code, gender"
                       />
@@ -469,13 +499,18 @@ export const DataAnonymization: React.FC = () => {
                 {/* Sample Data Preview */}
                 {sampleData.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Data Preview ({sampleData.length} records)</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Data Preview ({sampleData.length} records)
+                    </h3>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
-                            {Object.keys(sampleData[0]).map(header => (
-                              <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {Object.keys(sampleData[0]).map((header) => (
+                              <th
+                                key={header}
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
                                 {header}
                               </th>
                             ))}
@@ -485,7 +520,10 @@ export const DataAnonymization: React.FC = () => {
                           {sampleData.slice(0, 5).map((row, index) => (
                             <tr key={index}>
                               {Object.values(row).map((value, cellIndex) => (
-                                <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td
+                                  key={cellIndex}
+                                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                                >
                                   {value}
                                 </td>
                               ))}
@@ -510,13 +548,17 @@ export const DataAnonymization: React.FC = () => {
                 {processing ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                    <span className="ml-3 text-lg font-medium text-gray-900">Processing anonymization...</span>
+                    <span className="ml-3 text-lg font-medium text-gray-900">
+                      Processing anonymization...
+                    </span>
                   </div>
                 ) : (
                   <div className="text-center py-12">
                     <Shield className="h-16 w-16 text-green-500 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900">Ready to Process</h3>
-                    <p className="text-gray-600 mt-2">Configure your anonymization settings and click "Run Anonymization" to begin.</p>
+                    <p className="text-gray-600 mt-2">
+                      Configure your anonymization settings and click "Run Anonymization" to begin.
+                    </p>
                   </div>
                 )}
               </motion.div>
@@ -599,15 +641,21 @@ export const DataAnonymization: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Information Loss:</span>
-                      <span className="font-medium">{result.metrics.informationLoss.toFixed(3)}</span>
+                      <span className="font-medium">
+                        {result.metrics.informationLoss.toFixed(3)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Disclosure Risk:</span>
-                      <span className="font-medium">{result.metrics.disclosureRisk.toFixed(3)}</span>
+                      <span className="font-medium">
+                        {result.metrics.disclosureRisk.toFixed(3)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Avg Class Size:</span>
-                      <span className="font-medium">{result.metrics.averageEquivalenceClassSize.toFixed(1)}</span>
+                      <span className="font-medium">
+                        {result.metrics.averageEquivalenceClassSize.toFixed(1)}
+                      </span>
                     </div>
                     {result.metrics.kValue && (
                       <div className="flex justify-between">

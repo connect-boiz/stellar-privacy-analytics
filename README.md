@@ -80,6 +80,16 @@ stellar/
 - Rust 1.70+ (for Stellar contracts)
 - Soroban CLI (Stellar smart contract platform)
 
+### Service Discovery
+This implementation includes a comprehensive service discovery system with:
+- Automatic service registration and health monitoring
+- Circuit breaker patterns for fault tolerance
+- Service mesh with intelligent load balancing
+- Failover and disaster recovery capabilities
+- Real-time monitoring and alerting
+
+Access the Service Discovery Dashboard at `http://localhost:3003` when running with Docker Compose.
+
 ### Installation
 
 ```bash

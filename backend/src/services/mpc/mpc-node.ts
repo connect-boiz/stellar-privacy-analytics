@@ -1,6 +1,13 @@
-import { EventEmitter } from 'events';
-import { ShamirSecretSharing, Share, MPCSession, MPCOperation, MPCSessionStatus, MPCArithmetic } from './shamir-secret-sharing';
-import { logger } from '../../utils/logger';
+import { EventEmitter } from "events";
+import {
+  ShamirSecretSharing,
+  Share,
+  MPCSession,
+  MPCOperation,
+  MPCSessionStatus,
+  MPCArithmetic,
+} from "./shamir-secret-sharing";
+import { logger } from "../../utils/logger";
 
 /**
  * Main MPC Node implementation
@@ -22,40 +29,48 @@ export class MPCNode extends EventEmitter {
     this.nodeId = nodeId;
     this.shamir = new ShamirSecretSharing(threshold, totalShares);
     this.arithmetic = new MPCArithmetic(threshold, totalShares);
-    
-    logger.info(`MPC Node ${nodeId} initialized with threshold ${threshold}, total shares ${totalShares}`);
+
+    logger.info(
+      `MPC Node ${nodeId} initialized with threshold ${threshold}, total shares ${totalShares}`,
+    );
   }
 
   /**
    * Initialize a new MPC session
    */
-  async initializeSession(sessionId: string, participants: string[], operation: MPCOperation): Promise<MPCSession> {
+  async initializeSession(
+    sessionId: string,
+    participants: string[],
+    operation: MPCOperation,
+  ): Promise<MPCSession> {
     if (this.sessions.has(sessionId)) {
       throw new Error(`Session ${sessionId} already exists`);
     }
 
     if (!participants.includes(this.nodeId)) {
-      throw new Error('This node must be included in participants');
+      throw new Error("This node must be included in participants");
     }
 
     const session: MPCSession = {
       id: sessionId,
       participants: [...participants],
-      threshold: this.shamir['threshold'],
+      threshold: this.shamir["threshold"],
       operation,
       status: MPCSessionStatus.INITIALIZING,
       createdAt: new Date(),
-      shares: new Map()
+      shares: new Map(),
     };
 
     this.sessions.set(sessionId, session);
-    
+
     // Set session timeout
     this.setSessionTimeout(sessionId);
-    
-    this.emit('sessionInitialized', session);
-    
-    logger.info(`MPC Session ${sessionId} initialized with ${participants.length} participants`);
+
+    this.emit("sessionInitialized", session);
+
+    logger.info(
+      `MPC Session ${sessionId} initialized with ${participants.length} participants`,
+    );
     return session;
   }
 
@@ -81,7 +96,7 @@ export class MPCNode extends EventEmitter {
     const session = this.sessions.get(sessionId);
     if (session) {
       logger.warn(`MPC Session ${sessionId} timed out and will be removed`);
-      this.emit('sessionTimeout', sessionId);
+      this.emit("sessionTimeout", sessionId);
       this.closeSession(sessionId);
     }
   }
@@ -95,13 +110,13 @@ export class MPCNode extends EventEmitter {
       // Clear any session-specific data
       session.shares.clear();
       this.sessions.delete(sessionId);
-      
+
       const timeout = this.sessionTimeouts.get(sessionId);
       if (timeout) {
         clearTimeout(timeout);
         this.sessionTimeouts.delete(sessionId);
       }
-      
+
       logger.info(`MPC Session ${sessionId} closed and resources released`);
     }
   }
@@ -116,12 +131,12 @@ export class MPCNode extends EventEmitter {
     }
 
     if (!session.participants.includes(this.nodeId)) {
-      throw new Error('This node is not a participant in this session');
+      throw new Error("This node is not a participant in this session");
     }
 
     session.status = MPCSessionStatus.SHARING;
-    this.emit('sessionJoined', sessionId, initiatorId);
-    
+    this.emit("sessionJoined", sessionId, initiatorId);
+
     logger.info(`Node ${this.nodeId} joined session ${sessionId}`);
   }
 
@@ -140,13 +155,15 @@ export class MPCNode extends EventEmitter {
 
     // Create secret shares from input data
     const shares = this.shamir.split(inputData);
-    
+
     // Store shares for this node
     session.shares.set(this.nodeId, shares[0]); // Store first share for this node
-    
-    this.emit('dataProcessed', sessionId, shares);
-    logger.info(`Processed data for session ${sessionId}, created ${shares.length} shares`);
-    
+
+    this.emit("dataProcessed", sessionId, shares);
+    logger.info(
+      `Processed data for session ${sessionId}, created ${shares.length} shares`,
+    );
+
     return shares;
   }
 
@@ -164,10 +181,19 @@ export class MPCNode extends EventEmitter {
     for (const participant of session.participants) {
       if (participant !== this.nodeId) {
         // Find the share for this participant
-        const participantShare = shares.find(s => s.id === parseInt(participant.slice(-1)));
+        const participantShare = shares.find(
+          (s) => s.id === parseInt(participant.slice(-1)),
+        );
         if (participantShare) {
-          this.emit('shareDistributed', sessionId, participant, participantShare);
-          logger.info(`Distributed share to ${participant} for session ${sessionId}`);
+          this.emit(
+            "shareDistributed",
+            sessionId,
+            participant,
+            participantShare,
+          );
+          logger.info(
+            `Distributed share to ${participant} for session ${sessionId}`,
+          );
         }
       }
     }
@@ -176,7 +202,11 @@ export class MPCNode extends EventEmitter {
   /**
    * Receive share from another participant
    */
-  async receiveShare(sessionId: string, fromNodeId: string, share: Share): Promise<void> {
+  async receiveShare(
+    sessionId: string,
+    fromNodeId: string,
+    share: Share,
+  ): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
@@ -187,10 +217,10 @@ export class MPCNode extends EventEmitter {
     }
 
     session.shares.set(fromNodeId, share);
-    this.emit('shareReceived', sessionId, fromNodeId, share);
-    
+    this.emit("shareReceived", sessionId, fromNodeId, share);
+
     logger.info(`Received share from ${fromNodeId} for session ${sessionId}`);
-    
+
     // Check if we have enough shares to proceed
     if (session.shares.size >= session.threshold) {
       await this.startComputation(sessionId);
@@ -207,25 +237,27 @@ export class MPCNode extends EventEmitter {
     }
 
     session.status = MPCSessionStatus.COMPUTING;
-    this.emit('computationStarted', sessionId);
-    
+    this.emit("computationStarted", sessionId);
+
     logger.info(`Starting computation for session ${sessionId}`);
-    
+
     try {
       // Perform computation based on operation type
       const result = await this.performComputation(session);
       session.result = result;
       session.status = MPCSessionStatus.REVEALING;
-      
-      this.emit('computationCompleted', sessionId, result);
+
+      this.emit("computationCompleted", sessionId, result);
       logger.info(`Computation completed for session ${sessionId}`);
-      
+
       // Start reveal phase
       await this.startRevealPhase(sessionId);
     } catch (error) {
       session.status = MPCSessionStatus.FAILED;
-      this.emit('computationFailed', sessionId, error);
-      logger.error(`Computation failed for session ${sessionId}: ${error.message}`);
+      this.emit("computationFailed", sessionId, error);
+      logger.error(
+        `Computation failed for session ${sessionId}: ${error.message}`,
+      );
     }
   }
 
@@ -234,7 +266,20 @@ export class MPCNode extends EventEmitter {
    */
   private async performComputation(session: MPCSession): Promise<string> {
     const shares = Array.from(session.shares.values());
-    
+
+    // Simulate computation progress
+    const totalSteps = 10;
+    for (let step = 1; step <= totalSteps; step++) {
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate processing time
+
+      this.emit("computationProgress", session.id, {
+        step,
+        totalSteps,
+        percentage: (step / totalSteps) * 100,
+        message: `Processing step ${step}/${totalSteps}`,
+      });
+    }
+
     switch (session.operation) {
       case MPCOperation.SUM:
         return this.performSum(shares);
@@ -252,7 +297,7 @@ export class MPCNode extends EventEmitter {
     // In a real MPC implementation, this would involve secure computation
     // For this demo, we'll reconstruct the values and sum them
     let sum = 0;
-    
+
     for (const share of shares) {
       try {
         const value = parseInt(this.shamir.reconstruct([share]));
@@ -261,7 +306,7 @@ export class MPCNode extends EventEmitter {
         logger.warn(`Failed to reconstruct value from share: ${error.message}`);
       }
     }
-    
+
     return sum.toString();
   }
 
@@ -283,15 +328,17 @@ export class MPCNode extends EventEmitter {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    this.emit('revealPhaseStarted', sessionId);
-    
+    this.emit("revealPhaseStarted", sessionId);
+
     // In a real implementation, this would coordinate with other nodes
     // For now, we'll complete the session
     session.status = MPCSessionStatus.COMPLETED;
-    this.emit('sessionCompleted', sessionId, session.result);
-    
-    logger.info(`Session ${sessionId} completed with result: ${session.result}`);
-    
+    this.emit("sessionCompleted", sessionId, session.result);
+
+    logger.info(
+      `Session ${sessionId} completed with result: ${session.result}`,
+    );
+
     // Auto-close session after completion with a short delay to allow retrieval
     setTimeout(() => this.closeSession(sessionId), 60000); // 1 minute
   }
@@ -305,13 +352,13 @@ export class MPCNode extends EventEmitter {
     }
 
     const interval = setInterval(() => {
-      this.emit('heartbeat', nodeId);
+      this.emit("heartbeat", nodeId);
       this.resetParticipantTimeout(nodeId);
     }, intervalMs);
 
     this.heartbeatIntervals.set(nodeId, interval);
     this.resetParticipantTimeout(nodeId);
-    
+
     logger.info(`Started heartbeat monitoring for node ${nodeId}`);
   }
 
@@ -348,7 +395,7 @@ export class MPCNode extends EventEmitter {
    */
   private handleParticipantTimeout(nodeId: string): void {
     logger.warn(`Node ${nodeId} timed out`);
-    this.emit('participantTimeout', nodeId);
+    this.emit("participantTimeout", nodeId);
     this.connectedNodes.delete(nodeId);
     this.stopHeartbeat(nodeId);
   }
@@ -359,7 +406,7 @@ export class MPCNode extends EventEmitter {
   handleHeartbeatResponse(nodeId: string): void {
     if (!this.connectedNodes.has(nodeId)) {
       this.connectedNodes.add(nodeId);
-      this.emit('nodeConnected', nodeId);
+      this.emit("nodeConnected", nodeId);
     }
     this.resetParticipantTimeout(nodeId);
   }
@@ -390,7 +437,7 @@ export class MPCNode extends EventEmitter {
    */
   cleanup(): void {
     // Clear all heartbeat intervals
-    for (const [nodeId, interval] of this.heartbeatIntervals) {
+    for (const [_nodeId, interval] of this.heartbeatIntervals) {
       clearInterval(interval);
     }
     this.heartbeatIntervals.clear();

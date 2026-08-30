@@ -1,9 +1,9 @@
-import { logger } from '../utils/logger';
-import { Certification } from '../types/certification';
+import { logger } from "../utils/logger";
+import { Certification } from "../types/certification";
 
 export interface BadgeOptions {
-  format: 'svg' | 'png' | 'json';
-  size: 'small' | 'medium' | 'large';
+  format: "svg" | "png" | "json";
+  size: "small" | "medium" | "large";
 }
 
 class BadgeService {
@@ -13,28 +13,34 @@ class BadgeService {
     large: { width: 240, height: 80 },
   };
 
-  async generateBadge(certification: Certification, options: BadgeOptions): Promise<string | object> {
+  async generateBadge(
+    certification: Certification,
+    options: BadgeOptions,
+  ): Promise<string | object> {
     try {
       switch (options.format) {
-        case 'svg':
+        case "svg":
           return this.generateSVGBadge(certification, options.size);
-        case 'png':
+        case "png":
           return this.generatePNGBadge(certification, options.size);
-        case 'json':
+        case "json":
           return this.generateJSONBadge(certification, options.size);
         default:
           throw new Error(`Unsupported format: ${options.format}`);
       }
     } catch (error) {
-      logger.error('Error generating badge:', error);
+      logger.error("Error generating badge:", error);
       throw error;
     }
   }
 
-  private generateSVGBadge(certification: Certification, size: 'small' | 'medium' | 'large'): string {
+  private generateSVGBadge(
+    certification: Certification,
+    size: "small" | "medium" | "large",
+  ): string {
     const dimensions = this.sizeDimensions[size];
     const colors = this.getCertificationColors(certification.certificationType);
-    const fontSize = size === 'small' ? 10 : size === 'medium' ? 12 : 14;
+    const fontSize = size === "small" ? 10 : size === "medium" ? 12 : 14;
 
     return `
 <svg width="${dimensions.width}" height="${dimensions.height}" xmlns="http://www.w3.org/2000/svg">
@@ -54,14 +60,20 @@ class BadgeService {
 </svg>`.trim();
   }
 
-  private generatePNGBadge(certification: Certification, size: 'small' | 'medium' | 'large'): string {
+  private generatePNGBadge(
+    certification: Certification,
+    size: "small" | "medium" | "large",
+  ): string {
     // For demo purposes, return a base64 encoded PNG placeholder
     // In production, this would use a proper image generation library
-    const dimensions = this.sizeDimensions[size];
+    const _dimensions = this.sizeDimensions[size];
     return `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`;
   }
 
-  private generateJSONBadge(certification: Certification, size: 'small' | 'medium' | 'large'): object {
+  private generateJSONBadge(
+    certification: Certification,
+    size: "small" | "medium" | "large",
+  ): object {
     const dimensions = this.sizeDimensions[size];
     const colors = this.getCertificationColors(certification.certificationType);
 
@@ -74,56 +86,68 @@ class BadgeService {
       expires: certification.expiryDate,
       verificationCode: certification.verificationCode,
       badge: {
-        format: 'json',
+        format: "json",
         size,
         dimensions,
         colors,
         text: {
           primary: certification.certificationType,
-          secondary: certification.status === 'validated' ? '✓ Valid' : certification.status,
+          secondary:
+            certification.status === "validated"
+              ? "✓ Valid"
+              : certification.status,
         },
       },
     };
   }
 
-  private getCertificationColors(certificationType: string): { primary: string; secondary: string } {
+  private getCertificationColors(certificationType: string): {
+    primary: string;
+    secondary: string;
+  } {
     const colorMap: Record<string, { primary: string; secondary: string }> = {
-      'GDPR': { primary: '#003399', secondary: '#0066cc' },
-      'CCPA': { primary: '#ff6b35', secondary: '#ff8c42' },
-      'HIPAA': { primary: '#2c5aa0', secondary: '#4a7bc8' },
-      'ISO27001': { primary: '#00a652', secondary: '#00c853' },
-      'SOC2': { primary: '#6a1b9a', secondary: '#9c27b0' },
-      'CUSTOM': { primary: '#546e7a', secondary: '#78909c' },
+      GDPR: { primary: "#003399", secondary: "#0066cc" },
+      CCPA: { primary: "#ff6b35", secondary: "#ff8c42" },
+      HIPAA: { primary: "#2c5aa0", secondary: "#4a7bc8" },
+      ISO27001: { primary: "#00a652", secondary: "#00c853" },
+      SOC2: { primary: "#6a1b9a", secondary: "#9c27b0" },
+      CUSTOM: { primary: "#546e7a", secondary: "#78909c" },
     };
 
-    return colorMap[certificationType] || colorMap['CUSTOM'];
+    return colorMap[certificationType] || colorMap["CUSTOM"];
   }
 
-  async getBadgeEmbedCode(certificationId: string, options: BadgeOptions): Promise<string> {
+  async getBadgeEmbedCode(
+    certificationId: string,
+    options: BadgeOptions,
+  ): Promise<string> {
     try {
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
+      const baseUrl = process.env.BASE_URL || "http://localhost:3001";
       const badgeUrl = `${baseUrl}/api/v1/certification/${certificationId}/badge?format=${options.format}&size=${options.size}`;
 
-      if (options.format === 'svg') {
+      if (options.format === "svg") {
         return `<img src="${badgeUrl}" alt="Privacy Certification Badge" />`;
-      } else if (options.format === 'png') {
+      } else if (options.format === "png") {
         return `<img src="${badgeUrl}" alt="Privacy Certification Badge" />`;
       } else {
         return `<script src="${badgeUrl}"></script>`;
       }
     } catch (error) {
-      logger.error('Error generating embed code:', error);
+      logger.error("Error generating embed code:", error);
       throw error;
     }
   }
 
-  async validateBadgeRequest(certificationId: string, options: BadgeOptions): Promise<boolean> {
+  async validateBadgeRequest(
+    _certificationId: string,
+    _options: BadgeOptions,
+  ): Promise<boolean> {
     try {
       // In production, this would validate the certification exists and is valid
       // For demo purposes, we'll return true
       return true;
     } catch (error) {
-      logger.error('Error validating badge request:', error);
+      logger.error("Error validating badge request:", error);
       return false;
     }
   }

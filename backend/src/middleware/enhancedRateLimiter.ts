@@ -1,27 +1,27 @@
-import { Request, Response, NextFunction } from 'express';
-import Redis from 'redis';
-import { logger } from '../utils/logger';
-import { AuthenticatedRequest } from './stellarAuth';
-import { RateLimiterMiddleware, RateLimitConfig } from './rateLimiter';
+import { Response, NextFunction } from "express";
+import Redis from "redis";
+import { logger } from "../utils/logger";
+import { AuthenticatedRequest } from "./stellarAuth";
+import { RateLimiterMiddleware, RateLimitConfig } from "./rateLimiter";
 
 export interface EnhancedRateLimitConfig extends RateLimitConfig {
   // Collision prevention settings
   enableCollisionDetection?: boolean;
   collisionThreshold?: number;
-  
+
   // Advanced rate limiting features
   enableBurstProtection?: boolean;
   burstLimit?: number;
   burstWindowMs?: number;
-  
+
   // Adaptive rate limiting
   enableAdaptiveLimiting?: boolean;
   adaptiveMultiplier?: number;
-  
+
   // Rate limit bypass settings
   enableWhitelist?: boolean;
   whitelist?: string[];
-  
+
   // Monitoring and alerting
   enableAlerting?: boolean;
   alertThreshold?: number;
@@ -35,20 +35,22 @@ export interface RateLimitMetrics {
   peakRequestRate: number;
   collisionCount: number;
   adaptiveAdjustments: number;
+  timestamp?: number;
 }
 
 export class EnhancedRateLimiter extends RateLimiterMiddleware {
   private collisionMap: Map<string, number> = new Map();
-  private burstMap: Map<string, { count: number; lastReset: number }> = new Map();
+  private burstMap: Map<string, { count: number; lastReset: number }> =
+    new Map();
   private adaptiveMultipliers: Map<string, number> = new Map();
-  private metrics: RateLimitMetrics = {
+  private _enhancedMetrics: RateLimitMetrics = {
     totalRequests: 0,
     blockedRequests: 0,
     bypassedRequests: 0,
     averageRequestRate: 0,
     peakRequestRate: 0,
     collisionCount: 0,
-    adaptiveAdjustments: 0
+    adaptiveAdjustments: 0,
   };
 
   constructor(config: {
@@ -58,7 +60,7 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
     emergencyBypassKey?: string;
   }) {
     super(config);
-    
+
     // Initialize enhanced features
     this.initializeEnhancedFeatures();
   }
@@ -68,7 +70,7 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
     setInterval(() => {
       this.cleanupCollisionMap();
     }, 60000); // Every minute
-    
+
     // Clean up burst map periodically
     setInterval(() => {
       this.cleanupBurstMap();
@@ -79,69 +81,93 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
    * Enhanced rate limiting with collision detection and burst protection
    */
   enhancedRateLimit = (customConfig?: EnhancedRateLimitConfig) => {
-    return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    return async (
+      req: AuthenticatedRequest,
+      res: Response,
+      next: NextFunction,
+    ): Promise<void> => {
       try {
-        const config = { ...this.defaultConfig, ...customConfig } as EnhancedRateLimitConfig;
-        
+        const config = {
+          ...(this as any).defaultConfig,
+          ...customConfig,
+        } as EnhancedRateLimitConfig;
+
         // Update metrics
-        this.metrics.totalRequests++;
-        
+        this._enhancedMetrics.totalRequests++;
+
         // Check whitelist first
-        if (config.enableWhitelist && this.isWhitelisted(req, config.whitelist || [])) {
-          this.metrics.bypassedRequests++;
+        if (
+          config.enableWhitelist &&
+          this.isWhitelisted(req, config.whitelist || [])
+        ) {
+          this._enhancedMetrics.bypassedRequests++;
           return next();
         }
 
-        // Check for emergency bypass
-        if (this.checkEmergencyBypass(req)) {
-          this.metrics.bypassedRequests++;
-          logger.warn('Emergency bypass used', {
+        // Check for emergency bypass (WS5: only honoured with a real key)
+        if ((this as any).checkEmergencyBypass(req)) {
+          this._enhancedMetrics.bypassedRequests++;
+          logger.warn("Emergency bypass used", {
             ip: (req as any).ip,
-            userAgent: (req as any).get('User-Agent'),
-            traceId: req.traceId
+            userAgent: (req as any).get("User-Agent"),
+            traceId: req.traceId,
           });
           return next();
         }
 
         // Check custom skip function
-        if (config.skip && await config.skip(req)) {
+        if (config.skip && (await config.skip(req))) {
           return next();
         }
 
         const user = req.user;
         let key: string;
-        let tier: 'basic' | 'premium' | 'enterprise' = 'basic';
-        let type: 'user' | 'ip' | 'apikey' = 'ip';
+        let tier: "basic" | "premium" | "enterprise" = "basic";
+        let type: "user" | "ip" | "apikey" = "ip";
 
         if (!user) {
           // Check for API key rate limiting
-          const apiKey = this.extractApiKey(req);
+          const apiKey = (this as any).extractApiKey(req);
           if (apiKey) {
-            key = this.apiKeyKeyGenerator(req, apiKey);
-            type = 'apikey';
-            tier = await this.getApiKeyTier(apiKey);
+            key = (this as any).apiKeyKeyGenerator(req, apiKey);
+            type = "apikey";
+            tier = await (this as any).getApiKeyTier(apiKey);
           } else {
             // IP-based rate limiting
-            key = this.ipKeyGenerator(req);
-            type = 'ip';
+            key = (this as any).ipKeyGenerator(req);
+            type = "ip";
           }
         } else {
           // User-based rate limiting
-          tier = user.rateLimitTier || 'basic';
-          key = this.userKeyGenerator(req, config);
-          type = 'user';
+          tier = user.rateLimitTier || "basic";
+          key = (this as any).userKeyGenerator(req, config);
+          type = "user";
         }
 
         // Collision detection
         if (config.enableCollisionDetection) {
-          const collisionDetected = this.detectCollision(key, config.collisionThreshold || 10);
+          const collisionDetected = this.detectCollision(
+            key,
+            config.collisionThreshold || 10,
+          );
           if (collisionDetected) {
-            logger.warn('Rate limit collision detected', { key, type, tier });
-            this.metrics.collisionCount++;
-            
+            logger.warn("Rate limit collision detected", { key, type, tier });
+            this._enhancedMetrics.collisionCount++;
+
             // Apply stricter limits for potential abuse
-            const stricterConfig = { ...config, maxRequests: Math.floor(config.maxRequests * 0.5) };
-            await this.applyEnhancedRateLimit(req, res, next, stricterConfig, key, type, tier);
+            const stricterConfig = {
+              ...config,
+              maxRequests: Math.floor(config.maxRequests * 0.5),
+            };
+            await this.applyEnhancedRateLimit(
+              req,
+              res,
+              next,
+              stricterConfig,
+              key,
+              type,
+              tier,
+            );
             return;
           }
         }
@@ -150,7 +176,7 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
         if (config.enableBurstProtection) {
           const burstExceeded = this.checkBurstProtection(key, config);
           if (burstExceeded) {
-            logger.warn('Burst protection triggered', { key, type, tier });
+            logger.warn("Burst protection triggered", { key, type, tier });
             await this.handleBurstExceeded(req, res, config);
             return;
           }
@@ -159,36 +185,47 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
         // Adaptive rate limiting
         if (config.enableAdaptiveLimiting) {
           const adaptiveConfig = this.applyAdaptiveLimiting(key, config);
-          await this.applyEnhancedRateLimit(req, res, next, adaptiveConfig, key, type, tier);
+          await this.applyEnhancedRateLimit(
+            req,
+            res,
+            next,
+            adaptiveConfig,
+            key,
+            type,
+            tier,
+          );
         } else {
-          await this.applyEnhancedRateLimit(req, res, next, config, key, type, tier);
+          await this.applyEnhancedRateLimit(
+            req,
+            res,
+            next,
+            config,
+            key,
+            type,
+            tier,
+          );
         }
 
         // Check for alerting conditions
         if (config.enableAlerting && this.shouldTriggerAlert(config)) {
           await this.triggerRateLimitAlert(req, config);
         }
-
       } catch (error) {
-        logger.error('Enhanced rate limiting error', {
+        logger.error("Enhanced rate limiting error", {
           error: error instanceof Error ? error.message : String(error),
           traceId: req.traceId,
-          userId: req.user?.id
+          userId: req.user?.id,
         });
-        
-        // Fail-closed for production, fail-open for development
-        if (process.env.NODE_ENV === 'production') {
-          res.status(503).json({
-            error: {
-              code: 'RATE_LIMIT_SERVICE_UNAVAILABLE',
-              message: 'Rate limiting service temporarily unavailable'
-            },
-            traceId: req.traceId
-          });
-          return;
-        }
-        
-        next();
+
+        // WS5: fail-closed in all environments — a rate-limiter outage must
+        // not silently disable DoS protection.
+        res.status(503).json({
+          error: {
+            code: "RATE_LIMIT_SERVICE_UNAVAILABLE",
+            message: "Rate limiting service temporarily unavailable",
+          },
+          traceId: req.traceId,
+        });
       }
     };
   };
@@ -202,17 +239,26 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
     next: NextFunction,
     config: EnhancedRateLimitConfig,
     key: string,
-    type: 'user' | 'ip' | 'apikey',
-    tier: 'basic' | 'premium' | 'enterprise'
+    type: "user" | "ip" | "apikey",
+    tier: "basic" | "premium" | "enterprise",
   ): Promise<void> {
     // Use the parent class's applyRateLimit method with enhanced features
-    await super.applyRateLimit(req, res, (error?: any) => {
-      if (error) {
-        this.metrics.blockedRequests++;
-      } else {
-        next();
-      }
-    }, config, key, type, tier);
+    // eslint-disable-next-line @typescript-eslint/dot-notation
+    await super['applyRateLimit'](
+      req,
+      res,
+      (error?: any) => {
+        if (error) {
+          this._enhancedMetrics.blockedRequests++;
+        } else {
+          next();
+        }
+      },
+      config,
+      key,
+      type,
+      tier,
+    );
   }
 
   /**
@@ -221,58 +267,67 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
   private detectCollision(key: string, threshold: number): boolean {
     const currentCount = this.collisionMap.get(key) || 0;
     this.collisionMap.set(key, currentCount + 1);
-    
+
     return currentCount > threshold;
   }
 
   /**
    * Burst protection for sudden traffic spikes
    */
-  private checkBurstProtection(key: string, config: EnhancedRateLimitConfig): boolean {
+  private checkBurstProtection(
+    key: string,
+    config: EnhancedRateLimitConfig,
+  ): boolean {
     const now = Date.now();
     const burstWindow = config.burstWindowMs || 60000; // 1 minute default
     const burstLimit = config.burstLimit || Math.floor(config.maxRequests * 2);
-    
+
     const burstData = this.burstMap.get(key);
-    
+
     if (!burstData || now - burstData.lastReset > burstWindow) {
       this.burstMap.set(key, { count: 1, lastReset: now });
       return false;
     }
-    
+
     burstData.count++;
-    
+
     return burstData.count > burstLimit;
   }
 
   /**
    * Adaptive rate limiting based on request patterns
    */
-  private applyAdaptiveLimiting(key: string, config: EnhancedRateLimitConfig): EnhancedRateLimitConfig {
+  private applyAdaptiveLimiting(
+    key: string,
+    config: EnhancedRateLimitConfig,
+  ): EnhancedRateLimitConfig {
     const currentMultiplier = this.adaptiveMultipliers.get(key) || 1.0;
     const adaptiveMultiplier = config.adaptiveMultiplier || 0.8;
-    
+
     // Gradually reduce limits for high-frequency users
     const newMultiplier = Math.max(0.5, currentMultiplier * adaptiveMultiplier);
     this.adaptiveMultipliers.set(key, newMultiplier);
-    
-    this.metrics.adaptiveAdjustments++;
-    
+
+    this._enhancedMetrics.adaptiveAdjustments++;
+
     return {
       ...config,
-      maxRequests: Math.floor(config.maxRequests * newMultiplier)
+      maxRequests: Math.floor(config.maxRequests * newMultiplier),
     };
   }
 
   /**
    * Check if request is from whitelisted source
    */
-  private isWhitelisted(req: AuthenticatedRequest, whitelist: string[]): boolean {
+  private isWhitelisted(
+    req: AuthenticatedRequest,
+    whitelist: string[],
+  ): boolean {
     const ip = (req as any).ip;
-    const userAgent = (req as any).get('User-Agent');
-    
-    return whitelist.some(item => {
-      if (item.includes('/')) {
+    const userAgent = (req as any).get("User-Agent");
+
+    return whitelist.some((item) => {
+      if (item.includes("/")) {
         // CIDR notation for IP ranges
         return this.isIpInRange(ip, item);
       } else {
@@ -283,36 +338,65 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
   }
 
   /**
-   * Check if IP is in CIDR range
+   * Check if IP is in CIDR range — proper prefix-length math (WS5.3), so
+   * e.g. 192.168.0.0/16 no longer matches 192.168.123.4 via naive octet
+   * prefixing.
    */
   private isIpInRange(ip: string, cidr: string): boolean {
-    // Simplified CIDR check - in production, use proper IP range library
-    const [network, prefixLength] = cidr.split('/');
-    return ip.startsWith(network.split('.').slice(0, Math.floor(parseInt(prefixLength) / 8)).join('.'));
+    try {
+      const [network, prefixLength] = cidr.split("/");
+      const prefix = parseInt(prefixLength, 10);
+      if (!network || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+        return false;
+      }
+
+      const ipParts = ip.split(".").map((p) => parseInt(p, 10));
+      const netParts = network.split(".").map((p) => parseInt(p, 10));
+      if (
+        ipParts.length !== 4 ||
+        netParts.length !== 4 ||
+        ipParts.some((p) => Number.isNaN(p) || p < 0 || p > 255) ||
+        netParts.some((p) => Number.isNaN(p) || p < 0 || p > 255)
+      ) {
+        return false;
+      }
+
+      // Compare only the bits covered by the prefix length.
+      const ipInt = ipParts.reduce((acc, p) => (acc << 8) | p, 0) >>> 0;
+      const netInt = netParts.reduce((acc, p) => (acc << 8) | p, 0) >>> 0;
+      const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+      return (ipInt & mask) === (netInt & mask);
+    } catch {
+      return false;
+    }
   }
 
   /**
    * Handle burst exceeded scenario
    */
-  private async handleBurstExceeded(req: AuthenticatedRequest, res: Response, config: EnhancedRateLimitConfig): Promise<void> {
-    this.metrics.blockedRequests++;
-    
-    logger.warn('Burst protection exceeded', {
+  private async handleBurstExceeded(
+    req: AuthenticatedRequest,
+    res: Response,
+    config: EnhancedRateLimitConfig,
+  ): Promise<void> {
+    this._enhancedMetrics.blockedRequests++;
+
+    logger.warn("Burst protection exceeded", {
       ip: (req as any).ip,
       traceId: req.traceId,
-      burstLimit: config.burstLimit
+      burstLimit: config.burstLimit,
     });
 
     res.status(429).json({
       error: {
-        code: 'BURST_LIMIT_EXCEEDED',
-        message: 'Too many requests in short time. Please slow down.',
+        code: "BURST_LIMIT_EXCEEDED",
+        message: "Too many requests in short time. Please slow down.",
         details: {
           burstLimit: config.burstLimit,
-          burstWindowMs: config.burstWindowMs
-        }
+          burstWindowMs: config.burstWindowMs,
+        },
       },
-      traceId: req.traceId
+      traceId: req.traceId,
     });
   }
 
@@ -321,26 +405,29 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
    */
   private shouldTriggerAlert(config: EnhancedRateLimitConfig): boolean {
     const alertThreshold = config.alertThreshold || 0.8;
-    const blockRate = this.metrics.blockedRequests / this.metrics.totalRequests;
-    
+    const blockRate = this._enhancedMetrics.blockedRequests / this._enhancedMetrics.totalRequests;
+
     return blockRate > alertThreshold;
   }
 
   /**
    * Trigger rate limit alert
    */
-  private async triggerRateLimitAlert(req: AuthenticatedRequest, config: EnhancedRateLimitConfig): Promise<void> {
-    logger.error('Rate limit alert triggered', {
-      metrics: this.metrics,
+  private async triggerRateLimitAlert(
+    req: AuthenticatedRequest,
+    config: EnhancedRateLimitConfig,
+  ): Promise<void> {
+    logger.error("Rate limit alert triggered", {
+      metrics: this._enhancedMetrics,
       config: {
         alertThreshold: config.alertThreshold,
-        maxRequests: config.maxRequests
+        maxRequests: config.maxRequests,
       },
       request: {
         ip: (req as any).ip,
-        userAgent: (req as any).get('User-Agent'),
-        traceId: req.traceId
-      }
+        userAgent: (req as any).get("User-Agent"),
+        traceId: req.traceId,
+      },
     });
 
     // In production, this would integrate with alerting systems
@@ -353,9 +440,12 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
   private cleanupCollisionMap(): void {
     const now = Date.now();
     const expiryTime = 5 * 60 * 1000; // 5 minutes
-    
+
     for (const [key, count] of this.collisionMap.entries()) {
-      if (count === 0 || now - parseInt(key.split(':')[key.split(':').length - 1]) > expiryTime) {
+      if (
+        count === 0 ||
+        now - parseInt(key.split(":")[key.split(":").length - 1]) > expiryTime
+      ) {
         this.collisionMap.delete(key);
       }
     }
@@ -367,7 +457,7 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
   private cleanupBurstMap(): void {
     const now = Date.now();
     const expiryTime = 2 * 60 * 1000; // 2 minutes
-    
+
     for (const [key, data] of this.burstMap.entries()) {
       if (now - data.lastReset > expiryTime) {
         this.burstMap.delete(key);
@@ -379,21 +469,21 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
    * Get comprehensive rate limiting metrics
    */
   getEnhancedMetrics(): RateLimitMetrics {
-    return { ...this.metrics };
+    return { ...this._enhancedMetrics };
   }
 
   /**
    * Reset enhanced metrics
    */
   resetEnhancedMetrics(): void {
-    this.metrics = {
+    this._enhancedMetrics = {
       totalRequests: 0,
       blockedRequests: 0,
       bypassedRequests: 0,
       averageRequestRate: 0,
       peakRequestRate: 0,
       collisionCount: 0,
-      adaptiveAdjustments: 0
+      adaptiveAdjustments: 0,
     };
   }
 }
@@ -401,7 +491,9 @@ export class EnhancedRateLimiter extends RateLimiterMiddleware {
 /**
  * Create enhanced rate limiter factory
  */
-export function createEnhancedRateLimiter(redis: Redis.RedisClientType): EnhancedRateLimiter {
+export function createEnhancedRateLimiter(
+  redis: Redis.RedisClientType,
+): EnhancedRateLimiter {
   return new EnhancedRateLimiter({ redis });
 }
 

@@ -12,12 +12,12 @@ export interface XRayAnalysis {
 }
 
 export enum AnalysisType {
-  DESCRIPTIVE = 'descriptive',
-  PREDICTIVE = 'predictive',
-  CORRELATION = 'correlation',
-  ANOMALY_DETECTION = 'anomaly_detection',
-  TREND_ANALYSIS = 'trend_analysis',
-  SEGMENTATION = 'segmentation'
+  DESCRIPTIVE = "descriptive",
+  PREDICTIVE = "predictive",
+  CORRELATION = "correlation",
+  ANOMALY_DETECTION = "anomaly_detection",
+  TREND_ANALYSIS = "trend_analysis",
+  SEGMENTATION = "segmentation",
 }
 
 export interface AnalysisParameters {
@@ -31,18 +31,18 @@ export interface AnalysisParameters {
 
 export interface AnalysisFilter {
   field: string;
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains';
+  operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "in" | "contains";
   value: any;
 }
 
 export enum AggregationType {
-  COUNT = 'count',
-  SUM = 'sum',
-  AVERAGE = 'average',
-  MEDIAN = 'median',
-  MIN = 'min',
-  MAX = 'max',
-  STD_DEV = 'std_dev'
+  COUNT = "count",
+  SUM = "sum",
+  AVERAGE = "average",
+  MEDIAN = "median",
+  MIN = "min",
+  MAX = "max",
+  STD_DEV = "std_dev",
 }
 
 export interface TimeRange {
@@ -58,24 +58,24 @@ export interface PrivacyAnalysisSettings {
 }
 
 export enum NoiseMechanism {
-  LAPLACE = 'laplace',
-  GAUSSIAN = 'gaussian',
-  EXPONENTIAL = 'exponential'
+  LAPLACE = "laplace",
+  GAUSSIAN = "gaussian",
+  EXPONENTIAL = "exponential",
 }
 
 export enum AnonymizationLevel {
-  NONE = 'none',
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high'
+  NONE = "none",
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
 }
 
 export enum AnalysisStatus {
-  PENDING = 'pending',
-  RUNNING = 'running',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled'
+  PENDING = "pending",
+  RUNNING = "running",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
 }
 
 export interface AnalysisResult {
@@ -113,19 +113,19 @@ export interface VisualizationConfig {
 }
 
 export enum VisualizationType {
-  BAR_CHART = 'bar_chart',
-  LINE_CHART = 'line_chart',
-  PIE_CHART = 'pie_chart',
-  SCATTER_PLOT = 'scatter_plot',
-  HEATMAP = 'heatmap',
-  HISTOGRAM = 'histogram',
-  BOX_PLOT = 'box_plot'
+  BAR_CHART = "bar_chart",
+  LINE_CHART = "line_chart",
+  PIE_CHART = "pie_chart",
+  SCATTER_PLOT = "scatter_plot",
+  HEATMAP = "heatmap",
+  HISTOGRAM = "histogram",
+  BOX_PLOT = "box_plot",
 }
 
 export interface PrivacyAnnotation {
-  type: 'noise_level' | 'sample_size' | 'confidence_interval';
+  type: "noise_level" | "sample_size" | "confidence_interval";
   message: string;
-  level: 'info' | 'warning' | 'error';
+  level: "info" | "warning" | "error";
 }
 
 export interface PrivacyMetrics {

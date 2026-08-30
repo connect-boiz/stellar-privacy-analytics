@@ -1,4 +1,5 @@
-import { logger } from '../utils/logger';
+import * as geoip from "geoip-lite";
+import { logger } from "../utils/logger";
 
 export interface UserAttributes {
   userId?: string;
@@ -40,10 +41,16 @@ export interface ABACPolicy {
   id: string;
   name: string;
   description: string;
-  rules: ABACRule[];
+  rules?: ABACRule[];
+  target?: {
+    users?: AttributeCondition[];
+    resources?: AttributeCondition[];
+    environment?: AttributeCondition[];
+  };
+  condition?: LogicalExpression;
   priority: number;
   enabled: boolean;
-  effect: 'allow' | 'deny';
+  effect: "allow" | "deny";
 }
 
 export interface ABACRule {
@@ -59,12 +66,21 @@ export interface ABACRule {
 
 export interface AttributeCondition {
   attribute: string;
-  operator: 'equals' | 'not_equals' | 'in' | 'not_in' | 'contains' | 'starts_with' | 'ends_with' | 'greater_than' | 'less_than';
+  operator:
+    | "equals"
+    | "not_equals"
+    | "in"
+    | "not_in"
+    | "contains"
+    | "starts_with"
+    | "ends_with"
+    | "greater_than"
+    | "less_than";
   value: any;
 }
 
 export interface LogicalExpression {
-  operator: 'and' | 'or' | 'not';
+  operator: "and" | "or" | "not";
   operands: (LogicalExpression | AttributeCondition)[];
 }
 
@@ -79,83 +95,95 @@ export class ABACService {
     this.attributeResolver = new AttributeResolver();
     this.decisionCache = new Map();
     this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
-    
+
     this.initializeDefaultPolicies();
     this.setupCacheCleanup();
   }
 
   async evaluateAccess(
     userAttributes: UserAttributes,
-    resource: Resource
+    resource: Resource,
   ): Promise<AccessDecision> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const cacheKey = this.createDecisionCacheKey(userAttributes, resource);
-    
+
     // Check cache first
     const cached = this.decisionCache.get(cacheKey);
-    if (cached && (Date.now() - cached.context.timestamp.getTime() < this.cacheTimeout)) {
+    if (
+      cached &&
+      Date.now() - cached.context.timestamp.getTime() < this.cacheTimeout
+    ) {
       return cached;
     }
-    
+
     try {
       // Resolve dynamic attributes
-      const resolvedAttributes = await this.attributeResolver.resolve(userAttributes, resource);
-      
+      const resolvedAttributes = await this.attributeResolver.resolve(
+        userAttributes,
+        resource,
+      );
+
       // Get applicable policies
-      const applicablePolicies = this.getApplicablePolicies(resolvedAttributes, resource);
-      
+      const applicablePolicies = this.getApplicablePolicies(
+        resolvedAttributes,
+        resource,
+      );
+
       // Evaluate policies in priority order
       const decisions: AccessDecision[] = [];
-      
+
       for (const policy of applicablePolicies) {
-        const decision = await this.evaluatePolicy(policy, resolvedAttributes, resource);
+        const decision = await this.evaluatePolicy(
+          policy,
+          resolvedAttributes,
+          resource,
+        );
         decisions.push(decision);
-        
+
         // Deny policies take precedence over allow policies
-        if (!decision.allowed && policy.effect === 'deny') {
+        if (!decision.allowed && policy.effect === "deny") {
           this.cacheDecision(cacheKey, decision);
           return decision;
         }
       }
-      
+
       // If no deny policies matched, check for allow policies
-      const allowDecision = decisions.find(d => d.allowed);
+      const allowDecision = decisions.find((d) => d.allowed);
       if (allowDecision) {
         this.cacheDecision(cacheKey, allowDecision);
         return allowDecision;
       }
-      
+
       // Default deny
       const defaultDecision: AccessDecision = {
         allowed: false,
-        reason: 'No applicable policies found - default deny',
-        policy: 'default',
+        reason: "No applicable policies found - default deny",
+        policy: "default",
         context: {
           userAttributes: resolvedAttributes,
           resource,
           matchedRules: [],
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
-      
+
       this.cacheDecision(cacheKey, defaultDecision);
       return defaultDecision;
-      
     } catch (error) {
-      logger.error('ABAC evaluation error:', error);
-      
+      logger.error("ABAC evaluation error:", error);
+
       const errorDecision: AccessDecision = {
         allowed: false,
         reason: `ABAC evaluation error: ${(error as Error).message}`,
-        policy: 'error',
+        policy: "error",
         context: {
           userAttributes,
           resource,
           matchedRules: [],
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
-      
+
       return errorDecision;
     }
   }
@@ -163,49 +191,74 @@ export class ABACService {
   private async evaluatePolicy(
     policy: ABACPolicy,
     userAttributes: UserAttributes,
-    resource: Resource
+    resource: Resource,
   ): Promise<AccessDecision> {
     try {
-      const matchedRules: string[] = [];
-      
+      const _matchedRules: string[] = [];
+
       // Check if policy applies to this user and resource
-      const targetMatch = this.evaluateTarget(policy.target, userAttributes, resource);
+      const targetMatch = this.evaluateTarget(
+        policy.target ?? {},
+        userAttributes,
+        resource,
+      );
       if (!targetMatch) {
         return {
           allowed: false,
-          reason: 'Policy target does not match',
+          reason: "Policy target does not match",
           policy: policy.id,
           context: {
             userAttributes,
             resource,
             matchedRules: [],
-            timestamp: new Date()
-          }
+            timestamp: new Date(),
+          },
         };
       }
-      
+
+      // If there is no condition, default to allow effect
+      if (!policy.condition) {
+        return {
+          allowed: policy.effect === "allow",
+          reason: `Policy ${policy.effect} - no condition specified`,
+          policy: policy.id,
+          context: {
+            userAttributes,
+            resource,
+            matchedRules: [],
+            timestamp: new Date(),
+          },
+        };
+      }
+
       // Evaluate policy condition
-      const conditionResult = this.evaluateLogicalExpression(policy.condition, userAttributes, resource);
-      
+      const conditionResult = this.evaluateLogicalExpression(
+        policy.condition,
+        userAttributes,
+        resource,
+      );
+
       const decision: AccessDecision = {
-        allowed: policy.effect === 'allow' ? conditionResult.result : !conditionResult.result,
-        reason: conditionResult.result ? 
-          `Policy ${policy.effect} - condition satisfied: ${conditionResult.explanation}` :
-          `Policy ${policy.effect} - condition not satisfied: ${conditionResult.explanation}`,
+        allowed:
+          policy.effect === "allow"
+            ? conditionResult.result
+            : !conditionResult.result,
+        reason: conditionResult.result
+          ? `Policy ${policy.effect} - condition satisfied: ${conditionResult.explanation}`
+          : `Policy ${policy.effect} - condition not satisfied: ${conditionResult.explanation}`,
         policy: policy.id,
         context: {
           userAttributes,
           resource,
           matchedRules: conditionResult.matchedRules,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
-      
+
       return decision;
-      
     } catch (error) {
       logger.error(`Policy evaluation error for ${policy.id}:`, error);
-      
+
       return {
         allowed: false,
         reason: `Policy evaluation error: ${(error as Error).message}`,
@@ -214,8 +267,8 @@ export class ABACService {
           userAttributes,
           resource,
           matchedRules: [],
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -223,144 +276,198 @@ export class ABACService {
   private evaluateTarget(
     target: any,
     userAttributes: UserAttributes,
-    resource: Resource
+    resource: Resource,
   ): boolean {
     // If no target specified, applies to all
-    if (!target || (!target.users && !target.resources && !target.environment)) {
+    if (
+      !target ||
+      (!target.users && !target.resources && !target.environment)
+    ) {
       return true;
     }
-    
+
     let userMatch = true;
     let resourceMatch = true;
     let environmentMatch = true;
-    
+
     // Evaluate user conditions
     if (target.users) {
       userMatch = target.users.every((condition: AttributeCondition) =>
-        this.evaluateAttributeCondition(condition, userAttributes)
+        this.evaluateAttributeCondition(condition, userAttributes),
       );
     }
-    
+
     // Evaluate resource conditions
     if (target.resources) {
       resourceMatch = target.resources.every((condition: AttributeCondition) =>
-        this.evaluateAttributeCondition(condition, resource)
+        this.evaluateAttributeCondition(condition, resource),
       );
     }
-    
+
     // Evaluate environment conditions
     if (target.environment) {
       const environment = {
         timestamp: new Date(),
         ipAddress: userAttributes.ipAddress,
-        jurisdiction: userAttributes.jurisdiction
+        jurisdiction: userAttributes.jurisdiction,
       };
-      
-      environmentMatch = target.environment.every((condition: AttributeCondition) =>
-        this.evaluateAttributeCondition(condition, environment)
+
+      environmentMatch = target.environment.every(
+        (condition: AttributeCondition) =>
+          this.evaluateAttributeCondition(condition, environment),
       );
     }
-    
+
     return userMatch && resourceMatch && environmentMatch;
+  }
+
+  private isAttributeCondition(
+    operand: LogicalExpression | AttributeCondition,
+  ): operand is AttributeCondition {
+    return "attribute" in operand;
+  }
+
+  private isLogicalExpression(
+    operand: LogicalExpression | AttributeCondition,
+  ): operand is LogicalExpression {
+    return "operands" in operand;
   }
 
   private evaluateLogicalExpression(
     expression: LogicalExpression,
     userAttributes: UserAttributes,
-    resource: Resource
+    resource: Resource,
   ): { result: boolean; explanation: string; matchedRules: string[] } {
     const matchedRules: string[] = [];
-    
+    const context = { ...userAttributes, ...resource };
+
     switch (expression.operator) {
-      case 'and':
-        const andResults = expression.operands.map(operand => {
-          if ('operator' in operand) {
-            const result = this.evaluateAttributeCondition(operand as AttributeCondition, 
-              { ...userAttributes, ...resource });
-            if (result) matchedRules.push(`${operand.attribute} ${operand.operator} ${operand.value}`);
+      case "and":
+        const andResults = expression.operands.map((operand) => {
+          if (this.isAttributeCondition(operand)) {
+            const result = this.evaluateAttributeCondition(operand, context);
+            if (result)
+              matchedRules.push(
+                `${operand.attribute} ${operand.operator} ${operand.value}`,
+              );
             return result;
-          } else {
-            return this.evaluateLogicalExpression(operand as LogicalExpression, userAttributes, resource).result;
           }
+          if (this.isLogicalExpression(operand)) {
+            return this.evaluateLogicalExpression(
+              operand,
+              userAttributes,
+              resource,
+            ).result;
+          }
+          return false;
         });
-        
+
         return {
-          result: andResults.every(r => r),
-          explanation: `All conditions must be true: ${andResults.join(', ')}`,
-          matchedRules
+          result: andResults.every((r) => r),
+          explanation: `All conditions must be true: ${andResults.join(", ")}`,
+          matchedRules,
         };
-        
-      case 'or':
-        const orResults = expression.operands.map(operand => {
-          if ('operator' in operand) {
-            const result = this.evaluateAttributeCondition(operand as AttributeCondition, 
-              { ...userAttributes, ...resource });
-            if (result) matchedRules.push(`${operand.attribute} ${operand.operator} ${operand.value}`);
+
+      case "or":
+        const orResults = expression.operands.map((operand) => {
+          if (this.isAttributeCondition(operand)) {
+            const result = this.evaluateAttributeCondition(operand, context);
+            if (result)
+              matchedRules.push(
+                `${operand.attribute} ${operand.operator} ${operand.value}`,
+              );
             return result;
-          } else {
-            return this.evaluateLogicalExpression(operand as LogicalExpression, userAttributes, resource).result;
           }
+          if (this.isLogicalExpression(operand)) {
+            return this.evaluateLogicalExpression(
+              operand,
+              userAttributes,
+              resource,
+            ).result;
+          }
+          return false;
         });
-        
+
         return {
-          result: orResults.some(r => r),
-          explanation: `At least one condition must be true: ${orResults.join(', ')}`,
-          matchedRules
+          result: orResults.some((r) => r),
+          explanation: `At least one condition must be true: ${orResults.join(", ")}`,
+          matchedRules,
         };
-        
-      case 'not':
+
+      case "not":
         const operandResult = expression.operands[0];
-        if ('operator' in operandResult) {
-          const result = this.evaluateAttributeCondition(operandResult as AttributeCondition, 
-            { ...userAttributes, ...resource });
-          if (result) matchedRules.push(`NOT ${operandResult.attribute} ${operandResult.operator} ${operandResult.value}`);
+        if (this.isAttributeCondition(operandResult)) {
+          const result = this.evaluateAttributeCondition(
+            operandResult,
+            context,
+          );
+          if (result)
+            matchedRules.push(
+              `NOT ${operandResult.attribute} ${operandResult.operator} ${operandResult.value}`,
+            );
           return {
             result: !result,
             explanation: `Negated condition: NOT (${operandResult.attribute} ${operandResult.operator} ${operandResult.value})`,
-            matchedRules
+            matchedRules,
           };
-        } else {
-          const innerResult = this.evaluateLogicalExpression(operandResult as LogicalExpression, userAttributes, resource);
+        }
+        if (this.isLogicalExpression(operandResult)) {
+          const innerResult = this.evaluateLogicalExpression(
+            operandResult,
+            userAttributes,
+            resource,
+          );
           return {
             result: !innerResult.result,
             explanation: `Negated expression: NOT (${innerResult.explanation})`,
-            matchedRules
+            matchedRules,
           };
         }
-        
+        return {
+          result: false,
+          explanation: "NOT operand is neither AttributeCondition nor LogicalExpression",
+          matchedRules,
+        };
+
       default:
         return {
           result: false,
           explanation: `Unknown operator: ${expression.operator}`,
-          matchedRules
+          matchedRules,
         };
     }
   }
 
   private evaluateAttributeCondition(
     condition: AttributeCondition,
-    context: any
+    context: any,
   ): boolean {
     const attributeValue = this.getAttributeValue(condition.attribute, context);
-    
+
     switch (condition.operator) {
-      case 'equals':
+      case "equals":
         return attributeValue === condition.value;
-      case 'not_equals':
+      case "not_equals":
         return attributeValue !== condition.value;
-      case 'in':
-        return Array.isArray(condition.value) && condition.value.includes(attributeValue);
-      case 'not_in':
-        return Array.isArray(condition.value) && !condition.value.includes(attributeValue);
-      case 'contains':
+      case "in":
+        return (
+          Array.isArray(condition.value) &&
+          condition.value.includes(attributeValue)
+        );
+      case "not_in":
+        return (
+          Array.isArray(condition.value) &&
+          !condition.value.includes(attributeValue)
+        );
+      case "contains":
         return String(attributeValue).includes(String(condition.value));
-      case 'starts_with':
+      case "starts_with":
         return String(attributeValue).startsWith(String(condition.value));
-      case 'ends_with':
+      case "ends_with":
         return String(attributeValue).endsWith(String(condition.value));
-      case 'greater_than':
+      case "greater_than":
         return Number(attributeValue) > Number(condition.value);
-      case 'less_than':
+      case "less_than":
         return Number(attributeValue) < Number(condition.value);
       default:
         return false;
@@ -368,33 +475,35 @@ export class ABACService {
   }
 
   private getAttributeValue(attribute: string, context: any): any {
-    const parts = attribute.split('.');
+    const parts = attribute.split(".");
     let value = context;
-    
+
     for (const part of parts) {
-      if (value && typeof value === 'object' && part in value) {
+      if (value && typeof value === "object" && part in value) {
         value = value[part];
       } else {
         return undefined;
       }
     }
-    
+
     return value;
   }
 
   private getApplicablePolicies(
     userAttributes: UserAttributes,
-    resource: Resource
+    resource: Resource,
   ): ABACPolicy[] {
     return Array.from(this.policies.values())
-      .filter(policy => policy.enabled)
-      .filter(policy => this.evaluateTarget(policy.target, userAttributes, resource))
+      .filter((policy) => policy.enabled)
+      .filter((policy) =>
+        this.evaluateTarget(policy.target ?? {}, userAttributes, resource),
+      )
       .sort((a, b) => b.priority - a.priority);
   }
 
   private createDecisionCacheKey(
     userAttributes: UserAttributes,
-    resource: Resource
+    resource: Resource,
   ): string {
     const keyData = {
       userId: userAttributes.userId,
@@ -402,10 +511,10 @@ export class ABACService {
       department: userAttributes.department,
       resourcePath: resource.path,
       resourceMethod: resource.method,
-      resourceService: resource.service
+      resourceService: resource.service,
     };
-    
-    return Buffer.from(JSON.stringify(keyData)).toString('base64');
+
+    return Buffer.from(JSON.stringify(keyData)).toString("base64");
   }
 
   private cacheDecision(key: string, decision: AccessDecision): void {
@@ -416,17 +525,19 @@ export class ABACService {
     setInterval(() => {
       const now = Date.now();
       const keysToDelete: string[] = [];
-      
+
       this.decisionCache.forEach((decision, key) => {
         if (now - decision.context.timestamp.getTime() > this.cacheTimeout) {
           keysToDelete.push(key);
         }
       });
-      
-      keysToDelete.forEach(key => this.decisionCache.delete(key));
-      
+
+      keysToDelete.forEach((key) => this.decisionCache.delete(key));
+
       if (keysToDelete.length > 0) {
-        logger.debug(`Cleaned up ${keysToDelete.length} expired ABAC decisions`);
+        logger.debug(
+          `Cleaned up ${keysToDelete.length} expired ABAC decisions`,
+        );
       }
     }, this.cacheTimeout);
   }
@@ -434,69 +545,82 @@ export class ABACService {
   private initializeDefaultPolicies(): void {
     // Policy: Allow analysts to access analytics endpoints
     const analystPolicy: ABACPolicy = {
-      id: 'analyst-access',
-      name: 'Analyst Access Policy',
-      description: 'Allow users with analyst role to access analytics endpoints',
-      effect: 'allow',
+      id: "analyst-access",
+      name: "Analyst Access Policy",
+      description:
+        "Allow users with analyst role to access analytics endpoints",
+      effect: "allow",
       priority: 100,
       enabled: true,
       target: {
-        users: [
-          { attribute: 'roles', operator: 'contains', value: 'analyst' }
-        ],
+        users: [{ attribute: "roles", operator: "contains", value: "analyst" }],
         resources: [
-          { attribute: 'service', operator: 'equals', value: 'analytics' }
-        ]
+          { attribute: "service", operator: "equals", value: "analytics" },
+        ],
       },
       condition: {
-        operator: 'and',
+        operator: "and",
         operands: [
-          { attribute: 'consent', operator: 'equals', value: true },
-          { attribute: 'dataClassification', operator: 'in', value: ['public', 'internal'] }
-        ]
-      }
+          { attribute: "consent", operator: "equals", value: true },
+          {
+            attribute: "dataClassification",
+            operator: "in",
+            value: ["public", "internal"],
+          },
+        ],
+      },
     };
 
     // Policy: Deny access to sensitive data without proper clearance
     const sensitiveDataPolicy: ABACPolicy = {
-      id: 'sensitive-data-protection',
-      name: 'Sensitive Data Protection Policy',
-      description: 'Deny access to sensitive data without proper clearance',
-      effect: 'deny',
+      id: "sensitive-data-protection",
+      name: "Sensitive Data Protection Policy",
+      description: "Deny access to sensitive data without proper clearance",
+      effect: "deny",
       priority: 200,
       enabled: true,
       target: {
         resources: [
-          { attribute: 'dataClassification', operator: 'equals', value: 'sensitive' }
-        ]
+          {
+            attribute: "dataClassification",
+            operator: "equals",
+            value: "sensitive",
+          },
+        ],
       },
       condition: {
-        operator: 'not',
+        operator: "not",
         operands: [
-          { attribute: 'clearanceLevel', operator: 'in', value: ['high', 'top-secret'] }
-        ]
-      }
+          {
+            attribute: "clearanceLevel",
+            operator: "in",
+            value: ["high", "top-secret"],
+          },
+        ],
+      },
     };
 
     // Policy: Require consent for personal data access
     const consentPolicy: ABACPolicy = {
-      id: 'consent-requirement',
-      name: 'Consent Requirement Policy',
-      description: 'Require explicit consent for personal data access',
-      effect: 'deny',
+      id: "consent-requirement",
+      name: "Consent Requirement Policy",
+      description: "Require explicit consent for personal data access",
+      effect: "deny",
       priority: 150,
       enabled: true,
       target: {
         resources: [
-          { attribute: 'dataClassification', operator: 'in', value: ['personal', 'pii'] }
-        ]
+          {
+            attribute: "dataClassification",
+            operator: "in",
+            value: ["personal", "pii"],
+          },
+        ],
       },
       condition: {
-        operator: 'not',
-        operands: [
-          { attribute: 'consent', operator: 'equals', value: true }
-        ]
-      }
+        operator: "not",
+        operands: [{ attribute: "consent", operator: "equals", value: true }],
+      },
     };
 
     this.policies.set(analystPolicy.id, analystPolicy);
@@ -536,56 +660,93 @@ export class ABACService {
     cacheSize: number;
   } {
     const totalPolicies = this.policies.size;
-    const enabledPolicies = Array.from(this.policies.values()).filter(p => p.enabled).length;
-    
+    const enabledPolicies = Array.from(this.policies.values()).filter(
+      (p) => p.enabled,
+    ).length;
+
     return {
       totalPolicies,
       enabledPolicies,
-      cacheSize: this.decisionCache.size
+      cacheSize: this.decisionCache.size,
     };
   }
 }
 
-class AttributeResolver {
-  async resolve(userAttributes: UserAttributes, resource: Resource): Promise<UserAttributes> {
+export class AttributeResolver {
+  async resolve(
+    userAttributes: UserAttributes,
+    resource: Resource,
+  ): Promise<UserAttributes> {
     const resolved = { ...userAttributes };
-    
+
     // Resolve dynamic attributes based on context
     resolved.timestamp = new Date();
     resolved.resourcePath = resource.path;
     resolved.resourceMethod = resource.method;
     resolved.resourceService = resource.service;
-    
+
     // Resolve department-based clearance if not explicitly set
     if (!resolved.clearanceLevel && resolved.department) {
-      resolved.clearanceLevel = this.getDepartmentClearance(resolved.department);
+      resolved.clearanceLevel = this.getDepartmentClearance(
+        resolved.department,
+      );
     }
-    
+
     // Resolve jurisdiction based on IP
     if (!resolved.jurisdiction && resolved.ipAddress) {
-      resolved.jurisdiction = await this.resolveJurisdiction(resolved.ipAddress);
+      resolved.jurisdiction = await this.resolveJurisdiction(
+        resolved.ipAddress,
+      );
     }
-    
+
     return resolved;
   }
 
   private getDepartmentClearance(department: string): string {
     const clearanceMap: Record<string, string> = {
-      'engineering': 'high',
-      'data-analytics': 'high',
-      'security': 'top-secret',
-      'legal': 'high',
-      'hr': 'medium',
-      'marketing': 'low',
-      'sales': 'low'
+      engineering: "high",
+      "data-analytics": "high",
+      security: "top-secret",
+      legal: "high",
+      hr: "medium",
+      marketing: "low",
+      sales: "low",
     };
-    
-    return clearanceMap[department.toLowerCase()] || 'low';
+
+    return clearanceMap[department.toLowerCase()] || "low";
   }
 
-  private async resolveJurisdiction(ipAddress: string): Promise<string> {
-    // In a real implementation, this would use a GeoIP service
-    // For now, return a default
-    return 'US';
+  /**
+   * Resolves the jurisdiction (ISO 3166-1 alpha-2 country code) for a given IP
+   * address using the geoip-lite database. Returns "unknown" if the lookup
+   * fails or the IP address cannot be mapped to a country, so that geo-based
+   * ABAC policies are never silently bypassed with a "US" default.
+   */
+  async resolveJurisdiction(ipAddress: string): Promise<string> {
+    if (!ipAddress || ipAddress.trim() === "") {
+      logger.warn(
+        'resolveJurisdiction called with empty IP address — returning "unknown"',
+      );
+      return "unknown";
+    }
+
+    try {
+      const geo = geoip.lookup(ipAddress);
+
+      if (!geo || !geo.country) {
+        logger.warn(
+          `GeoIP lookup returned no result for IP ${ipAddress} — returning "unknown"`,
+        );
+        return "unknown";
+      }
+
+      logger.debug(
+        `GeoIP resolved ${ipAddress} to jurisdiction "${geo.country}"`,
+      );
+      return geo.country;
+    } catch (error) {
+      logger.error(`GeoIP lookup error for IP ${ipAddress}:`, error);
+      return "unknown";
+    }
   }
 }

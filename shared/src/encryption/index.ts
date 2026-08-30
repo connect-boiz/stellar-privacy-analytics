@@ -1,14 +1,14 @@
-import CryptoJS from 'crypto-js';
-import { v4 as uuidv4 } from 'uuid';
-import { EncryptedData } from '../types/privacy';
+import CryptoJS from "crypto-js";
+import { v4 as uuidv4 } from "uuid";
+import { EncryptedData } from "../types/privacy";
 
 // Export new blob storage components
-export * from './aes';
-export * from './storage';
-export * from './blob-storage';
+export * from "./aes";
+export * from "./storage";
+export * from "./blob-storage";
 
 export class EncryptionService {
-  private static readonly ALGORITHM = 'AES-256-GCM';
+  private static readonly ALGORITHM = "AES-256-GCM";
   private static readonly KEY_DERIVATION_ITERATIONS = 100000;
 
   /**
@@ -20,18 +20,14 @@ export class EncryptionService {
       const iv = CryptoJS.lib.WordArray.random(16);
       const keyHash = CryptoJS.PBKDF2(key, keyId, {
         keySize: 256 / 32,
-        iterations: this.KEY_DERIVATION_ITERATIONS
+        iterations: this.KEY_DERIVATION_ITERATIONS,
       });
 
-      const encrypted = CryptoJS.AES.encrypt(
-        JSON.stringify(data),
-        keyHash,
-        {
-          iv: iv,
-          mode: CryptoJS.mode.GCM,
-          padding: CryptoJS.pad.NoPadding
-        }
-      );
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), keyHash, {
+        iv: iv,
+        mode: (CryptoJS.mode as any).GCM,
+        padding: CryptoJS.pad.NoPadding,
+      });
 
       const checksum = CryptoJS.SHA256(JSON.stringify(data)).toString();
 
@@ -41,9 +37,9 @@ export class EncryptionService {
           algorithm: this.ALGORITHM,
           keyId,
           iv: CryptoJS.enc.Base64.stringify(iv),
-          timestamp: new Date()
+          timestamp: new Date(),
         },
-        checksum
+        checksum,
       };
     } catch (error) {
       throw new Error(`Encryption failed: ${error}`);
@@ -53,34 +49,39 @@ export class EncryptionService {
   /**
    * Decrypts data using AES-256-GCM
    */
-  static async decrypt(encryptedData: EncryptedData, key: string): Promise<any> {
+  static async decrypt(
+    encryptedData: EncryptedData,
+    key: string,
+  ): Promise<any> {
     try {
       const { data, metadata } = encryptedData;
       const iv = CryptoJS.enc.Base64.parse(metadata.iv);
-      
+
       const keyHash = CryptoJS.PBKDF2(key, metadata.keyId, {
         keySize: 256 / 32,
-        iterations: this.KEY_DERIVATION_ITERATIONS
+        iterations: this.KEY_DERIVATION_ITERATIONS,
       });
 
       const decrypted = CryptoJS.AES.decrypt(data, keyHash, {
         iv: iv,
-        mode: CryptoJS.mode.GCM,
-        padding: CryptoJS.pad.NoPadding
+        mode: (CryptoJS.mode as any).GCM,
+        padding: CryptoJS.pad.NoPadding,
       });
 
       const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
-      
+
       if (!plaintext) {
-        throw new Error('Decryption produced empty result');
+        throw new Error("Decryption produced empty result");
       }
 
       const result = JSON.parse(plaintext);
-      
+
       // Verify checksum
-      const computedChecksum = CryptoJS.SHA256(JSON.stringify(result)).toString();
+      const computedChecksum = CryptoJS.SHA256(
+        JSON.stringify(result),
+      ).toString();
       if (computedChecksum !== encryptedData.checksum) {
-        throw new Error('Data integrity check failed');
+        throw new Error("Data integrity check failed");
       }
 
       return result;
@@ -113,10 +114,14 @@ export class EncryptionService {
   /**
    * Derives a key from password using PBKDF2
    */
-  static deriveKey(password: string, salt: string, iterations: number = 100000): string {
+  static deriveKey(
+    password: string,
+    salt: string,
+    iterations: number = 100000,
+  ): string {
     return CryptoJS.PBKDF2(password, salt, {
       keySize: 256 / 32,
-      iterations
+      iterations,
     }).toString();
   }
 }
@@ -159,29 +164,40 @@ export class DifferentialPrivacy {
   /**
    * Adds Laplace noise for differential privacy
    */
-  static addLaplaceNoise(value: number, epsilon: number, sensitivity: number = 1): number {
+  static addLaplaceNoise(
+    value: number,
+    epsilon: number,
+    sensitivity: number = 1,
+  ): number {
     if (epsilon <= 0) {
-      throw new Error('Epsilon must be positive');
+      throw new Error("Epsilon must be positive");
     }
 
     const scale = sensitivity / epsilon;
     const uniform = Math.random() - 0.5;
-    const noise = -scale * Math.sign(uniform) * Math.log(1 - 2 * Math.abs(uniform));
-    
+    const noise =
+      -scale * Math.sign(uniform) * Math.log(1 - 2 * Math.abs(uniform));
+
     return value + noise;
   }
 
   /**
    * Adds Gaussian noise for differential privacy
    */
-  static addGaussianNoise(value: number, epsilon: number, delta: number, sensitivity: number = 1): number {
+  static addGaussianNoise(
+    value: number,
+    epsilon: number,
+    delta: number,
+    sensitivity: number = 1,
+  ): number {
     if (epsilon <= 0 || delta <= 0 || delta >= 1) {
-      throw new Error('Invalid epsilon or delta values');
+      throw new Error("Invalid epsilon or delta values");
     }
 
-    const sigma = sensitivity * Math.sqrt(2 * Math.log(1.25 / delta)) / epsilon;
+    const sigma =
+      (sensitivity * Math.sqrt(2 * Math.log(1.25 / delta))) / epsilon;
     const noise = this.gaussianRandom() * sigma;
-    
+
     return value + noise;
   }
 
@@ -189,7 +205,8 @@ export class DifferentialPrivacy {
    * Generates Gaussian random number using Box-Muller transform
    */
   private static gaussianRandom(): number {
-    let u = 0, v = 0;
+    let u = 0,
+      v = 0;
     while (u === 0) u = Math.random();
     while (v === 0) v = Math.random();
     return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);

@@ -6,7 +6,7 @@ const TooltipTestPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Tooltip Positioning Test</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Test various tooltip positions */}
           <div className="p-6 bg-white rounded-lg shadow">
@@ -17,19 +17,19 @@ const TooltipTestPage: React.FC = () => {
                   Top Tooltip
                 </button>
               </Tooltip>
-              
+
               <Tooltip content="Right tooltip content" side="right">
                 <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
                   Right Tooltip
                 </button>
               </Tooltip>
-              
+
               <Tooltip content="Bottom tooltip content" side="bottom">
                 <button className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
                   Bottom Tooltip
                 </button>
               </Tooltip>
-              
+
               <Tooltip content="Left tooltip content" side="left">
                 <button className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
                   Left Tooltip
@@ -47,19 +47,19 @@ const TooltipTestPage: React.FC = () => {
                   Default
                 </button>
               </Tooltip>
-              
+
               <Tooltip content="Info tooltip" variant="info">
                 <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                   Info
                 </button>
               </Tooltip>
-              
+
               <Tooltip content="Warning tooltip" variant="warning">
                 <button className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
                   Warning
                 </button>
               </Tooltip>
-              
+
               <Tooltip content="Error tooltip" variant="error">
                 <button className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
                   Error
@@ -72,7 +72,7 @@ const TooltipTestPage: React.FC = () => {
           <div className="p-6 bg-white rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-4">Long Content Tests</h2>
             <div className="space-y-4">
-              <Tooltip 
+              <Tooltip
                 content="This is a very long tooltip content that should be truncated properly to avoid overflow issues on small screens."
                 maxLines={2}
                 maxWidth={200}
@@ -81,8 +81,8 @@ const TooltipTestPage: React.FC = () => {
                   Truncated
                 </button>
               </Tooltip>
-              
-              <Tooltip 
+
+              <Tooltip
                 content="This tooltip has no truncation and should show all content even if it's very long."
                 truncate={false}
                 maxWidth={300}
@@ -98,7 +98,7 @@ const TooltipTestPage: React.FC = () => {
           <div className="p-6 bg-white rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-4">Accessibility Tests</h2>
             <div className="space-y-4">
-              <Tooltip 
+              <Tooltip
                 content="Keyboard accessible tooltip. Try tabbing to this button and pressing Enter."
                 ariaLabel="Keyboard accessible tooltip"
                 keyboardAccessible={true}
@@ -107,8 +107,8 @@ const TooltipTestPage: React.FC = () => {
                   Keyboard Accessible
                 </button>
               </Tooltip>
-              
-              <Tooltip 
+
+              <Tooltip
                 content="Screen reader friendly tooltip with proper ARIA attributes."
                 showOnFocus={true}
                 ariaLabel="Screen reader friendly tooltip"
@@ -124,16 +124,13 @@ const TooltipTestPage: React.FC = () => {
           <div className="p-6 bg-white rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-4">Performance Tests</h2>
             <div className="space-y-4">
-              <Tooltip 
-                content="Tooltip with animations enabled"
-                disableAnimations={false}
-              >
+              <Tooltip content="Tooltip with animations enabled" disableAnimations={false}>
                 <button className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">
                   With Animations
                 </button>
               </Tooltip>
-              
-              <Tooltip 
+
+              <Tooltip
                 content="Tooltip with animations disabled for better performance"
                 disableAnimations={true}
               >
@@ -148,7 +145,7 @@ const TooltipTestPage: React.FC = () => {
           <div className="p-6 bg-white rounded-lg shadow">
             <h2 className="text-lg font-semibold mb-4">Edge Cases</h2>
             <div className="space-y-4">
-              <Tooltip 
+              <Tooltip
                 content="This tooltip should automatically flip position if there's not enough space."
                 side="top"
               >
@@ -156,12 +153,12 @@ const TooltipTestPage: React.FC = () => {
                   Auto-flip Tooltip
                 </button>
               </Tooltip>
-              
-              <Tooltip 
-                content="This tooltip is disabled and should not appear."
-                disabled={true}
-              >
-                <button className="px-4 py-2 bg-gray-300 text-gray-600 rounded cursor-not-allowed" disabled>
+
+              <Tooltip content="This tooltip is disabled and should not appear." disabled={true}>
+                <button
+                  className="px-4 py-2 bg-gray-300 text-gray-600 rounded cursor-not-allowed"
+                  disabled
+                >
                   Disabled Tooltip
                 </button>
               </Tooltip>

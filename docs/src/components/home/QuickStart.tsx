@@ -1,38 +1,42 @@
-import { motion } from 'framer-motion'
-import { Rocket, BookOpen, Code, Users } from 'lucide-react'
-import Link from 'next/link'
+import { motion } from "framer-motion";
+import { Rocket, BookOpen, Code, Users } from "lucide-react";
+import Link from "next/link";
 
 export function QuickStart() {
   const steps = [
     {
       icon: Rocket,
-      title: 'Get Started in Minutes',
-      description: 'Choose your learning track and begin your journey into privacy-preserving analytics.',
-      action: 'Choose Your Track',
-      href: '/tracks'
+      title: "Get Started in Minutes",
+      description:
+        "Choose your learning track and begin your journey into privacy-preserving analytics.",
+      action: "Choose Your Track",
+      href: "/tracks",
     },
     {
       icon: BookOpen,
-      title: 'Learn the Basics',
-      description: 'Master fundamental concepts like differential privacy, SMPC, and ZK proofs.',
-      action: 'Start Learning',
-      href: '/docs/beginner'
+      title: "Learn the Basics",
+      description:
+        "Master fundamental concepts like differential privacy, SMPC, and ZK proofs.",
+      action: "Start Learning",
+      href: "/docs/beginner",
     },
     {
       icon: Code,
-      title: 'Try PQL',
-      description: 'Write your first Privacy Query Language queries and see results instantly.',
-      action: 'Try Examples',
-      href: '/docs/pql-examples'
+      title: "Try PQL",
+      description:
+        "Write your first Privacy Query Language queries and see results instantly.",
+      action: "Try Examples",
+      href: "/docs/pql-examples",
     },
     {
       icon: Users,
-      title: 'Join the Community',
-      description: 'Connect with other developers and privacy experts in our community.',
-      action: 'Join Discord',
-      href: '/community'
-    }
-  ]
+      title: "Join the Community",
+      description:
+        "Connect with other developers and privacy experts in our community.",
+      action: "Join Discord",
+      href: "/community",
+    },
+  ];
 
   return (
     <motion.div
@@ -45,8 +49,9 @@ export function QuickStart() {
         Quick Start Guide
       </h2>
       <p className="text-gray-600 text-center mb-8 max-w-2xl mx-auto">
-        Get up and running with Stellar Privacy Analytics in just a few simple steps. 
-        Whether you're a beginner or an experienced developer, we have a path for you.
+        Get up and running with Stellar Privacy Analytics in just a few simple
+        steps. Whether you&apos;re a beginner or an experienced developer, we have a
+        path for you.
       </p>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -75,8 +80,18 @@ export function QuickStart() {
                   className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center"
                 >
                   {step.action}
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg
+                    className="w-4 h-4 ml-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </motion.button>
               </Link>
@@ -97,5 +112,5 @@ export function QuickStart() {
         </Link>
       </div>
     </motion.div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { X, Search, CheckCircle, AlertTriangle, ExternalLink, Shield } from 'lucide-react';
+import { X, Search, CheckCircle, AlertTriangle, Shield } from 'lucide-react';
 import { certificationService, Certification } from '../../services/certificationService';
 
 const PublicVerificationPortal: React.FC = () => {
@@ -63,9 +63,7 @@ const PublicVerificationPortal: React.FC = () => {
               <Shield className="w-6 h-6 text-blue-600" />
               Public Verification Portal
             </h2>
-            <p className="text-gray-600 mt-1">
-              Verify the authenticity of privacy certifications
-            </p>
+            <p className="text-gray-600 mt-1">Verify the authenticity of privacy certifications</p>
           </div>
           <button
             onClick={() => window.history.back()}
@@ -136,7 +134,9 @@ const PublicVerificationPortal: React.FC = () => {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center">
                 <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                <span className="text-green-800 font-medium">Certification Verified Successfully</span>
+                <span className="text-green-800 font-medium">
+                  Certification Verified Successfully
+                </span>
               </div>
             </div>
 
@@ -153,7 +153,9 @@ const PublicVerificationPortal: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(certification.status)}`}>
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(certification.status)}`}
+                  >
                     {certification.status}
                   </span>
                 </div>
@@ -185,8 +187,9 @@ const PublicVerificationPortal: React.FC = () => {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <h3 className="font-medium text-yellow-900 mb-2">Important Notice</h3>
               <p className="text-sm text-yellow-800">
-                This verification confirms the authenticity of the certification at the time of verification. 
-                For the most current status, please contact the issuing organization directly.
+                This verification confirms the authenticity of the certification at the time of
+                verification. For the most current status, please contact the issuing organization
+                directly.
               </p>
             </div>
 

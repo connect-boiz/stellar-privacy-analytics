@@ -68,7 +68,7 @@ const TooltipContent = React.forwardRef<
       info: 'bg-blue-600 text-white border-blue-500',
       warning: 'bg-yellow-600 text-white border-yellow-500',
       error: 'bg-red-600 text-white border-red-500',
-      success: 'bg-green-600 text-white border-green-500'
+      success: 'bg-green-600 text-white border-green-500',
     };
 
     return (
@@ -122,7 +122,7 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       variant = 'default',
       persistOnClick = true,
       className,
-      arrowClassName,
+      _arrowClassName,
       ...props
     },
     ref
@@ -135,34 +135,40 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       const checkTouch = () => {
         setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0);
       };
-      
+
       checkTouch();
       window.addEventListener('resize', checkTouch);
       return () => window.removeEventListener('resize', checkTouch);
     }, []);
 
-    const handleOpenChange = useCallback((open: boolean) => {
-      if (disabled) return;
-      
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+    const handleOpenChange = useCallback(
+      (open: boolean) => {
+        if (disabled) return;
 
-      if (open) {
-        setIsOpen(true);
-      } else {
-        timeoutRef.current = setTimeout(() => {
-          setIsOpen(false);
-        }, hideDelay);
-      }
-    }, [disabled, hideDelay]);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
 
-    const handleClick = useCallback((event: React.MouseEvent) => {
-      if (isTouch && persistOnClick) {
-        event.preventDefault();
-        handleOpenChange(!isOpen);
-      }
-    }, [isTouch, persistOnClick, isOpen, handleOpenChange]);
+        if (open) {
+          setIsOpen(true);
+        } else {
+          timeoutRef.current = setTimeout(() => {
+            setIsOpen(false);
+          }, hideDelay);
+        }
+      },
+      [disabled, hideDelay]
+    );
+
+    const handleClick = useCallback(
+      (event: React.MouseEvent) => {
+        if (isTouch && persistOnClick) {
+          event.preventDefault();
+          handleOpenChange(!isOpen);
+        }
+      },
+      [isTouch, persistOnClick, isOpen, handleOpenChange]
+    );
 
     if (disabled) {
       return <>{children}</>;

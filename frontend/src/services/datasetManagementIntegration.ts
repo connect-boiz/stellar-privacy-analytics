@@ -4,15 +4,15 @@
 
 import {
   DatasetMetadata,
-  PrivacyMetadata,
-  QualityMetadata,
-  UsageMetadata,
-  LineageMetadata,
-  ComplianceMetadata,
-  ProcessingMetadata,
-  LocationMetadata,
-  AccessMetadata,
-  SchemaMetadata
+  _PrivacyMetadata,
+  _QualityMetadata,
+  _UsageMetadata,
+  _LineageMetadata,
+  _ComplianceMetadata,
+  _ProcessingMetadata,
+  _LocationMetadata,
+  _AccessMetadata,
+  _SchemaMetadata,
 } from '../types/dataCatalog';
 
 export interface DatasetManagementConfig {
@@ -63,7 +63,13 @@ export interface EndpointCredentials {
 export interface ExternalDatasetSystem {
   id: string;
   name: string;
-  type: 'data_catalog' | 'data_warehouse' | 'data_lake' | 'data_marketplace' | 'ml_platform' | 'analytics_platform';
+  type:
+    | 'data_catalog'
+    | 'data_warehouse'
+    | 'data_lake'
+    | 'data_marketplace'
+    | 'ml_platform'
+    | 'analytics_platform';
   version: string;
   capabilities: SystemCapability[];
   endpoint: IntegrationEndpoint;
@@ -74,7 +80,15 @@ export interface ExternalDatasetSystem {
 }
 
 export interface SystemCapability {
-  type: 'metadata_extraction' | 'data_access' | 'lineage_tracking' | 'quality_assessment' | 'access_control' | 'versioning' | 'search' | 'custom';
+  type:
+    | 'metadata_extraction'
+    | 'data_access'
+    | 'lineage_tracking'
+    | 'quality_assessment'
+    | 'access_control'
+    | 'versioning'
+    | 'search'
+    | 'custom';
   supported: boolean;
   parameters: Record<string, any>;
 }
@@ -116,7 +130,16 @@ export interface TokenRefreshConfig {
 
 export interface DatasetOperation {
   id: string;
-  type: 'create' | 'update' | 'delete' | 'archive' | 'restore' | 'sync' | 'validate' | 'backup' | 'custom';
+  type:
+    | 'create'
+    | 'update'
+    | 'delete'
+    | 'archive'
+    | 'restore'
+    | 'sync'
+    | 'validate'
+    | 'backup'
+    | 'custom';
   datasetId: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   startedAt?: number;
@@ -161,7 +184,13 @@ export interface DatasetVersion {
 }
 
 export interface VersionChange {
-  type: 'field_added' | 'field_removed' | 'field_modified' | 'schema_changed' | 'metadata_updated' | 'custom';
+  type:
+    | 'field_added'
+    | 'field_removed'
+    | 'field_modified'
+    | 'schema_changed'
+    | 'metadata_updated'
+    | 'custom';
   field?: string;
   oldValue?: any;
   newValue?: any;
@@ -253,14 +282,14 @@ export class DatasetManagementIntegration {
             autoArchive: true,
             autoDelete: false,
             complianceRetention: {
-              'personal_data': 2555,
-              'financial_data': 3650,
-              'health_data': 3650,
-              'public_data': 1825
-            }
+              personal_data: 2555,
+              financial_data: 3650,
+              health_data: 3650,
+              public_data: 1825,
+            },
           },
           integrationEndpoints: [],
-          externalSystems: []
+          externalSystems: [],
         };
       }
       DatasetManagementIntegration.instance = new DatasetManagementIntegration(config);
@@ -269,7 +298,7 @@ export class DatasetManagementIntegration {
   }
 
   private initializeExternalSystems(): void {
-    this.config.externalSystems.forEach(system => {
+    this.config.externalSystems.forEach((system) => {
       this.externalSystems.set(system.id, system);
     });
   }
@@ -277,9 +306,12 @@ export class DatasetManagementIntegration {
   private startPeriodicSync(): void {
     if (!this.config.autoSyncEnabled) return;
 
-    setInterval(() => {
-      this.performScheduledSync();
-    }, this.config.syncInterval * 60 * 1000);
+    setInterval(
+      () => {
+        this.performScheduledSync();
+      },
+      this.config.syncInterval * 60 * 1000
+    );
   }
 
   // Dataset management operations
@@ -296,7 +328,7 @@ export class DatasetManagementIntegration {
       validate: options?.validate ?? this.config.validationEnabled,
       backup: options?.backup ?? this.config.backupEnabled,
       version: options?.version,
-      approval: options?.approval ?? this.config.approvalRequired
+      approval: options?.approval ?? this.config.approvalRequired,
     });
 
     const operation = this.operations.get(operationId)!;
@@ -326,7 +358,10 @@ export class DatasetManagementIntegration {
 
       // Create initial version if versioning is enabled
       if (this.config.versionControlEnabled) {
-        const version = await this.createDatasetVersion(metadata, operation.parameters.version || '1.0.0');
+        const version = await this.createDatasetVersion(
+          metadata,
+          operation.parameters.version || '1.0.0'
+        );
         this.addOperationLog(operationId, 'info', `Version ${version.version} created`);
       }
 
@@ -347,11 +382,10 @@ export class DatasetManagementIntegration {
         message: 'Dataset created successfully',
         details: { datasetId: metadata.id },
         affectedRecords: 1,
-        warnings: []
+        warnings: [],
       };
 
       return operation;
-
     } catch (error) {
       operation.status = 'failed';
       operation.error = error.toString();
@@ -361,7 +395,7 @@ export class DatasetManagementIntegration {
         message: 'Dataset creation failed',
         details: { error: error.toString() },
         affectedRecords: 0,
-        warnings: []
+        warnings: [],
       };
       throw error;
     }
@@ -383,7 +417,7 @@ export class DatasetManagementIntegration {
       backup: options?.backup ?? this.config.backupEnabled,
       version: options?.version,
       approval: options?.approval ?? this.config.approvalRequired,
-      createVersion: options?.createVersion ?? this.config.versionControlEnabled
+      createVersion: options?.createVersion ?? this.config.versionControlEnabled,
     });
 
     const operation = this.operations.get(operationId)!;
@@ -406,7 +440,10 @@ export class DatasetManagementIntegration {
 
       // Check approval requirements
       if (operation.parameters.approval) {
-        const approvalResult = await this.requestApproval(operationId, 'update', { currentMetadata, updates });
+        const approvalResult = await this.requestApproval(operationId, 'update', {
+          currentMetadata,
+          updates,
+        });
         if (!approvalResult.approved) {
           throw new Error(`Approval required: ${approvalResult.reason}`);
         }
@@ -440,11 +477,10 @@ export class DatasetManagementIntegration {
         message: 'Dataset updated successfully',
         details: { datasetId, updatedFields: Object.keys(updates) },
         affectedRecords: 1,
-        warnings: []
+        warnings: [],
       };
 
       return operation;
-
     } catch (error) {
       operation.status = 'failed';
       operation.error = error.toString();
@@ -454,7 +490,7 @@ export class DatasetManagementIntegration {
         message: 'Dataset update failed',
         details: { error: error.toString() },
         affectedRecords: 0,
-        warnings: []
+        warnings: [],
       };
       throw error;
     }
@@ -473,7 +509,7 @@ export class DatasetManagementIntegration {
       backup: options?.backup ?? this.config.backupEnabled,
       archive: options?.archive ?? true,
       approval: options?.approval ?? this.config.approvalRequired,
-      force: options?.force ?? false
+      force: options?.force ?? false,
     });
 
     const operation = this.operations.get(operationId)!;
@@ -527,11 +563,10 @@ export class DatasetManagementIntegration {
         message: 'Dataset deleted successfully',
         details: { datasetId },
         affectedRecords: 1,
-        warnings: []
+        warnings: [],
       };
 
       return operation;
-
     } catch (error) {
       operation.status = 'failed';
       operation.error = error.toString();
@@ -541,7 +576,7 @@ export class DatasetManagementIntegration {
         message: 'Dataset deletion failed',
         details: { error: error.toString() },
         affectedRecords: 0,
-        warnings: []
+        warnings: [],
       };
       throw error;
     }
@@ -569,7 +604,7 @@ export class DatasetManagementIntegration {
       recordsDeleted: 0,
       errors: [],
       warnings: [],
-      success: false
+      success: false,
     };
 
     try {
@@ -580,9 +615,9 @@ export class DatasetManagementIntegration {
       }
 
       // Determine target system
-      const targetSystem = options?.systemId ? 
-        this.externalSystems.get(options.systemId) :
-        this.getDefaultSyncSystem(metadata);
+      const targetSystem = options?.systemId
+        ? this.externalSystems.get(options.systemId)
+        : this.getDefaultSyncSystem(metadata);
 
       if (!targetSystem) {
         throw new Error('No suitable sync system found');
@@ -605,7 +640,6 @@ export class DatasetManagementIntegration {
       this.syncResults.set(datasetId, syncHistory);
 
       return result;
-
     } catch (error) {
       result.endTime = Date.now();
       result.duration = result.endTime - result.startTime;
@@ -614,7 +648,7 @@ export class DatasetManagementIntegration {
         error: error.toString(),
         severity: 'critical',
         timestamp: Date.now(),
-        resolved: false
+        resolved: false,
       });
       throw error;
     }
@@ -626,7 +660,7 @@ export class DatasetManagementIntegration {
     version: string
   ): Promise<DatasetVersion> {
     const versionId = `version_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const datasetVersion: DatasetVersion = {
       id: versionId,
       datasetId: metadata.id,
@@ -640,7 +674,7 @@ export class DatasetManagementIntegration {
       tags: [],
       size: this.calculateDatasetSize(metadata),
       checksum: this.calculateChecksum(metadata),
-      isActive: true
+      isActive: true,
     };
 
     // Store version
@@ -667,17 +701,17 @@ export class DatasetManagementIntegration {
       operation.startedAt = Date.now();
 
       const versions = this.versions.get(datasetId) || [];
-      const targetVersion = versions.find(v => v.id === versionId);
-      
+      const targetVersion = versions.find((v) => v.id === versionId);
+
       if (!targetVersion) {
         throw new Error('Version not found');
       }
 
       // Restore version metadata
       await this.updateDatasetInExternalSystems(datasetId, targetVersion.metadata);
-      
+
       // Update active version
-      versions.forEach(v => v.isActive = false);
+      versions.forEach((v) => (v.isActive = false));
       targetVersion.isActive = true;
 
       operation.status = 'completed';
@@ -688,11 +722,10 @@ export class DatasetManagementIntegration {
         message: `Restored to version ${targetVersion.version}`,
         details: { versionId, version: targetVersion.version },
         affectedRecords: 1,
-        warnings: []
+        warnings: [],
       };
 
       return operation;
-
     } catch (error) {
       operation.status = 'failed';
       operation.error = error.toString();
@@ -702,16 +735,19 @@ export class DatasetManagementIntegration {
         message: 'Version restore failed',
         details: { error: error.toString() },
         affectedRecords: 0,
-        warnings: []
+        warnings: [],
       };
       throw error;
     }
   }
 
   // Backup management
-  public async createDatasetBackup(datasetId: string, type: 'full' | 'incremental' = 'full'): Promise<DatasetBackup> {
+  public async createDatasetBackup(
+    datasetId: string,
+    type: 'full' | 'incremental' = 'full'
+  ): Promise<DatasetBackup> {
     const backupId = `backup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const metadata = await this.getDatasetMetadata(datasetId);
     if (!metadata) {
       throw new Error('Dataset not found');
@@ -727,7 +763,7 @@ export class DatasetManagementIntegration {
       encrypted: true,
       createdAt: Date.now(),
       checksum: '',
-      status: 'creating'
+      status: 'creating',
     };
 
     // Store backup
@@ -756,8 +792,8 @@ export class DatasetManagementIntegration {
       operation.startedAt = Date.now();
 
       const backups = this.backups.get(datasetId) || [];
-      const targetBackup = backups.find(b => b.id === backupId);
-      
+      const targetBackup = backups.find((b) => b.id === backupId);
+
       if (!targetBackup) {
         throw new Error('Backup not found');
       }
@@ -777,11 +813,10 @@ export class DatasetManagementIntegration {
         message: 'Dataset restored from backup',
         details: { backupId, backupType: targetBackup.type },
         affectedRecords: 1,
-        warnings: []
+        warnings: [],
       };
 
       return operation;
-
     } catch (error) {
       operation.status = 'failed';
       operation.error = error.toString();
@@ -791,7 +826,7 @@ export class DatasetManagementIntegration {
         message: 'Backup restore failed',
         details: { error: error.toString() },
         affectedRecords: 0,
-        warnings: []
+        warnings: [],
       };
       throw error;
     }
@@ -804,7 +839,7 @@ export class DatasetManagementIntegration {
     reason: string
   ): Promise<DatasetArchive> {
     const archiveId = `archive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const archive: DatasetArchive = {
       id: archiveId,
       datasetId,
@@ -816,7 +851,7 @@ export class DatasetManagementIntegration {
       metadata: { ...metadata },
       size: this.calculateDatasetSize(metadata),
       compressed: true,
-      encrypted: true
+      encrypted: true,
     };
 
     // Store archive
@@ -838,7 +873,7 @@ export class DatasetManagementIntegration {
       // Find archive
       let targetArchive: DatasetArchive | undefined;
       for (const archives of this.archives.values()) {
-        const found = archives.find(a => a.id === archiveId);
+        const found = archives.find((a) => a.id === archiveId);
         if (found) {
           targetArchive = found;
           break;
@@ -860,11 +895,10 @@ export class DatasetManagementIntegration {
         message: 'Dataset restored from archive',
         details: { archiveId, datasetId: targetArchive.datasetId },
         affectedRecords: 1,
-        warnings: []
+        warnings: [],
       };
 
       return operation;
-
     } catch (error) {
       operation.status = 'failed';
       operation.error = error.toString();
@@ -874,7 +908,7 @@ export class DatasetManagementIntegration {
         message: 'Archive restore failed',
         details: { error: error.toString() },
         affectedRecords: 0,
-        warnings: []
+        warnings: [],
       };
       throw error;
     }
@@ -885,7 +919,7 @@ export class DatasetManagementIntegration {
     try {
       // Test connection
       await this.testSystemConnection(system);
-      
+
       this.externalSystems.set(system.id, system);
       return true;
     } catch (error) {
@@ -901,7 +935,7 @@ export class DatasetManagementIntegration {
     try {
       // Cleanup system data
       await this.cleanupSystemData(systemId);
-      
+
       this.externalSystems.delete(systemId);
       return true;
     } catch (error) {
@@ -926,7 +960,7 @@ export class DatasetManagementIntegration {
     const results: DatasetSyncResult[] = [];
 
     // Get datasets to sync
-    const datasets = options?.datasets || await this.getDatasetsForSystem(systemId);
+    const datasets = options?.datasets || (await this.getDatasetsForSystem(systemId));
 
     for (const datasetId of datasets) {
       try {
@@ -945,9 +979,13 @@ export class DatasetManagementIntegration {
   }
 
   // Private helper methods
-  private createOperation(type: string, datasetId: string, parameters: Record<string, any>): string {
+  private createOperation(
+    type: string,
+    datasetId: string,
+    parameters: Record<string, any>
+  ): string {
     const operationId = `op_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const operation: DatasetOperation = {
       id: operationId,
       type: type as any,
@@ -955,20 +993,24 @@ export class DatasetManagementIntegration {
       status: 'pending',
       parameters,
       progress: 0,
-      logs: []
+      logs: [],
     };
 
     this.operations.set(operationId, operation);
     return operationId;
   }
 
-  private addOperationLog(operationId: string, level: 'debug' | 'info' | 'warn' | 'error', message: string): void {
+  private addOperationLog(
+    operationId: string,
+    level: 'debug' | 'info' | 'warn' | 'error',
+    message: string
+  ): void {
     const operation = this.operations.get(operationId);
     if (operation) {
       operation.logs.push({
         timestamp: Date.now(),
         level,
-        message
+        message,
       });
     }
   }
@@ -993,9 +1035,9 @@ export class DatasetManagementIntegration {
   }
 
   private async requestApproval(
-    operationId: string,
-    operationType: string,
-    data: any
+    _operationId: string,
+    _operationType: string,
+    _data: any
   ): Promise<{ approved: boolean; reason?: string }> {
     // Simplified approval logic
     // In production would integrate with approval workflow system
@@ -1005,7 +1047,7 @@ export class DatasetManagementIntegration {
   private async createDatasetInExternalSystems(metadata: DatasetMetadata): Promise<void> {
     // Create dataset in all configured external systems
     for (const system of this.externalSystems.values()) {
-      if (system.enabled && system.capabilities.some(c => c.type === 'metadata_extraction')) {
+      if (system.enabled && system.capabilities.some((c) => c.type === 'metadata_extraction')) {
         await this.createDatasetInSystem(system, metadata);
       }
     }
@@ -1017,7 +1059,7 @@ export class DatasetManagementIntegration {
   ): Promise<void> {
     // Update dataset in all configured external systems
     for (const system of this.externalSystems.values()) {
-      if (system.enabled && system.capabilities.some(c => c.type === 'metadata_extraction')) {
+      if (system.enabled && system.capabilities.some((c) => c.type === 'metadata_extraction')) {
         await this.updateDatasetInSystem(system, datasetId, updates);
       }
     }
@@ -1033,57 +1075,57 @@ export class DatasetManagementIntegration {
   }
 
   private async createDatasetInSystem(
-    system: ExternalDatasetSystem,
-    metadata: DatasetMetadata
+    _system: ExternalDatasetSystem,
+    _metadata: DatasetMetadata
   ): Promise<void> {
     // System-specific implementation
-    console.log(`Creating dataset ${metadata.id} in system ${system.name}`);
+    // Creating dataset ${metadata.id} in system ${system.name}
   }
 
   private async updateDatasetInSystem(
-    system: ExternalDatasetSystem,
-    datasetId: string,
-    updates: Partial<DatasetMetadata>
+    _system: ExternalDatasetSystem,
+    _datasetId: string,
+    _updates: Partial<DatasetMetadata>
   ): Promise<void> {
     // System-specific implementation
-    console.log(`Updating dataset ${datasetId} in system ${system.name}`);
+    // Updating dataset ${datasetId} in system ${system.name}
   }
 
   private async deleteDatasetFromSystem(
-    system: ExternalDatasetSystem,
-    datasetId: string
+    _system: ExternalDatasetSystem,
+    _datasetId: string
   ): Promise<void> {
     // System-specific implementation
-    console.log(`Deleting dataset ${datasetId} from system ${system.name}`);
+    // Deleting dataset ${datasetId} from system ${system.name}
   }
 
-  private async testSystemConnection(system: ExternalDatasetSystem): Promise<void> {
+  private async testSystemConnection(_system: ExternalDatasetSystem): Promise<void> {
     // Test connection to external system
-    console.log(`Testing connection to system ${system.name}`);
+    // Testing connection to system ${system.name}
   }
 
-  private async cleanupSystemData(systemId: string): Promise<void> {
+  private async cleanupSystemData(_systemId: string): Promise<void> {
     // Cleanup data related to external system
-    console.log(`Cleaning up data for system ${systemId}`);
+    // Cleaning up data for system ${systemId}
   }
 
-  private async getDatasetMetadata(datasetId: string): Promise<DatasetMetadata | null> {
+  private async getDatasetMetadata(_datasetId: string): Promise<DatasetMetadata | null> {
     // Get metadata from primary storage or external systems
     // Simplified implementation
     return null;
   }
 
-  private async getDatasetsForSystem(systemId: string): Promise<string[]> {
+  private async getDatasetsForSystem(_systemId: string): Promise<string[]> {
     // Get datasets that are synced with the specified system
     // Simplified implementation
     return [];
   }
 
   private async applyRetentionPolicy(metadata: DatasetMetadata): Promise<void> {
-    const retentionPeriod = this.calculateRetentionPeriod(metadata);
-    
+    const _retentionPeriod = this.calculateRetentionPeriod(metadata);
+
     // Schedule archival and deletion based on retention policy
-    console.log(`Applying retention policy for dataset ${metadata.id}: ${retentionPeriod} days`);
+    // Applying retention policy for dataset ${metadata.id}: ${retentionPeriod} days
   }
 
   private calculateRetentionPeriod(metadata: DatasetMetadata): number {
@@ -1105,11 +1147,13 @@ export class DatasetManagementIntegration {
   private detectVersionChanges(metadata: DatasetMetadata, version: string): VersionChange[] {
     // Detect changes between current and previous version
     // Simplified implementation
-    return [{
-      type: 'metadata_updated',
-      description: `Updated to version ${version}`,
-      impact: 'non_breaking'
-    }];
+    return [
+      {
+        type: 'metadata_updated',
+        description: `Updated to version ${version}`,
+        impact: 'non_breaking',
+      },
+    ];
   }
 
   private generateNextVersion(datasetId: string): string {
@@ -1118,20 +1162,20 @@ export class DatasetManagementIntegration {
 
     const latestVersion = versions[versions.length - 1];
     const parts = latestVersion.version.split('.').map(Number);
-    
+
     // Increment patch version
     parts[2] = parts[2] + 1;
-    
+
     return parts.join('.');
   }
 
-  private calculateDatasetSize(metadata: DatasetMetadata): number {
+  private calculateDatasetSize(_metadata: DatasetMetadata): number {
     // Calculate dataset size based on schema and estimated record count
     // Simplified implementation
     return 1000000; // 1MB placeholder
   }
 
-  private calculateChecksum(metadata: DatasetMetadata): string {
+  private calculateChecksum(_metadata: DatasetMetadata): string {
     // Generate checksum for metadata
     // Simplified implementation
     return `checksum_${Date.now()}`;
@@ -1141,7 +1185,7 @@ export class DatasetManagementIntegration {
     return `/backups/${datasetId}/${backupId}`;
   }
 
-  private generateBackupChecksum(backup: DatasetBackup): string {
+  private generateBackupChecksum(_backup: DatasetBackup): string {
     return `backup_checksum_${Date.now()}`;
   }
 
@@ -1149,17 +1193,17 @@ export class DatasetManagementIntegration {
     return `/archives/${datasetId}/${archiveId}`;
   }
 
-  private async restoreFromBackup(backup: DatasetBackup): Promise<void> {
+  private async restoreFromBackup(_backup: DatasetBackup): Promise<void> {
     // Restore dataset from backup
-    console.log(`Restoring dataset from backup ${backup.id}`);
+    // Restoring dataset from backup ${backup.id}
   }
 
-  private async restoreDatasetFromArchive(archive: DatasetArchive): Promise<void> {
+  private async restoreDatasetFromArchive(_archive: DatasetArchive): Promise<void> {
     // Restore dataset from archive
-    console.log(`Restoring dataset from archive ${archive.id}`);
+    // Restoring dataset from archive ${archive.id}
   }
 
-  private getDefaultSyncSystem(metadata: DatasetMetadata): ExternalDatasetSystem | undefined {
+  private getDefaultSyncSystem(_metadata: DatasetMetadata): ExternalDatasetSystem | undefined {
     // Find the most suitable system for syncing this dataset
     for (const system of this.externalSystems.values()) {
       if (system.enabled) {
@@ -1173,11 +1217,11 @@ export class DatasetManagementIntegration {
     metadata: DatasetMetadata,
     system: ExternalDatasetSystem,
     result: DatasetSyncResult,
-    options?: any
+    _options?: any
   ): Promise<void> {
     // Perform full synchronization
-    console.log(`Performing full sync for dataset ${metadata.id} with system ${system.name}`);
-    
+    // Full sync for dataset ${metadata.id} with system ${system.name}
+
     // Simulate sync processing
     result.recordsProcessed = 1000;
     result.recordsUpdated = 500;
@@ -1189,11 +1233,11 @@ export class DatasetManagementIntegration {
     metadata: DatasetMetadata,
     system: ExternalDatasetSystem,
     result: DatasetSyncResult,
-    options?: any
+    _options?: any
   ): Promise<void> {
     // Perform incremental synchronization
-    console.log(`Performing incremental sync for dataset ${metadata.id} with system ${system.name}`);
-    
+    // Incremental sync for dataset ${metadata.id} with system ${system.name}
+
     // Simulate sync processing
     result.recordsProcessed = 100;
     result.recordsUpdated = 30;
@@ -1211,8 +1255,7 @@ export class DatasetManagementIntegration {
 
   private async performScheduledSync(): Promise<void> {
     // Perform scheduled synchronization for all datasets
-    console.log('Performing scheduled synchronization');
-    
+    // Performing scheduled synchronization
     // Get all datasets that need syncing
     // This would integrate with the metadata management service
   }
@@ -1222,24 +1265,20 @@ export class DatasetManagementIntegration {
     return this.operations.get(operationId);
   }
 
-  public getOperations(
-    datasetId?: string,
-    type?: string,
-    status?: string
-  ): DatasetOperation[] {
+  public getOperations(datasetId?: string, type?: string, status?: string): DatasetOperation[] {
     const operations = Array.from(this.operations.values());
-    
+
     let filtered = operations;
     if (datasetId) {
-      filtered = filtered.filter(op => op.datasetId === datasetId);
+      filtered = filtered.filter((op) => op.datasetId === datasetId);
     }
     if (type) {
-      filtered = filtered.filter(op => op.type === type);
+      filtered = filtered.filter((op) => op.type === type);
     }
     if (status) {
-      filtered = filtered.filter(op => op.status === status);
+      filtered = filtered.filter((op) => op.status === status);
     }
-    
+
     return filtered.sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
   }
 

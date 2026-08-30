@@ -35,19 +35,19 @@ class OfflineCache {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
     });
   }
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
-    
+
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return entry.data;
   }
 
@@ -69,7 +69,7 @@ class ApiClient {
     maxRetries: 3,
     baseDelay: 1000,
     maxDelay: 10000,
-    backoffFactor: 2
+    backoffFactor: 2,
   };
   private offlineCache = new OfflineCache();
   private isOnline = navigator.onLine;
@@ -99,10 +99,10 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         // Add request metadata for offline handling
         config.metadata = { startTime: Date.now() };
-        
+
         return config;
       },
       (error) => {
@@ -123,22 +123,22 @@ class ApiClient {
       },
       async (error: AxiosError) => {
         const networkError = this.handleNetworkError(error);
-        
+
         // If offline and it's a GET request, try cache
         if (!this.isOnline && error.config?.method?.toLowerCase() === 'get') {
           return this.handleOfflineRequest(error.config);
         }
-        
+
         // Queue request if offline
         if (!this.isOnline) {
           return this.queueRequest(() => this.instance(error.config!));
         }
-        
+
         // Handle retry for retryable errors
         if (networkError.retryable) {
           return this.handleRetry(error.config, networkError);
         }
-        
+
         return Promise.reject(networkError);
       }
     );
@@ -148,10 +148,10 @@ class ApiClient {
     const updateNetworkStatus = () => {
       const wasOnline = this.isOnline;
       this.isOnline = navigator.onLine;
-      
+
       if (wasOnline !== this.isOnline) {
         this.notifyNetworkStatusChange(this.isOnline);
-        
+
         if (this.isOnline) {
           this.processRequestQueue();
           toast.success('Connection restored');
@@ -166,7 +166,7 @@ class ApiClient {
   }
 
   private notifyNetworkStatusChange(online: boolean): void {
-    this.networkStatusListeners.forEach(listener => listener(online));
+    this.networkStatusListeners.forEach((listener) => listener(online));
   }
 
   private createNetworkError(error: any, type: ErrorType): NetworkError {
@@ -191,7 +191,7 @@ class ApiClient {
 
   private handleNetworkError(error: AxiosError): NetworkError {
     let errorType: ErrorType;
-    
+
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
       errorType = 'timeout';
     } else if (!error.response) {
@@ -204,7 +204,7 @@ class ApiClient {
 
     const networkError = this.createNetworkError(error, errorType);
     this.showUserFriendlyError(networkError);
-    
+
     return networkError;
   }
 
@@ -214,7 +214,7 @@ class ApiClient {
       server: 'Server is temporarily unavailable. Please try again later.',
       timeout: 'Request timed out. Please check your connection and try again.',
       cors: 'Connection blocked by security policy. Please contact support.',
-      client: 'Request failed. Please try again.'
+      client: 'Request failed. Please try again.',
     };
 
     const message = errorMessages[error.type] || 'An unexpected error occurred.';
@@ -228,7 +228,7 @@ class ApiClient {
   private handleOfflineRequest(config: AxiosRequestConfig): Promise<AxiosResponse> {
     const cacheKey = this.getCacheKey(config);
     const cachedData = this.offlineCache.get(cacheKey);
-    
+
     if (cachedData) {
       toast.success('Showing cached data (offline mode)', { duration: 3000 });
       return Promise.resolve({
@@ -239,7 +239,7 @@ class ApiClient {
         config,
       } as AxiosResponse);
     }
-    
+
     const error = this.createNetworkError(new Error('No cached data available'), 'network');
     toast.error('No cached data available for this request');
     return Promise.reject(error);
@@ -264,24 +264,27 @@ class ApiClient {
     }
 
     this.isProcessingQueue = true;
-    
+
     while (this.requestQueue.length > 0) {
       const request = this.requestQueue.shift();
       if (request) {
         try {
           await request();
         } catch (error) {
-          console.error('Failed to process queued request:', error);
+          // Queued request silently failed; already reported upstream
         }
       }
     }
-    
+
     this.isProcessingQueue = false;
   }
 
-  private async handleRetry(config: AxiosRequestConfig | undefined, error: NetworkError): Promise<any> {
+  private async handleRetry(
+    config: AxiosRequestConfig | undefined,
+    error: NetworkError
+  ): Promise<any> {
     if (!config) return Promise.reject(error);
-    
+
     const retryConfig = config as AxiosRequestConfig & { _retry?: number; _retryCount?: number };
     retryConfig._retry = retryConfig._retry || 0;
     retryConfig._retryCount = retryConfig._retryCount || 0;
@@ -289,15 +292,17 @@ class ApiClient {
     if (retryConfig._retryCount < this.retryConfig.maxRetries) {
       retryConfig._retryCount++;
       const delay = Math.min(
-        this.retryConfig.baseDelay * Math.pow(this.retryConfig.backoffFactor, retryConfig._retryCount - 1),
+        this.retryConfig.baseDelay *
+          Math.pow(this.retryConfig.backoffFactor, retryConfig._retryCount - 1),
         this.retryConfig.maxDelay
       );
-      
-      console.log(`Retrying request (${retryConfig._retryCount}/${this.retryConfig.maxRetries}) in ${delay}ms...`);
-      toast.loading(`Retrying... (${retryConfig._retryCount}/${this.retryConfig.maxRetries})`, { id: 'retry' });
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
+
+      toast.loading(`Retrying... (${retryConfig._retryCount}/${this.retryConfig.maxRetries})`, {
+        id: 'retry',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
       try {
         const result = await this.instance(retryConfig);
         toast.success('Request succeeded after retry', { id: 'retry' });
@@ -314,39 +319,23 @@ class ApiClient {
   }
 
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response = await this.instance.get<T>(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.instance.get<T>(url, config);
+    return response.data;
   }
 
   public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response = await this.instance.post<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.instance.post<T>(url, data, config);
+    return response.data;
   }
 
   public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response = await this.instance.put<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.instance.put<T>(url, data, config);
+    return response.data;
   }
 
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response = await this.instance.delete<T>(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.instance.delete<T>(url, config);
+    return response.data;
   }
 
   // Public methods for network status and cache management
@@ -389,7 +378,11 @@ class ApiClient {
   }
 
   // Fallback method for critical functionality
-  public async getWithFallback<T>(url: string, fallbackData: T, config?: AxiosRequestConfig): Promise<T> {
+  public async getWithFallback<T>(
+    url: string,
+    fallbackData: T,
+    config?: AxiosRequestConfig
+  ): Promise<T> {
     try {
       return await this.get<T>(url, config);
     } catch (error) {

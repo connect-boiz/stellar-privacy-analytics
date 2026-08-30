@@ -35,13 +35,14 @@ export function validateField<T>(
 ): string | null {
   // Required check
   if (rules.required) {
-    const isEmpty = value === undefined || value === null || value === '' ||
+    const isEmpty =
+      value === undefined ||
+      value === null ||
+      value === '' ||
       (Array.isArray(value) && value.length === 0);
-    
+
     if (isEmpty) {
-      return typeof rules.required === 'string' 
-        ? rules.required 
-        : 'This field is required';
+      return typeof rules.required === 'string' ? rules.required : 'This field is required';
     }
   }
 
@@ -54,10 +55,11 @@ export function validateField<T>(
   if (typeof value === 'string') {
     // Min length
     if (rules.minLength !== undefined) {
-      const minLen = typeof rules.minLength === 'number' 
-        ? { value: rules.minLength, message: `Minimum ${rules.minLength} characters required` }
-        : { value: rules.minLength.value, message: rules.minLength.message };
-      
+      const minLen =
+        typeof rules.minLength === 'number'
+          ? { value: rules.minLength, message: `Minimum ${rules.minLength} characters required` }
+          : { value: rules.minLength.value, message: rules.minLength.message };
+
       if (value.length < minLen.value) {
         return minLen.message;
       }
@@ -65,10 +67,11 @@ export function validateField<T>(
 
     // Max length
     if (rules.maxLength !== undefined) {
-      const maxLen = typeof rules.maxLength === 'number'
-        ? { value: rules.maxLength, message: `Maximum ${rules.maxLength} characters allowed` }
-        : { value: rules.maxLength.value, message: rules.maxLength.message };
-      
+      const maxLen =
+        typeof rules.maxLength === 'number'
+          ? { value: rules.maxLength, message: `Maximum ${rules.maxLength} characters allowed` }
+          : { value: rules.maxLength.value, message: rules.maxLength.message };
+
       if (value.length > maxLen.value) {
         return maxLen.message;
       }
@@ -76,10 +79,11 @@ export function validateField<T>(
 
     // Pattern
     if (rules.pattern !== undefined) {
-      const pattern = rules.pattern instanceof RegExp
-        ? { value: rules.pattern, message: 'Invalid format' }
-        : rules.pattern;
-      
+      const pattern =
+        rules.pattern instanceof RegExp
+          ? { value: rules.pattern, message: 'Invalid format' }
+          : rules.pattern;
+
       if (!pattern.value.test(value)) {
         return pattern.message;
       }
@@ -92,10 +96,11 @@ export function validateField<T>(
 
     // Min
     if (rules.min !== undefined) {
-      const minRule = typeof rules.min === 'number'
-        ? { value: rules.min, message: `Minimum value is ${rules.min}` }
-        : rules.min;
-      
+      const minRule =
+        typeof rules.min === 'number'
+          ? { value: rules.min, message: `Minimum value is ${rules.min}` }
+          : rules.min;
+
       if (numValue < minRule.value) {
         return minRule.message;
       }
@@ -103,10 +108,11 @@ export function validateField<T>(
 
     // Max
     if (rules.max !== undefined) {
-      const maxRule = typeof rules.max === 'number'
-        ? { value: rules.max, message: `Maximum value is ${rules.max}` }
-        : rules.max;
-      
+      const maxRule =
+        typeof rules.max === 'number'
+          ? { value: rules.max, message: `Maximum value is ${rules.max}` }
+          : rules.max;
+
       if (numValue > maxRule.value) {
         return maxRule.message;
       }
@@ -142,24 +148,24 @@ export function validateFormData<T extends Record<string, unknown>>(
   }
 ): ValidationError {
   const errors: ValidationError = {};
-  
+
   for (const [field, rules] of Object.entries(schema)) {
     // Skip if only validating specific fields and this isn't one
     if (options?.onlyFields && !options.onlyFields.includes(field)) {
       continue;
     }
-    
+
     // Skip if excluding this field
     if (options?.excludeFields?.includes(field)) {
       continue;
     }
-    
+
     const error = validateField(data[field], rules, data);
     if (error) {
       errors[field] = error;
     }
   }
-  
+
   return errors;
 }
 
@@ -193,9 +199,7 @@ export function createStepValidator<T extends Record<string, unknown>>(
 /**
  * Create form-wide validator
  */
-export function createFormValidator<T extends Record<string, unknown>>(
-  schema: FormSchema
-) {
+export function createFormValidator<T extends Record<string, unknown>>(schema: FormSchema) {
   return (data: T): ValidationError => {
     return validateFormData(data, schema);
   };
@@ -211,7 +215,7 @@ export const patterns = {
   stellarPublicKey: /^G[A-Z0-9]{55}$/,
   stellarSecretKey: /^S[A-Z0-9]{55}$/,
   alphanumeric: /^[a-zA-Z0-9]+$/,
-  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/
+  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/,
 };
 
 /**
@@ -219,59 +223,64 @@ export const patterns = {
  */
 export const rules = {
   required: (message = 'This field is required'): ValidationRule<unknown> => ({
-    required: message
+    required: message,
   }),
 
   email: (message = 'Invalid email address'): ValidationRule<string> => ({
     required: 'Email is required',
-    pattern: { value: patterns.email, message }
+    pattern: { value: patterns.email, message },
   }),
 
   phone: (message = 'Invalid phone number'): ValidationRule<string> => ({
-    pattern: { value: patterns.phone, message }
+    pattern: { value: patterns.phone, message },
   }),
 
-  password: (message = 'Password must be at least 8 characters with uppercase, lowercase, and number'): ValidationRule<string> => ({
+  password: (
+    message = 'Password must be at least 8 characters with uppercase, lowercase, and number'
+  ): ValidationRule<string> => ({
     required: 'Password is required',
     minLength: { value: 8, message },
-    pattern: { value: patterns.password, message }
+    pattern: { value: patterns.password, message },
   }),
 
   stellarPublicKey: (message = 'Invalid Stellar public key'): ValidationRule<string> => ({
     required: 'Public key is required',
-    pattern: { value: patterns.stellarPublicKey, message }
+    pattern: { value: patterns.stellarPublicKey, message },
   }),
 
-  confirmPassword: (passwordField: string, message = 'Passwords do not match'): ValidationRule<string> => ({
+  confirmPassword: (
+    passwordField: string,
+    message = 'Passwords do not match'
+  ): ValidationRule<string> => ({
     required: 'Please confirm your password',
-    validate: (value, formData) => value === formData[passwordField] ? true : message
+    validate: (value, formData) => (value === formData[passwordField] ? true : message),
   }),
 
   minLength: (length: number, message?: string): ValidationRule<string> => ({
-    minLength: { value: length, message: message || `Minimum ${length} characters required` }
+    minLength: { value: length, message: message || `Minimum ${length} characters required` },
   }),
 
   maxLength: (length: number, message?: string): ValidationRule<string> => ({
-    maxLength: { value: length, message: message || `Maximum ${length} characters allowed` }
+    maxLength: { value: length, message: message || `Maximum ${length} characters allowed` },
   }),
 
   min: (value: number, message?: string): ValidationRule<number> => ({
-    min: { value, message: message || `Minimum value is ${value}` }
+    min: { value, message: message || `Minimum value is ${value}` },
   }),
 
   max: (value: number, message?: string): ValidationRule<number> => ({
-    max: { value, message: message || `Maximum value is ${value}` }
+    max: { value, message: message || `Maximum value is ${value}` },
   }),
 
   range: (min: number, max: number, message?: string): ValidationRule<number> => ({
     min: { value: min, message: message || `Minimum value is ${min}` },
-    max: { value: max, message: message || `Maximum value is ${max}` }
+    max: { value: max, message: message || `Maximum value is ${max}` },
   }),
 
   optional: <T>(baseRules: ValidationRule<T>): ValidationRule<T> => ({
     ...baseRules,
-    required: false
-  })
+    required: false,
+  }),
 };
 
 /**
@@ -299,7 +308,7 @@ export function createDebouncedValidator<T extends Record<string, unknown>>(
   delay: number = 300
 ) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (
     data: T,
     callback: (errors: ValidationError) => void,
@@ -308,7 +317,7 @@ export function createDebouncedValidator<T extends Record<string, unknown>>(
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
+
     timeoutId = setTimeout(() => {
       const errors = validateFormData(data, schema, options);
       callback(errors);
@@ -326,5 +335,5 @@ export default {
   patterns,
   rules,
   validateAsync,
-  createDebouncedValidator
+  createDebouncedValidator,
 };

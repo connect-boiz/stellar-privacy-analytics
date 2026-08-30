@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldCheck, Lock, Activity, ArrowLeft, AlertTriangle, Clock, BarChart2 } from 'lucide-react';
+import {
+  ShieldCheck,
+  Lock,
+  Activity,
+  ArrowLeft,
+  AlertTriangle,
+  Clock,
+  BarChart2,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuditTable } from '../components/AuditTable';
 import { motion } from 'framer-motion';
@@ -8,7 +16,12 @@ import { motion } from 'framer-motion';
 const MOCK_EVENTS = Array.from({ length: 40 }, (_, i) => ({
   id: `audit-${1000 - i}`,
   timestamp: new Date(Date.now() - i * 1000 * 60 * 30),
-  action: i % 5 === 0 ? 'data_export_attempt' : i % 3 === 0 ? 'differential_privacy_query' : 'data_access_request',
+  action:
+    i % 5 === 0
+      ? 'data_export_attempt'
+      : i % 3 === 0
+        ? 'differential_privacy_query'
+        : 'data_access_request',
   actor: `user_${String.fromCharCode(97 + (i % 6))}`,
   riskLevel: i % 10 === 0 ? 'critical' : i % 5 === 0 ? 'high' : 'low',
   outcome: i % 7 === 0 ? 'failure' : 'success',
@@ -17,22 +30,40 @@ const MOCK_EVENTS = Array.from({ length: 40 }, (_, i) => ({
 
 // ── Anomaly Detection ─────────────────────────────────────────────────────────
 const AnomalyPanel: React.FC = () => {
-  const anomalies = useMemo(() => MOCK_EVENTS.filter(
-    (e) => e.riskLevel === 'critical' || e.riskLevel === 'high' || e.outcome === 'failure'
-  ), []);
+  const anomalies = useMemo(
+    () =>
+      MOCK_EVENTS.filter(
+        (e) => e.riskLevel === 'critical' || e.riskLevel === 'high' || e.outcome === 'failure'
+      ),
+    []
+  );
 
   const riskBadge = (r: string) =>
-    r === 'critical' ? 'bg-red-100 text-red-700' :
-    r === 'high' ? 'bg-orange-100 text-orange-700' :
-    'bg-yellow-100 text-yellow-700';
+    r === 'critical'
+      ? 'bg-red-100 text-red-700'
+      : r === 'high'
+        ? 'bg-orange-100 text-orange-700'
+        : 'bg-yellow-100 text-yellow-700';
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Critical Events', count: MOCK_EVENTS.filter(e => e.riskLevel === 'critical').length, color: 'text-red-600' },
-          { label: 'High Risk', count: MOCK_EVENTS.filter(e => e.riskLevel === 'high').length, color: 'text-orange-600' },
-          { label: 'Failures', count: MOCK_EVENTS.filter(e => e.outcome === 'failure').length, color: 'text-yellow-600' },
+          {
+            label: 'Critical Events',
+            count: MOCK_EVENTS.filter((e) => e.riskLevel === 'critical').length,
+            color: 'text-red-600',
+          },
+          {
+            label: 'High Risk',
+            count: MOCK_EVENTS.filter((e) => e.riskLevel === 'high').length,
+            color: 'text-orange-600',
+          },
+          {
+            label: 'Failures',
+            count: MOCK_EVENTS.filter((e) => e.outcome === 'failure').length,
+            color: 'text-yellow-600',
+          },
         ].map(({ label, count, color }) => (
           <div key={label} className="bg-white rounded-lg shadow p-4 text-center">
             <p className={`text-2xl font-bold ${color}`}>{count}</p>
@@ -58,8 +89,12 @@ const AnomalyPanel: React.FC = () => {
               <span className="ml-2 text-xs text-gray-400">by {e.actor}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 text-xs rounded font-medium ${riskBadge(e.riskLevel)}`}>{e.riskLevel}</span>
-              {e.outcome === 'failure' && <span className="text-xs text-red-500 font-medium">BLOCKED</span>}
+              <span className={`px-2 py-0.5 text-xs rounded font-medium ${riskBadge(e.riskLevel)}`}>
+                {e.riskLevel}
+              </span>
+              {e.outcome === 'failure' && (
+                <span className="text-xs text-red-500 font-medium">BLOCKED</span>
+              )}
             </div>
           </motion.div>
         ))}
@@ -79,7 +114,9 @@ const RetentionPanel: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-lg shadow p-6 space-y-4">
-        <h3 className="font-semibold text-gray-900 flex items-center gap-2"><Clock className="h-4 w-4 text-blue-500" /> Retention Policy</h3>
+        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+          <Clock className="h-4 w-4 text-blue-500" /> Retention Policy
+        </h3>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -90,18 +127,27 @@ const RetentionPanel: React.FC = () => {
             min={7}
             max={365}
             value={retentionDays}
-            onChange={(e) => { setRetentionDays(Number(e.target.value)); setArchived(false); }}
+            onChange={(e) => {
+              setRetentionDays(Number(e.target.value));
+              setArchived(false);
+            }}
             className="w-full accent-blue-600"
           />
-          <div className="flex justify-between text-xs text-gray-400 mt-1"><span>7 days</span><span>365 days</span></div>
+          <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <span>7 days</span>
+            <span>365 days</span>
+          </div>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-700">
-              <span className="font-bold text-orange-600">{expiredCount}</span> records older than {retentionDays} days
+              <span className="font-bold text-orange-600">{expiredCount}</span> records older than{' '}
+              {retentionDays} days
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">These records are eligible for archival or deletion.</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              These records are eligible for archival or deletion.
+            </p>
           </div>
           <button
             onClick={() => setArchived(true)}
@@ -116,7 +162,10 @@ const RetentionPanel: React.FC = () => {
           {[7, 30, 90, 180, 365].map((d) => (
             <button
               key={d}
-              onClick={() => { setRetentionDays(d); setArchived(false); }}
+              onClick={() => {
+                setRetentionDays(d);
+                setArchived(false);
+              }}
               className={`py-2 rounded-lg border transition-colors ${retentionDays === d ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
             >
               {d < 365 ? `${d}d` : '1yr'}
@@ -137,7 +186,9 @@ const TimelinePanel: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-6"><BarChart2 className="h-4 w-4 text-blue-500" /> Activity Timeline</h3>
+      <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-6">
+        <BarChart2 className="h-4 w-4 text-blue-500" /> Activity Timeline
+      </h3>
       <div className="relative">
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
         <div className="space-y-4">
@@ -149,16 +200,28 @@ const TimelinePanel: React.FC = () => {
               transition={{ delay: i * 0.03 }}
               className="relative pl-10"
             >
-              <div className={`absolute left-2.5 top-1.5 w-3 h-3 rounded-full ${iconColor(e.riskLevel)} ring-2 ring-white`} />
+              <div
+                className={`absolute left-2.5 top-1.5 w-3 h-3 rounded-full ${iconColor(e.riskLevel)} ring-2 ring-white`}
+              />
               <div className="bg-gray-50 rounded-lg px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-800">{e.action.replace(/_/g, ' ')}</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {e.action.replace(/_/g, ' ')}
+                  </span>
                   <span className="text-xs text-gray-400">{e.timestamp.toLocaleTimeString()}</span>
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                   <span>by {e.actor}</span>
-                  {e.epsilonConsumed > 0 && <span className="text-blue-600">ε {e.epsilonConsumed}</span>}
-                  <span className={e.outcome === 'failure' ? 'text-red-500 font-medium' : 'text-green-600'}>{e.outcome}</span>
+                  {e.epsilonConsumed > 0 && (
+                    <span className="text-blue-600">ε {e.epsilonConsumed}</span>
+                  )}
+                  <span
+                    className={
+                      e.outcome === 'failure' ? 'text-red-500 font-medium' : 'text-green-600'
+                    }
+                  >
+                    {e.outcome}
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -203,7 +266,8 @@ const AuditExplorerPage: React.FC = () => {
               </h1>
             </div>
             <p className="text-gray-500 max-w-2xl font-mono text-xs uppercase tracking-tight">
-              CRYPTOGRAPHIC AUDIT TRAIL // REAL-TIME STELLAR LEDGER VERIFICATION // ZERO-KNOWLEDGE PROOF LOGS
+              CRYPTOGRAPHIC AUDIT TRAIL // REAL-TIME STELLAR LEDGER VERIFICATION // ZERO-KNOWLEDGE
+              PROOF LOGS
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -217,7 +281,9 @@ const AuditExplorerPage: React.FC = () => {
             <div className="glass p-4 rounded-xl flex items-center gap-3">
               <Lock className="text-green-500" />
               <div>
-                <div className="text-[10px] uppercase font-bold text-gray-400">Proof Verification</div>
+                <div className="text-[10px] uppercase font-bold text-gray-400">
+                  Proof Verification
+                </div>
                 <div className="text-xl font-bold font-mono tracking-tighter">99.2%</div>
               </div>
             </div>
@@ -257,15 +323,24 @@ const AuditExplorerPage: React.FC = () => {
         <footer className="pt-8 border-t border-gray-200 dark:border-obsidian-800 grid grid-cols-1 md:grid-cols-3 gap-8 opacity-50 text-[10px] font-mono leading-relaxed">
           <div className="space-y-2">
             <span className="text-cyber-blue font-bold">DECENTRALIZED LOGGING:</span>
-            <p>Internal audit records are hashed and anchored to the Stellar network using SHA-256 Merkle trees.</p>
+            <p>
+              Internal audit records are hashed and anchored to the Stellar network using SHA-256
+              Merkle trees.
+            </p>
           </div>
           <div className="space-y-2">
             <span className="text-cyber-blue font-bold">PRIVACY BUDGET ENFORCEMENT:</span>
-            <p>Epsilon (ε) consumption is tracked per query with automatic revocation on threshold breach.</p>
+            <p>
+              Epsilon (ε) consumption is tracked per query with automatic revocation on threshold
+              breach.
+            </p>
           </div>
           <div className="space-y-2">
             <span className="text-cyber-blue font-bold">ZK-PROOF SYSTEM:</span>
-            <p>Zero-Knowledge proofs generated using Bulletproofs, proving compliance without revealing raw data.</p>
+            <p>
+              Zero-Knowledge proofs generated using Bulletproofs, proving compliance without
+              revealing raw data.
+            </p>
           </div>
         </footer>
       </div>

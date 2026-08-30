@@ -1,15 +1,16 @@
-import { HSMService } from './hsmService';
-import { MasterKeyManager } from './masterKeyManager';
-import { AuditService } from './auditService';
-import { KillSwitchService } from './killSwitchService';
-import { HSMConfigManager } from '../config/hsmConfig';
-import { logger } from '../utils/logger';
-import { EventEmitter } from 'events';
+import { HSMService } from "./hsmService";
+import { MasterKeyManager } from "./masterKeyManager";
+import { AuditService } from "./auditService";
+import { KillSwitchService } from "./killSwitchService";
+import { HSMConfigManager } from "../config/hsmConfig";
+import { logger } from "../utils/logger";
+import { EventEmitter } from "events";
 
 export interface HSMIntegrationConfig {
   autoInitializeMasterKey?: boolean;
   enableAutoRecovery?: boolean;
   autoRecoveryDelayMinutes?: number;
+  maxRecoveryAttempts?: number;
   auditRetentionDays?: number;
   killSwitchThresholds?: {
     maxFailedAuth?: number;
@@ -44,7 +45,7 @@ export interface SystemStatus {
     totalActivations: number;
     securityMetrics: any;
   };
-  overall: 'healthy' | 'degraded' | 'critical';
+  overall: "healthy" | "degraded" | "critical";
 }
 
 export class HSMIntegration extends EventEmitter {
@@ -57,20 +58,21 @@ export class HSMIntegration extends EventEmitter {
 
   constructor(config: HSMIntegrationConfig = {}) {
     super();
-    
+
     this.config = {
       autoInitializeMasterKey: true,
-      enableAutoRecovery: false,
-      autoRecoveryDelayMinutes: 30,
+      enableAutoRecovery: true,
+      autoRecoveryDelayMinutes: 5,
+      maxRecoveryAttempts: 5,
       auditRetentionDays: 90,
       killSwitchThresholds: {
         maxFailedAuth: 10,
         maxSuspiciousRequests: 5,
         maxKeyAnomalies: 3,
         maxSystemErrors: 15,
-        metricsWindow: 5
+        metricsWindow: 5,
       },
-      ...config
+      ...config,
     };
 
     this.initializeServices();
@@ -84,10 +86,12 @@ export class HSMIntegration extends EventEmitter {
 
       // Initialize audit service
       this.auditService = new AuditService({
-        logPath: process.env.AUDIT_LOG_PATH || './logs/audit.log',
-        signatureKey: process.env.AUDIT_SIGNATURE_KEY || 'default-signature-key',
+        logPath: process.env.AUDIT_LOG_PATH || "./logs/audit.log",
+        // WS2: dev-only fallback centralised in utils/secrets; production is
+        // blocked by the boot-time secret audit.
+        signatureKey: process.env.AUDIT_SIGNATURE_KEY || undefined,
         immutableStorage: true,
-        batchSize: 100
+        batchSize: 100,
       });
 
       // Initialize master key manager
@@ -101,61 +105,62 @@ export class HSMIntegration extends EventEmitter {
         {
           autoRecoveryEnabled: this.config.enableAutoRecovery,
           autoRecoveryDelay: this.config.autoRecoveryDelayMinutes,
-          thresholds: this.config.killSwitchThresholds
-        }
+          maxRecoveryAttempts: this.config.maxRecoveryAttempts,
+          thresholds: this.config.killSwitchThresholds,
+        },
       );
 
       this.setupEventListeners();
-      logger.info('HSM integration services initialized');
+      logger.info("HSM integration services initialized");
     } catch (error) {
-      logger.error('Failed to initialize HSM integration services:', error);
+      logger.error("Failed to initialize HSM integration services:", error);
       throw error;
     }
   }
 
   private setupEventListeners(): void {
     // Forward HSM events
-    this.hsmService.on('connectionUnhealthy', (data) => {
-      this.emit('hsmConnectionUnhealthy', data);
-      logger.warn('HSM connection unhealthy', data);
+    this.hsmService.on("connectionUnhealthy", (data) => {
+      this.emit("hsmConnectionUnhealthy", data);
+      logger.warn("HSM connection unhealthy", data);
     });
 
-    this.hsmService.on('keyRotated', (data) => {
-      this.emit('keyRotated', data);
-      logger.info('Key rotated', data);
+    this.hsmService.on("keyRotated", (data) => {
+      this.emit("keyRotated", data);
+      logger.info("Key rotated", data);
     });
 
     // Forward master key events
-    this.masterKeyManager.on('masterKeyInitialized', (data) => {
-      this.emit('masterKeyInitialized', data);
-      logger.info('Master key initialized', data);
+    this.masterKeyManager.on("masterKeyInitialized", (data) => {
+      this.emit("masterKeyInitialized", data);
+      logger.info("Master key initialized", data);
     });
 
-    this.masterKeyManager.on('masterKeyRotated', (data) => {
-      this.emit('masterKeyRotated', data);
-      logger.info('Master key rotated', data);
+    this.masterKeyManager.on("masterKeyRotated", (data) => {
+      this.emit("masterKeyRotated", data);
+      logger.info("Master key rotated", data);
     });
 
     // Forward kill switch events
-    this.killSwitchService.on('activated', (data) => {
-      this.emit('killSwitchActivated', data);
-      logger.error('Kill switch activated', data);
+    this.killSwitchService.on("activated", (data) => {
+      this.emit("killSwitchActivated", data);
+      logger.error("Kill switch activated", data);
     });
 
-    this.killSwitchService.on('deactivated', (data) => {
-      this.emit('killSwitchDeactivated', data);
-      logger.info('Kill switch deactivated', data);
+    this.killSwitchService.on("deactivated", (data) => {
+      this.emit("killSwitchDeactivated", data);
+      logger.info("Kill switch deactivated", data);
     });
 
-    this.killSwitchService.on('autoRecovered', (data) => {
-      this.emit('autoRecovered', data);
-      logger.info('Auto-recovery completed', data);
+    this.killSwitchService.on("autoRecovered", (data) => {
+      this.emit("autoRecovered", data);
+      logger.info("Auto-recovery completed", data);
     });
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) {
-      logger.warn('HSM integration already initialized');
+      logger.warn("HSM integration already initialized");
       return;
     }
 
@@ -163,13 +168,13 @@ export class HSMIntegration extends EventEmitter {
       // Verify HSM connection
       const hsmStatus = this.hsmService.getSystemStatus();
       if (!hsmStatus.connectionHealth) {
-        throw new Error('HSM connection is not healthy');
+        throw new Error("HSM connection is not healthy");
       }
 
       // Initialize master key if configured
       if (this.config.autoInitializeMasterKey) {
         const masterKeyId = await this.masterKeyManager.initializeMasterKey();
-        logger.info('Master key auto-initialized', { keyId: masterKeyId });
+        logger.info("Master key auto-initialized", { keyId: masterKeyId });
       }
 
       // Setup audit log cleanup
@@ -178,11 +183,11 @@ export class HSMIntegration extends EventEmitter {
       }
 
       this.initialized = true;
-      logger.info('HSM integration initialized successfully');
+      logger.info("HSM integration initialized successfully");
 
-      this.emit('initialized', { timestamp: new Date() });
+      this.emit("initialized", { timestamp: new Date() });
     } catch (error) {
-      logger.error('Failed to initialize HSM integration:', error);
+      logger.error("Failed to initialize HSM integration:", error);
       throw error;
     }
   }
@@ -191,24 +196,37 @@ export class HSMIntegration extends EventEmitter {
     try {
       await this.auditService.shutdown();
       await this.killSwitchService.shutdown();
-      
+
       this.initialized = false;
-      logger.info('HSM integration shutdown completed');
+      logger.info("HSM integration shutdown completed");
     } catch (error) {
-      logger.error('Error during HSM integration shutdown:', error);
+      logger.error("Error during HSM integration shutdown:", error);
       throw error;
     }
   }
 
   // Convenience methods for common operations
-  async generateDataKey(purpose: string, userId?: string, context?: Record<string, any>) {
+  async generateDataKey(
+    purpose: string,
+    userId?: string,
+    context?: Record<string, any>,
+  ) {
     this.ensureInitialized();
     return this.masterKeyManager.generateDataKey({ purpose, userId, context });
   }
 
-  async decryptDataKey(wrappedKey: any, purpose: string, userId?: string, context?: Record<string, any>) {
+  async decryptDataKey(
+    wrappedKey: any,
+    purpose: string,
+    userId?: string,
+    context?: Record<string, any>,
+  ) {
     this.ensureInitialized();
-    return this.masterKeyManager.decryptDataKey(wrappedKey, { purpose, userId, context });
+    return this.masterKeyManager.decryptDataKey(wrappedKey, {
+      purpose,
+      userId,
+      context,
+    });
   }
 
   async rotateMasterKey(): Promise<string> {
@@ -216,11 +234,22 @@ export class HSMIntegration extends EventEmitter {
     return this.masterKeyManager.rotateMasterKey();
   }
 
-  async activateKillSwitch(reason: string, triggeredBy?: string): Promise<void> {
-    return this.killSwitchService.activate(reason, 'manual', 'critical', triggeredBy);
+  async activateKillSwitch(
+    reason: string,
+    triggeredBy?: string,
+  ): Promise<void> {
+    return this.killSwitchService.activate(
+      reason,
+      "manual",
+      "critical",
+      triggeredBy,
+    );
   }
 
-  async deactivateKillSwitch(reason: string, triggeredBy?: string): Promise<void> {
+  async deactivateKillSwitch(
+    reason: string,
+    triggeredBy?: string,
+  ): Promise<void> {
     return this.killSwitchService.deactivate(reason, triggeredBy);
   }
 
@@ -234,12 +263,12 @@ export class HSMIntegration extends EventEmitter {
     const securityMetrics = this.killSwitchService.getSecurityMetrics();
 
     // Determine overall health
-    let overall: SystemStatus['overall'] = 'healthy';
-    
+    let overall: SystemStatus["overall"] = "healthy";
+
     if (!hsmStatus.connectionHealth || killSwitchStatus.active) {
-      overall = 'critical';
+      overall = "critical";
     } else if (!masterKeyStatus.activeKeyId || !auditIntegrity.valid) {
-      overall = 'degraded';
+      overall = "degraded";
     }
 
     return {
@@ -247,25 +276,25 @@ export class HSMIntegration extends EventEmitter {
         connected: hsmStatus.connectionHealth,
         healthy: hsmStatus.connectionHealth,
         killSwitchActive: hsmStatus.killSwitchActive,
-        lastHealthCheck: hsmStatus.lastHealthCheck
+        lastHealthCheck: hsmStatus.lastHealthCheck,
       },
       masterKey: {
         initialized: !!masterKeyStatus.activeKeyId,
         activeKeyId: masterKeyStatus.activeKeyId,
         totalKeys: masterKeyStatus.totalKeys,
-        cacheSize: masterKeyStatus.cacheSize
+        cacheSize: masterKeyStatus.cacheSize,
       },
       audit: {
         totalRecords: auditMetrics.totalRecords,
-        integrityValid: auditIntegrity.valid
+        integrityValid: auditIntegrity.valid,
       },
       killSwitch: {
         active: killSwitchStatus.active,
         autoRecoveryEnabled: killSwitchStatus.autoRecoveryEnabled,
         totalActivations: killSwitchStatus.totalActivations,
-        securityMetrics
+        securityMetrics,
       },
-      overall
+      overall,
     };
   }
 
@@ -281,31 +310,39 @@ export class HSMIntegration extends EventEmitter {
 
     // Check HSM
     if (!status.hsm.connected) {
-      issues.push('HSM connection lost');
-      recommendations.push('Check HSM endpoint and network connectivity');
+      issues.push("HSM connection lost");
+      recommendations.push("Check HSM endpoint and network connectivity");
     }
 
     if (status.hsm.killSwitchActive) {
-      issues.push('HSM kill switch is active');
-      recommendations.push('Investigate security incident and deactivate when safe');
+      issues.push("HSM kill switch is active");
+      recommendations.push(
+        "Investigate security incident and deactivate when safe",
+      );
     }
 
     // Check master key
     if (!status.masterKey.initialized) {
-      issues.push('Master key not initialized');
-      recommendations.push('Initialize master key to enable encryption operations');
+      issues.push("Master key not initialized");
+      recommendations.push(
+        "Initialize master key to enable encryption operations",
+      );
     }
 
     // Check audit integrity
     if (!status.audit.integrityValid) {
-      issues.push('Audit log integrity compromised');
-      recommendations.push('Investigate audit log tampering and restore from backup');
+      issues.push("Audit log integrity compromised");
+      recommendations.push(
+        "Investigate audit log tampering and restore from backup",
+      );
     }
 
     // Check kill switch
     if (status.killSwitch.active) {
-      issues.push('System kill switch is active');
-      recommendations.push('Review security metrics and deactivate when appropriate');
+      issues.push("System kill switch is active");
+      recommendations.push(
+        "Review security metrics and deactivate when appropriate",
+      );
     }
 
     // Get detailed metrics
@@ -316,15 +353,15 @@ export class HSMIntegration extends EventEmitter {
       killSwitch: {
         status: this.killSwitchService.getStatus(),
         metrics: this.killSwitchService.getSecurityMetrics(),
-        thresholds: this.killSwitchService.getThresholds()
-      }
+        thresholds: this.killSwitchService.getThresholds(),
+      },
     };
 
     return {
       status,
       issues,
       recommendations,
-      metrics
+      metrics,
     };
   }
 
@@ -338,17 +375,22 @@ export class HSMIntegration extends EventEmitter {
 
     if (updates.enableAutoRecovery !== undefined) {
       if (updates.enableAutoRecovery) {
-        this.killSwitchService.enableAutoRecovery(updates.autoRecoveryDelayMinutes || 30);
+        this.killSwitchService.enableAutoRecovery(
+          updates.autoRecoveryDelayMinutes,
+        );
       } else {
         this.killSwitchService.disableAutoRecovery();
       }
     }
 
-    logger.info('HSM integration configuration updated', updates);
+    logger.info("HSM integration configuration updated", updates);
   }
 
   // Audit and compliance methods
-  async exportAuditLog(query?: any, format: 'json' | 'csv' = 'json'): Promise<string> {
+  async exportAuditLog(
+    query?: any,
+    format: "json" | "csv" = "json",
+  ): Promise<string> {
     return this.auditService.exportAuditLog(query || {}, format);
   }
 
@@ -362,44 +404,53 @@ export class HSMIntegration extends EventEmitter {
 
   // Emergency procedures
   async emergencyShutdown(reason: string, triggeredBy?: string): Promise<void> {
-    logger.error('Emergency shutdown initiated', { reason, triggeredBy });
+    logger.error("Emergency shutdown initiated", { reason, triggeredBy });
 
     try {
       // Activate kill switch
-      await this.activateKillSwitch(`Emergency shutdown: ${reason}`, triggeredBy);
+      await this.activateKillSwitch(
+        `Emergency shutdown: ${reason}`,
+        triggeredBy,
+      );
 
       // Clear all caches
       this.masterKeyManager.clearCache();
 
       // Log emergency action
       await this.auditService.logSecurityViolation(
-        'emergency_shutdown',
+        "emergency_shutdown",
         {
-          userId: triggeredBy || 'system',
-          ipAddress: 'system',
-          userAgent: 'hsm-integration'
+          userId: triggeredBy || "system",
+          ipAddress: "system",
+          userAgent: "hsm-integration",
         },
         {
-          type: 'system',
-          id: 'emergency-shutdown'
+          type: "system",
+          id: "emergency-shutdown",
         },
         {
           reason,
           timestamp: new Date(),
-          systemStatus: await this.getSystemStatus()
-        }
+          systemStatus: await this.getSystemStatus(),
+        },
       );
 
-      this.emit('emergencyShutdown', { reason, triggeredBy, timestamp: new Date() });
+      this.emit("emergencyShutdown", {
+        reason,
+        triggeredBy,
+        timestamp: new Date(),
+      });
     } catch (error) {
-      logger.error('Emergency shutdown failed:', error);
+      logger.error("Emergency shutdown failed:", error);
       throw error;
     }
   }
 
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new Error('HSM integration not initialized. Call initialize() first.');
+      throw new Error(
+        "HSM integration not initialized. Call initialize() first.",
+      );
     }
   }
 
@@ -416,9 +467,12 @@ export class HSMIntegration extends EventEmitter {
       setTimeout(async () => {
         try {
           const deletedCount = await this.auditService.cleanup(retentionDays);
-          logger.info('Audit cleanup completed', { deletedCount, retentionDays });
+          logger.info("Audit cleanup completed", {
+            deletedCount,
+            retentionDays,
+          });
         } catch (error) {
-          logger.error('Audit cleanup failed:', error);
+          logger.error("Audit cleanup failed:", error);
         }
 
         // Schedule next cleanup
@@ -454,7 +508,9 @@ export class HSMIntegration extends EventEmitter {
 // Singleton instance for application-wide use
 let hsmIntegrationInstance: HSMIntegration | null = null;
 
-export function getHSMIntegration(config?: HSMIntegrationConfig): HSMIntegration {
+export function getHSMIntegration(
+  config?: HSMIntegrationConfig,
+): HSMIntegration {
   if (!hsmIntegrationInstance) {
     hsmIntegrationInstance = new HSMIntegration(config);
   }

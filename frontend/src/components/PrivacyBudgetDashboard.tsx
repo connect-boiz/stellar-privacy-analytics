@@ -1,10 +1,42 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, BarChart, Bar, ComposedChart } from 'recharts';
-import { AlertCircle, Info, TrendingDown, Calendar, Shield, GripVertical, Plus, Minus, AlertTriangle, Download, TrendingUp, Zap, Target, Sliders, Clock, CheckCircle } from 'lucide-react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+  _BarChart,
+  _Bar,
+  _ComposedChart,
+} from 'recharts';
+import {
+  AlertCircle,
+  Info,
+  TrendingDown,
+  Calendar,
+  Shield,
+  GripVertical,
+  Plus,
+  Minus,
+  AlertTriangle,
+  Download,
+  _TrendingUp,
+  Zap,
+  Target,
+  Sliders,
+  _Clock,
+  CheckCircle,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
-import { format, subDays, startOfDay, differenceInDays } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 
 interface PrivacyBudget {
   datasetId: string;
@@ -40,7 +72,7 @@ interface ApiResponse {
   history: BudgetHistory[];
 }
 
-interface BudgetAllocationData {
+interface _BudgetAllocationData {
   id: string;
   analysisName: string;
   allocated: number;
@@ -59,7 +91,7 @@ const defaultAllocations: BudgetAllocation[] = [
     priority: 1,
     impact: 'high',
     dataset: 'Customer Analytics',
-    lastQuery: '2 hours ago'
+    lastQuery: '2 hours ago',
   },
   {
     id: 'alloc-2',
@@ -69,7 +101,7 @@ const defaultAllocations: BudgetAllocation[] = [
     priority: 2,
     impact: 'medium',
     dataset: 'Financial Data',
-    lastQuery: '1 day ago'
+    lastQuery: '1 day ago',
   },
   {
     id: 'alloc-3',
@@ -79,7 +111,7 @@ const defaultAllocations: BudgetAllocation[] = [
     priority: 3,
     impact: 'low',
     dataset: 'User Analytics',
-    lastQuery: '3 days ago'
+    lastQuery: '3 days ago',
   },
   {
     id: 'alloc-4',
@@ -89,8 +121,8 @@ const defaultAllocations: BudgetAllocation[] = [
     priority: 4,
     impact: 'low',
     dataset: 'Marketing',
-    lastQuery: '5 days ago'
-  }
+    lastQuery: '5 days ago',
+  },
 ];
 
 const optimizationSuggestions = [
@@ -99,22 +131,22 @@ const optimizationSuggestions = [
     title: 'Combine Queries',
     description: 'Combine your customer segmentation queries to save 0.3 ε per analysis',
     savings: 0.3,
-    impact: 'high'
+    impact: 'high',
   },
   {
     id: 'opt-2',
     title: 'Reduce Frequency',
     description: 'Reduce daily reporting frequency from hourly to every 6 hours',
     savings: 0.15,
-    impact: 'medium'
+    impact: 'medium',
   },
   {
     id: 'opt-3',
     title: 'Use Aggregate Data',
     description: 'Use pre-aggregated data for dashboard metrics',
     savings: 0.25,
-    impact: 'high'
-  }
+    impact: 'high',
+  },
 ];
 
 const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) => {
@@ -128,7 +160,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
   const [allocations, setAllocations] = useState<BudgetAllocation[]>(defaultAllocations);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [totalBudget] = useState(1.0);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [_showExportModal, _setShowExportModal] = useState(false);
 
   const getBudgetColor = useCallback((percentage: number) => {
     if (percentage >= 90) return '#ef4444';
@@ -138,10 +170,14 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
 
   const getStatusColor = useCallback((status: string) => {
     switch (status) {
-      case 'critical': return '#ef4444';
-      case 'warning': return '#f59e0b';
-      case 'healthy': return '#10b981';
-      default: return '#6b7280';
+      case 'critical':
+        return '#ef4444';
+      case 'warning':
+        return '#f59e0b';
+      case 'healthy':
+        return '#10b981';
+      default:
+        return '#6b7280';
     }
   }, []);
 
@@ -149,20 +185,24 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await axios.get<ApiResponse>(`/api/v1/privacy/budget/${datasetId}`);
-      
+
       if (response.data.success) {
         setBudget(response.data.data);
         setHistory(response.data.history || []);
-        
+
         if (response.data.data.percentageUsed >= 90 && !alertShown) {
           toast.error(
             `Privacy budget critically low! Only ${(100 - response.data.data.percentageUsed).toFixed(1)}% remaining.`,
             { duration: 5000, icon: <AlertCircle className="w-5 h-5" /> }
           );
           setAlertShown(true);
-        } else if (response.data.data.percentageUsed >= 70 && response.data.data.percentageUsed < 90 && !alertShown) {
+        } else if (
+          response.data.data.percentageUsed >= 70 &&
+          response.data.data.percentageUsed < 90 &&
+          !alertShown
+        ) {
           toast.warning(
             `Privacy budget warning: ${(100 - response.data.data.percentageUsed).toFixed(1)}% remaining.`,
             { duration: 4000, icon: <TrendingDown className="w-5 h-5" /> }
@@ -182,20 +222,20 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
   const generateMockHistory = useCallback((): BudgetHistory[] => {
     const history: BudgetHistory[] = [];
     const today = startOfDay(new Date());
-    
+
     for (let i = 29; i >= 0; i--) {
       const date = format(subDays(today, i), 'yyyy-MM-dd');
       const baseEpsilon = 1.0;
       const consumption = Math.random() * 0.3;
-      
+
       history.push({
         date,
-        epsilon: Math.max(0, baseEpsilon - (consumption * (30 - i))),
+        epsilon: Math.max(0, baseEpsilon - consumption * (30 - i)),
         percentageUsed: Math.min(100, consumption * (30 - i) * 100),
-        operation: i % 3 === 0 ? 'Query' : i % 3 === 1 ? 'Analysis' : 'Export'
+        operation: i % 3 === 0 ? 'Query' : i % 3 === 1 ? 'Analysis' : 'Export',
       });
     }
-    
+
     return history;
   }, []);
 
@@ -205,18 +245,24 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
     return () => clearInterval(interval);
   }, [fetchBudgetData]);
 
-  const gaugeData = budget ? [
-    { name: 'Used', value: budget.percentageUsed, color: getBudgetColor(budget.percentageUsed) },
-    { name: 'Remaining', value: 100 - budget.percentageUsed, color: '#e5e7eb' }
-  ] : [];
+  const gaugeData = budget
+    ? [
+        {
+          name: 'Used',
+          value: budget.percentageUsed,
+          color: getBudgetColor(budget.percentageUsed),
+        },
+        { name: 'Remaining', value: 100 - budget.percentageUsed, color: '#e5e7eb' },
+      ]
+    : [];
 
-  const totalUsed = useMemo(() => 
-    allocations.reduce((sum, a) => sum + a.currentEpsilon, 0),
+  const totalUsed = useMemo(
+    () => allocations.reduce((sum, a) => sum + a.currentEpsilon, 0),
     [allocations]
   );
 
-  const totalRequested = useMemo(() => 
-    allocations.reduce((sum, a) => sum + a.requestedEpsilon, 0),
+  const totalRequested = useMemo(
+    () => allocations.reduce((sum, a) => sum + a.requestedEpsilon, 0),
     [allocations]
   );
 
@@ -228,20 +274,20 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
     e.preventDefault();
     if (!draggedItem || draggedItem === targetId) return;
 
-    const draggedIndex = allocations.findIndex(a => a.id === draggedItem);
-    const targetIndex = allocations.findIndex(a => a.id === targetId);
-    
+    const draggedIndex = allocations.findIndex((a) => a.id === draggedItem);
+    const targetIndex = allocations.findIndex((a) => a.id === targetId);
+
     if (draggedIndex === -1 || targetIndex === -1) return;
 
     const newAllocations = [...allocations];
     const [draggedItem_] = newAllocations.splice(draggedIndex, 1);
     newAllocations.splice(targetIndex, 0, draggedItem_);
-    
+
     const updatedAllocations = newAllocations.map((a, i) => ({
       ...a,
-      priority: i + 1
+      priority: i + 1,
     }));
-    
+
     setAllocations(updatedAllocations);
   };
 
@@ -250,19 +296,25 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
   };
 
   const adjustAllocation = (id: string, delta: number) => {
-    setAllocations(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const newValue = Math.max(0.01, Math.min(totalBudget, a.currentEpsilon + delta));
-      return { ...a, currentEpsilon: Math.round(newValue * 100) / 100 };
-    }));
+    setAllocations((prev) =>
+      prev.map((a) => {
+        if (a.id !== id) return a;
+        const newValue = Math.max(0.01, Math.min(totalBudget, a.currentEpsilon + delta));
+        return { ...a, currentEpsilon: Math.round(newValue * 100) / 100 };
+      })
+    );
   };
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+      case 'high':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'low':
+        return 'text-green-600 bg-green-50 border-green-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
     }
   };
 
@@ -272,14 +324,14 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
       totalBudget: totalBudget,
       used: totalUsed,
       remaining: totalBudget - totalUsed,
-      allocations: allocations.map(a => ({
+      allocations: allocations.map((a) => ({
         name: a.name,
         epsilon: a.currentEpsilon,
         priority: a.priority,
-        impact: a.impact
-      }))
+        impact: a.impact,
+      })),
     };
-    
+
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -290,12 +342,10 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
     toast.success('Budget report exported');
   };
 
-  const allocateBudget = (allocation: BudgetAllocation, newAmount: number) => {
-    setAllocations(prev => prev.map(a => 
-      a.id === allocation.id 
-        ? { ...a, currentEpsilon: newAmount }
-        : a
-    ));
+  const _allocateBudget = (allocation: BudgetAllocation, newAmount: number) => {
+    setAllocations((prev) =>
+      prev.map((a) => (a.id === allocation.id ? { ...a, currentEpsilon: newAmount } : a))
+    );
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -347,8 +397,10 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium text-white`}
-                 style={{ backgroundColor: getStatusColor(budget.status) }}>
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium text-white`}
+              style={{ backgroundColor: getStatusColor(budget.status) }}
+            >
               {budget.status.toUpperCase()}
             </div>
           </div>
@@ -377,7 +429,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            
+
             <div className="relative -mt-32 text-center">
               <div className="text-3xl font-bold text-gray-900">
                 {(100 - budget.percentageUsed).toFixed(1)}%
@@ -398,11 +450,11 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="h-2 rounded-full transition-all duration-300"
-                  style={{ 
+                  style={{
                     width: `${budget.percentageUsed}%`,
-                    backgroundColor: getBudgetColor(budget.percentageUsed)
+                    backgroundColor: getBudgetColor(budget.percentageUsed),
                   }}
                 ></div>
               </div>
@@ -410,9 +462,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-blue-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-600">
-                  {budget.maxEpsilon}
-                </div>
+                <div className="text-2xl font-bold text-blue-600">{budget.maxEpsilon}</div>
                 <div className="text-sm text-blue-800">Max Epsilon</div>
               </div>
               <div className="bg-green-50 rounded-lg p-4">
@@ -438,7 +488,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
             <Sliders className="w-4 h-4" />
             <span>{showAllocation ? 'Hide' : 'Allocate'} Budget</span>
           </button>
-          
+
           <button
             onClick={() => setShowHistory(!showHistory)}
             className="flex items-center justify-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -471,8 +521,12 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                 <p className="text-sm text-gray-600">Drag and drop to prioritize analyses</p>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-600">Total Allocated: {totalUsed.toFixed(2)} ε</div>
-                <div className="text-sm text-gray-600">Available: {(totalBudget - totalUsed).toFixed(2)} ε</div>
+                <div className="text-sm text-gray-600">
+                  Total Allocated: {totalUsed.toFixed(2)} ε
+                </div>
+                <div className="text-sm text-gray-600">
+                  Available: {(totalBudget - totalUsed).toFixed(2)} ε
+                </div>
               </div>
             </div>
 
@@ -494,7 +548,9 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-medium text-gray-900">{allocation.name}</span>
-                          <span className={`px-2 py-0.5 text-xs rounded capitalize ${getImpactColor(allocation.impact)}`}>
+                          <span
+                            className={`px-2 py-0.5 text-xs rounded capitalize ${getImpactColor(allocation.impact)}`}
+                          >
                             {allocation.impact}
                           </span>
                         </div>
@@ -524,7 +580,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                         </button>
                       </div>
                       <div className="w-24 bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-blue-600 h-2 rounded-full"
                           style={{ width: `${(allocation.currentEpsilon / totalBudget) * 100}%` }}
                         />
@@ -542,7 +598,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                   <span className="font-semibold text-purple-900">Optimization Tips</span>
                 </div>
                 <div className="space-y-2">
-                  {optimizationSuggestions.map(suggestion => (
+                  {optimizationSuggestions.map((suggestion) => (
                     <div key={suggestion.id} className="text-sm">
                       <div className="font-medium text-purple-800">{suggestion.title}</div>
                       <div className="text-purple-700">{suggestion.description}</div>
@@ -569,7 +625,7 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                       <span>Budget within limits</span>
                     </div>
                   )}
-                  {allocations.some(a => a.impact === 'high' && a.currentEpsilon < 0.3) && (
+                  {allocations.some((a) => a.impact === 'high' && a.currentEpsilon < 0.3) && (
                     <div className="flex items-start space-x-2 text-yellow-700">
                       <AlertTriangle className="h-4 w-4 mt-0.5" />
                       <span>High-priority analysis underfunded</span>
@@ -584,14 +640,18 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
                   <span className="font-semibold text-blue-900">Impact Analysis</span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  {allocations.slice(0, 3).map(a => (
+                  {allocations.slice(0, 3).map((a) => (
                     <div key={a.id} className="flex items-center justify-between">
                       <span className="text-blue-800">{a.name}</span>
-                      <span className={`px-2 py-0.5 text-xs rounded ${
-                        a.impact === 'high' ? 'bg-red-100 text-red-700' :
-                        a.impact === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 text-xs rounded ${
+                          a.impact === 'high'
+                            ? 'bg-red-100 text-red-700'
+                            : a.impact === 'medium'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-green-100 text-green-700'
+                        }`}
+                      >
                         {a.impact}
                       </span>
                     </div>
@@ -605,38 +665,33 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
 
       {showHistory && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            30-Day Budget History
-          </h3>
-          
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">30-Day Budget History</h3>
+
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={history.length > 0 ? history : generateMockHistory()}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={(value) => format(new Date(value), 'MMM dd')}
-              />
-              <YAxis 
+              <XAxis dataKey="date" tickFormatter={(value) => format(new Date(value), 'MMM dd')} />
+              <YAxis
                 label={{ value: 'Epsilon (ε)', angle: -90, position: 'insideLeft' }}
                 domain={[0, 'dataMax']}
               />
-              <Tooltip 
+              <Tooltip
                 labelFormatter={(value) => format(new Date(value as string), 'MMM dd, yyyy')}
                 formatter={(value: number) => [value.toFixed(3), 'Epsilon']}
               />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="epsilon" 
-                stroke="#3b82f6" 
+              <Line
+                type="monotone"
+                dataKey="epsilon"
+                stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ fill: '#3b82f6', r: 3 }}
                 name="Epsilon Remaining"
               />
-              <Line 
-                type="monotone" 
-                dataKey="percentageUsed" 
-                stroke="#ef4444" 
+              <Line
+                type="monotone"
+                dataKey="percentageUsed"
+                stroke="#ef4444"
                 strokeWidth={2}
                 dot={{ fill: '#ef4444', r: 3 }}
                 name="Percentage Used"
@@ -653,9 +708,10 @@ const PrivacyBudgetDashboard: React.FC<{ datasetId: string }> = ({ datasetId }) 
           <div>
             <h4 className="font-semibold text-blue-900">Understanding Privacy Budget</h4>
             <p className="text-sm text-blue-800 mt-1">
-              Your privacy budget (epsilon) represents the total amount of privacy loss allowed for this dataset. 
-              Each analytics query consumes some of this budget. When the budget is depleted, no further queries can be made 
-              to protect individual privacy. The system automatically monitors and alerts you when the budget gets low.
+              Your privacy budget (epsilon) represents the total amount of privacy loss allowed for
+              this dataset. Each analytics query consumes some of this budget. When the budget is
+              depleted, no further queries can be made to protect individual privacy. The system
+              automatically monitors and alerts you when the budget gets low.
             </p>
           </div>
         </div>

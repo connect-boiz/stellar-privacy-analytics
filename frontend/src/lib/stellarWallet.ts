@@ -2,8 +2,6 @@
  * Stellar wallet integration for transaction signing and blockchain operations
  */
 
-import { WebCryptoService } from './webCrypto';
-
 export interface StellarAccount {
   publicKey: string;
   secretKey?: string;
@@ -32,12 +30,15 @@ export class StellarWalletService {
   private static readonly HORIZON_TESTNET = 'https://horizon-testnet.stellar.org';
   private static readonly HORIZON_MAINNET = 'https://horizon.stellar.org';
   private static readonly NETWORK_PASSPHRASE_TESTNET = 'Test SDF Network ; September 2015';
-  private static readonly NETWORK_PASSPHRASE_MAINNET = 'Public Global Stellar Network ; September 2015';
+  private static readonly NETWORK_PASSPHRASE_MAINNET =
+    'Public Global Stellar Network ; September 2015';
 
   /**
    * Connect to Stellar wallet (Freighter, Albedo, etc.)
    */
-  static async connectWallet(walletType: 'freighter' | 'albedo' | 'xbull' = 'freighter'): Promise<StellarAccount> {
+  static async connectWallet(
+    walletType: 'freighter' | 'albedo' | 'xbull' = 'freighter'
+  ): Promise<StellarAccount> {
     try {
       let account: StellarAccount;
 
@@ -73,13 +74,13 @@ export class StellarWalletService {
     try {
       // Create transaction
       const transaction = await this.createUploadTransaction(account, transactionData, network);
-      
+
       // Sign transaction
       const signedTransaction = await this.signTransaction(transaction, account);
-      
+
       // Submit transaction
       const result = await this.submitTransaction(signedTransaction, network);
-      
+
       // Generate receipt
       const receipt: UploadReceipt = {
         transactionHash: result.hash,
@@ -88,7 +89,7 @@ export class StellarWalletService {
         zkProofHash: transactionData.zkProofHash,
         timestamp: transactionData.timestamp,
         network,
-        verificationUrl: `${this.getHorizonUrl(network)}/transactions/${result.hash}`
+        verificationUrl: `${this.getHorizonUrl(network)}/transactions/${result.hash}`,
       };
 
       return receipt;
@@ -101,12 +102,17 @@ export class StellarWalletService {
   /**
    * Get account balance
    */
-  static async getAccountBalance(account: StellarAccount, network: 'testnet' | 'mainnet' = 'testnet'): Promise<string> {
+  static async getAccountBalance(
+    account: StellarAccount,
+    network: 'testnet' | 'mainnet' = 'testnet'
+  ): Promise<string> {
     try {
       const response = await fetch(`${this.getHorizonUrl(network)}/accounts/${account.publicKey}`);
       const accountData = await response.json();
-      
-      const nativeBalance = accountData.balances.find((balance: any) => balance.asset_type === 'native');
+
+      const nativeBalance = accountData.balances.find(
+        (balance: any) => balance.asset_type === 'native'
+      );
       return nativeBalance ? nativeBalance.balance : '0';
     } catch (error) {
       console.error('Failed to get account balance:', error);
@@ -117,11 +123,16 @@ export class StellarWalletService {
   /**
    * Verify transaction on blockchain
    */
-  static async verifyTransaction(transactionHash: string, network: 'testnet' | 'mainnet' = 'testnet'): Promise<boolean> {
+  static async verifyTransaction(
+    transactionHash: string,
+    network: 'testnet' | 'mainnet' = 'testnet'
+  ): Promise<boolean> {
     try {
-      const response = await fetch(`${this.getHorizonUrl(network)}/transactions/${transactionHash}`);
+      const response = await fetch(
+        `${this.getHorizonUrl(network)}/transactions/${transactionHash}`
+      );
       const transaction = await response.json();
-      
+
       return transaction.successful === true;
     } catch (error) {
       console.error('Failed to verify transaction:', error);
@@ -189,7 +200,7 @@ of this upload by visiting the verification URL above.
 
       return {
         publicKey,
-        network: network === 'TESTNET' ? 'testnet' : 'mainnet'
+        network: network === 'TESTNET' ? 'testnet' : 'mainnet',
       };
     } catch (error) {
       throw new Error('Failed to connect to Freighter wallet');
@@ -203,10 +214,10 @@ of this upload by visiting the verification URL above.
 
     try {
       const result = await (window as any).albedo.publicKey();
-      
+
       return {
         publicKey: result.pubkey,
-        network: 'testnet' // Albedo typically uses testnet by default
+        network: 'testnet', // Albedo typically uses testnet by default
       };
     } catch (error) {
       throw new Error('Failed to connect to Albedo wallet');
@@ -220,10 +231,10 @@ of this upload by visiting the verification URL above.
 
     try {
       const publicKey = await (window as any).xbull.getPublicKey();
-      
+
       return {
         publicKey,
-        network: 'testnet' // Default to testnet
+        network: 'testnet', // Default to testnet
       };
     } catch (error) {
       throw new Error('Failed to connect to xBull wallet');
@@ -237,7 +248,7 @@ of this upload by visiting the verification URL above.
   ): Promise<any> {
     // In a real implementation, this would use the Stellar SDK
     // For now, we'll simulate transaction creation
-    
+
     const horizonUrl = this.getHorizonUrl(network);
     const response = await fetch(`${horizonUrl}/accounts/${account.publicKey}`);
     const accountData = await response.json();
@@ -250,33 +261,34 @@ of this upload by visiting the verification URL above.
         {
           type: 'manage_data',
           name: 'data_cid',
-          value: transactionData.dataCID
+          value: transactionData.dataCID,
         },
         {
           type: 'manage_data',
           name: 'encrypted_hash',
-          value: transactionData.encryptedDataHash
+          value: transactionData.encryptedDataHash,
         },
         {
           type: 'manage_data',
           name: 'zk_proof_hash',
-          value: transactionData.zkProofHash
+          value: transactionData.zkProofHash,
         },
         {
           type: 'manage_data',
           name: 'timestamp',
-          value: transactionData.timestamp.toString()
-        }
+          value: transactionData.timestamp.toString(),
+        },
       ],
       memo: `Data Upload: ${transactionData.dataCID.substring(0, 8)}...`,
-      networkPassphrase: network === 'testnet' ? this.NETWORK_PASSPHRASE_TESTNET : this.NETWORK_PASSPHRASE_MAINNET
+      networkPassphrase:
+        network === 'testnet' ? this.NETWORK_PASSPHRASE_TESTNET : this.NETWORK_PASSPHRASE_MAINNET,
     };
   }
 
-  private static async signTransaction(transaction: any, account: StellarAccount): Promise<string> {
+  private static async signTransaction(transaction: any, _account: StellarAccount): Promise<string> {
     // In a real implementation, this would use the wallet's signing method
     // For now, we'll simulate signing
-    
+
     if ((window as any).freighter) {
       return await (window as any).freighter.signTransaction(transaction);
     } else if ((window as any).albedo) {
@@ -289,15 +301,18 @@ of this upload by visiting the verification URL above.
     }
   }
 
-  private static async submitTransaction(signedTransaction: string, network: 'testnet' | 'mainnet'): Promise<any> {
+  private static async submitTransaction(
+    signedTransaction: string,
+    network: 'testnet' | 'mainnet'
+  ): Promise<any> {
     const horizonUrl = this.getHorizonUrl(network);
-    
+
     const response = await fetch(`${horizonUrl}/transactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: `tx=${encodeURIComponent(signedTransaction)}`
+      body: `tx=${encodeURIComponent(signedTransaction)}`,
     });
 
     if (!response.ok) {

@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { 
-  Globe, 
-  Search, 
-  Download, 
-  Upload, 
-  Edit, 
-  Save, 
-  X, 
-  CheckCircle, 
+import {
+  Globe,
+  Search,
+  Download,
+  Upload,
+  Edit,
+  Save,
+  X,
+  CheckCircle,
   AlertCircle,
   Plus,
   Trash2,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 import { supportedLanguages } from '../i18n';
 
@@ -28,7 +28,7 @@ interface TranslationNamespace {
 }
 
 export const TranslationManager: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { _t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
   const [selectedNamespace, setSelectedNamespace] = useState('translation');
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,6 +45,7 @@ export const TranslationManager: React.FC = () => {
 
   useEffect(() => {
     loadTranslations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLanguage, selectedNamespace]);
 
   const loadTranslations = async () => {
@@ -62,47 +63,48 @@ export const TranslationManager: React.FC = () => {
 
   const flattenObject = (obj: any, prefix = ''): TranslationKey[] => {
     const result: TranslationKey[] = [];
-    
+
     for (const key in obj) {
       const newKey = prefix ? `${prefix}.${key}` : key;
-      
+
       if (typeof obj[key] === 'object' && obj[key] !== null) {
         result.push(...flattenObject(obj[key], newKey));
       } else {
         result.push({
           key: newKey,
           value: obj[key] || '',
-          isMissing: !obj[key] || obj[key] === ''
+          isMissing: !obj[key] || obj[key] === '',
         });
       }
     }
-    
+
     return result;
   };
 
   const unflattenObject = (flatTranslations: TranslationKey[]): TranslationNamespace => {
     const result: TranslationNamespace = {};
-    
+
     flatTranslations.forEach(({ key, value }) => {
       const keys = key.split('.');
       let current = result;
-      
+
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current[keys[i]]) {
           current[keys[i]] = {};
         }
         current = current[keys[i]] as TranslationNamespace;
       }
-      
+
       current[keys[keys.length - 1]] = value;
     });
-    
+
     return result;
   };
 
-  const filteredTranslations = translations.filter(item =>
-    item.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.value.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTranslations = translations.filter(
+    (item) =>
+      item.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.value.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (key: string, value: string) => {
@@ -112,7 +114,7 @@ export const TranslationManager: React.FC = () => {
 
   const handleSave = () => {
     if (editingKey) {
-      const updatedTranslations = translations.map(item =>
+      const updatedTranslations = translations.map((item) =>
         item.key === editingKey ? { ...item, value: editingValue, isMissing: false } : item
       );
       setTranslations(updatedTranslations);
@@ -127,7 +129,7 @@ export const TranslationManager: React.FC = () => {
       const newTranslation: TranslationKey = {
         key: newKey,
         value: newValue,
-        isMissing: false
+        isMissing: false,
       };
       setTranslations([...translations, newTranslation]);
       setNewKey('');
@@ -138,7 +140,7 @@ export const TranslationManager: React.FC = () => {
   };
 
   const handleDelete = (key: string) => {
-    const updatedTranslations = translations.filter(item => item.key !== key);
+    const updatedTranslations = translations.filter((item) => item.key !== key);
     setTranslations(updatedTranslations);
     setHasChanges(true);
   };
@@ -148,10 +150,9 @@ export const TranslationManager: React.FC = () => {
     try {
       const unflattened = unflattenObject(translations);
       i18n.addResourceBundle(selectedLanguage, selectedNamespace, unflattened, true, true);
-      
-      // In a real application, you would save this to your backend
-      console.log('Saving translations:', unflattened);
-      
+
+      // In a real application, this would save to your backend
+
       setHasChanges(false);
     } catch (error) {
       console.error('Failed to save translations:', error);
@@ -163,10 +164,10 @@ export const TranslationManager: React.FC = () => {
   const handleExport = () => {
     const unflattened = unflattenObject(translations);
     const dataStr = JSON.stringify(unflattened, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
     const exportFileDefaultName = `${selectedLanguage}_${selectedNamespace}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -191,7 +192,7 @@ export const TranslationManager: React.FC = () => {
     }
   };
 
-  const missingCount = translations.filter(item => item.isMissing).length;
+  const missingCount = translations.filter((item) => item.isMissing).length;
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -200,7 +201,9 @@ export const TranslationManager: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Translation Manager</h1>
-            <p className="text-gray-600 mt-1">Manage translations for privacy-related UI elements</p>
+            <p className="text-gray-600 mt-1">
+              Manage translations for privacy-related UI elements
+            </p>
           </div>
           <div className="flex items-center space-x-4">
             {hasChanges && (
@@ -225,12 +228,7 @@ export const TranslationManager: React.FC = () => {
             <label className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 cursor-pointer">
               <Upload className="w-4 h-4" />
               <span>Import</span>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
             </label>
           </div>
         </div>
@@ -246,14 +244,14 @@ export const TranslationManager: React.FC = () => {
               onChange={(e) => setSelectedLanguage(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {supportedLanguages.map(lang => (
+              {supportedLanguages.map((lang) => (
                 <option key={lang.code} value={lang.code}>
                   {lang.flag} {lang.nativeName}
                 </option>
               ))}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Namespace</label>
             <select
@@ -261,12 +259,14 @@ export const TranslationManager: React.FC = () => {
               onChange={(e) => setSelectedNamespace(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {namespaces.map(ns => (
-                <option key={ns} value={ns}>{ns}</option>
+              {namespaces.map((ns) => (
+                <option key={ns} value={ns}>
+                  {ns}
+                </option>
               ))}
             </select>
           </div>
-          
+
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <div className="relative">
@@ -359,7 +359,7 @@ export const TranslationManager: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="max-h-96 overflow-y-auto">
           {isLoading ? (
             <div className="flex items-center justify-center p-8">
@@ -404,7 +404,9 @@ export const TranslationManager: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900">{item.key}</div>
-                        <div className={`text-sm ${item.isMissing ? 'text-red-600 italic' : 'text-gray-600'}`}>
+                        <div
+                          className={`text-sm ${item.isMissing ? 'text-red-600 italic' : 'text-gray-600'}`}
+                        >
                           {item.isMissing ? '[Missing]' : item.value}
                         </div>
                       </div>

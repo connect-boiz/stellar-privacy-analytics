@@ -1,8 +1,8 @@
-import { logger } from '../utils/logger';
-import { spawn, ChildProcess } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { logger } from "../utils/logger";
+import { spawn, ChildProcess } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 export interface SandboxConfig {
   enableSandbox: boolean;
@@ -56,8 +56,8 @@ export class SandboxManager {
       cpuLimit: 50,
       diskLimit: 100,
       networkAccess: false,
-      allowedPaths: ['/tmp', '/var/tmp'],
-      blockedCommands: ['rm', 'dd', 'mkfs', 'fdisk', 'kill', 'killall'],
+      allowedPaths: ["/tmp", "/var/tmp"],
+      blockedCommands: ["rm", "dd", "mkfs", "fdisk", "kill", "killall"],
       ...config,
     };
 
@@ -75,7 +75,7 @@ export class SandboxManager {
     this.tempDir = this.createTempDirectory();
     this.setupGracefulShutdown();
 
-    logger.info('Sandbox Manager initialized', {
+    logger.info("Sandbox Manager initialized", {
       enableSandbox: this.config.enableSandbox,
       memoryLimit: this.config.memoryLimit,
       timeoutMs: this.config.timeoutMs,
@@ -84,16 +84,16 @@ export class SandboxManager {
   }
 
   private createTempDirectory(): string {
-    const tempDir = path.join(os.tmpdir(), 'sandbox-temp-' + Date.now());
-    
+    const tempDir = path.join(os.tmpdir(), "sandbox-temp-" + Date.now());
+
     try {
       fs.mkdirSync(tempDir, { recursive: true });
       fs.chmodSync(tempDir, 0o700); // Restrict permissions
-      
-      logger.info('Created sandbox temp directory', { tempDir });
+
+      logger.info("Created sandbox temp directory", { tempDir });
       return tempDir;
     } catch (error) {
-      logger.error('Failed to create sandbox temp directory:', error);
+      logger.error("Failed to create sandbox temp directory:", error);
       throw error;
     }
   }
@@ -111,18 +111,18 @@ export class SandboxManager {
     const executionId = this.generateExecutionId();
 
     try {
-      logger.info('Starting sandboxed execution', { executionId });
+      logger.info("Starting sandboxed execution", { executionId });
 
       // Create sandbox script
       const scriptPath = await this.createSandboxScript(fn, executionId);
-      
+
       // Execute in sandbox
       const result = await this.executeInSandbox<T>(scriptPath, executionId);
-      
+
       // Update metrics
       this.updateMetrics(startTime, result.success, result.memoryUsed);
-      
-      logger.info('Sandboxed execution completed', {
+
+      logger.info("Sandboxed execution completed", {
         executionId,
         success: result.success,
         executionTime: result.executionTime,
@@ -132,10 +132,10 @@ export class SandboxManager {
       return result;
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      
+
       this.updateMetrics(startTime, false, 0);
-      
-      logger.error('Sandboxed execution failed', {
+
+      logger.error("Sandboxed execution failed", {
         executionId,
         error: error.message,
         executionTime,
@@ -154,13 +154,15 @@ export class SandboxManager {
   /**
    * Execute function directly (no sandboxing)
    */
-  private async executeDirectly<T>(fn: () => Promise<T>): Promise<SandboxResult<T>> {
+  private async executeDirectly<T>(
+    fn: () => Promise<T>,
+  ): Promise<SandboxResult<T>> {
     const startTime = Date.now();
-    
+
     try {
       const result = await fn();
       const executionTime = Date.now() - startTime;
-      
+
       return {
         success: true,
         result,
@@ -170,7 +172,7 @@ export class SandboxManager {
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      
+
       return {
         success: false,
         error: error.message,
@@ -184,12 +186,15 @@ export class SandboxManager {
   /**
    * Create sandbox script for execution
    */
-  private async createSandboxScript<T>(fn: () => Promise<T>, executionId: string): Promise<string> {
+  private async createSandboxScript<T>(
+    fn: () => Promise<T>,
+    executionId: string,
+  ): Promise<string> {
     const scriptPath = path.join(this.tempDir, `script-${executionId}.js`);
-    
+
     // Serialize the function to execute
     const serializedFunction = fn.toString();
-    
+
     // Create sandbox script
     const sandboxScript = `
 const { spawn } = require('child_process');
@@ -244,11 +249,11 @@ execute().then(result => {
     try {
       fs.writeFileSync(scriptPath, sandboxScript);
       fs.chmodSync(scriptPath, 0o700); // Restrict permissions
-      
-      logger.debug('Created sandbox script', { scriptPath, executionId });
+
+      logger.debug("Created sandbox script", { scriptPath, executionId });
       return scriptPath;
     } catch (error) {
-      logger.error('Failed to create sandbox script:', error);
+      logger.error("Failed to create sandbox script:", error);
       throw error;
     }
   }
@@ -256,20 +261,23 @@ execute().then(result => {
   /**
    * Execute script in sandbox
    */
-  private async executeInSandbox<T>(scriptPath: string, executionId: string): Promise<SandboxResult<T>> {
-    return new Promise((resolve, reject) => {
+  private async executeInSandbox<T>(
+    scriptPath: string,
+    executionId: string,
+  ): Promise<SandboxResult<T>> {
+    return new Promise((resolve, _reject) => {
       const startTime = Date.now();
-      
+
       // Set up resource limits
-      const resourceLimits = {
+      const _resourceLimits = {
         memory: this.config.memoryLimit * 1024 * 1024, // Convert MB to bytes
         cpu: this.config.cpuLimit,
         timeout: this.config.timeoutMs,
       };
 
       // Create child process with resource limits
-      const child = spawn('node', [scriptPath], {
-        stdio: 'pipe',
+      const child = spawn("node", [scriptPath], {
+        stdio: "pipe",
         env: {
           ...process.env,
           NODE_OPTIONS: `--max-old-space-size=${this.config.memoryLimit}`,
@@ -279,26 +287,26 @@ execute().then(result => {
 
       this.activeProcesses.set(executionId, child);
 
-      let stdout = '';
-      let stderr = '';
+      let stdout = "";
+      let stderr = "";
 
-      child.stdout?.on('data', (data) => {
+      child.stdout?.on("data", (data) => {
         stdout += data.toString();
       });
 
-      child.stderr?.on('data', (data) => {
+      child.stderr?.on("data", (data) => {
         stderr += data.toString();
       });
 
       // Set up timeout
       const timeout = setTimeout(() => {
         if (!child.killed) {
-          child.kill('SIGKILL');
+          child.kill("SIGKILL");
           this.metrics.timeouts++;
-          
+
           resolve({
             success: false,
-            error: 'Execution timeout',
+            error: "Execution timeout",
             executionTime: this.config.timeoutMs,
             memoryUsed: 0,
             cpuUsed: 0,
@@ -306,17 +314,17 @@ execute().then(result => {
         }
       }, this.config.timeoutMs);
 
-      child.on('close', (code, signal) => {
+      child.on("close", (code, signal) => {
         clearTimeout(timeout);
         this.activeProcesses.delete(executionId);
 
         const executionTime = Date.now() - startTime;
 
-        if (signal === 'SIGKILL') {
+        if (signal === "SIGKILL") {
           // Process was killed (likely due to timeout)
           resolve({
             success: false,
-            error: 'Process killed (timeout or memory limit)',
+            error: "Process killed (timeout or memory limit)",
             executionTime,
             memoryUsed: 0,
             cpuUsed: 0,
@@ -326,9 +334,11 @@ execute().then(result => {
           try {
             const resultPath = `${scriptPath}.result`;
             if (fs.existsSync(resultPath)) {
-              const resultData = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+              const resultData = JSON.parse(
+                fs.readFileSync(resultPath, "utf8"),
+              );
               fs.unlinkSync(resultPath);
-              
+
               resolve({
                 ...resultData,
                 executionTime,
@@ -336,7 +346,7 @@ execute().then(result => {
             } else {
               resolve({
                 success: false,
-                error: 'Result file not found',
+                error: "Result file not found",
                 executionTime,
                 memoryUsed: 0,
                 cpuUsed: 0,
@@ -355,13 +365,13 @@ execute().then(result => {
           // Error - read error file
           try {
             const errorPath = `${scriptPath}.error`;
-            let errorMessage = 'Unknown error';
-            
+            let errorMessage = "Unknown error";
+
             if (fs.existsSync(errorPath)) {
-              errorMessage = fs.readFileSync(errorPath, 'utf8');
+              errorMessage = fs.readFileSync(errorPath, "utf8");
               fs.unlinkSync(errorPath);
             }
-            
+
             resolve({
               success: false,
               error: errorMessage,
@@ -384,14 +394,14 @@ execute().then(result => {
         try {
           fs.unlinkSync(scriptPath);
         } catch (error) {
-          logger.warn('Failed to clean up script file:', error);
+          logger.warn("Failed to clean up script file:", error);
         }
       });
 
-      child.on('error', (error) => {
+      child.on("error", (error) => {
         clearTimeout(timeout);
         this.activeProcesses.delete(executionId);
-        
+
         resolve({
           success: false,
           error: `Process error: ${error.message}`,
@@ -406,11 +416,15 @@ execute().then(result => {
   /**
    * Update execution metrics
    */
-  private updateMetrics(startTime: number, success: boolean, memoryUsed: number): void {
+  private updateMetrics(
+    startTime: number,
+    success: boolean,
+    memoryUsed: number,
+  ): void {
     const executionTime = Date.now() - startTime;
-    
+
     this.metrics.totalExecutions++;
-    
+
     if (success) {
       this.metrics.successfulExecutions++;
     } else {
@@ -418,14 +432,16 @@ execute().then(result => {
     }
 
     // Update averages
-    this.metrics.averageExecutionTime = 
-      (this.metrics.averageExecutionTime * (this.metrics.totalExecutions - 1) + executionTime) / 
+    this.metrics.averageExecutionTime =
+      (this.metrics.averageExecutionTime * (this.metrics.totalExecutions - 1) +
+        executionTime) /
       this.metrics.totalExecutions;
-    
-    this.metrics.averageMemoryUsage = 
-      (this.metrics.averageMemoryUsage * (this.metrics.totalExecutions - 1) + memoryUsed) / 
+
+    this.metrics.averageMemoryUsage =
+      (this.metrics.averageMemoryUsage * (this.metrics.totalExecutions - 1) +
+        memoryUsed) /
       this.metrics.totalExecutions;
-    
+
     // Update peak memory
     if (memoryUsed > this.metrics.peakMemoryUsage) {
       this.metrics.peakMemoryUsage = memoryUsed;
@@ -465,15 +481,15 @@ execute().then(result => {
    */
   killProcess(executionId: string): boolean {
     const process = this.activeProcesses.get(executionId);
-    
+
     if (process && !process.killed) {
-      process.kill('SIGKILL');
+      process.kill("SIGKILL");
       this.activeProcesses.delete(executionId);
-      
-      logger.info('Killed sandbox process', { executionId });
+
+      logger.info("Killed sandbox process", { executionId });
       return true;
     }
-    
+
     return false;
   }
 
@@ -482,17 +498,17 @@ execute().then(result => {
    */
   killAllProcesses(): number {
     let killedCount = 0;
-    
-    for (const [executionId, process] of this.activeProcesses) {
+
+    for (const [_executionId, process] of this.activeProcesses) {
       if (!process.killed) {
-        process.kill('SIGKILL');
+        process.kill("SIGKILL");
         killedCount++;
       }
     }
-    
+
     this.activeProcesses.clear();
-    
-    logger.info('Killed all sandbox processes', { killedCount });
+
+    logger.info("Killed all sandbox processes", { killedCount });
     return killedCount;
   }
 
@@ -507,13 +523,13 @@ execute().then(result => {
       }
 
       // Check if we can write to temp directory
-      const testFile = path.join(this.tempDir, 'health-check');
-      fs.writeFileSync(testFile, 'test');
+      const testFile = path.join(this.tempDir, "health-check");
+      fs.writeFileSync(testFile, "test");
       fs.unlinkSync(testFile);
 
       return true;
     } catch (error) {
-      logger.error('Sandbox health check failed:', error);
+      logger.error("Sandbox health check failed:", error);
       return false;
     }
   }
@@ -523,8 +539,8 @@ execute().then(result => {
    */
   updateConfig(config: Partial<SandboxConfig>): void {
     this.config = { ...this.config, ...config };
-    
-    logger.info('Sandbox configuration updated', {
+
+    logger.info("Sandbox configuration updated", {
       enableSandbox: this.config.enableSandbox,
       memoryLimit: this.config.memoryLimit,
       timeoutMs: this.config.timeoutMs,
@@ -543,32 +559,32 @@ execute().then(result => {
    */
   async cleanup(): Promise<void> {
     this.isShuttingDown = true;
-    
+
     // Kill all active processes
     this.killAllProcesses();
-    
+
     // Clean up temp directory
     try {
       if (fs.existsSync(this.tempDir)) {
         const files = fs.readdirSync(this.tempDir);
-        
+
         for (const file of files) {
           const filePath = path.join(this.tempDir, file);
           try {
             fs.unlinkSync(filePath);
           } catch (error) {
-            logger.warn('Failed to delete temp file:', { filePath, error });
+            logger.warn("Failed to delete temp file:", { filePath, error });
           }
         }
-        
+
         fs.rmdirSync(this.tempDir);
-        logger.info('Cleaned up sandbox temp directory');
+        logger.info("Cleaned up sandbox temp directory");
       }
     } catch (error) {
-      logger.error('Failed to clean up sandbox temp directory:', error);
+      logger.error("Failed to clean up sandbox temp directory:", error);
     }
-    
-    logger.info('Sandbox Manager cleaned up');
+
+    logger.info("Sandbox Manager cleaned up");
   }
 
   /**
@@ -577,15 +593,15 @@ execute().then(result => {
   private setupGracefulShutdown(): void {
     const shutdown = async (signal: string) => {
       if (this.isShuttingDown) return;
-      
+
       logger.info(`Received ${signal}, shutting down sandbox manager...`);
-      
+
       await this.cleanup();
       process.exit(0);
     };
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   }
 
   /**
@@ -606,7 +622,7 @@ execute().then(result => {
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const usedMem = totalMem - freeMem;
-    
+
     return {
       memory: {
         total: Math.round(totalMem / 1024 / 1024), // MB
@@ -626,25 +642,26 @@ execute().then(result => {
    */
   hasEnoughResources(): boolean {
     const usage = this.getSystemResourceUsage();
-    
+
     // Check if we have enough memory
     if (usage.memory.percentage > 80) {
       return false;
     }
-    
+
     // Check if CPU is not overloaded
     if (usage.cpu.usage > 90) {
       return false;
     }
-    
+
     // Check if we have enough memory for the sandbox
     const requiredMemory = this.config.memoryLimit;
     const availableMemory = usage.memory.free;
-    
-    if (availableMemory < requiredMemory * 2) { // Keep 2x margin
+
+    if (availableMemory < requiredMemory * 2) {
+      // Keep 2x margin
       return false;
     }
-    
+
     return true;
   }
 }

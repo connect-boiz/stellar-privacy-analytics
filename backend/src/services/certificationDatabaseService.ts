@@ -1,5 +1,9 @@
-import { logger } from '../utils/logger';
-import { Certification, CertificationFilter, IndustryStandard } from '../types/certification';
+import { logger } from "../utils/logger";
+import {
+  Certification,
+  CertificationFilter,
+  IndustryStandard,
+} from "../types/certification";
 
 // Mock database implementation for certification data - in production, this would connect to PostgreSQL
 class CertificationDatabaseService {
@@ -11,7 +15,7 @@ class CertificationDatabaseService {
       this.certifications.set(certification.id, certification);
       logger.info(`Stored certification ${certification.id} in database`);
     } catch (error) {
-      logger.error('Error storing certification:', error);
+      logger.error("Error storing certification:", error);
       throw error;
     }
   }
@@ -20,12 +24,14 @@ class CertificationDatabaseService {
     try {
       return this.certifications.get(id) || null;
     } catch (error) {
-      logger.error('Error fetching certification from database:', error);
+      logger.error("Error fetching certification from database:", error);
       throw error;
     }
   }
 
-  async getCertificationByVerificationCode(verificationCode: string): Promise<Certification | null> {
+  async getCertificationByVerificationCode(
+    verificationCode: string,
+  ): Promise<Certification | null> {
     try {
       for (const certification of this.certifications.values()) {
         if (certification.verificationCode === verificationCode) {
@@ -34,12 +40,14 @@ class CertificationDatabaseService {
       }
       return null;
     } catch (error) {
-      logger.error('Error fetching certification by verification code:', error);
+      logger.error("Error fetching certification by verification code:", error);
       throw error;
     }
   }
 
-  async getOrganizationCertifications(filters: CertificationFilter): Promise<Certification[]> {
+  async getOrganizationCertifications(
+    filters: CertificationFilter,
+  ): Promise<Certification[]> {
     try {
       let certifications = Array.from(this.certifications.values());
 
@@ -49,28 +57,40 @@ class CertificationDatabaseService {
       }
 
       if (filters.status) {
-        certifications = certifications.filter(cert => cert.status === filters.status);
+        certifications = certifications.filter(
+          (cert) => cert.status === filters.status,
+        );
       }
 
       if (filters.certificationType) {
-        certifications = certifications.filter(cert => cert.certificationType === filters.certificationType);
+        certifications = certifications.filter(
+          (cert) => cert.certificationType === filters.certificationType,
+        );
       }
 
       if (filters.dateFrom) {
-        certifications = certifications.filter(cert => cert.createdAt >= filters.dateFrom!);
+        certifications = certifications.filter(
+          (cert) => cert.createdAt >= filters.dateFrom!,
+        );
       }
 
       if (filters.dateTo) {
-        certifications = certifications.filter(cert => cert.createdAt <= filters.dateTo!);
+        certifications = certifications.filter(
+          (cert) => cert.createdAt <= filters.dateTo!,
+        );
       }
 
       if (filters.privacyLevel) {
-        certifications = certifications.filter(cert => cert.privacyLevel === filters.privacyLevel);
+        certifications = certifications.filter(
+          (cert) => cert.privacyLevel === filters.privacyLevel,
+        );
       }
 
-      return certifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return certifications.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      );
     } catch (error) {
-      logger.error('Error fetching organization certifications:', error);
+      logger.error("Error fetching organization certifications:", error);
       throw error;
     }
   }
@@ -80,7 +100,7 @@ class CertificationDatabaseService {
       this.certifications.set(certification.id, certification);
       logger.info(`Updated certification ${certification.id} in database`);
     } catch (error) {
-      logger.error('Error updating certification:', error);
+      logger.error("Error updating certification:", error);
       throw error;
     }
   }
@@ -90,7 +110,7 @@ class CertificationDatabaseService {
       this.certifications.delete(id);
       logger.info(`Deleted certification ${id} from database`);
     } catch (error) {
-      logger.error('Error deleting certification:', error);
+      logger.error("Error deleting certification:", error);
       throw error;
     }
   }
@@ -98,10 +118,10 @@ class CertificationDatabaseService {
   async getCertificationsExpiringBefore(date: Date): Promise<Certification[]> {
     try {
       return Array.from(this.certifications.values()).filter(
-        cert => cert.expiryDate <= date && cert.status === 'validated'
+        (cert) => cert.expiryDate <= date && cert.status === "validated",
       );
     } catch (error) {
-      logger.error('Error fetching expiring certifications:', error);
+      logger.error("Error fetching expiring certifications:", error);
       throw error;
     }
   }
@@ -110,7 +130,7 @@ class CertificationDatabaseService {
     try {
       return Array.from(this.industryStandards.values());
     } catch (error) {
-      logger.error('Error fetching industry standards:', error);
+      logger.error("Error fetching industry standards:", error);
       throw error;
     }
   }
@@ -119,7 +139,7 @@ class CertificationDatabaseService {
     try {
       return this.industryStandards.get(id) || null;
     } catch (error) {
-      logger.error('Error fetching industry standard:', error);
+      logger.error("Error fetching industry standard:", error);
       throw error;
     }
   }
@@ -129,7 +149,7 @@ class CertificationDatabaseService {
       this.industryStandards.set(standard.id, standard);
       logger.info(`Stored industry standard ${standard.id} in database`);
     } catch (error) {
-      logger.error('Error storing industry standard:', error);
+      logger.error("Error storing industry standard:", error);
       throw error;
     }
   }
@@ -137,13 +157,14 @@ class CertificationDatabaseService {
   async searchCertifications(query: string): Promise<Certification[]> {
     try {
       const lowerQuery = query.toLowerCase();
-      return Array.from(this.certifications.values()).filter(cert =>
-        cert.organizationName.toLowerCase().includes(lowerQuery) ||
-        cert.certificationType.toLowerCase().includes(lowerQuery) ||
-        cert.contactEmail.toLowerCase().includes(lowerQuery)
+      return Array.from(this.certifications.values()).filter(
+        (cert) =>
+          cert.organizationName.toLowerCase().includes(lowerQuery) ||
+          cert.certificationType.toLowerCase().includes(lowerQuery) ||
+          cert.contactEmail.toLowerCase().includes(lowerQuery),
       );
     } catch (error) {
-      logger.error('Error searching certifications:', error);
+      logger.error("Error searching certifications:", error);
       throw error;
     }
   }
@@ -156,7 +177,7 @@ class CertificationDatabaseService {
   }> {
     try {
       const certifications = Array.from(this.certifications.values());
-      
+
       const stats = {
         total: certifications.length,
         byStatus: {} as Record<string, number>,
@@ -164,15 +185,17 @@ class CertificationDatabaseService {
         byPrivacyLevel: {} as Record<string, number>,
       };
 
-      certifications.forEach(cert => {
+      certifications.forEach((cert) => {
         stats.byStatus[cert.status] = (stats.byStatus[cert.status] || 0) + 1;
-        stats.byType[cert.certificationType] = (stats.byType[cert.certificationType] || 0) + 1;
-        stats.byPrivacyLevel[cert.privacyLevel] = (stats.byPrivacyLevel[cert.privacyLevel] || 0) + 1;
+        stats.byType[cert.certificationType] =
+          (stats.byType[cert.certificationType] || 0) + 1;
+        stats.byPrivacyLevel[cert.privacyLevel] =
+          (stats.byPrivacyLevel[cert.privacyLevel] || 0) + 1;
       });
 
       return stats;
     } catch (error) {
-      logger.error('Error fetching certification stats:', error);
+      logger.error("Error fetching certification stats:", error);
       throw error;
     }
   }
@@ -182,28 +205,58 @@ class CertificationDatabaseService {
       // Initialize some mock industry standards
       const mockStandards: IndustryStandard[] = [
         {
-          id: 'gdpr-2018',
-          name: 'General Data Protection Regulation',
-          description: 'EU regulation on data protection and privacy',
+          id: "gdpr-2018",
+          name: "General Data Protection Regulation",
+          description: "EU regulation on data protection and privacy",
           requirements: [
-            { id: 'gdpr-1', description: 'Lawful basis for processing', category: 'Legal', mandatory: true },
-            { id: 'gdpr-2', description: 'Data minimization', category: 'Technical', mandatory: true },
-            { id: 'gdpr-3', description: 'Data subject rights', category: 'Legal', mandatory: true },
+            {
+              id: "gdpr-1",
+              description: "Lawful basis for processing",
+              category: "Legal",
+              mandatory: true,
+            },
+            {
+              id: "gdpr-2",
+              description: "Data minimization",
+              category: "Technical",
+              mandatory: true,
+            },
+            {
+              id: "gdpr-3",
+              description: "Data subject rights",
+              category: "Legal",
+              mandatory: true,
+            },
           ],
-          version: '1.0',
-          lastUpdated: new Date('2018-05-25'),
+          version: "1.0",
+          lastUpdated: new Date("2018-05-25"),
         },
         {
-          id: 'ccpa-2020',
-          name: 'California Consumer Privacy Act',
-          description: 'California state privacy law',
+          id: "ccpa-2020",
+          name: "California Consumer Privacy Act",
+          description: "California state privacy law",
           requirements: [
-            { id: 'ccpa-1', description: 'Right to know', category: 'Legal', mandatory: true },
-            { id: 'ccpa-2', description: 'Right to delete', category: 'Legal', mandatory: true },
-            { id: 'ccpa-3', description: 'Right to opt-out', category: 'Legal', mandatory: true },
+            {
+              id: "ccpa-1",
+              description: "Right to know",
+              category: "Legal",
+              mandatory: true,
+            },
+            {
+              id: "ccpa-2",
+              description: "Right to delete",
+              category: "Legal",
+              mandatory: true,
+            },
+            {
+              id: "ccpa-3",
+              description: "Right to opt-out",
+              category: "Legal",
+              mandatory: true,
+            },
           ],
-          version: '1.0',
-          lastUpdated: new Date('2020-01-01'),
+          version: "1.0",
+          lastUpdated: new Date("2020-01-01"),
         },
       ];
 
@@ -211,9 +264,9 @@ class CertificationDatabaseService {
         await this.storeIndustryStandard(standard);
       }
 
-      logger.info('Initialized mock industry standards');
+      logger.info("Initialized mock industry standards");
     } catch (error) {
-      logger.error('Error initializing mock data:', error);
+      logger.error("Error initializing mock data:", error);
       throw error;
     }
   }

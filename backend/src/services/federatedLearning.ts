@@ -1,7 +1,6 @@
-import { EventEmitter } from 'events';
-import { logger } from '../utils/logger';
-import crypto from 'crypto';
-import { Server as SocketIOServer } from 'socket.io';
+import { EventEmitter } from "events";
+import { logger } from "../utils/logger";
+import { Server as SocketIOServer } from "socket.io";
 
 export interface FederatedClient {
   id: string;
@@ -9,7 +8,7 @@ export interface FederatedClient {
   publicKey: string; // For encrypted model updates
   dataSamples: number;
   lastUpdate: Date;
-  status: 'active' | 'inactive' | 'training';
+  status: "active" | "inactive" | "training";
 }
 
 export interface ModelUpdate {
@@ -23,7 +22,7 @@ export interface ModelUpdate {
 }
 
 export interface FederatedConfig {
-  aggregationStrategy: 'fedavg' | 'fedprox' | 'scaffold';
+  aggregationStrategy: "fedavg" | "fedprox" | "scaffold";
   minClients: number;
   maxClients: number;
   rounds: number;
@@ -56,7 +55,7 @@ export class FederatedLearningService extends EventEmitter {
   constructor(config: Partial<FederatedConfig> = {}) {
     super();
     this.config = {
-      aggregationStrategy: 'fedavg',
+      aggregationStrategy: "fedavg",
       minClients: 3,
       maxClients: 10,
       rounds: 100,
@@ -65,7 +64,7 @@ export class FederatedLearningService extends EventEmitter {
       noiseScale: 0.1,
       clippingBound: 1.0,
       encryptionEnabled: true,
-      ...config
+      ...config,
     };
   }
 
@@ -77,51 +76,66 @@ export class FederatedLearningService extends EventEmitter {
   private setupSocketHandlers() {
     if (!this.io) return;
 
-    this.io.on('connection', (socket) => {
+    this.io.on("connection", (socket) => {
       logger.info(`ML client connected: ${socket.id}`);
 
       // Client registration
-      socket.on('register-client', async (data: { endpoint: string; publicKey: string; dataSamples: number }) => {
-        const client: FederatedClient = {
-          id: socket.id,
-          endpoint: data.endpoint,
-          publicKey: data.publicKey,
-          dataSamples: data.dataSamples,
-          lastUpdate: new Date(),
-          status: 'active'
-        };
+      socket.on(
+        "register-client",
+        async (data: {
+          endpoint: string;
+          publicKey: string;
+          dataSamples: number;
+        }) => {
+          const client: FederatedClient = {
+            id: socket.id,
+            endpoint: data.endpoint,
+            publicKey: data.publicKey,
+            dataSamples: data.dataSamples,
+            lastUpdate: new Date(),
+            status: "active",
+          };
 
-        this.clients.set(socket.id, client);
-        logger.info(`Client registered: ${socket.id} with ${data.dataSamples} samples`);
+          this.clients.set(socket.id, client);
+          logger.info(
+            `Client registered: ${socket.id} with ${data.dataSamples} samples`,
+          );
 
-        socket.emit('client-registered', { clientId: socket.id, config: this.config });
-        
-        // Notify all clients about the updated client list
-        this.broadcastClientList();
-      });
+          socket.emit("client-registered", {
+            clientId: socket.id,
+            config: this.config,
+          });
+
+          // Notify all clients about the updated client list
+          this.broadcastClientList();
+        },
+      );
 
       // Model update from client
-      socket.on('model-update', async (update: ModelUpdate) => {
+      socket.on("model-update", async (update: ModelUpdate) => {
         try {
           await this.processModelUpdate(update);
-          socket.emit('update-received', { status: 'success' });
+          socket.emit("update-received", { status: "success" });
         } catch (error) {
-          logger.error('Error processing model update:', error);
-          socket.emit('update-received', { status: 'error', message: 'Failed to process update' });
+          logger.error("Error processing model update:", error);
+          socket.emit("update-received", {
+            status: "error",
+            message: "Failed to process update",
+          });
         }
       });
 
       // Training status requests
-      socket.on('get-training-status', () => {
-        socket.emit('training-status', {
+      socket.on("get-training-status", () => {
+        socket.emit("training-status", {
           isTraining: this.isTraining,
           currentRound: this.currentRound,
           config: this.config,
-          metrics: this.trainingHistory
+          metrics: this.trainingHistory,
         });
       });
 
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         this.clients.delete(socket.id);
         logger.info(`Client disconnected: ${socket.id}`);
         this.broadcastClientList();
@@ -132,31 +146,33 @@ export class FederatedLearningService extends EventEmitter {
   private broadcastClientList() {
     if (!this.io) return;
 
-    const clientList = Array.from(this.clients.values()).map(client => ({
+    const clientList = Array.from(this.clients.values()).map((client) => ({
       id: client.id,
       dataSamples: client.dataSamples,
       status: client.status,
-      lastUpdate: client.lastUpdate
+      lastUpdate: client.lastUpdate,
     }));
 
-    this.io.emit('clients-updated', clientList);
+    this.io.emit("clients-updated", clientList);
   }
 
   async startFederatedTraining(initialModel?: number[]): Promise<void> {
     if (this.isTraining) {
-      throw new Error('Training is already in progress');
+      throw new Error("Training is already in progress");
     }
 
     if (this.clients.size < this.config.minClients) {
-      throw new Error(`Insufficient clients. Need at least ${this.config.minClients}, have ${this.clients.size}`);
+      throw new Error(
+        `Insufficient clients. Need at least ${this.config.minClients}, have ${this.clients.size}`,
+      );
     }
 
     this.isTraining = true;
     this.currentRound = 0;
     this.currentModel = initialModel || this.generateRandomModel();
 
-    logger.info('Starting federated learning training');
-    this.emit('training-started');
+    logger.info("Starting federated learning training");
+    this.emit("training-started");
 
     try {
       for (let round = 0; round < this.config.rounds; round++) {
@@ -164,19 +180,25 @@ export class FederatedLearningService extends EventEmitter {
         await this.runTrainingRound(round);
 
         // Check convergence
-        const latestMetrics = this.trainingHistory[this.trainingHistory.length - 1];
-        if (latestMetrics && latestMetrics.accuracy >= this.config.targetAccuracy) {
+        const latestMetrics =
+          this.trainingHistory[this.trainingHistory.length - 1];
+        if (
+          latestMetrics &&
+          latestMetrics.accuracy >= this.config.targetAccuracy
+        ) {
           logger.info(`Target accuracy reached at round ${round}`);
           break;
         }
       }
 
       this.isTraining = false;
-      this.emit('training-completed', { finalModel: this.currentModel, history: this.trainingHistory });
-      
+      this.emit("training-completed", {
+        finalModel: this.currentModel,
+        history: this.trainingHistory,
+      });
     } catch (error) {
       this.isTraining = false;
-      this.emit('training-error', error);
+      this.emit("training-error", error);
       throw error;
     }
   }
@@ -186,7 +208,7 @@ export class FederatedLearningService extends EventEmitter {
 
     // Select clients for this round
     const selectedClients = this.selectClients();
-    
+
     // Send current model to selected clients
     await this.sendModelToClients(selectedClients);
 
@@ -205,30 +227,40 @@ export class FederatedLearningService extends EventEmitter {
       accuracy: this.calculateAccuracy(),
       loss: this.calculateLoss(),
       participatingClients: updates.length,
-      totalSamples: updates.reduce((sum, update) => sum + update.sampleCount, 0),
-      privacyBudgetUsed: updates.reduce((sum, update) => sum + (update.epsilon || 0), 0),
-      convergenceThreshold: this.calculateConvergenceThreshold()
+      totalSamples: updates.reduce(
+        (sum, update) => sum + update.sampleCount,
+        0,
+      ),
+      privacyBudgetUsed: updates.reduce(
+        (sum, update) => sum + (update.epsilon || 0),
+        0,
+      ),
+      convergenceThreshold: this.calculateConvergenceThreshold(),
     };
 
     this.trainingHistory.push(metrics);
-    this.emit('round-completed', metrics);
+    this.emit("round-completed", metrics);
 
     // Broadcast results
     if (this.io) {
-      this.io.emit('round-results', {
+      this.io.emit("round-results", {
         round,
         model: this.currentModel,
-        metrics
+        metrics,
       });
     }
 
-    logger.info(`Round ${round} completed with ${updates.length} client updates`);
+    logger.info(
+      `Round ${round} completed with ${updates.length} client updates`,
+    );
   }
 
   private selectClients(): FederatedClient[] {
-    const activeClients = Array.from(this.clients.values()).filter(c => c.status === 'active');
+    const activeClients = Array.from(this.clients.values()).filter(
+      (c) => c.status === "active",
+    );
     const numClients = Math.min(this.config.maxClients, activeClients.length);
-    
+
     // Randomly select clients (in practice, this could be based on data availability, latency, etc.)
     const shuffled = activeClients.sort(() => Math.random() - 0.5);
     return shuffled.slice(0, numClients);
@@ -238,26 +270,30 @@ export class FederatedLearningService extends EventEmitter {
     const modelData = {
       model: this.currentModel,
       round: this.currentRound,
-      config: this.config
+      config: this.config,
     };
 
     if (this.io) {
-      clients.forEach(client => {
-        this.io!.to(client.id).emit('start-training', modelData);
-        client.status = 'training';
+      clients.forEach((client) => {
+        this.io!.to(client.id).emit("start-training", modelData);
+        client.status = "training";
       });
     }
   }
 
-  private async collectModelUpdates(clients: FederatedClient[]): Promise<ModelUpdate[]> {
-    return new Promise((resolve, reject) => {
+  private async collectModelUpdates(
+    clients: FederatedClient[],
+  ): Promise<ModelUpdate[]> {
+    return new Promise((resolve, _reject) => {
       const updates: ModelUpdate[] = [];
-      const clientIds = new Set(clients.map(c => c.id));
+      const clientIds = new Set(clients.map((c) => c.id));
       let timeout: NodeJS.Timeout;
 
       const checkComplete = () => {
-        if (updates.length >= this.config.minClients || 
-            (clientIds.size === updates.length && updates.length > 0)) {
+        if (
+          updates.length >= this.config.minClients ||
+          (clientIds.size === updates.length && updates.length > 0)
+        ) {
           clearTimeout(timeout);
           resolve(updates);
         }
@@ -273,11 +309,11 @@ export class FederatedLearningService extends EventEmitter {
           }
         };
 
-        this.io.once('model-update', updateHandler);
+        this.io.once("model-update", updateHandler);
 
         // Set timeout (30 seconds per round)
         timeout = setTimeout(() => {
-          this.io!.off('model-update', updateHandler);
+          this.io!.off("model-update", updateHandler);
           resolve(updates); // Return whatever we have
         }, 30000);
       }
@@ -290,11 +326,11 @@ export class FederatedLearningService extends EventEmitter {
     }
 
     switch (this.config.aggregationStrategy) {
-      case 'fedavg':
+      case "fedavg":
         return this.federatedAveraging(updates);
-      case 'fedprox':
+      case "fedprox":
         return this.federatedProximal(updates);
-      case 'scaffold':
+      case "scaffold":
         return this.scaffoldAggregation(updates);
       default:
         return this.federatedAveraging(updates);
@@ -302,10 +338,13 @@ export class FederatedLearningService extends EventEmitter {
   }
 
   private federatedAveraging(updates: ModelUpdate[]): number[] {
-    const totalSamples = updates.reduce((sum, update) => sum + update.sampleCount, 0);
+    const totalSamples = updates.reduce(
+      (sum, update) => sum + update.sampleCount,
+      0,
+    );
     const weightedSum = new Array(this.currentModel.length).fill(0);
 
-    updates.forEach(update => {
+    updates.forEach((update) => {
       const weight = update.sampleCount / totalSamples;
       update.modelWeights.forEach((weight_val, index) => {
         weightedSum[index] += weight_val * weight;
@@ -329,7 +368,7 @@ export class FederatedLearningService extends EventEmitter {
   private scaffoldAggregation(updates: ModelUpdate[]): number[] {
     // SCAFFOLD adds control variates to reduce client drift
     const fedAvg = this.federatedAveraging(updates);
-    
+
     // Simplified SCAFFOLD implementation
     const controlVariates = new Array(this.currentModel.length).fill(0);
     return fedAvg.map((weight, index) => {
@@ -340,27 +379,35 @@ export class FederatedLearningService extends EventEmitter {
   private async processModelUpdate(update: ModelUpdate): Promise<void> {
     // Apply differential privacy noise if enabled
     if (update.epsilon && update.epsilon > 0) {
-      update.modelWeights = this.addDifferentialPrivacyNoise(update.modelWeights, update.epsilon);
+      update.modelWeights = this.addDifferentialPrivacyNoise(
+        update.modelWeights,
+        update.epsilon,
+      );
     }
 
     // Decrypt update if encrypted
     if (update.encryptedUpdate && this.config.encryptionEnabled) {
-      update.modelWeights = await this.decryptModelUpdate(update.encryptedUpdate);
+      update.modelWeights = await this.decryptModelUpdate(
+        update.encryptedUpdate,
+      );
     }
 
     // Update client status
     const client = this.clients.get(update.clientId);
     if (client) {
       client.lastUpdate = new Date();
-      client.status = 'active';
+      client.status = "active";
     }
   }
 
-  private addDifferentialPrivacyNoise(weights: number[], epsilon: number): number[] {
+  private addDifferentialPrivacyNoise(
+    weights: number[],
+    epsilon: number,
+  ): number[] {
     const sensitivity = this.config.clippingBound;
     const scale = sensitivity / epsilon;
-    
-    return weights.map(weight => {
+
+    return weights.map((weight) => {
       const noise = this.generateLaplaceNoise(0, scale);
       return weight + noise;
     });
@@ -374,8 +421,8 @@ export class FederatedLearningService extends EventEmitter {
   private async decryptModelUpdate(encryptedUpdate: string): Promise<number[]> {
     // Simplified decryption - in practice, this would use homomorphic encryption
     // For now, return a mock decrypted update
-    const decrypted = Buffer.from(encryptedUpdate, 'base64');
-    return Array.from(decrypted).map(b => b / 255.0);
+    const decrypted = Buffer.from(encryptedUpdate, "base64");
+    return Array.from(decrypted).map((b) => b / 255.0);
   }
 
   private generateRandomModel(): number[] {
@@ -399,7 +446,7 @@ export class FederatedLearningService extends EventEmitter {
 
   private calculateConvergenceThreshold(): number {
     if (this.trainingHistory.length < 2) return 1.0;
-    
+
     const current = this.trainingHistory[this.trainingHistory.length - 1];
     const previous = this.trainingHistory[this.trainingHistory.length - 2];
     return Math.abs(current.accuracy - previous.accuracy);
@@ -412,27 +459,32 @@ export class FederatedLearningService extends EventEmitter {
       currentRound: this.currentRound,
       config: this.config,
       metrics: this.trainingHistory,
-      clients: Array.from(this.clients.values())
+      clients: Array.from(this.clients.values()),
     };
   }
 
   async stopTraining(): Promise<void> {
     this.isTraining = false;
-    this.emit('training-stopped');
-    logger.info('Federated learning training stopped');
+    this.emit("training-stopped");
+    logger.info("Federated learning training stopped");
   }
 
   getClientMetrics(): any {
     return {
       totalClients: this.clients.size,
-      activeClients: Array.from(this.clients.values()).filter(c => c.status === 'active').length,
-      totalSamples: Array.from(this.clients.values()).reduce((sum, c) => sum + c.dataSamples, 0),
-      clients: Array.from(this.clients.values()).map(c => ({
+      activeClients: Array.from(this.clients.values()).filter(
+        (c) => c.status === "active",
+      ).length,
+      totalSamples: Array.from(this.clients.values()).reduce(
+        (sum, c) => sum + c.dataSamples,
+        0,
+      ),
+      clients: Array.from(this.clients.values()).map((c) => ({
         id: c.id,
         dataSamples: c.dataSamples,
         status: c.status,
-        lastUpdate: c.lastUpdate
-      }))
+        lastUpdate: c.lastUpdate,
+      })),
     };
   }
 }

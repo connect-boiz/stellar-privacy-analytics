@@ -12,18 +12,18 @@ interface ModalContextValue {
 const ModalContext = createContext<ModalContextValue>({
   modalCount: 0,
   addModal: () => {},
-  removeModal: () => {}
+  removeModal: () => {},
 });
 
 export const ModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [modalCount, setModalCount] = useState(0);
 
   const addModal = useCallback(() => {
-    setModalCount(prev => prev + 1);
+    setModalCount((prev) => prev + 1);
   }, []);
 
   const removeModal = useCallback(() => {
-    setModalCount(prev => Math.max(0, prev - 1));
+    setModalCount((prev) => Math.max(0, prev - 1));
   }, []);
 
   return (
@@ -74,39 +74,42 @@ function useFocusTrap(isActive: boolean) {
     }
   }, []);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!isActive || !containerRef.current) return;
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (!isActive || !containerRef.current) return;
 
-    const container = containerRef.current;
-    const focusableElements = container.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    );
+      const container = containerRef.current;
+      const focusableElements = container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
 
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
-    // Tab key handling for focus trap
-    if (event.key === 'Tab') {
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      if (event.shiftKey) {
-        // Shift + Tab
-        if (document.activeElement === firstElement) {
+      // Tab key handling for focus trap
+      if (event.key === 'Tab') {
+        if (focusableElements.length === 0) {
           event.preventDefault();
-          lastElement.focus();
+          return;
         }
-      } else {
-        // Tab
-        if (document.activeElement === lastElement) {
-          event.preventDefault();
-          firstElement.focus();
+
+        if (event.shiftKey) {
+          // Shift + Tab
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          // Tab
+          if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+          }
         }
       }
-    }
-  }, [isActive]);
+    },
+    [isActive]
+  );
 
   useEffect(() => {
     if (isActive) {
@@ -141,7 +144,7 @@ const LiveAnnouncer: React.FC<LiveAnnouncerProps> = ({ message, assertive = fals
       overflow: 'hidden',
       clip: 'rect(0, 0, 0, 0)',
       whiteSpace: 'nowrap',
-      border: 0
+      border: 0,
     }}
   >
     {message}
@@ -163,7 +166,7 @@ export const Modal: React.FC<ModalProps> = ({
   className = '',
   overlayClassName = '',
   'aria-labelledby': ariaLabelledBy,
-  'aria-describedby': ariaDescribedBy
+  'aria-describedby': ariaDescribedBy,
 }) => {
   const { addModal, removeModal } = useModalContext();
   const { containerRef, restoreFocus } = useFocusTrap(isOpen);
@@ -225,6 +228,7 @@ export const Modal: React.FC<ModalProps> = ({
     // Small delay to ensure DOM is ready
     const timeoutId = setTimeout(focusElement, 50);
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialFocusRef]);
 
   // Handle focus restoration on close
@@ -261,7 +265,7 @@ export const Modal: React.FC<ModalProps> = ({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
-    full: 'max-w-4xl'
+    full: 'max-w-4xl',
   };
 
   const labelledBy = ariaLabelledBy || (title ? titleId.current : undefined);
@@ -308,10 +312,7 @@ export const Modal: React.FC<ModalProps> = ({
               {(title || showCloseButton) && (
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
                   {title && (
-                    <h2
-                      id={titleId.current}
-                      className="text-lg font-semibold text-gray-900"
-                    >
+                    <h2 id={titleId.current} className="text-lg font-semibold text-gray-900">
                       {title}
                     </h2>
                   )}
@@ -330,18 +331,13 @@ export const Modal: React.FC<ModalProps> = ({
 
               {/* Description */}
               {description && (
-                <p
-                  id={descriptionId.current}
-                  className="px-4 pt-4 text-sm text-gray-600"
-                >
+                <p id={descriptionId.current} className="px-4 pt-4 text-sm text-gray-600">
                   {description}
                 </p>
               )}
 
               {/* Content */}
-              <div className="p-4">
-                {children}
-              </div>
+              <div className="p-4">{children}</div>
             </motion.div>
           </div>
         </>
@@ -372,14 +368,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   variant = 'default',
-  isLoading = false
+  isLoading = false,
 }) => {
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const variantClasses = {
     default: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
     danger: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-    warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
+    warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500',
   };
 
   return (
@@ -428,7 +424,7 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
   title,
   message,
   buttonLabel = 'OK',
-  variant = 'default'
+  variant = 'default',
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -437,17 +433,11 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
     success: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
     error: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
     warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500',
-    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+    info: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      size="sm"
-      initialFocusRef={buttonRef}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm" initialFocusRef={buttonRef}>
       <p className="text-gray-600 mb-6">{message}</p>
       <div className="flex justify-end">
         <button

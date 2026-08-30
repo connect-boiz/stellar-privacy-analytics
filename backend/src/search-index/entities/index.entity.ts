@@ -3,13 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-} from 'typeorm';
+} from "typeorm";
 
-export type IndexType = 'inverted' | 'bloom' | 'lsh';
+export type IndexType = "inverted" | "bloom" | "lsh";
 
-@Entity('search_indexes')
+@Entity("search_indexes")
 export class SearchIndex {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column()
@@ -21,8 +21,8 @@ export class SearchIndex {
   @Column()
   type: IndexType;
 
-  @Column({ default: 'pending' })
-  status: 'pending' | 'building' | 'ready' | 'failed';
+  @Column({ default: "pending" })
+  status: "pending" | "building" | "ready" | "failed";
 
   @Column({ nullable: true })
   storagePath: string;

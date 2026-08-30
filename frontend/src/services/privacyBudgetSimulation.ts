@@ -3,7 +3,7 @@
  */
 
 import {
-  PrivacyBudget,
+  _PrivacyBudget,
   BudgetAllocation,
   SimulationScenario,
   SimulationResult,
@@ -12,10 +12,10 @@ import {
   Projection,
   Recommendation,
   SensitivityAnalysis,
-  BudgetOptimization,
-  OptimizationSolution,
+  _BudgetOptimization,
+  _OptimizationSolution,
   AllocationCategory,
-  ImpactFactor
+  _ImpactFactor,
 } from '../types/privacyBudget';
 
 export interface SimulationConfig {
@@ -47,7 +47,7 @@ export class PrivacyBudgetSimulation {
           monteCarloRuns: 1000,
           confidenceLevel: 0.95,
           timeStep: 1,
-          optimizationAlgorithm: 'genetic'
+          optimizationAlgorithm: 'genetic',
         };
       }
       PrivacyBudgetSimulation.instance = new PrivacyBudgetSimulation(config);
@@ -65,10 +65,25 @@ export class PrivacyBudgetSimulation {
         minAllocation: 0.1,
         maxAllocation: 0.4,
         impactFactors: [
-          { metric: 'data_quality', weight: 0.3, direction: 'positive', description: 'Higher budget improves data quality' },
-          { metric: 'coverage', weight: 0.4, direction: 'positive', description: 'More budget increases data coverage' },
-          { metric: 'privacy_risk', weight: 0.3, direction: 'negative', description: 'Higher collection increases privacy risk' }
-        ]
+          {
+            metric: 'data_quality',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Higher budget improves data quality',
+          },
+          {
+            metric: 'coverage',
+            weight: 0.4,
+            direction: 'positive',
+            description: 'More budget increases data coverage',
+          },
+          {
+            metric: 'privacy_risk',
+            weight: 0.3,
+            direction: 'negative',
+            description: 'Higher collection increases privacy risk',
+          },
+        ],
       },
       {
         id: 'data_analysis',
@@ -78,10 +93,25 @@ export class PrivacyBudgetSimulation {
         minAllocation: 0.2,
         maxAllocation: 0.5,
         impactFactors: [
-          { metric: 'insight_quality', weight: 0.4, direction: 'positive', description: 'Better tools improve insights' },
-          { metric: 'processing_speed', weight: 0.3, direction: 'positive', description: 'More resources speed up processing' },
-          { metric: 'accuracy', weight: 0.3, direction: 'positive', description: 'Advanced analytics improve accuracy' }
-        ]
+          {
+            metric: 'insight_quality',
+            weight: 0.4,
+            direction: 'positive',
+            description: 'Better tools improve insights',
+          },
+          {
+            metric: 'processing_speed',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'More resources speed up processing',
+          },
+          {
+            metric: 'accuracy',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Advanced analytics improve accuracy',
+          },
+        ],
       },
       {
         id: 'data_sharing',
@@ -91,10 +121,25 @@ export class PrivacyBudgetSimulation {
         minAllocation: 0.05,
         maxAllocation: 0.2,
         impactFactors: [
-          { metric: 'collaboration', weight: 0.4, direction: 'positive', description: 'Enables better collaboration' },
-          { metric: 'innovation', weight: 0.3, direction: 'positive', description: 'Drives innovation through sharing' },
-          { metric: 'privacy_risk', weight: 0.3, direction: 'negative', description: 'Increases potential privacy risks' }
-        ]
+          {
+            metric: 'collaboration',
+            weight: 0.4,
+            direction: 'positive',
+            description: 'Enables better collaboration',
+          },
+          {
+            metric: 'innovation',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Drives innovation through sharing',
+          },
+          {
+            metric: 'privacy_risk',
+            weight: 0.3,
+            direction: 'negative',
+            description: 'Increases potential privacy risks',
+          },
+        ],
       },
       {
         id: 'compliance',
@@ -104,10 +149,25 @@ export class PrivacyBudgetSimulation {
         minAllocation: 0.1,
         maxAllocation: 0.3,
         impactFactors: [
-          { metric: 'compliance_score', weight: 0.5, direction: 'positive', description: 'Direct impact on compliance' },
-          { metric: 'audit_readiness', weight: 0.3, direction: 'positive', description: 'Improves audit preparedness' },
-          { metric: 'risk_reduction', weight: 0.2, direction: 'positive', description: 'Reduces regulatory risks' }
-        ]
+          {
+            metric: 'compliance_score',
+            weight: 0.5,
+            direction: 'positive',
+            description: 'Direct impact on compliance',
+          },
+          {
+            metric: 'audit_readiness',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Improves audit preparedness',
+          },
+          {
+            metric: 'risk_reduction',
+            weight: 0.2,
+            direction: 'positive',
+            description: 'Reduces regulatory risks',
+          },
+        ],
       },
       {
         id: 'monitoring',
@@ -117,10 +177,25 @@ export class PrivacyBudgetSimulation {
         minAllocation: 0.05,
         maxAllocation: 0.15,
         impactFactors: [
-          { metric: 'detection_capability', weight: 0.4, direction: 'positive', description: 'Better threat detection' },
-          { metric: 'response_time', weight: 0.3, direction: 'positive', description: 'Faster incident response' },
-          { metric: 'prevention', weight: 0.3, direction: 'positive', description: 'Proactive risk prevention' }
-        ]
+          {
+            metric: 'detection_capability',
+            weight: 0.4,
+            direction: 'positive',
+            description: 'Better threat detection',
+          },
+          {
+            metric: 'response_time',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Faster incident response',
+          },
+          {
+            metric: 'prevention',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Proactive risk prevention',
+          },
+        ],
       },
       {
         id: 'research',
@@ -130,14 +205,29 @@ export class PrivacyBudgetSimulation {
         minAllocation: 0.02,
         maxAllocation: 0.1,
         impactFactors: [
-          { metric: 'innovation', weight: 0.5, direction: 'positive', description: 'Drives privacy innovation' },
-          { metric: 'competitive_advantage', weight: 0.3, direction: 'positive', description: 'Creates competitive edge' },
-          { metric: 'future_readiness', weight: 0.2, direction: 'positive', description: 'Prepares for future challenges' }
-        ]
-      }
+          {
+            metric: 'innovation',
+            weight: 0.5,
+            direction: 'positive',
+            description: 'Drives privacy innovation',
+          },
+          {
+            metric: 'competitive_advantage',
+            weight: 0.3,
+            direction: 'positive',
+            description: 'Creates competitive edge',
+          },
+          {
+            metric: 'future_readiness',
+            weight: 0.2,
+            direction: 'positive',
+            description: 'Prepares for future challenges',
+          },
+        ],
+      },
     ];
 
-    defaultCategories.forEach(category => {
+    defaultCategories.forEach((category) => {
       this.categories.set(category.id, category);
     });
   }
@@ -145,36 +235,36 @@ export class PrivacyBudgetSimulation {
   // Main simulation methods
   public async runSimulation(scenario: SimulationScenario): Promise<SimulationResult> {
     const startTime = Date.now();
-    
+
     try {
       // Validate scenario
       this.validateScenario(scenario);
-      
+
       // Initialize allocations
       const allocations = this.initializeAllocations(scenario);
-      
+
       // Run optimization if needed
       const optimizedAllocations = await this.optimizeAllocations(
         allocations,
         scenario.parameters,
         scenario.constraints
       );
-      
+
       // Calculate metrics
       const metrics = this.calculateMetrics(optimizedAllocations, scenario);
-      
+
       // Generate projections
       const projections = this.generateProjections(optimizedAllocations, scenario);
-      
+
       // Run sensitivity analysis
       const sensitivity = this.runSensitivityAnalysis(optimizedAllocations, scenario);
-      
+
       // Generate recommendations
       const recommendations = this.generateRecommendations(optimizedAllocations, metrics, scenario);
-      
+
       // Calculate confidence intervals
       const confidence = this.calculateConfidenceIntervals(optimizedAllocations, scenario);
-      
+
       const result: SimulationResult = {
         id: `result-${Date.now()}`,
         scenarioId: scenario.id,
@@ -191,24 +281,23 @@ export class PrivacyBudgetSimulation {
           version: '1.0',
           algorithm: this.config.optimizationAlgorithm,
           parameters: scenario.parameters,
-          assumptions: scenario.assumptions.map(a => a.description),
+          assumptions: scenario.assumptions.map((a) => a.description),
           limitations: [
             'Model based on historical patterns',
             'External factors may impact results',
-            'Assumes stable market conditions'
+            'Assumes stable market conditions',
           ],
           validation: {
             backtesting: [],
             crossValidation: 0.85,
             accuracy: 0.88,
             precision: 0.91,
-            recall: 0.86
-          }
-        }
+            recall: 0.86,
+          },
+        },
       };
 
       return result;
-
     } catch (error) {
       return {
         id: `result-${Date.now()}`,
@@ -233,9 +322,9 @@ export class PrivacyBudgetSimulation {
             crossValidation: 0,
             accuracy: 0,
             precision: 0,
-            recall: 0
-          }
-        }
+            recall: 0,
+          },
+        },
       };
     }
   }
@@ -244,15 +333,15 @@ export class PrivacyBudgetSimulation {
     if (!scenario.baseBudget) {
       throw new Error('Base budget is required');
     }
-    
+
     if (scenario.baseBudget.totalBudget <= 0) {
       throw new Error('Total budget must be positive');
     }
-    
+
     if (scenario.allocations.length === 0) {
       throw new Error('At least one allocation is required');
     }
-    
+
     // Check allocation constraints
     const totalAllocation = scenario.allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
     if (totalAllocation > scenario.baseBudget.totalBudget) {
@@ -261,16 +350,16 @@ export class PrivacyBudgetSimulation {
   }
 
   private initializeAllocations(scenario: SimulationScenario): BudgetAllocation[] {
-    return scenario.allocations.map(allocation => {
+    return scenario.allocations.map((allocation) => {
       const category = this.categories.get(allocation.category.id);
       if (!category) {
         throw new Error(`Unknown category: ${allocation.category.id}`);
       }
-      
+
       return {
         ...allocation,
         category,
-        performance: allocation.performance || this.getDefaultPerformance()
+        performance: allocation.performance || this.getDefaultPerformance(),
       };
     });
   }
@@ -295,45 +384,45 @@ export class PrivacyBudgetSimulation {
   private linearOptimization(
     allocations: BudgetAllocation[],
     parameters: SimulationParameters,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): BudgetAllocation[] {
     // Simplified linear programming approach
     const totalBudget = allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
-    
+
     // Calculate efficiency scores
-    const efficiencyScores = allocations.map(alloc => ({
+    const efficiencyScores = allocations.map((alloc) => ({
       allocation: alloc,
-      score: this.calculateEfficiencyScore(alloc, parameters)
+      score: this.calculateEfficiencyScore(alloc, parameters),
     }));
-    
+
     // Sort by efficiency (highest first)
     efficiencyScores.sort((a, b) => b.score - a.score);
-    
+
     // Reallocate based on efficiency
     const optimizedAllocations: BudgetAllocation[] = [];
     let remainingBudget = totalBudget;
-    
+
     for (const { allocation, score } of efficiencyScores) {
       const category = this.categories.get(allocation.category.id)!;
       const minAllocation = totalBudget * category.minAllocation;
       const maxAllocation = totalBudget * category.maxAllocation;
-      
+
       let newAmount = Math.min(
         Math.max(minAllocation, allocation.amount * (1 + score * 0.2)),
         maxAllocation
       );
-      
+
       newAmount = Math.min(newAmount, remainingBudget);
-      
+
       optimizedAllocations.push({
         ...allocation,
         amount: newAmount,
-        percentage: (newAmount / totalBudget) * 100
+        percentage: (newAmount / totalBudget) * 100,
       });
-      
+
       remainingBudget -= newAmount;
     }
-    
+
     return optimizedAllocations;
   }
 
@@ -346,37 +435,37 @@ export class PrivacyBudgetSimulation {
     const generations = 100;
     const mutationRate = 0.1;
     const crossoverRate = 0.7;
-    
+
     const totalBudget = allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
-    
+
     // Initialize population
     let population = this.initializePopulation(allocations, totalBudget, populationSize);
-    
+
     for (let generation = 0; generation < generations; generation++) {
       // Evaluate fitness
-      const fitnessScores = population.map(individual => 
+      const fitnessScores = population.map((individual) =>
         this.calculateFitness(individual, parameters, constraints)
       );
-      
+
       // Selection
       const selected = this.tournamentSelection(population, fitnessScores);
-      
+
       // Crossover
       const offspring = this.crossover(selected, crossoverRate, totalBudget);
-      
+
       // Mutation
       const mutated = this.mutate(offspring, mutationRate, totalBudget, constraints);
-      
+
       // Replace population
       population = this.selectNewPopulation(population, mutated, fitnessScores);
     }
-    
+
     // Return best solution
-    const finalFitness = population.map(individual => 
+    const finalFitness = population.map((individual) =>
       this.calculateFitness(individual, parameters, constraints)
     );
     const bestIndex = finalFitness.indexOf(Math.max(...finalFitness));
-    
+
     return population[bestIndex];
   }
 
@@ -390,74 +479,79 @@ export class PrivacyBudgetSimulation {
     let bestSolution = [...allocations];
     let currentEnergy = this.calculateEnergy(currentSolution, parameters, constraints);
     let bestEnergy = currentEnergy;
-    
+
     const initialTemperature = 1000;
     const coolingRate = 0.95;
     const minTemperature = 0.01;
-    
+
     let temperature = initialTemperature;
-    
+
     while (temperature > minTemperature) {
       // Generate neighbor solution
       const neighbor = this.generateNeighbor(currentSolution, totalBudget, constraints);
       const neighborEnergy = this.calculateEnergy(neighbor, parameters, constraints);
-      
+
       // Accept or reject
       const delta = neighborEnergy - currentEnergy;
       if (delta < 0 || Math.random() < Math.exp(-delta / temperature)) {
         currentSolution = neighbor;
         currentEnergy = neighborEnergy;
-        
+
         if (currentEnergy < bestEnergy) {
           bestSolution = [...currentSolution];
           bestEnergy = currentEnergy;
         }
       }
-      
+
       temperature *= coolingRate;
     }
-    
+
     return bestSolution;
   }
 
-  private calculateMetrics(allocations: BudgetAllocation[], scenario: SimulationScenario): SimulationMetrics {
+  private calculateMetrics(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): SimulationMetrics {
     const totalBudget = scenario.baseBudget.totalBudget;
-    
+
     // Calculate ROI
-    const totalROI = allocations.reduce((sum, alloc) => {
-      const roi = (alloc.performance.actualROI || alloc.expectedROI);
-      return sum + (roi * alloc.amount);
-    }, 0) / totalBudget;
-    
+    const totalROI =
+      allocations.reduce((sum, alloc) => {
+        const roi = alloc.performance.actualROI || alloc.expectedROI;
+        return sum + roi * alloc.amount;
+      }, 0) / totalBudget;
+
     // Calculate risk score
-    const riskScores = allocations.map(alloc => {
+    const riskScores = allocations.map((alloc) => {
       const riskLevel = { low: 0.25, medium: 0.5, high: 0.75 }[alloc.riskLevel];
       return riskLevel * (alloc.amount / totalBudget);
     });
     const riskScore = riskScores.reduce((sum, risk) => sum + risk, 0) * 100;
-    
+
     // Calculate privacy score
     const privacyScore = this.calculatePrivacyScore(allocations, scenario);
-    
+
     // Calculate utility score
     const utilityScore = this.calculateUtilityScore(allocations, scenario);
-    
+
     // Calculate efficiency
     const efficiency = this.calculateEfficiency(allocations);
-    
+
     // Calculate compliance score
     const complianceScore = this.calculateComplianceScore(allocations, scenario);
-    
+
     // Calculate budget utilization
-    const budgetUtilization = allocations.reduce((sum, alloc) => sum + alloc.amount, 0) / totalBudget;
-    
+    const budgetUtilization =
+      allocations.reduce((sum, alloc) => sum + alloc.amount, 0) / totalBudget;
+
     // Calculate financial metrics
     const costBenefitRatio = totalROI > 0 ? 1 / totalROI : 0;
     const netPresentValue = this.calculateNPV(allocations, scenario);
     const internalRateOfReturn = this.calculateIRR(allocations, scenario);
     const paybackPeriod = this.calculatePaybackPeriod(allocations, scenario);
     const breakEvenPoint = this.calculateBreakEvenPoint(allocations, scenario);
-    
+
     return {
       totalROI,
       riskScore,
@@ -470,108 +564,114 @@ export class PrivacyBudgetSimulation {
       netPresentValue,
       internalRateOfReturn,
       paybackPeriod,
-      breakEvenPoint
+      breakEvenPoint,
     };
   }
 
-  private generateProjections(allocations: BudgetAllocation[], scenario: SimulationScenario): Projection[] {
+  private generateProjections(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): Projection[] {
     const timeHorizon = scenario.parameters.timeHorizon;
     const timeSteps = Math.floor(timeHorizon / this.config.timeStep);
-    
+
     const projections: Projection[] = [];
-    
+
     // Project key metrics
     const metrics = ['roi', 'risk', 'privacy', 'utility', 'compliance'];
-    
-    metrics.forEach(metric => {
+
+    metrics.forEach((metric) => {
       const timePoints: any[] = [];
       let currentValue = this.getMetricValue(metric, allocations);
-      
+
       for (let step = 0; step < timeSteps; step++) {
-        const timestamp = Date.now() + (step * this.config.timeStep * 24 * 60 * 60 * 1000);
-        
+        const timestamp = Date.now() + step * this.config.timeStep * 24 * 60 * 60 * 1000;
+
         // Apply growth/decay rates
         const growthRate = this.getGrowthRate(metric, allocations);
-        currentValue *= (1 + growthRate * this.config.timeStep / 365);
-        
+        currentValue *= 1 + (growthRate * this.config.timeStep) / 365;
+
         // Add some randomness
         const noise = (Math.random() - 0.5) * 0.1;
-        currentValue *= (1 + noise);
-        
+        currentValue *= 1 + noise;
+
         // Calculate confidence bounds
-        const confidence = 0.95;
+        const _confidence = 0.95;
         const margin = currentValue * 0.1;
-        
+
         timePoints.push({
           timestamp,
           value: currentValue,
           lowerBound: Math.max(0, currentValue - margin),
           upperBound: currentValue + margin,
-          probability: Math.random()
+          probability: Math.random(),
         });
       }
-      
+
       // Calculate trend
       const trend = this.calculateTrend(timePoints);
-      
+
       projections.push({
         metric,
         timePoints,
         trend,
-        confidence: 0.85
+        confidence: 0.85,
       });
     });
-    
+
     return projections;
   }
 
-  private runSensitivityAnalysis(allocations: BudgetAllocation[], scenario: SimulationScenario): SensitivityAnalysis {
+  private runSensitivityAnalysis(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): SensitivityAnalysis {
     const parameters = this.getSensitivityParameters(allocations);
     const scenarios: any[] = [];
-    
+
     // Generate sensitivity scenarios
     for (let i = 0; i < 10; i++) {
       const scenarioParams: Record<string, number> = {};
-      
-      parameters.forEach(param => {
+
+      parameters.forEach((param) => {
         const range = param.range.max - param.range.min;
-        const value = param.range.min + (Math.random() * range);
+        const value = param.range.min + Math.random() * range;
         scenarioParams[param.name] = value;
       });
-      
+
       // Calculate results for this scenario
       const testAllocations = this.applyParameterChanges(allocations, scenarioParams);
       const results = this.calculateMetrics(testAllocations, scenario);
-      
+
       scenarios.push({
         name: `Scenario ${i + 1}`,
         parameters: scenarioParams,
         results,
-        variance: this.calculateVariance(results)
+        variance: this.calculateVariance(results),
       });
     }
-    
+
     // Generate tornado chart data
     const tornadoChart = this.generateTornadoChart(parameters, allocations, scenario);
-    
+
     // Generate correlation matrix
     const correlationMatrix = this.generateCorrelationMatrix(scenarios);
-    
+
     return {
       parameters,
       scenarios,
       tornadoChart,
-      correlationMatrix
+      correlationMatrix,
     };
   }
 
   private generateRecommendations(
     allocations: BudgetAllocation[],
     metrics: SimulationMetrics,
-    scenario: SimulationScenario
+    _scenario: SimulationScenario
   ): Recommendation[] {
     const recommendations: Recommendation[] = [];
-    
+
     // ROI optimization recommendations
     if (metrics.totalROI < 0.15) {
       recommendations.push({
@@ -579,7 +679,8 @@ export class PrivacyBudgetSimulation {
         type: 'optimization',
         priority: 'high',
         title: 'Improve ROI Performance',
-        description: 'Current ROI is below optimal levels. Consider reallocating budget to higher-ROI categories.',
+        description:
+          'Current ROI is below optimal levels. Consider reallocating budget to higher-ROI categories.',
         rationale: `Current ROI of ${(metrics.totalROI * 100).toFixed(1)}% is below the 15% target.`,
         expectedImpact: {
           roi: 0.05,
@@ -587,7 +688,7 @@ export class PrivacyBudgetSimulation {
           privacy: 0.01,
           utility: 0.03,
           cost: -0.02,
-          confidence: 0.8
+          confidence: 0.8,
         },
         implementation: {
           steps: [
@@ -598,7 +699,7 @@ export class PrivacyBudgetSimulation {
               duration: 7,
               cost: 5000,
               prerequisites: [],
-              deliverables: ['Performance analysis report']
+              deliverables: ['Performance analysis report'],
             },
             {
               id: '2',
@@ -607,16 +708,16 @@ export class PrivacyBudgetSimulation {
               duration: 14,
               cost: 10000,
               prerequisites: ['1'],
-              deliverables: ['Updated budget allocation']
-            }
+              deliverables: ['Updated budget allocation'],
+            },
           ],
           duration: 21,
           cost: 15000,
           resources: [
             { type: 'human', name: 'Analyst', quantity: 2, unit: 'person', cost: 10000 },
-            { type: 'technical', name: 'Software', quantity: 1, unit: 'license', cost: 5000 }
+            { type: 'technical', name: 'Software', quantity: 1, unit: 'license', cost: 5000 },
           ],
-          dependencies: []
+          dependencies: [],
         },
         risks: [
           {
@@ -627,8 +728,8 @@ export class PrivacyBudgetSimulation {
             impact: 0.4,
             category: 'operational',
             mitigation: 'Phase implementation gradually',
-            owner: 'project-manager'
-          }
+            owner: 'project-manager',
+          },
         ],
         alternatives: [
           {
@@ -643,13 +744,13 @@ export class PrivacyBudgetSimulation {
               privacy: 0.01,
               utility: 0.02,
               cost: -0.01,
-              confidence: 0.9
-            }
-          }
-        ]
+              confidence: 0.9,
+            },
+          },
+        ],
       });
     }
-    
+
     // Risk mitigation recommendations
     if (metrics.riskScore > 70) {
       recommendations.push({
@@ -657,7 +758,8 @@ export class PrivacyBudgetSimulation {
         type: 'risk_mitigation',
         priority: 'critical',
         title: 'Reduce Privacy Risk Exposure',
-        description: 'Current risk score is elevated. Implement additional privacy protection measures.',
+        description:
+          'Current risk score is elevated. Implement additional privacy protection measures.',
         rationale: `Risk score of ${metrics.riskScore.toFixed(1)} exceeds the 70% threshold.`,
         expectedImpact: {
           roi: -0.02,
@@ -665,7 +767,7 @@ export class PrivacyBudgetSimulation {
           privacy: 0.1,
           utility: -0.01,
           cost: 0.05,
-          confidence: 0.9
+          confidence: 0.9,
         },
         implementation: {
           steps: [
@@ -676,22 +778,22 @@ export class PrivacyBudgetSimulation {
               duration: 30,
               cost: 25000,
               prerequisites: [],
-              deliverables: ['Enhanced privacy framework']
-            }
+              deliverables: ['Enhanced privacy framework'],
+            },
           ],
           duration: 30,
           cost: 25000,
           resources: [
             { type: 'human', name: 'Privacy Engineer', quantity: 3, unit: 'person', cost: 15000 },
-            { type: 'technical', name: 'Privacy Tools', quantity: 1, unit: 'suite', cost: 10000 }
+            { type: 'technical', name: 'Privacy Tools', quantity: 1, unit: 'suite', cost: 10000 },
           ],
-          dependencies: []
+          dependencies: [],
         },
         risks: [],
-        alternatives: []
+        alternatives: [],
       });
     }
-    
+
     // Privacy improvement recommendations
     if (metrics.privacyScore < 80) {
       recommendations.push({
@@ -707,7 +809,7 @@ export class PrivacyBudgetSimulation {
           privacy: 0.15,
           utility: 0.02,
           cost: 0.03,
-          confidence: 0.75
+          confidence: 0.75,
         },
         implementation: {
           steps: [
@@ -718,75 +820,80 @@ export class PrivacyBudgetSimulation {
               duration: 45,
               cost: 30000,
               prerequisites: [],
-              deliverables: ['Privacy technology implementation']
-            }
+              deliverables: ['Privacy technology implementation'],
+            },
           ],
           duration: 45,
           cost: 30000,
           resources: [
             { type: 'human', name: 'Privacy Specialist', quantity: 2, unit: 'person', cost: 20000 },
-            { type: 'technical', name: 'Privacy Tools', quantity: 1, unit: 'suite', cost: 10000 }
+            { type: 'technical', name: 'Privacy Tools', quantity: 1, unit: 'suite', cost: 10000 },
           ],
-          dependencies: []
+          dependencies: [],
         },
         risks: [],
-        alternatives: []
+        alternatives: [],
       });
     }
-    
+
     return recommendations;
   }
 
   private calculateConfidenceIntervals(
     allocations: BudgetAllocation[],
-    scenario: SimulationScenario
+    _scenario: SimulationScenario
   ): any[] {
     const confidence = this.config.confidenceLevel;
     const metrics = ['roi', 'risk', 'privacy', 'utility', 'compliance'];
-    
-    return metrics.map(metric => {
+
+    return metrics.map((metric) => {
       const baseValue = this.getMetricValue(metric, allocations);
       const standardError = this.calculateStandardError(metric, allocations);
       const margin = this.getMarginForConfidence(confidence) * standardError;
-      
+
       return {
         metric,
         lower: baseValue - margin,
         upper: baseValue + margin,
         level: confidence,
-        method: 'monte_carlo'
+        method: 'monte_carlo',
       };
     });
   }
 
   // Helper methods
-  private calculateEfficiencyScore(allocation: BudgetAllocation, parameters: SimulationParameters): number {
+  private calculateEfficiencyScore(
+    allocation: BudgetAllocation,
+    _parameters: SimulationParameters
+  ): number {
     const roi = allocation.expectedROI;
     const riskMultiplier = { low: 1.2, medium: 1.0, high: 0.8 }[allocation.riskLevel];
-    const priorityMultiplier = { low: 0.8, medium: 1.0, high: 1.2, critical: 1.5 }[allocation.priority];
-    
+    const priorityMultiplier = { low: 0.8, medium: 1.0, high: 1.2, critical: 1.5 }[
+      allocation.priority
+    ];
+
     return roi * riskMultiplier * priorityMultiplier;
   }
 
   private calculateFitness(
     allocations: BudgetAllocation[],
     parameters: SimulationParameters,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): number {
-    const metrics = this.calculateMetrics(allocations, { 
-      ...parameters, 
-      baseBudget: { totalBudget: allocations.reduce((sum, a) => sum + a.amount, 0) } as any 
+    const metrics = this.calculateMetrics(allocations, {
+      ...parameters,
+      baseBudget: { totalBudget: allocations.reduce((sum, a) => sum + a.amount, 0) } as any,
     } as SimulationScenario);
-    
+
     // Weighted fitness function based on optimization goal
     const weights = parameters.optimizationGoal.weights;
-    
+
     return (
-      (metrics.totalROI * (weights.roi || 0.3)) +
-      ((100 - metrics.riskScore) * (weights.risk || 0.2)) +
-      (metrics.privacyScore * (weights.privacy || 0.2)) +
-      (metrics.utilityScore * (weights.utility || 0.2)) +
-      (metrics.complianceScore * (weights.compliance || 0.1))
+      metrics.totalROI * (weights.roi || 0.3) +
+      (100 - metrics.riskScore) * (weights.risk || 0.2) +
+      metrics.privacyScore * (weights.privacy || 0.2) +
+      metrics.utilityScore * (weights.utility || 0.2) +
+      metrics.complianceScore * (weights.compliance || 0.1)
     );
   }
 
@@ -802,13 +909,19 @@ export class PrivacyBudgetSimulation {
   private getMetricValue(metric: string, allocations: BudgetAllocation[]): number {
     switch (metric) {
       case 'roi':
-        return allocations.reduce((sum, alloc) => sum + (alloc.expectedROI * alloc.amount), 0) / 
-               allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+        return (
+          allocations.reduce((sum, alloc) => sum + alloc.expectedROI * alloc.amount, 0) /
+          allocations.reduce((sum, alloc) => sum + alloc.amount, 0)
+        );
       case 'risk':
-        return allocations.reduce((sum, alloc) => {
-          const riskLevel = { low: 0.25, medium: 0.5, high: 0.75 }[alloc.riskLevel];
-          return sum + (riskLevel * alloc.amount);
-        }, 0) / allocations.reduce((sum, alloc) => sum + alloc.amount, 0) * 100;
+        return (
+          (allocations.reduce((sum, alloc) => {
+            const riskLevel = { low: 0.25, medium: 0.5, high: 0.75 }[alloc.riskLevel];
+            return sum + riskLevel * alloc.amount;
+          }, 0) /
+            allocations.reduce((sum, alloc) => sum + alloc.amount, 0)) *
+          100
+        );
       case 'privacy':
         return 75 + Math.random() * 20; // Simplified calculation
       case 'utility':
@@ -820,16 +933,16 @@ export class PrivacyBudgetSimulation {
     }
   }
 
-  private getGrowthRate(metric: string, allocations: BudgetAllocation[]): number {
+  private getGrowthRate(metric: string, _allocations: BudgetAllocation[]): number {
     // Simplified growth rates
     const growthRates = {
       roi: 0.05,
       risk: -0.02,
       privacy: 0.03,
       utility: 0.04,
-      compliance: 0.02
+      compliance: 0.02,
     };
-    
+
     return growthRates[metric as keyof typeof growthRates] || 0;
   }
 
@@ -840,146 +953,154 @@ export class PrivacyBudgetSimulation {
         slope: 0,
         correlation: 0,
         seasonality: [],
-        changePoints: []
+        changePoints: [],
       };
     }
-    
+
     // Simple linear regression for trend
     const n = timePoints.length;
     const sumX = timePoints.reduce((sum, point, i) => sum + i, 0);
     const sumY = timePoints.reduce((sum, point) => sum + point.value, 0);
-    const sumXY = timePoints.reduce((sum, point, i) => sum + (i * point.value), 0);
-    const sumXX = timePoints.reduce((sum, point, i) => sum + (i * i), 0);
-    
+    const sumXY = timePoints.reduce((sum, point, i) => sum + i * point.value, 0);
+    const sumXX = timePoints.reduce((sum, point, i) => sum + i * i, 0);
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const correlation = this.calculateCorrelation(timePoints.map((p, i) => ({ x: i, y: p.value })));
-    
+
     let direction: 'increasing' | 'decreasing' | 'stable' = 'stable';
     if (Math.abs(slope) > 0.01) {
       direction = slope > 0 ? 'increasing' : 'decreasing';
     }
-    
+
     return {
       direction,
       slope,
       correlation,
       seasonality: [],
-      changePoints: []
+      changePoints: [],
     };
   }
 
   private calculateCorrelation(data: { x: number; y: number }[]): number {
     if (data.length < 2) return 0;
-    
+
     const n = data.length;
     const sumX = data.reduce((sum, point) => sum + point.x, 0);
     const sumY = data.reduce((sum, point) => sum + point.y, 0);
-    const sumXY = data.reduce((sum, point) => sum + (point.x * point.y), 0);
-    const sumXX = data.reduce((sum, point) => sum + (point.x * point.x), 0);
-    const sumYY = data.reduce((sum, point) => sum + (point.y * point.y), 0);
-    
+    const sumXY = data.reduce((sum, point) => sum + point.x * point.y, 0);
+    const sumXX = data.reduce((sum, point) => sum + point.x * point.x, 0);
+    const sumYY = data.reduce((sum, point) => sum + point.y * point.y, 0);
+
     const numerator = n * sumXY - sumX * sumY;
     const denominator = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
-    
+
     return denominator === 0 ? 0 : numerator / denominator;
   }
 
   // Genetic algorithm helpers
-  private initializePopulation(allocations: BudgetAllocation[], totalBudget: number, size: number): BudgetAllocation[][] {
+  private initializePopulation(
+    allocations: BudgetAllocation[],
+    totalBudget: number,
+    size: number
+  ): BudgetAllocation[][] {
     const population: BudgetAllocation[][] = [];
-    
+
     for (let i = 0; i < size; i++) {
       const individual = this.createRandomIndividual(allocations, totalBudget);
       population.push(individual);
     }
-    
+
     return population;
   }
 
-  private createRandomIndividual(allocations: BudgetAllocation[], totalBudget: number): BudgetAllocation[] {
+  private createRandomIndividual(
+    allocations: BudgetAllocation[],
+    totalBudget: number
+  ): BudgetAllocation[] {
     const individual = [...allocations];
     let remainingBudget = totalBudget;
-    
+
     // Randomly allocate budget
     for (let i = 0; i < individual.length - 1; i++) {
       const category = this.categories.get(individual[i].category.id)!;
       const maxAllocation = totalBudget * category.maxAllocation;
       const minAllocation = totalBudget * category.minAllocation;
-      
+
       const randomAmount = Math.random() * (maxAllocation - minAllocation) + minAllocation;
       const amount = Math.min(randomAmount, remainingBudget);
-      
+
       individual[i] = {
         ...individual[i],
         amount,
-        percentage: (amount / totalBudget) * 100
+        percentage: (amount / totalBudget) * 100,
       };
-      
+
       remainingBudget -= amount;
     }
-    
+
     // Allocate remaining to last category
     const lastIndex = individual.length - 1;
     individual[lastIndex] = {
       ...individual[lastIndex],
       amount: remainingBudget,
-      percentage: (remainingBudget / totalBudget) * 100
+      percentage: (remainingBudget / totalBudget) * 100,
     };
-    
+
     return individual;
   }
 
-  private tournamentSelection(population: BudgetAllocation[][], fitnessScores: number[]): BudgetAllocation[][] {
+  private tournamentSelection(
+    population: BudgetAllocation[][],
+    fitnessScores: number[]
+  ): BudgetAllocation[][] {
     const selected: BudgetAllocation[][] = [];
     const tournamentSize = 3;
-    
+
     for (let i = 0; i < population.length; i++) {
       // Random tournament selection
       const tournament: number[] = [];
       for (let j = 0; j < tournamentSize; j++) {
         tournament.push(Math.floor(Math.random() * population.length));
       }
-      
+
       // Find best in tournament
       let bestIndex = tournament[0];
       let bestFitness = fitnessScores[bestIndex];
-      
+
       for (const index of tournament) {
         if (fitnessScores[index] > bestFitness) {
           bestIndex = index;
           bestFitness = fitnessScores[index];
         }
       }
-      
+
       selected.push([...population[bestIndex]]);
     }
-    
+
     return selected;
   }
 
-  private crossover(parents: BudgetAllocation[][], crossoverRate: number, totalBudget: number): BudgetAllocation[][] {
+  private crossover(
+    parents: BudgetAllocation[][],
+    crossoverRate: number,
+    totalBudget: number
+  ): BudgetAllocation[][] {
     const offspring: BudgetAllocation[][] = [];
-    
+
     for (let i = 0; i < parents.length; i += 2) {
       if (i + 1 >= parents.length) break;
-      
+
       const parent1 = parents[i];
       const parent2 = parents[i + 1];
-      
+
       if (Math.random() < crossoverRate) {
         // Single point crossover
         const crossoverPoint = Math.floor(Math.random() * parent1.length);
-        
-        const child1 = [
-          ...parent1.slice(0, crossoverPoint),
-          ...parent2.slice(crossoverPoint)
-        ];
-        
-        const child2 = [
-          ...parent2.slice(0, crossoverPoint),
-          ...parent1.slice(crossoverPoint)
-        ];
-        
+
+        const child1 = [...parent1.slice(0, crossoverPoint), ...parent2.slice(crossoverPoint)];
+
+        const child2 = [...parent2.slice(0, crossoverPoint), ...parent1.slice(crossoverPoint)];
+
         // Normalize to ensure budget constraints
         offspring.push(this.normalizeAllocations(child1, totalBudget));
         offspring.push(this.normalizeAllocations(child2, totalBudget));
@@ -988,7 +1109,7 @@ export class PrivacyBudgetSimulation {
         offspring.push([...parent2]);
       }
     }
-    
+
     return offspring;
   }
 
@@ -996,15 +1117,15 @@ export class PrivacyBudgetSimulation {
     population: BudgetAllocation[][],
     mutationRate: number,
     totalBudget: number,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): BudgetAllocation[][] {
-    return population.map(individual => {
+    return population.map((individual) => {
       if (Math.random() < mutationRate) {
         // Random mutation
         const mutated = [...individual];
         const index = Math.floor(Math.random() * mutated.length);
         const category = this.categories.get(mutated[index].category.id)!;
-        
+
         // Randomly adjust amount within constraints
         const currentAmount = mutated[index].amount;
         const maxChange = currentAmount * 0.2;
@@ -1013,28 +1134,31 @@ export class PrivacyBudgetSimulation {
           totalBudget * category.minAllocation,
           Math.min(totalBudget * category.maxAllocation, currentAmount + change)
         );
-        
+
         mutated[index] = {
           ...mutated[index],
           amount: newAmount,
-          percentage: (newAmount / totalBudget) * 100
+          percentage: (newAmount / totalBudget) * 100,
         };
-        
+
         return this.normalizeAllocations(mutated, totalBudget);
       }
-      
+
       return individual;
     });
   }
 
-  private normalizeAllocations(allocations: BudgetAllocation[], totalBudget: number): BudgetAllocation[] {
+  private normalizeAllocations(
+    allocations: BudgetAllocation[],
+    totalBudget: number
+  ): BudgetAllocation[] {
     const currentTotal = allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
     const scaleFactor = totalBudget / currentTotal;
-    
-    return allocations.map(alloc => ({
+
+    return allocations.map((alloc) => ({
       ...alloc,
       amount: alloc.amount * scaleFactor,
-      percentage: (alloc.amount * scaleFactor / totalBudget) * 100
+      percentage: ((alloc.amount * scaleFactor) / totalBudget) * 100,
     }));
   }
 
@@ -1047,25 +1171,28 @@ export class PrivacyBudgetSimulation {
     const combined = [...oldPopulation, ...newPopulation];
     const combinedFitness = [
       ...fitnessScores,
-      ...newPopulation.map(individual => this.calculateFitness(individual, {} as any, {} as any))
+      ...newPopulation.map((individual) => this.calculateFitness(individual, {} as any, {} as any)),
     ];
-    
+
     // Sort by fitness and keep best
-    const indexed = combined.map((individual, index) => ({ individual, fitness: combinedFitness[index] }));
+    const indexed = combined.map((individual, index) => ({
+      individual,
+      fitness: combinedFitness[index],
+    }));
     indexed.sort((a, b) => b.fitness - a.fitness);
-    
-    return indexed.slice(0, oldPopulation.length).map(item => item.individual);
+
+    return indexed.slice(0, oldPopulation.length).map((item) => item.individual);
   }
 
   private generateNeighbor(
     current: BudgetAllocation[],
     totalBudget: number,
-    constraints: ScenarioConstraints
+    _constraints: ScenarioConstraints
   ): BudgetAllocation[] {
     const neighbor = [...current];
     const index = Math.floor(Math.random() * neighbor.length);
     const category = this.categories.get(neighbor[index].category.id)!;
-    
+
     // Randomly adjust one allocation
     const currentAmount = neighbor[index].amount;
     const maxChange = currentAmount * 0.1;
@@ -1074,30 +1201,40 @@ export class PrivacyBudgetSimulation {
       totalBudget * category.minAllocation,
       Math.min(totalBudget * category.maxAllocation, currentAmount + change)
     );
-    
+
     neighbor[index] = {
       ...neighbor[index],
       amount: newAmount,
-      percentage: (newAmount / totalBudget) * 100
+      percentage: (newAmount / totalBudget) * 100,
     };
-    
+
     return this.normalizeAllocations(neighbor, totalBudget);
   }
 
   // Additional helper methods
-  private calculatePrivacyScore(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
-    const privacyAllocations = allocations.filter(a => a.category.type === 'compliance' || a.category.type === 'monitoring');
+  private calculatePrivacyScore(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): number {
+    const privacyAllocations = allocations.filter(
+      (a) => a.category.type === 'compliance' || a.category.type === 'monitoring'
+    );
     const privacyBudget = privacyAllocations.reduce((sum, a) => sum + a.amount, 0);
     const totalBudget = scenario.baseBudget.totalBudget;
-    
+
     return Math.min(100, (privacyBudget / totalBudget) * 150);
   }
 
-  private calculateUtilityScore(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
-    const utilityAllocations = allocations.filter(a => a.category.type === 'data_analysis' || a.category.type === 'research');
+  private calculateUtilityScore(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): number {
+    const utilityAllocations = allocations.filter(
+      (a) => a.category.type === 'data_analysis' || a.category.type === 'research'
+    );
     const utilityBudget = utilityAllocations.reduce((sum, a) => sum + a.amount, 0);
     const totalBudget = scenario.baseBudget.totalBudget;
-    
+
     return Math.min(100, (utilityBudget / totalBudget) * 120);
   }
 
@@ -1106,46 +1243,55 @@ export class PrivacyBudgetSimulation {
       return sum + (alloc.performance.efficiency || 0.8) * alloc.amount;
     }, 0);
     const totalBudget = allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
-    
+
     return (totalEfficiency / totalBudget) * 100;
   }
 
-  private calculateComplianceScore(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
-    const complianceAllocations = allocations.filter(a => a.category.type === 'compliance');
+  private calculateComplianceScore(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): number {
+    const complianceAllocations = allocations.filter((a) => a.category.type === 'compliance');
     const complianceBudget = complianceAllocations.reduce((sum, a) => sum + a.amount, 0);
     const totalBudget = scenario.baseBudget.totalBudget;
-    
+
     return Math.min(100, (complianceBudget / totalBudget) * 125);
   }
 
   private calculateNPV(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
     // Simplified NPV calculation
-    const totalROI = allocations.reduce((sum, alloc) => sum + (alloc.expectedROI * alloc.amount), 0);
+    const totalROI = allocations.reduce((sum, alloc) => sum + alloc.expectedROI * alloc.amount, 0);
     const totalBudget = scenario.baseBudget.totalBudget;
     const discountRate = 0.1;
     const timeHorizon = scenario.parameters.timeHorizon / 365; // Convert to years
-    
+
     return (totalROI - totalBudget) / Math.pow(1 + discountRate, timeHorizon);
   }
 
   private calculateIRR(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
     // Simplified IRR calculation
-    const totalROI = allocations.reduce((sum, alloc) => sum + (alloc.expectedROI * alloc.amount), 0);
+    const totalROI = allocations.reduce((sum, alloc) => sum + alloc.expectedROI * alloc.amount, 0);
     const totalBudget = scenario.baseBudget.totalBudget;
-    
+
     return totalBudget > 0 ? (totalROI - totalBudget) / totalBudget : 0;
   }
 
-  private calculatePaybackPeriod(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
+  private calculatePaybackPeriod(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): number {
     // Simplified payback period calculation
-    const totalROI = allocations.reduce((sum, alloc) => sum + (alloc.expectedROI * alloc.amount), 0);
+    const totalROI = allocations.reduce((sum, alloc) => sum + alloc.expectedROI * alloc.amount, 0);
     const totalBudget = scenario.baseBudget.totalBudget;
     const dailyReturn = (totalROI - totalBudget) / scenario.parameters.timeHorizon;
-    
+
     return dailyReturn > 0 ? totalBudget / dailyReturn : scenario.parameters.timeHorizon;
   }
 
-  private calculateBreakEvenPoint(allocations: BudgetAllocation[], scenario: SimulationScenario): number {
+  private calculateBreakEvenPoint(
+    allocations: BudgetAllocation[],
+    scenario: SimulationScenario
+  ): number {
     // Simplified break-even calculation
     return this.calculatePaybackPeriod(allocations, scenario);
   }
@@ -1163,7 +1309,7 @@ export class PrivacyBudgetSimulation {
       netPresentValue: 0,
       internalRateOfReturn: 0,
       paybackPeriod: 0,
-      breakEvenPoint: 0
+      breakEvenPoint: 0,
     };
   }
 
@@ -1172,7 +1318,7 @@ export class PrivacyBudgetSimulation {
       parameters: [],
       scenarios: [],
       tornadoChart: { parameters: [], baseCase: 0 },
-      correlationMatrix: { matrix: [], variables: [], significant: [] }
+      correlationMatrix: { matrix: [], variables: [], significant: [] },
     };
   }
 
@@ -1183,32 +1329,35 @@ export class PrivacyBudgetSimulation {
       efficiency: 0.8,
       complianceScore: 0.8,
       userSatisfaction: 0.8,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
   }
 
   private getSensitivityParameters(allocations: BudgetAllocation[]): any[] {
-    return allocations.map(alloc => ({
+    return allocations.map((alloc) => ({
       name: alloc.category.id,
       baseValue: alloc.amount,
       range: {
         min: alloc.amount * 0.8,
-        max: alloc.amount * 1.2
+        max: alloc.amount * 1.2,
       },
       distribution: 'normal' as const,
       sensitivity: 0.5,
-      impact: 0.3
+      impact: 0.3,
     }));
   }
 
-  private applyParameterChanges(allocations: BudgetAllocation[], parameters: Record<string, number>): BudgetAllocation[] {
-    return allocations.map(alloc => {
+  private applyParameterChanges(
+    allocations: BudgetAllocation[],
+    parameters: Record<string, number>
+  ): BudgetAllocation[] {
+    return allocations.map((alloc) => {
       const paramValue = parameters[alloc.category.id];
       if (paramValue !== undefined) {
         return {
           ...alloc,
           amount: paramValue,
-          percentage: (paramValue / allocations.reduce((sum, a) => sum + a.amount, 0)) * 100
+          percentage: (paramValue / allocations.reduce((sum, a) => sum + a.amount, 0)) * 100,
         };
       }
       return alloc;
@@ -1222,15 +1371,19 @@ export class PrivacyBudgetSimulation {
     return variance;
   }
 
-  private generateTornadoChart(parameters: any[], allocations: BudgetAllocation[], scenario: SimulationScenario): any {
+  private generateTornadoChart(
+    parameters: any[],
+    allocations: BudgetAllocation[],
+    _scenario: SimulationScenario
+  ): any {
     return {
-      parameters: parameters.map(param => ({
+      parameters: parameters.map((param) => ({
         name: param.name,
         lowImpact: param.baseValue * 0.9,
         highImpact: param.baseValue * 1.1,
-        range: (param.range.max - param.range.min) / 2
+        range: (param.range.max - param.range.min) / 2,
       })),
-      baseCase: allocations.reduce((sum, alloc) => sum + alloc.amount, 0)
+      baseCase: allocations.reduce((sum, alloc) => sum + alloc.amount, 0),
     };
   }
 
@@ -1238,7 +1391,7 @@ export class PrivacyBudgetSimulation {
     // Simplified correlation matrix generation
     const variables = Object.keys(scenarios[0].parameters);
     const matrix: number[][] = [];
-    
+
     for (let i = 0; i < variables.length; i++) {
       const row: number[] = [];
       for (let j = 0; j < variables.length; j++) {
@@ -1250,17 +1403,17 @@ export class PrivacyBudgetSimulation {
       }
       matrix.push(row);
     }
-    
+
     return {
       matrix,
       variables,
-      significant: []
+      significant: [],
     };
   }
 
   private calculateStandardError(metric: string, allocations: BudgetAllocation[]): number {
     // Simplified standard error calculation
-    const values = allocations.map(alloc => this.getMetricValue(metric, [alloc]));
+    const values = allocations.map((alloc) => this.getMetricValue(metric, [alloc]));
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
     return Math.sqrt(variance / values.length);

@@ -52,21 +52,18 @@ const EnhancedTooltipTrigger = React.forwardRef<
     keyboardAccessible?: boolean;
     showOnFocus?: boolean;
   }
->(({ keyboardAccessible = true, showOnFocus = true, ...props }, ref) => {
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (keyboardAccessible && (event.key === 'Enter' || event.key === ' ')) {
-      event.preventDefault();
-      // Trigger tooltip on Enter/Space for keyboard users
-    }
-  }, [keyboardAccessible]);
-
-  return (
-    <TooltipPrimitive.Trigger
-      ref={ref}
-      onKeyDown={handleKeyDown}
-      {...props}
-    />
+>(({ keyboardAccessible = true, _showOnFocus = true, ...props }, ref) => {
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (keyboardAccessible && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        // Trigger tooltip on Enter/Space for keyboard users
+      }
+    },
+    [keyboardAccessible]
   );
+
+  return <TooltipPrimitive.Trigger ref={ref} onKeyDown={handleKeyDown} {...props} />;
 });
 EnhancedTooltipTrigger.displayName = 'EnhancedTooltipTrigger';
 
@@ -99,10 +96,12 @@ const EnhancedTooltipContent = React.forwardRef<
       info: 'bg-blue-600 text-white border-blue-500',
       warning: 'bg-yellow-600 text-white border-yellow-500',
       error: 'bg-red-600 text-white border-red-500',
-      success: 'bg-green-600 text-white border-green-500'
+      success: 'bg-green-600 text-white border-green-500',
     };
 
-    const animationClasses = disableAnimations ? '' : 'animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95';
+    const animationClasses = disableAnimations
+      ? ''
+      : 'animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95';
 
     return (
       <TooltipPrimitive.Content
@@ -162,19 +161,14 @@ const EnhancedTooltip = React.forwardRef<HTMLDivElement, EnhancedTooltipProps>(
       disableAnimations = false,
       ...props
     },
-    ref
+    _ref
   ) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isTouch, setIsTouch] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout>();
     const generatedId = useRef(tooltipId || `tooltip-${Math.random().toString(36).substr(2, 9)}`);
 
-    const {
-      position,
-      triggerRef,
-      contentRef,
-      updatePosition,
-    } = useResponsiveTooltip({
+    const { position, triggerRef, contentRef, updatePosition } = useResponsiveTooltip({
       preferredSide: side,
       preferredAlign: align,
       flipEnabled: true,
@@ -184,42 +178,51 @@ const EnhancedTooltip = React.forwardRef<HTMLDivElement, EnhancedTooltipProps>(
       const checkTouch = () => {
         setIsTouch('ontouchstart' in window || navigator.maxTouchPoints > 0);
       };
-      
+
       checkTouch();
       window.addEventListener('resize', checkTouch);
       return () => window.removeEventListener('resize', checkTouch);
     }, []);
 
-    const handleOpenChange = useCallback((open: boolean) => {
-      if (disabled) return;
-      
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+    const handleOpenChange = useCallback(
+      (open: boolean) => {
+        if (disabled) return;
 
-      if (open) {
-        setIsOpen(true);
-        // Update position when tooltip opens
-        setTimeout(updatePosition, 0);
-      } else {
-        timeoutRef.current = setTimeout(() => {
-          setIsOpen(false);
-        }, hideDelay);
-      }
-    }, [disabled, hideDelay, updatePosition]);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
 
-    const handleClick = useCallback((event: React.MouseEvent) => {
-      if (isTouch && persistOnClick) {
-        event.preventDefault();
-        handleOpenChange(!isOpen);
-      }
-    }, [isTouch, persistOnClick, isOpen, handleOpenChange]);
+        if (open) {
+          setIsOpen(true);
+          // Update position when tooltip opens
+          setTimeout(updatePosition, 0);
+        } else {
+          timeoutRef.current = setTimeout(() => {
+            setIsOpen(false);
+          }, hideDelay);
+        }
+      },
+      [disabled, hideDelay, updatePosition]
+    );
 
-    const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-      if (keyboardAccessible && (event.key === 'Escape' && isOpen)) {
-        handleOpenChange(false);
-      }
-    }, [keyboardAccessible, isOpen, handleOpenChange]);
+    const handleClick = useCallback(
+      (event: React.MouseEvent) => {
+        if (isTouch && persistOnClick) {
+          event.preventDefault();
+          handleOpenChange(!isOpen);
+        }
+      },
+      [isTouch, persistOnClick, isOpen, handleOpenChange]
+    );
+
+    const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent) => {
+        if (keyboardAccessible && event.key === 'Escape' && isOpen) {
+          handleOpenChange(false);
+        }
+      },
+      [keyboardAccessible, isOpen, handleOpenChange]
+    );
 
     if (disabled) {
       return <>{children}</>;
@@ -230,14 +233,16 @@ const EnhancedTooltip = React.forwardRef<HTMLDivElement, EnhancedTooltipProps>(
       ref: triggerRef,
       'aria-describedby': isOpen ? generatedId.current : undefined,
       'aria-label': ariaLabel || triggerElement.props['aria-label'],
-      tabIndex: keyboardAccessible ? (triggerElement.props.tabIndex ?? 0) : triggerElement.props.tabIndex,
+      tabIndex: keyboardAccessible
+        ? (triggerElement.props.tabIndex ?? 0)
+        : triggerElement.props.tabIndex,
       ...triggerElement.props,
     });
 
     return (
       <EnhancedTooltipProvider delayDuration={delayDuration}>
-        <EnhancedTooltipRoot 
-          open={isOpen} 
+        <EnhancedTooltipRoot
+          open={isOpen}
           onOpenChange={handleOpenChange}
           delayDuration={delayDuration}
         >
@@ -275,10 +280,10 @@ const EnhancedTooltip = React.forwardRef<HTMLDivElement, EnhancedTooltipProps>(
 );
 EnhancedTooltip.displayName = 'EnhancedTooltip';
 
-export { 
-  EnhancedTooltip as Tooltip, 
+export {
+  EnhancedTooltip as Tooltip,
   EnhancedTooltipProvider as TooltipProvider,
   EnhancedTooltipRoot as TooltipRoot,
   EnhancedTooltipTrigger as TooltipTrigger,
-  EnhancedTooltipContent as TooltipContent
+  EnhancedTooltipContent as TooltipContent,
 };

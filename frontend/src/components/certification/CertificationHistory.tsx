@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { X, Calendar, FileText, CheckCircle, AlertTriangle, Clock, RefreshCw } from 'lucide-react';
-import { Certification, ValidationRecord, ComplianceCheck } from '../../services/certificationService';
+import { X, FileText, CheckCircle, AlertTriangle, Clock, RefreshCw } from 'lucide-react';
+import {
+  Certification,
+  ValidationRecord,
+  ComplianceCheck,
+} from '../../services/certificationService';
 
 interface CertificationHistoryProps {
   certification: Certification;
   onClose: () => void;
 }
 
-const CertificationHistory: React.FC<CertificationHistoryProps> = ({
-  certification,
-  onClose
-}) => {
+const CertificationHistory: React.FC<CertificationHistoryProps> = ({ certification, onClose }) => {
   const [activeTab, setActiveTab] = useState<'validation' | 'compliance'>('validation');
 
   const mockValidationHistory: ValidationRecord[] = [
@@ -25,7 +26,7 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
       score: 95,
       maxScore: 100,
       details: 'Full compliance with GDPR requirements',
-      evidence: ['audit_report.pdf', 'compliance_checklist.xlsx']
+      evidence: ['audit_report.pdf', 'compliance_checklist.xlsx'],
     },
     {
       id: 'val-2',
@@ -35,8 +36,8 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
       status: 'passed',
       score: 88,
       maxScore: 100,
-      details: 'Automated validation completed successfully'
-    }
+      details: 'Automated validation completed successfully',
+    },
   ];
 
   const mockComplianceHistory: ComplianceCheck[] = [
@@ -51,23 +52,20 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
           passed: true,
           score: 90,
           maxScore: 100,
-          details: 'Security of processing measures are adequate'
+          details: 'Security of processing measures are adequate',
         },
         {
           standard: 'GDPR Art. 25',
           passed: true,
           score: 85,
           maxScore: 100,
-          details: 'Data protection by design implemented'
-        }
+          details: 'Data protection by design implemented',
+        },
       ],
       checkedAt: '2024-01-15T10:00:00Z',
       checkedBy: 'system',
-      recommendations: [
-        'Continue regular security audits',
-        'Update documentation regularly'
-      ]
-    }
+      recommendations: ['Continue regular security audits', 'Update documentation regularly'],
+    },
   ];
 
   const getStatusIcon = (status: string) => {
@@ -116,10 +114,7 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
               Track validation and compliance history for {certification.organizationName}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -128,7 +123,7 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
         <div className="flex space-x-1 mb-6">
           {[
             { id: 'validation', label: 'Validation History', icon: CheckCircle },
-            { id: 'compliance', label: 'Compliance History', icon: FileText }
+            { id: 'compliance', label: 'Compliance History', icon: FileText },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -166,7 +161,9 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(record.status)}`}
+                    >
                       {record.status}
                     </span>
                     <p className="text-xs text-gray-500 mt-1">
@@ -178,11 +175,15 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                   <div>
                     <p className="text-sm text-gray-600">Score</p>
-                    <p className="font-medium">{record.score}/{record.maxScore}</p>
+                    <p className="font-medium">
+                      {record.score}/{record.maxScore}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Date</p>
-                    <p className="font-medium">{new Date(record.validationDate).toLocaleString()}</p>
+                    <p className="font-medium">
+                      {new Date(record.validationDate).toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
@@ -235,7 +236,9 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(check.status)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(check.status)}`}
+                    >
                       {check.status}
                     </span>
                     <p className="text-xs text-gray-500 mt-1">
@@ -248,7 +251,10 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
                   <p className="text-sm text-gray-600 mb-2">Results</p>
                   <div className="space-y-2">
                     {check.results.map((result, resultIndex) => (
-                      <div key={resultIndex} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <div
+                        key={resultIndex}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                      >
                         <div className="flex items-center">
                           {result.passed ? (
                             <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
@@ -299,10 +305,7 @@ const CertificationHistory: React.FC<CertificationHistoryProps> = ({
             <RefreshCw className="w-4 h-4" />
             Renew Certification
           </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
-          >
+          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">
             Close
           </button>
         </div>

@@ -1,9 +1,9 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { SearchIndexService } from './search-index.service';
-import { CreateIndexDto } from './dto/create-index.dto';
-import { SearchDto } from './dto/search.dto';
+import { Controller, Post, Body } from "@nestjs/common";
+import { SearchIndexService } from "./search-index.service";
+import { CreateIndexDto } from "./dto/create-index.dto";
+import { SearchDto } from "./dto/search.dto";
 
-@Controller('search-index')
+@Controller("search-index")
 export class SearchIndexController {
   constructor(private readonly service: SearchIndexService) {}
 
@@ -12,7 +12,7 @@ export class SearchIndexController {
     return this.service.create(dto);
   }
 
-  @Post('search')
+  @Post("search")
   search(@Body() dto: SearchDto) {
     return this.service.search(dto.indexId, dto.query);
   }

@@ -1,7 +1,7 @@
-import { EventEmitter } from 'events';
-import { logger } from '../utils/logger';
-import { PerformanceObserver, performance } from 'perf_hooks';
-import { DistributedLock } from '../utils/lock';
+import { EventEmitter } from "events";
+import { logger } from "../utils/logger";
+import { PerformanceObserver, performance } from "perf_hooks";
+import { DistributedLock } from "../utils/lock";
 
 export interface DataProcessingOptions {
   chunkSize?: number;
@@ -42,7 +42,7 @@ export interface ProcessingResult<T = any> {
 
 /**
  * DataProcessor - High-performance data processing service with memory management
- * 
+ *
  * Features:
  * - Chunked processing for large datasets
  * - Automatic garbage collection triggering
@@ -66,7 +66,7 @@ export class DataProcessor extends EventEmitter {
 
   constructor(options: DataProcessingOptions = {}) {
     super();
-    
+
     this.options = {
       chunkSize: options.chunkSize || 1000,
       maxMemoryUsage: options.maxMemoryUsage || 512, // 512 MB default
@@ -98,7 +98,7 @@ export class DataProcessor extends EventEmitter {
     this.startMemoryMonitoring();
     this.setupPerformanceObserver();
 
-    logger.info('DataProcessor initialized', {
+    logger.info("DataProcessor initialized", {
       chunkSize: this.options.chunkSize,
       maxMemoryUsage: this.options.maxMemoryUsage,
       gcThreshold: this.options.gcThreshold,
@@ -112,22 +112,24 @@ export class DataProcessor extends EventEmitter {
   async processDataset<T>(
     dataset: any[],
     processor: (chunk: any[], index: number) => Promise<T>,
-    options?: { 
-      skipGC?: boolean; 
-      priority?: 'low' | 'normal' | 'high';
+    options?: {
+      skipGC?: boolean;
+      priority?: "low" | "normal" | "high";
       lockKey?: string; // Optional key for distributed locking
-    }
+    },
   ): Promise<ProcessingResult<T[]>> {
     const startTime = performance.now();
     this.abortController = new AbortController();
-    
+
     // If a lock key is provided, wrap the entire processing in a distributed lock
     if (options?.lockKey) {
       const lock = new DistributedLock(options.lockKey);
       const acquired = await lock.acquire();
-      
+
       if (!acquired) {
-        logger.error('Failed to acquire lock for dataset processing', { lockKey: options.lockKey });
+        logger.error("Failed to acquire lock for dataset processing", {
+          lockKey: options.lockKey,
+        });
         return {
           success: false,
           error: `Lock acquisition failed for key: ${options.lockKey}`,
@@ -152,16 +154,16 @@ export class DataProcessor extends EventEmitter {
   private async executeProcessing<T>(
     dataset: any[],
     processor: (chunk: any[], index: number) => Promise<T>,
-    options?: { skipGC?: boolean; priority?: 'low' | 'normal' | 'high' }
+    options?: { skipGC?: boolean; priority?: "low" | "normal" | "high" },
   ): Promise<ProcessingResult<T[]>> {
     const startTime = performance.now();
-    
+
     try {
       this.isProcessing = true;
       const results: T[] = [];
       const totalChunks = Math.ceil(dataset.length / this.options.chunkSize);
-      
-      logger.info('Starting dataset processing', {
+
+      logger.info("Starting dataset processing", {
         totalRecords: dataset.length,
         chunkSize: this.options.chunkSize,
         totalChunks,
@@ -170,29 +172,31 @@ export class DataProcessor extends EventEmitter {
       // Process in chunks
       for (let i = 0; i < dataset.length; i += this.options.chunkSize) {
         if (this.abortController?.signal.aborted) {
-          throw new Error('Processing aborted');
+          throw new Error("Processing aborted");
         }
 
         const chunk = dataset.slice(i, i + this.options.chunkSize);
         const chunkIndex = Math.floor(i / this.options.chunkSize);
-        
-        this.emit('chunkStarted', { chunkIndex, chunkSize: chunk.length });
-        
+
+        this.emit("chunkStarted", { chunkIndex, chunkSize: chunk.length });
+
         try {
           // Check memory before processing chunk
           await this.checkAndTriggerGC(options?.skipGC);
-          
+
           const chunkStartTime = performance.now();
           const result = await processor(chunk, chunkIndex);
           const chunkEndTime = performance.now();
-          
+
           results.push(result);
-          
+
           this.metrics.totalRecordsProcessed += chunk.length;
-          this.metrics.totalBytesProcessed += Buffer.byteLength(JSON.stringify(chunk));
+          this.metrics.totalBytesProcessed += Buffer.byteLength(
+            JSON.stringify(chunk),
+          );
           this.updateAverageProcessingTime(chunkEndTime - chunkStartTime);
-          
-          this.emit('chunkCompleted', {
+
+          this.emit("chunkCompleted", {
             chunkIndex,
             chunkSize: chunk.length,
             processingTime: chunkEndTime - chunkStartTime,
@@ -202,20 +206,19 @@ export class DataProcessor extends EventEmitter {
           if (this.getMemoryUsagePercent() > this.options.gcThreshold) {
             await this.forceGarbageCollection();
           }
-
         } catch (error) {
           this.metrics.errors++;
-          this.emit('chunkError', { chunkIndex, error });
+          this.emit("chunkError", { chunkIndex, error });
           throw error;
         }
       }
 
       const endTime = performance.now();
       const processingTime = endTime - startTime;
-      
+
       this.isProcessing = false;
-      
-      logger.info('Dataset processing completed', {
+
+      logger.info("Dataset processing completed", {
         totalRecords: dataset.length,
         processingTime,
         averageTimePerRecord: processingTime / dataset.length,
@@ -227,12 +230,11 @@ export class DataProcessor extends EventEmitter {
         metrics: { ...this.metrics },
         processingTime,
       };
-
     } catch (error: any) {
       this.isProcessing = false;
       this.metrics.errors++;
-      
-      logger.error('Dataset processing failed', {
+
+      logger.error("Dataset processing failed", {
         error: error.message,
         totalRecords: dataset.length,
       });
@@ -253,31 +255,31 @@ export class DataProcessor extends EventEmitter {
    */
   async processStream<T>(
     stream: AsyncIterable<any>,
-    processor: (item: any) => Promise<T>
+    processor: (item: any) => Promise<T>,
   ): Promise<ProcessingResult<T[]>> {
     const startTime = performance.now();
     const results: T[] = [];
     let itemCount = 0;
-    
+
     try {
       this.isProcessing = true;
-      
+
       for await (const item of stream) {
         if (this.abortController?.signal.aborted) {
           break;
         }
 
         await this.checkAndTriggerGC();
-        
+
         const result = await processor(item);
         results.push(result);
         itemCount++;
-        
+
         this.metrics.totalRecordsProcessed++;
-        
+
         // Periodic cleanup
         if (itemCount % this.options.batchSize === 0) {
-          this.emit('batchCompleted', { batchSize: this.options.batchSize });
+          this.emit("batchCompleted", { batchSize: this.options.batchSize });
           await this.cleanup();
         }
       }
@@ -291,7 +293,6 @@ export class DataProcessor extends EventEmitter {
         metrics: { ...this.metrics },
         processingTime,
       };
-
     } catch (error: any) {
       this.isProcessing = false;
       this.metrics.errors++;
@@ -310,23 +311,24 @@ export class DataProcessor extends EventEmitter {
    */
   async processParallel<T>(
     tasks: Array<() => Promise<T>>,
-    options?: { maxConcurrent?: number }
+    options?: { maxConcurrent?: number },
   ): Promise<ProcessingResult<T[]>> {
     const startTime = performance.now();
-    const maxConcurrent = options?.maxConcurrent || this.options.maxConcurrentTasks;
+    const maxConcurrent =
+      options?.maxConcurrent || this.options.maxConcurrentTasks;
     const results: T[] = [];
-    
+
     try {
       this.isProcessing = true;
-      
+
       // Process tasks with limited concurrency
       for (let i = 0; i < tasks.length; i += maxConcurrent) {
         const batch = tasks.slice(i, i + maxConcurrent);
-        
+
         await this.checkAndTriggerGC();
-        
+
         const batchResults = await Promise.all(
-          batch.map(async (task, index) => {
+          batch.map(async (task, _index) => {
             try {
               const result = await task();
               this.metrics.totalRecordsProcessed++;
@@ -335,7 +337,7 @@ export class DataProcessor extends EventEmitter {
               this.metrics.errors++;
               return { success: false, error };
             }
-          })
+          }),
         );
 
         for (const batchResult of batchResults) {
@@ -357,7 +359,6 @@ export class DataProcessor extends EventEmitter {
         metrics: { ...this.metrics },
         processingTime,
       };
-
     } catch (error: any) {
       this.isProcessing = false;
 
@@ -375,13 +376,13 @@ export class DataProcessor extends EventEmitter {
    */
   private async checkAndTriggerGC(skipGC?: boolean): Promise<void> {
     const memoryPercent = this.getMemoryUsagePercent();
-    
+
     if (memoryPercent > this.options.gcThreshold && !skipGC) {
-      logger.warn('High memory usage detected, triggering GC', {
+      logger.warn("High memory usage detected, triggering GC", {
         memoryPercent: memoryPercent.toFixed(2),
         threshold: this.options.gcThreshold,
       });
-      
+
       await this.forceGarbageCollection();
     }
   }
@@ -391,7 +392,7 @@ export class DataProcessor extends EventEmitter {
    */
   private async forceGarbageCollection(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       // @ts-ignore - global.gc() is available when Node.js is run with --expose-gc flag
       if (global.gc) {
@@ -401,18 +402,20 @@ export class DataProcessor extends EventEmitter {
         const gcTime = performance.now() - startTime;
         this.metrics.gcStats.totalGCTime += gcTime;
         this.metrics.gcStats.lastGCRun = new Date();
-        
-        logger.debug('Garbage collection completed', {
+
+        logger.debug("Garbage collection completed", {
           gcTime: gcTime.toFixed(2),
           totalGCRuns: this.metrics.gcStats.totalGCRuns,
         });
       } else {
-        logger.warn('GC not exposed - run Node.js with --expose-gc flag for better memory management');
+        logger.warn(
+          "GC not exposed - run Node.js with --expose-gc flag for better memory management",
+        );
         // Fallback: manual cleanup
         await this.cleanup();
       }
     } catch (error) {
-      logger.error('Garbage collection failed:', error);
+      logger.error("Garbage collection failed:", error);
       this.metrics.warnings++;
     }
   }
@@ -422,11 +425,11 @@ export class DataProcessor extends EventEmitter {
    */
   private async cleanup(): Promise<void> {
     // Clear any cached data
-    this.emit('cleanup');
-    
+    this.emit("cleanup");
+
     // Wait for event loop to process cleanup
-    await new Promise(resolve => setImmediate(resolve));
-    
+    await new Promise((resolve) => setImmediate(resolve));
+
     // Update memory metrics
     this.updateMemoryMetrics();
   }
@@ -459,7 +462,8 @@ export class DataProcessor extends EventEmitter {
   private updateAverageProcessingTime(currentTime: number): void {
     const total = this.metrics.totalRecordsProcessed;
     const oldAvg = this.metrics.averageProcessingTime;
-    this.metrics.averageProcessingTime = ((oldAvg * (total - 1)) + currentTime) / total;
+    this.metrics.averageProcessingTime =
+      (oldAvg * (total - 1) + currentTime) / total;
   }
 
   /**
@@ -468,23 +472,26 @@ export class DataProcessor extends EventEmitter {
   private startMemoryMonitoring(): void {
     this.memoryMonitorInterval = setInterval(() => {
       this.updateMemoryMetrics();
-      
+
       const memoryPercent = this.getMemoryUsagePercent();
-      
+
       if (memoryPercent > 90) {
-        logger.error('Critical memory usage detected!', {
+        logger.error("Critical memory usage detected!", {
           memoryPercent: memoryPercent.toFixed(2),
-          heapUsed: (this.metrics.memoryUsage.heapUsed / 1024 / 1024).toFixed(2) + ' MB',
+          heapUsed:
+            (this.metrics.memoryUsage.heapUsed / 1024 / 1024).toFixed(2) +
+            " MB",
         });
-        this.emit('memoryCritical', { memoryPercent });
+        this.emit("memoryCritical", { memoryPercent });
       } else if (memoryPercent > this.options.gcThreshold) {
-        logger.warn('High memory usage detected', {
+        logger.warn("High memory usage detected", {
           memoryPercent: memoryPercent.toFixed(2),
-          heapUsed: (this.metrics.memoryUsage.heapUsed / 1024 / 1024).toFixed(2) + ' MB',
+          heapUsed:
+            (this.metrics.memoryUsage.heapUsed / 1024 / 1024).toFixed(2) +
+            " MB",
         });
-        this.emit('memoryWarning', { memoryPercent });
+        this.emit("memoryWarning", { memoryPercent });
       }
-      
     }, 5000); // Check every 5 seconds
   }
 
@@ -496,23 +503,26 @@ export class DataProcessor extends EventEmitter {
       const obs = new PerformanceObserver((items) => {
         const entries = items.getEntries();
         for (const entry of entries) {
-          if (entry.entryType === 'gc') {
+          if (entry.entryType === "gc") {
             const gcEntry = entry as any;
             this.metrics.gcStats.totalGCRuns++;
             this.metrics.gcStats.totalGCTime += gcEntry.duration;
             this.metrics.gcStats.lastGCRun = new Date();
-            
-            logger.debug('GC event detected', {
+
+            logger.debug("GC event detected", {
               kind: gcEntry.kind,
               duration: gcEntry.duration,
             });
           }
         }
       });
-      
-      obs.observe({ entryTypes: ['gc'] });
+
+      obs.observe({ entryTypes: ["gc"] });
     } catch (error) {
-      logger.warn('Performance observer setup failed (GC monitoring unavailable):', error);
+      logger.warn(
+        "Performance observer setup failed (GC monitoring unavailable):",
+        error,
+      );
     }
   }
 
@@ -522,7 +532,7 @@ export class DataProcessor extends EventEmitter {
   abort(): void {
     if (this.abortController) {
       this.abortController.abort();
-      logger.info('Processing aborted');
+      logger.info("Processing aborted");
     }
   }
 
@@ -569,30 +579,32 @@ export class DataProcessor extends EventEmitter {
    * Graceful shutdown
    */
   async shutdown(): Promise<void> {
-    logger.info('DataProcessor shutting down...');
-    
+    logger.info("DataProcessor shutting down...");
+
     // Stop accepting new tasks
     this.isProcessing = true;
-    
+
     // Abort ongoing processing
     this.abort();
-    
+
     // Stop memory monitoring
     if (this.memoryMonitorInterval) {
       clearInterval(this.memoryMonitorInterval);
     }
-    
+
     // Wait for active tasks to complete
     if (this.activeTasks.size > 0) {
-      logger.info(`Waiting for ${this.activeTasks.size} active tasks to complete...`);
+      logger.info(
+        `Waiting for ${this.activeTasks.size} active tasks to complete...`,
+      );
       await Promise.allSettled(this.activeTasks);
     }
-    
+
     // Final cleanup
     await this.cleanup();
     await this.forceGarbageCollection();
-    
-    logger.info('DataProcessor shutdown completed');
+
+    logger.info("DataProcessor shutdown completed");
   }
 }
 

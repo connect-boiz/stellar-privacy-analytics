@@ -32,9 +32,12 @@ import TrainingModulePage from './pages/TrainingModulePage';
 import TrainingAdminPage from './pages/TrainingAdminPage';
 import OnboardingPage from './pages/OnboardingPage';
 import KeyManagementPage from './pages/KeyManagementPage';
+import WalletPage from './pages/WalletPage';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 
 // Styles
 import './index.css';
@@ -70,8 +73,106 @@ const queryClient = new QueryClient({
   },
 });
 
+function _AppRoutes({ isAuthenticated }: { isAuthenticated: boolean }) {
+  useKeyboardShortcuts();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <KeyboardShortcutsModal />
+      <Routes>
+        <Route
+          path="/login"
+          element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />}
+        />
+        <Route
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<PrivacyHealthDashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/data" element={<DataManagement />} />
+          <Route path="/privacy" element={<PrivacySettings />} />
+          <Route path="/audit" element={<AuditExplorerPage />} />
+          <Route path="/upload" element={<EncryptedUploadPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/consent" element={<ConsentPage />} />
+          <Route path="/performance" element={<PerformancePage />} />
+          <Route path="/budget" element={<PrivacyBudgetPage />} />
+          <Route path="/training" element={<TrainingPage />} />
+          <Route path="/training/module/:moduleId" element={<TrainingModulePage />} />
+          <Route path="/training/admin" element={<TrainingAdminPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/network-test" element={<NetworkTestPage />} />
+          <Route path="/key-management" element={<KeyManagementPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+      </Routes>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+    </div>
+  );
+}
+
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  const shortcuts = [
+    {
+      key: 'g',
+      ctrl: true,
+      description: 'Go to Dashboard',
+      action: () => {
+        window.location.href = '/dashboard';
+      },
+    },
+    {
+      key: 'a',
+      ctrl: true,
+      description: 'Go to Analytics',
+      action: () => {
+        window.location.href = '/analytics';
+      },
+    },
+    {
+      key: 'd',
+      ctrl: true,
+      description: 'Go to Data Management',
+      action: () => {
+        window.location.href = '/data';
+      },
+    },
+    {
+      key: 'p',
+      ctrl: true,
+      description: 'Go to Privacy Settings',
+      action: () => {
+        window.location.href = '/privacy';
+      },
+    },
+    {
+      key: 's',
+      ctrl: true,
+      description: 'Go to Search',
+      action: () => {
+        window.location.href = '/search';
+      },
+    },
+    { key: '?', description: 'Show keyboard shortcuts', action: () => toggleHelp() },
+  ];
+
+  const { showHelp, toggleHelp, setShowHelp } = useKeyboardShortcuts(shortcuts, isAuthenticated);
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('preferred-language') || 'en';
@@ -97,8 +198,14 @@ function App() {
         <ErrorBoundary>
           <Router>
             <div className="min-h-screen bg-gray-50">
+              {showHelp && (
+                <KeyboardShortcutsHelp shortcuts={shortcuts} onClose={() => setShowHelp(false)} />
+              )}
               <Routes>
-                <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
+                <Route
+                  path="/login"
+                  element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />}
+                />
                 <Route
                   element={
                     <ProtectedRoute isAuthenticated={isAuthenticated}>

@@ -4,14 +4,14 @@
 
 import {
   SimulationResult,
-  SimulationScenario,
+  _SimulationScenario,
   ScenarioComparison,
-  Recommendation,
+  _Recommendation,
   BudgetExport,
-  BudgetShare,
+  _BudgetShare,
   ExportMetadata,
   SharePermission,
-  AccessLog
+  AccessLog,
 } from '../types/privacyBudget';
 
 export interface ExportConfig {
@@ -47,7 +47,14 @@ export interface ExportTemplate {
 export interface ExportSection {
   id: string;
   name: string;
-  type: 'summary' | 'metrics' | 'allocations' | 'recommendations' | 'projections' | 'sensitivity' | 'charts';
+  type:
+    | 'summary'
+    | 'metrics'
+    | 'allocations'
+    | 'recommendations'
+    | 'projections'
+    | 'sensitivity'
+    | 'charts';
   enabled: boolean;
   options: Record<string, any>;
 }
@@ -100,7 +107,7 @@ export class SimulationExportSharing {
           includeSensitivity: false,
           compressionEnabled: false,
           encryptionEnabled: false,
-          watermarkEnabled: false
+          watermarkEnabled: false,
         };
       }
       if (!shareConfig) {
@@ -110,7 +117,7 @@ export class SimulationExportSharing {
           requireAuthentication: true,
           allowDownload: true,
           allowComments: false,
-          trackAccess: true
+          trackAccess: true,
         };
       }
       SimulationExportSharing.instance = new SimulationExportSharing(exportConfig, shareConfig);
@@ -126,15 +133,33 @@ export class SimulationExportSharing {
         description: 'High-level overview for executive stakeholders',
         format: 'pdf',
         sections: [
-          { id: 'summary', name: 'Executive Summary', type: 'summary', enabled: true, options: { level: 'executive' } },
-          { id: 'metrics', name: 'Key Metrics', type: 'metrics', enabled: true, options: { includeCharts: true } },
-          { id: 'recommendations', name: 'Top Recommendations', type: 'recommendations', enabled: true, options: { maxCount: 5 } }
+          {
+            id: 'summary',
+            name: 'Executive Summary',
+            type: 'summary',
+            enabled: true,
+            options: { level: 'executive' },
+          },
+          {
+            id: 'metrics',
+            name: 'Key Metrics',
+            type: 'metrics',
+            enabled: true,
+            options: { includeCharts: true },
+          },
+          {
+            id: 'recommendations',
+            name: 'Top Recommendations',
+            type: 'recommendations',
+            enabled: true,
+            options: { maxCount: 5 },
+          },
         ],
         styling: {
           theme: 'corporate',
           colors: { primary: '#1e40af', secondary: '#64748b', accent: '#f59e0b' },
           fonts: { heading: 'Arial', body: 'Helvetica' },
-          watermark: 'CONFIDENTIAL'
+          watermark: 'CONFIDENTIAL',
         },
         metadata: {
           exportedAt: 0,
@@ -142,8 +167,8 @@ export class SimulationExportSharing {
           version: '1.0',
           format: 'pdf',
           encryption: false,
-          compression: false
-        }
+          compression: false,
+        },
       },
       {
         id: 'technical_analysis',
@@ -151,16 +176,46 @@ export class SimulationExportSharing {
         description: 'Detailed technical analysis for privacy teams',
         format: 'excel',
         sections: [
-          { id: 'summary', name: 'Analysis Summary', type: 'summary', enabled: true, options: { level: 'technical' } },
-          { id: 'metrics', name: 'All Metrics', type: 'metrics', enabled: true, options: { includeDetails: true } },
-          { id: 'allocations', name: 'Budget Allocations', type: 'allocations', enabled: true, options: { includeHistory: true } },
-          { id: 'projections', name: 'Future Projections', type: 'projections', enabled: true, options: { includeConfidence: true } },
-          { id: 'sensitivity', name: 'Sensitivity Analysis', type: 'sensitivity', enabled: true, options: { includeTornado: true } }
+          {
+            id: 'summary',
+            name: 'Analysis Summary',
+            type: 'summary',
+            enabled: true,
+            options: { level: 'technical' },
+          },
+          {
+            id: 'metrics',
+            name: 'All Metrics',
+            type: 'metrics',
+            enabled: true,
+            options: { includeDetails: true },
+          },
+          {
+            id: 'allocations',
+            name: 'Budget Allocations',
+            type: 'allocations',
+            enabled: true,
+            options: { includeHistory: true },
+          },
+          {
+            id: 'projections',
+            name: 'Future Projections',
+            type: 'projections',
+            enabled: true,
+            options: { includeConfidence: true },
+          },
+          {
+            id: 'sensitivity',
+            name: 'Sensitivity Analysis',
+            type: 'sensitivity',
+            enabled: true,
+            options: { includeTornado: true },
+          },
         ],
         styling: {
           theme: 'light',
           colors: { primary: '#3b82f6', secondary: '#6b7280', accent: '#10b981' },
-          fonts: { heading: 'Calibri', body: 'Arial' }
+          fonts: { heading: 'Calibri', body: 'Arial' },
         },
         metadata: {
           exportedAt: 0,
@@ -168,8 +223,8 @@ export class SimulationExportSharing {
           version: '1.0',
           format: 'excel',
           encryption: false,
-          compression: false
-        }
+          compression: false,
+        },
       },
       {
         id: 'compliance_report',
@@ -177,16 +232,40 @@ export class SimulationExportSharing {
         description: 'Compliance-focused report for audit purposes',
         format: 'pdf',
         sections: [
-          { id: 'summary', name: 'Compliance Summary', type: 'summary', enabled: true, options: { level: 'compliance' } },
-          { id: 'metrics', name: 'Compliance Metrics', type: 'metrics', enabled: true, options: { focus: 'compliance' } },
-          { id: 'allocations', name: 'Compliance Allocations', type: 'allocations', enabled: true, options: { category: 'compliance' } },
-          { id: 'recommendations', name: 'Compliance Recommendations', type: 'recommendations', enabled: true, options: { category: 'compliance' } }
+          {
+            id: 'summary',
+            name: 'Compliance Summary',
+            type: 'summary',
+            enabled: true,
+            options: { level: 'compliance' },
+          },
+          {
+            id: 'metrics',
+            name: 'Compliance Metrics',
+            type: 'metrics',
+            enabled: true,
+            options: { focus: 'compliance' },
+          },
+          {
+            id: 'allocations',
+            name: 'Compliance Allocations',
+            type: 'allocations',
+            enabled: true,
+            options: { category: 'compliance' },
+          },
+          {
+            id: 'recommendations',
+            name: 'Compliance Recommendations',
+            type: 'recommendations',
+            enabled: true,
+            options: { category: 'compliance' },
+          },
         ],
         styling: {
           theme: 'corporate',
           colors: { primary: '#059669', secondary: '#6b7280', accent: '#dc2626' },
           fonts: { heading: 'Times New Roman', body: 'Arial' },
-          watermark: 'COMPLIANCE REPORT'
+          watermark: 'COMPLIANCE REPORT',
         },
         metadata: {
           exportedAt: 0,
@@ -194,8 +273,8 @@ export class SimulationExportSharing {
           version: '1.0',
           format: 'pdf',
           encryption: true,
-          compression: false
-        }
+          compression: false,
+        },
       },
       {
         id: 'data_export',
@@ -203,16 +282,52 @@ export class SimulationExportSharing {
         description: 'Complete data export for further analysis',
         format: 'json',
         sections: [
-          { id: 'summary', name: 'Complete Summary', type: 'summary', enabled: true, options: { includeAll: true } },
-          { id: 'metrics', name: 'All Metrics', type: 'metrics', enabled: true, options: { includeRaw: true } },
-          { id: 'allocations', name: 'All Allocations', type: 'allocations', enabled: true, options: { includeRaw: true } },
-          { id: 'projections', name: 'All Projections', type: 'projections', enabled: true, options: { includeRaw: true } },
-          { id: 'sensitivity', name: 'Full Sensitivity Analysis', type: 'sensitivity', enabled: true, options: { includeRaw: true } },
-          { id: 'recommendations', name: 'All Recommendations', type: 'recommendations', enabled: true, options: { includeRaw: true } }
+          {
+            id: 'summary',
+            name: 'Complete Summary',
+            type: 'summary',
+            enabled: true,
+            options: { includeAll: true },
+          },
+          {
+            id: 'metrics',
+            name: 'All Metrics',
+            type: 'metrics',
+            enabled: true,
+            options: { includeRaw: true },
+          },
+          {
+            id: 'allocations',
+            name: 'All Allocations',
+            type: 'allocations',
+            enabled: true,
+            options: { includeRaw: true },
+          },
+          {
+            id: 'projections',
+            name: 'All Projections',
+            type: 'projections',
+            enabled: true,
+            options: { includeRaw: true },
+          },
+          {
+            id: 'sensitivity',
+            name: 'Full Sensitivity Analysis',
+            type: 'sensitivity',
+            enabled: true,
+            options: { includeRaw: true },
+          },
+          {
+            id: 'recommendations',
+            name: 'All Recommendations',
+            type: 'recommendations',
+            enabled: true,
+            options: { includeRaw: true },
+          },
         ],
         styling: {
           theme: 'light',
-          colors: { primary: '#6b7280', secondary: '#9ca3af', accent: '#3b82f6' }
+          colors: { primary: '#6b7280', secondary: '#9ca3af', accent: '#3b82f6' },
         },
         metadata: {
           exportedAt: 0,
@@ -220,12 +335,12 @@ export class SimulationExportSharing {
           version: '1.0',
           format: 'json',
           encryption: true,
-          compression: true
-        }
-      }
+          compression: true,
+        },
+      },
     ];
 
-    templates.forEach(template => {
+    templates.forEach((template) => {
       this.templates.set(template.id, template);
     });
   }
@@ -251,13 +366,13 @@ export class SimulationExportSharing {
       version: '1.0',
       format: selectedFormat,
       encryption: config.encryptionEnabled,
-      compression: config.compressionEnabled
+      compression: config.compressionEnabled,
     };
 
     return {
       format: selectedFormat,
       data: finalData,
-      metadata
+      metadata,
     };
   }
 
@@ -279,13 +394,13 @@ export class SimulationExportSharing {
       version: '1.0',
       format: selectedFormat,
       encryption: config.encryptionEnabled,
-      compression: config.compressionEnabled
+      compression: config.compressionEnabled,
     };
 
     return {
       format: selectedFormat,
       data: finalData,
-      metadata
+      metadata,
     };
   }
 
@@ -307,13 +422,13 @@ export class SimulationExportSharing {
       version: '1.0',
       format: selectedFormat,
       encryption: config.encryptionEnabled,
-      compression: config.compressionEnabled
+      compression: config.compressionEnabled,
     };
 
     return {
       format: selectedFormat,
       data: finalData,
-      metadata
+      metadata,
     };
   }
 
@@ -325,17 +440,16 @@ export class SimulationExportSharing {
   ): ShareLink {
     const shareId = `share-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const token = this.generateSecureToken();
-    const expiresAt = Date.now() + (expirationDays || this.shareConfig.defaultExpiration) * 24 * 60 * 60 * 1000;
+    const expiresAt =
+      Date.now() + (expirationDays || this.shareConfig.defaultExpiration) * 24 * 60 * 60 * 1000;
 
     const defaultPermissions: SharePermission = {
       type: 'view',
       scope: 'summary',
-      restrictions: []
+      restrictions: [],
     };
 
-    const finalPermissions: SharePermission[] = [
-      { ...defaultPermissions, ...permissions }
-    ];
+    const finalPermissions: SharePermission[] = [{ ...defaultPermissions, ...permissions }];
 
     const shareLink: ShareLink = {
       id: shareId,
@@ -345,7 +459,7 @@ export class SimulationExportSharing {
       permissions: finalPermissions,
       accessCount: 0,
       createdAt: Date.now(),
-      createdBy: 'current-user'
+      createdBy: 'current-user',
     };
 
     this.shares.set(shareId, shareLink);
@@ -365,12 +479,15 @@ export class SimulationExportSharing {
     return true;
   }
 
-  public recordShareAccess(shareId: string, accessInfo: {
-    userId?: string;
-    ip: string;
-    userAgent: string;
-    action: string;
-  }): void {
+  public recordShareAccess(
+    shareId: string,
+    accessInfo: {
+      userId?: string;
+      ip: string;
+      userAgent: string;
+      action: string;
+    }
+  ): void {
     const share = this.shares.get(shareId);
     if (!share) return;
 
@@ -379,7 +496,7 @@ export class SimulationExportSharing {
       userId: accessInfo.userId || 'anonymous',
       action: accessInfo.action,
       ip: accessInfo.ip,
-      userAgent: accessInfo.userAgent
+      userAgent: accessInfo.userAgent,
     };
 
     const logs = this.accessLogs.get(shareId) || [];
@@ -406,15 +523,15 @@ export class SimulationExportSharing {
         uniqueUsers: 0,
         accessByDate: {},
         accessByAction: {},
-        recentAccess: []
+        recentAccess: [],
       };
     }
 
-    const uniqueUsers = new Set(logs.map(log => log.userId)).size;
+    const uniqueUsers = new Set(logs.map((log) => log.userId)).size;
     const accessByDate: Record<string, number> = {};
     const accessByAction: Record<string, number> = {};
 
-    logs.forEach(log => {
+    logs.forEach((log) => {
       const date = new Date(log.timestamp).toISOString().split('T')[0];
       accessByDate[date] = (accessByDate[date] || 0) + 1;
       accessByAction[log.action] = (accessByAction[log.action] || 0) + 1;
@@ -427,7 +544,7 @@ export class SimulationExportSharing {
       uniqueUsers,
       accessByDate,
       accessByAction,
-      recentAccess
+      recentAccess,
     };
   }
 
@@ -493,13 +610,13 @@ export class SimulationExportSharing {
       scenarioId: result.scenarioId,
       timestamp: result.timestamp,
       status: result.status,
-      duration: result.duration
+      duration: result.duration,
     };
 
     // Add sections based on template or config
     const sections = template?.sections || this.getDefaultSections();
 
-    sections.forEach(section => {
+    sections.forEach((section) => {
       if (!section.enabled) return;
 
       switch (section.type) {
@@ -549,7 +666,7 @@ export class SimulationExportSharing {
       createdAt: comparison.createdAt,
       scenarios: comparison.scenarios,
       metrics: comparison.metrics,
-      weights: comparison.weights
+      weights: comparison.weights,
     };
 
     if (config.includeMetadata) {
@@ -562,9 +679,9 @@ export class SimulationExportSharing {
 
   private prepareMultiResultExportData(results: SimulationResult[], config: ExportConfig): any {
     return {
-      results: results.map(result => this.prepareExportData(result, null, config)),
+      results: results.map((result) => this.prepareExportData(result, null, config)),
       summary: this.prepareMultiResultSummary(results),
-      comparison: this.prepareMultiResultComparison(results)
+      comparison: this.prepareMultiResultComparison(results),
     };
   }
 
@@ -650,7 +767,7 @@ export class SimulationExportSharing {
       totalROI: result.metrics.totalROI,
       riskScore: result.metrics.riskScore,
       privacyScore: result.metrics.privacyScore,
-      utilityScore: result.metrics.utilityScore
+      utilityScore: result.metrics.utilityScore,
     };
 
     if (level === 'executive') {
@@ -683,7 +800,7 @@ export class SimulationExportSharing {
   }
 
   private prepareAllocationsData(result: SimulationResult, options: any): any {
-    const allocations = result.allocations.map(alloc => ({
+    const allocations = result.allocations.map((alloc) => ({
       id: alloc.id,
       category: alloc.category.name,
       amount: alloc.amount,
@@ -691,7 +808,7 @@ export class SimulationExportSharing {
       expectedROI: alloc.expectedROI,
       riskLevel: alloc.riskLevel,
       priority: alloc.priority,
-      performance: alloc.performance
+      performance: alloc.performance,
     }));
 
     if (options.includeHistory) {
@@ -699,7 +816,7 @@ export class SimulationExportSharing {
     }
 
     if (options.category) {
-      return allocations.filter(alloc => alloc.category === options.category);
+      return allocations.filter((alloc) => alloc.category === options.category);
     }
 
     return allocations;
@@ -713,21 +830,23 @@ export class SimulationExportSharing {
     }
 
     if (options.category) {
-      recommendations = recommendations.filter(rec => rec.type === options.category);
+      recommendations = recommendations.filter((rec) => rec.type === options.category);
     }
 
     return recommendations;
   }
 
   private prepareProjectionsData(result: SimulationResult, options: any): any {
-    const projections = result.projections.map(proj => ({
+    const projections = result.projections.map((proj) => ({
       metric: proj.metric,
       trend: proj.trend,
       confidence: proj.confidence,
-      timePoints: options.includeConfidence ? proj.timePoints : proj.timePoints.map(tp => ({
-        timestamp: tp.timestamp,
-        value: tp.value
-      }))
+      timePoints: options.includeConfidence
+        ? proj.timePoints
+        : proj.timePoints.map((tp) => ({
+            timestamp: tp.timestamp,
+            value: tp.value,
+          })),
     }));
 
     return projections;
@@ -747,12 +866,12 @@ export class SimulationExportSharing {
     return sensitivity;
   }
 
-  private prepareChartsData(result: SimulationResult, options: any): any {
+  private prepareChartsData(result: SimulationResult, _options: any): any {
     return {
       allocationChart: this.generateAllocationChart(result),
       metricsChart: this.generateMetricsChart(result),
       trendChart: this.generateTrendChart(result),
-      radarChart: this.generateRadarChart(result)
+      radarChart: this.generateRadarChart(result),
     };
   }
 
@@ -764,18 +883,18 @@ export class SimulationExportSharing {
   private async processCSVExport(data: any): Promise<string> {
     // Simplified CSV processing
     const csvRows: string[] = [];
-    
+
     // Flatten the data for CSV export
     const flattened = this.flattenData(data);
-    
+
     // Add header row
     const headers = Object.keys(flattened);
     csvRows.push(headers.join(','));
-    
+
     // Add data row
-    const values = headers.map(header => flattened[header]);
+    const values = headers.map((header) => flattened[header]);
     csvRows.push(values.join(','));
-    
+
     return csvRows.join('\n');
   }
 
@@ -786,18 +905,18 @@ export class SimulationExportSharing {
       worksheets: [
         {
           name: 'Summary',
-          data: this.prepareExcelData(data.summary || {})
+          data: this.prepareExcelData(data.summary || {}),
         },
         {
           name: 'Metrics',
-          data: this.prepareExcelData(data.metrics || {})
+          data: this.prepareExcelData(data.metrics || {}),
         },
         {
           name: 'Allocations',
-          data: this.prepareExcelData(data.allocations || [])
-        }
+          data: this.prepareExcelData(data.allocations || []),
+        },
       ],
-      styling: template?.styling
+      styling: template?.styling,
     };
   }
 
@@ -810,26 +929,26 @@ export class SimulationExportSharing {
         title: 'Privacy Budget Simulation Report',
         author: 'Privacy Budget System',
         subject: 'Simulation Results',
-        creator: 'Privacy Budget System'
+        creator: 'Privacy Budget System',
       },
-      styling: template?.styling
+      styling: template?.styling,
     };
   }
 
   // Additional processing methods for different export types
   private async processCSVComparisonExport(data: any): Promise<string> {
     const csvRows: string[] = [];
-    
+
     // Header for comparison data
     csvRows.push('Scenario,Metric,Value,Rank');
-    
+
     // Data rows
     data.results?.forEach((result: any) => {
       Object.entries(result.metrics).forEach(([metric, value]) => {
         csvRows.push(`${result.scenarioName},${metric},${value},${result.rank}`);
       });
     });
-    
+
     return csvRows.join('\n');
   }
 
@@ -838,27 +957,29 @@ export class SimulationExportSharing {
       worksheets: [
         {
           name: 'Comparison Summary',
-          data: this.prepareExcelData(data)
+          data: this.prepareExcelData(data),
         },
         {
           name: 'Scenario Results',
-          data: data.results?.map((result: any) => ({
-            'Scenario': result.scenarioName,
-            'Rank': result.rank,
-            'Score': result.score,
-            ...result.metrics
-          })) || []
+          data:
+            data.results?.map((result: any) => ({
+              Scenario: result.scenarioName,
+              Rank: result.rank,
+              Score: result.score,
+              ...result.metrics,
+            })) || [],
         },
         {
           name: 'Insights',
-          data: data.insights?.map((insight: any) => ({
-            'Type': insight.type,
-            'Description': insight.description,
-            'Impact': insight.impact,
-            'Recommendation': insight.recommendation
-          })) || []
-        }
-      ]
+          data:
+            data.insights?.map((insight: any) => ({
+              Type: insight.type,
+              Description: insight.description,
+              Impact: insight.impact,
+              Recommendation: insight.recommendation,
+            })) || [],
+        },
+      ],
     };
   }
 
@@ -868,47 +989,51 @@ export class SimulationExportSharing {
         {
           type: 'title',
           content: `Scenario Comparison: ${data.name}`,
-          styling: { fontSize: 24, fontWeight: 'bold' }
+          styling: { fontSize: 24, fontWeight: 'bold' },
         },
         {
           type: 'summary',
           content: this.generateComparisonSummary(data),
-          styling: { fontSize: 12 }
+          styling: { fontSize: 12 },
         },
         {
           type: 'results',
           content: data.results,
-          styling: { fontSize: 10 }
+          styling: { fontSize: 10 },
         },
         {
           type: 'insights',
           content: data.insights,
-          styling: { fontSize: 11 }
-        }
-      ]
+          styling: { fontSize: 11 },
+        },
+      ],
     };
   }
 
   private async processCSVMultiResultExport(data: any): Promise<string> {
     const csvRows: string[] = [];
-    
+
     // Header for multi-result data
-    csvRows.push('Result ID,Scenario ID,Status,Duration,Total ROI,Risk Score,Privacy Score,Utility Score');
-    
+    csvRows.push(
+      'Result ID,Scenario ID,Status,Duration,Total ROI,Risk Score,Privacy Score,Utility Score'
+    );
+
     // Data rows
     data.results?.forEach((result: any) => {
-      csvRows.push([
-        result.id,
-        result.scenarioId,
-        result.status,
-        result.duration,
-        result.metrics.totalROI,
-        result.metrics.riskScore,
-        result.metrics.privacyScore,
-        result.metrics.utilityScore
-      ].join(','));
+      csvRows.push(
+        [
+          result.id,
+          result.scenarioId,
+          result.status,
+          result.duration,
+          result.metrics.totalROI,
+          result.metrics.riskScore,
+          result.metrics.privacyScore,
+          result.metrics.utilityScore,
+        ].join(',')
+      );
     });
-    
+
     return csvRows.join('\n');
   }
 
@@ -917,28 +1042,29 @@ export class SimulationExportSharing {
       worksheets: [
         {
           name: 'Summary',
-          data: data.summary
+          data: data.summary,
         },
         {
           name: 'All Results',
-          data: data.results?.map((result: any) => ({
-            'ID': result.id,
-            'Scenario ID': result.scenarioId,
-            'Status': result.status,
-            'Duration': result.duration,
-            'Total ROI': result.metrics.totalROI,
-            'Risk Score': result.metrics.riskScore,
-            'Privacy Score': result.metrics.privacyScore,
-            'Utility Score': result.metrics.utilityScore,
-            'Efficiency': result.metrics.efficiency,
-            'Compliance Score': result.metrics.complianceScore
-          })) || []
+          data:
+            data.results?.map((result: any) => ({
+              ID: result.id,
+              'Scenario ID': result.scenarioId,
+              Status: result.status,
+              Duration: result.duration,
+              'Total ROI': result.metrics.totalROI,
+              'Risk Score': result.metrics.riskScore,
+              'Privacy Score': result.metrics.privacyScore,
+              'Utility Score': result.metrics.utilityScore,
+              Efficiency: result.metrics.efficiency,
+              'Compliance Score': result.metrics.complianceScore,
+            })) || [],
         },
         {
           name: 'Comparison',
-          data: data.comparison
-        }
-      ]
+          data: data.comparison,
+        },
+      ],
     };
   }
 
@@ -948,24 +1074,24 @@ export class SimulationExportSharing {
         {
           type: 'title',
           content: 'Multi-Result Analysis Report',
-          styling: { fontSize: 24, fontWeight: 'bold' }
+          styling: { fontSize: 24, fontWeight: 'bold' },
         },
         {
           type: 'summary',
           content: data.summary,
-          styling: { fontSize: 12 }
+          styling: { fontSize: 12 },
         },
         {
           type: 'comparison',
           content: data.comparison,
-          styling: { fontSize: 11 }
+          styling: { fontSize: 11 },
         },
         {
           type: 'detailed_results',
           content: data.results,
-          styling: { fontSize: 9 }
-        }
-      ]
+          styling: { fontSize: 9 },
+        },
+      ],
     };
   }
 
@@ -984,18 +1110,24 @@ export class SimulationExportSharing {
       { id: 'summary', name: 'Summary', type: 'summary', enabled: true, options: {} },
       { id: 'metrics', name: 'Metrics', type: 'metrics', enabled: true, options: {} },
       { id: 'allocations', name: 'Allocations', type: 'allocations', enabled: true, options: {} },
-      { id: 'recommendations', name: 'Recommendations', type: 'recommendations', enabled: true, options: {} }
+      {
+        id: 'recommendations',
+        name: 'Recommendations',
+        type: 'recommendations',
+        enabled: true,
+        options: {},
+      },
     ];
   }
 
   private flattenData(data: any, prefix = ''): Record<string, any> {
     const flattened: Record<string, any> = {};
-    
+
     for (const key in data) {
-      if (data.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
         const value = data[key];
         const newKey = prefix ? `${prefix}.${key}` : key;
-        
+
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           Object.assign(flattened, this.flattenData(value, newKey));
         } else {
@@ -1003,7 +1135,7 @@ export class SimulationExportSharing {
         }
       }
     }
-    
+
     return flattened;
   }
 
@@ -1035,39 +1167,53 @@ export class SimulationExportSharing {
     return `Compliance summary with score of ${result.metrics.complianceScore.toFixed(1)}`;
   }
 
-  private generateMetricsCharts(result: SimulationResult): any {
-    return { /* chart data */ };
+  private generateMetricsCharts(_result: SimulationResult): any {
+    return {
+      /* chart data */
+    };
   }
 
-  private generateMetricsDetails(result: SimulationResult): any {
-    return { /* detailed metrics */ };
+  private generateMetricsDetails(_result: SimulationResult): any {
+    return {
+      /* detailed metrics */
+    };
   }
 
-  private filterMetricsByFocus(metrics: any, focus: string): any {
-    return { /* filtered metrics */ };
+  private filterMetricsByFocus(_metrics: any, _focus: string): any {
+    return {
+      /* filtered metrics */
+    };
   }
 
-  private generateAllocationChart(result: SimulationResult): any {
-    return { /* allocation chart data */ };
+  private generateAllocationChart(_result: SimulationResult): any {
+    return {
+      /* allocation chart data */
+    };
   }
 
-  private generateMetricsChart(result: SimulationResult): any {
-    return { /* metrics chart data */ };
+  private generateMetricsChart(_result: SimulationResult): any {
+    return {
+      /* metrics chart data */
+    };
   }
 
-  private generateTrendChart(result: SimulationResult): any {
-    return { /* trend chart data */ };
+  private generateTrendChart(_result: SimulationResult): any {
+    return {
+      /* trend chart data */
+    };
   }
 
-  private generateRadarChart(result: SimulationResult): any {
-    return { /* radar chart data */ };
+  private generateRadarChart(_result: SimulationResult): any {
+    return {
+      /* radar chart data */
+    };
   }
 
   private prepareExcelData(data: any): any[] {
     if (Array.isArray(data)) {
       return data;
     }
-    
+
     // Convert object to array format for Excel
     return [data];
   }
@@ -1077,8 +1223,8 @@ export class SimulationExportSharing {
       {
         type: 'content',
         data: data,
-        styling: template?.styling
-      }
+        styling: template?.styling,
+      },
     ];
   }
 
@@ -1091,15 +1237,15 @@ export class SimulationExportSharing {
       totalResults: results.length,
       averageROI: results.reduce((sum, r) => sum + r.metrics.totalROI, 0) / results.length,
       averageRiskScore: results.reduce((sum, r) => sum + r.metrics.riskScore, 0) / results.length,
-      completedCount: results.filter(r => r.status === 'completed').length
+      completedCount: results.filter((r) => r.status === 'completed').length,
     };
   }
 
   private prepareMultiResultComparison(results: SimulationResult[]): any {
     return {
-      bestROI: Math.max(...results.map(r => r.metrics.totalROI)),
-      lowestRisk: Math.min(...results.map(r => r.metrics.riskScore)),
-      highestPrivacy: Math.max(...results.map(r => r.metrics.privacyScore))
+      bestROI: Math.max(...results.map((r) => r.metrics.totalROI)),
+      lowestRisk: Math.min(...results.map((r) => r.metrics.riskScore)),
+      highestPrivacy: Math.max(...results.map((r) => r.metrics.privacyScore)),
     };
   }
 }

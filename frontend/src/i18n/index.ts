@@ -39,7 +39,7 @@ i18n
     resources,
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
-    
+
     interpolation: {
       escapeValue: false,
     },
@@ -69,7 +69,7 @@ i18n
 
 // Export helper functions
 export const isRTL = (lng: string): boolean => rtlLanguages.includes(lng);
-export const getDirection = (lng: string): 'ltr' | 'rtl' => isRTL(lng) ? 'rtl' : 'ltr';
+export const getDirection = (lng: string): 'ltr' | 'rtl' => (isRTL(lng) ? 'rtl' : 'ltr');
 
 // Export supported languages
 export const supportedLanguages = [

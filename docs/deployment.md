@@ -49,27 +49,72 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --scale ba
 
 ## Environment Configuration
 
-### Required Environment Variables
+### Required secrets (issue #413 WS2 — fail-closed boot audit)
+
+In **production**, the backend refuses to start (`process.exit(1)`) when any of
+these is missing or still set to a known development default. Generate strong,
+unique, random values and never commit them:
+
+| Variable | Purpose |
+|----------|---------|
+| `JWT_SECRET` | HS256 signing/verification of user JWTs |
+| `API_KEY_SECRET` | HMAC derivation for service API keys |
+| `STORAGE_MASTER_KEY` | At-rest storage encryption |
+| `AUDIT_SIGNATURE_KEY` | HMAC signing of audit records |
+| `RATE_LIMIT_EMERGENCY_BYPASS_KEY` | Internal override (no public bypass) |
+| `HSM_ENDPOINT` | HSM base URL (required in production) |
+| `HSM_API_KEY` / `HSM_API_SECRET` | HSM authentication |
+| `DB_PASSWORD` | Postgres password |
+
+See `.env.example` for the complete documented set.
+
+### HSM requirement (issue #413 WS2)
+
+- The **HSM is the source of truth for the master key**: it generates the key
+  internally and returns only a wrapped form + key ID. Application memory never
+  holds master-key plaintext.
+- Master-key metadata and wrapped data keys are **persisted** in Postgres
+  (`master_keys` / `wrapped_keys`) so restarts and rotations are recoverable.
+- On rotation, all data keys are **re-wrapped under the new master key** by the
+  HSM; the old ciphertext stays decryptable via the deprecated key until
+  re-wrap completes.
+- The bundled software fallback HSM is **development-only**.
+
+### Production boot behavior
+
+- **Authentication is global**: every `/api/v1` route except `/auth/*`,
+  `/health`, and `/sandbox` requires a valid JWT or API key.
+- **Rate limiting fails closed**: if the rate-limit store is unavailable,
+  protected routes return `503` instead of opening to traffic.
+- **No public bypass key** and no hardcoded secret fallbacks exist in the
+  backend source (enforced by CI grep gates).
+
+## Redis Connection URL Format
+
+`REDIS_URL` is a **required** environment variable. The application validates the URL at startup and **refuses to start in production** if no authentication credentials are provided.
+
+### Supported URL formats
+
+| Format | Description | Example |
+|--------|-------------|--------|
+| `redis://:password@host:port` | Standard Redis with password | `redis://:mypassword@redis:6379` |
+| `redis://user:password@host:port` | Redis 6+ ACL with username + password | `redis://admin:secret@redis:6379` |
+| `rediss://:password@host:port` | Redis with TLS encryption | `rediss://:mypassword@redis:6380` |
+| `rediss://user:password@host:port` | Redis with TLS + ACL authentication | `rediss://admin:secret@redis.example.com:6380` |
+
+### Development vs Production
+
+- **Production**: Always requires authentication credentials (password or username+password). The application will crash on startup if `REDIS_URL` has no password.
+- **Development**: Warns about passwordless Redis URLs when `requirePassword` is enabled (default), but continues running. Set `requirePassword: false` in `ServiceDiscoveryConfig` to suppress the warning entirely.
+
+### Examples
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/stellar_db
-REDIS_URL=redis://localhost:6379
+# Development with local Redis (password required but recommended)
+REDIS_URL=redis://:devpassword@localhost:6379
 
-# Security
-ENCRYPTION_KEY=your-256-bit-encryption-key
-JWT_SECRET=your-jwt-secret-key
-HOMOMORPHIC_KEY=your-homomorphic-encryption-key
-
-# API Configuration
-API_PORT=3001
-FRONTEND_URL=http://localhost:3000
-CORS_ORIGIN=http://localhost:3000
-
-# Privacy Settings
-DEFAULT_PRIVACY_LEVEL=high
-DATA_RETENTION_DAYS=365
-DIFFERENTIAL_PRIVACY_EPSILON=1.0
+# Production with TLS
+REDIS_URL=rediss://stellar_app:${REDIS_PASSWORD}@redis.internal:6380
 ```
 
 ### Security Configuration
@@ -386,3 +431,64 @@ After successful deployment:
 3. Implement security scanning
 4. Configure CI/CD pipelines
 5. Set up disaster recovery procedures
+
+## Soroban Contracts Deployment & Operations
+
+The contracts live in `contracts/` and are organized as a **cargo workspace**:
+each contract is its own crate (`contracts/<name>/`) and compiles to its own
+`.wasm` artifact under `target/wasm32-unknown-unknown/release/<name>.wasm`.
+This matches `soroban-project.yml` and `contracts/scripts/deploy.ts`, which
+deploy `stellar_analytics.wasm` and `privacy_oracle.wasm` per contract.
+
+### Building
+
+```bash
+cd contracts
+cargo build --target wasm32-unknown-unknown --release   # all 8 contract .wasm files
+cargo test                                              # unit + integration tests (hard gate)
+cargo test --release
+cargo clippy --lib --bins -- -D warnings
+cargo fmt --check
+```
+
+The CI `contracts-rust` job runs all of the above plus a grep-based security
+gate — it fails on `env.current_contract_address()` in actor position and on
+whole-map instance-storage keys in the audited contracts (issues #412 WS1/WS3/WS5).
+
+### Upgrade procedure (UpgradeableProxy)
+
+The proxy is a **verified-implementation registry**, not a blind delegator:
+
+1. Deploy the new implementation contract and record its wasm hash.
+2. `register_implementation(env, caller, implementation, required_storage_version)`
+   — only the admin can do this, and only for a hash the admin has actually deployed.
+3. `initiate_upgrade(env, caller, new_implementation, new_storage_version)` — starts
+   the upgrade delay (floor enforced by `MIN_UPGRADE_DELAY`).
+4. `complete_upgrade(env, caller)` — succeeds only after the delay AND when the new
+   implementation's `storage_version` matches the current layout version. A mismatch
+   is refused so incompatible storage layouts can never be pointed to.
+5. Admin transfer is **two-step**: `transfer_admin` proposes a new admin, then the
+   proposed admin must call `accept_admin_transfer` before the role moves. A mistyped
+   address can never lock out the contract.
+
+### TTL durability policy (TtlStorage)
+
+Paid-for storage must outlive its advertised `expires_at`:
+
+- `store_data` extends the TTL of the persistent entry, the fee record and the
+  `data_entries` index alongside the data chunks.
+- `store_data` **fails** for TTLs that cannot be covered by the network's maximum
+  persistent TTL — data is never silently stored to evaporate.
+- `remove_entry` reads the entry before deleting chunks, fee record and index
+  entries, so no paid TTL is orphaned.
+- `cleanup_expired_data` can be rotated to a new worker via
+  `rotate_cleanup_worker(env, caller, new_worker)` (admin-authenticated); a lost
+  worker key no longer permanently disables cleanup.
+
+### Key rotation & auth model
+
+Every mutating entry point across the suite takes an explicit `caller: Address`
+and enforces `caller.require_auth()` at the host level — never argument equality
+alone. See `CHANGELOG.md` (issue #412) for the per-contract breakdown, and
+`contracts/integration-tests/src/auth_regression_tests.rs` for the spoofing
+regression suite.

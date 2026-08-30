@@ -1,13 +1,17 @@
-import { logger } from '../utils/logger';
-import crypto from 'crypto';
-import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
+import { logger } from "../utils/logger";
+import {
+  createHash,
+  randomBytes,
+  createCipheriv,
+  createDecipheriv,
+} from "crypto";
 
 export interface EncryptedModel {
   weights: string[]; // Encrypted weights
   bias: string[]; // Encrypted biases
   metadata: {
     modelId: string;
-    encryptionScheme: 'paillier' | 'bfv' | 'ckks';
+    encryptionScheme: "paillier" | "bfv" | "ckks";
     keySize: number;
     precision: number;
     createdAt: Date;
@@ -17,7 +21,7 @@ export interface EncryptedModel {
 export interface EncryptedData {
   values: string[];
   metadata: {
-    dataType: 'input' | 'output' | 'intermediate';
+    dataType: "input" | "output" | "intermediate";
     shape: number[];
     encryptionScheme: string;
   };
@@ -45,17 +49,18 @@ export interface InferenceResult {
 export class HomomorphicEncryptionService {
   private models: Map<string, EncryptedModel> = new Map();
   private inferenceHistory: Map<string, InferenceResult> = new Map();
-  private keyPairs: Map<string, { publicKey: string; privateKey: string }> = new Map();
+  private keyPairs: Map<string, { publicKey: string; privateKey: string }> =
+    new Map();
 
   constructor() {
     this.initializeService();
   }
 
   private initializeService(): void {
-    logger.info('Initializing Homomorphic Encryption Service');
-    
+    logger.info("Initializing Homomorphic Encryption Service");
+
     // Generate a default key pair for testing
-    const defaultKeyId = 'default';
+    const defaultKeyId = "default";
     this.generateKeyPair(defaultKeyId, 2048);
   }
 
@@ -63,8 +68,9 @@ export class HomomorphicEncryptionService {
   async generateKeyPair(keyId: string, keySize: number = 2048): Promise<void> {
     try {
       // Simplified key generation - in practice, use a proper HE library
-      const { publicKey, privateKey } = await this.generatePaillierKeyPair(keySize);
-      
+      const { publicKey, privateKey } =
+        await this.generatePaillierKeyPair(keySize);
+
       this.keyPairs.set(keyId, { publicKey, privateKey });
       logger.info(`Generated key pair for ${keyId} with size ${keySize}`);
     } catch (error) {
@@ -73,10 +79,12 @@ export class HomomorphicEncryptionService {
     }
   }
 
-  private async generatePaillierKeyPair(keySize: number): Promise<{ publicKey: string; privateKey: string }> {
+  private async generatePaillierKeyPair(
+    keySize: number,
+  ): Promise<{ publicKey: string; privateKey: string }> {
     // Simplified Paillier key generation (mock implementation)
     // In practice, use libraries like node-paillier or seal.js
-    
+
     const p = this.generateLargePrime(keySize / 2);
     const q = this.generateLargePrime(keySize / 2);
     const n = p * q;
@@ -95,14 +103,14 @@ export class HomomorphicEncryptionService {
     // In practice, use a proper cryptographic library
     const min = 2 ** (bits - 1);
     const max = 2 ** bits;
-    
+
     let candidate = Math.floor(Math.random() * (max - min)) + min;
-    
+
     // Simple primality test (not cryptographically secure)
     while (!this.isPrime(candidate)) {
       candidate = Math.floor(Math.random() * (max - min)) + min;
     }
-    
+
     return candidate;
   }
 
@@ -110,11 +118,11 @@ export class HomomorphicEncryptionService {
     if (n <= 1) return false;
     if (n <= 3) return true;
     if (n % 2 === 0 || n % 3 === 0) return false;
-    
+
     for (let i = 5; i * i <= n; i += 6) {
       if (n % i === 0 || n % (i + 2) === 0) return false;
     }
-    
+
     return true;
   }
 
@@ -138,7 +146,7 @@ export class HomomorphicEncryptionService {
   private modPow(base: number, exponent: number, modulus: number): number {
     let result = 1;
     base = base % modulus;
-    
+
     while (exponent > 0) {
       if (exponent % 2 === 1) {
         result = (result * base) % modulus;
@@ -146,12 +154,15 @@ export class HomomorphicEncryptionService {
       exponent = Math.floor(exponent / 2);
       base = (base * base) % modulus;
     }
-    
+
     return result;
   }
 
   // Encryption operations
-  async encryptValue(value: number, keyId: string = 'default'): Promise<string> {
+  async encryptValue(
+    value: number,
+    keyId: string = "default",
+  ): Promise<string> {
     const keyPair = this.keyPairs.get(keyId);
     if (!keyPair) {
       throw new Error(`Key pair not found for ${keyId}`);
@@ -159,11 +170,12 @@ export class HomomorphicEncryptionService {
 
     try {
       // Simplified Paillier encryption (mock)
-      const [n, g] = keyPair.publicKey.split(',').map(Number);
+      const [n, g] = keyPair.publicKey.split(",").map(Number);
       const r = Math.floor(Math.random() * (n - 2)) + 2;
-      
-      const ciphertext = (this.modPow(g, value, n * n) * this.modPow(r, n, n * n)) % (n * n);
-      
+
+      const ciphertext =
+        (this.modPow(g, value, n * n) * this.modPow(r, n, n * n)) % (n * n);
+
       return ciphertext.toString();
     } catch (error) {
       logger.error(`Failed to encrypt value ${value}:`, error);
@@ -171,7 +183,10 @@ export class HomomorphicEncryptionService {
     }
   }
 
-  async decryptValue(ciphertext: string, keyId: string = 'default'): Promise<number> {
+  async decryptValue(
+    ciphertext: string,
+    keyId: string = "default",
+  ): Promise<number> {
     const keyPair = this.keyPairs.get(keyId);
     if (!keyPair) {
       throw new Error(`Key pair not found for ${keyId}`);
@@ -179,15 +194,16 @@ export class HomomorphicEncryptionService {
 
     try {
       // Simplified Paillier decryption (mock)
-      const [lambda, mu] = keyPair.privateKey.split(',').map(Number);
-      const [n, g] = keyPair.publicKey.split(',').map(Number);
-      
+      const [lambda, mu] = keyPair.privateKey.split(",").map(Number);
+      const [n, _g] = keyPair.publicKey.split(",").map(Number);
+
       const cipher = BigInt(ciphertext);
       const n2 = BigInt(n * n);
-      
-      const l = (this.modPowBigInt(cipher, BigInt(lambda), n2) - BigInt(1)) / BigInt(n);
+
+      const l =
+        (this.modPowBigInt(cipher, BigInt(lambda), n2) - BigInt(1)) / BigInt(n);
       const plaintext = Number((l * BigInt(mu)) % BigInt(n));
-      
+
       return plaintext;
     } catch (error) {
       logger.error(`Failed to decrypt ciphertext:`, error);
@@ -195,10 +211,14 @@ export class HomomorphicEncryptionService {
     }
   }
 
-  private modPowBigInt(base: bigint, exponent: bigint, modulus: bigint): bigint {
+  private modPowBigInt(
+    base: bigint,
+    exponent: bigint,
+    modulus: bigint,
+  ): bigint {
     let result = BigInt(1);
     base = base % modulus;
-    
+
     while (exponent > BigInt(0)) {
       if (exponent % BigInt(2) === BigInt(1)) {
         result = (result * base) % modulus;
@@ -206,12 +226,16 @@ export class HomomorphicEncryptionService {
       exponent = exponent / BigInt(2);
       base = (base * base) % modulus;
     }
-    
+
     return result;
   }
 
   // Model encryption
-  async encryptModel(modelWeights: number[], modelBiases: number[], modelId: string): Promise<EncryptedModel> {
+  async encryptModel(
+    modelWeights: number[],
+    modelBiases: number[],
+    modelId: string,
+  ): Promise<EncryptedModel> {
     try {
       const encryptedWeights: string[] = [];
       const encryptedBiases: string[] = [];
@@ -233,15 +257,17 @@ export class HomomorphicEncryptionService {
         bias: encryptedBiases,
         metadata: {
           modelId,
-          encryptionScheme: 'paillier',
+          encryptionScheme: "paillier",
           keySize: 2048,
           precision: 6,
-          createdAt: new Date()
-        }
+          createdAt: new Date(),
+        },
       };
 
       this.models.set(modelId, encryptedModel);
-      logger.info(`Encrypted model ${modelId} with ${modelWeights.length} weights`);
+      logger.info(
+        `Encrypted model ${modelId} with ${modelWeights.length} weights`,
+      );
 
       return encryptedModel;
     } catch (error) {
@@ -251,7 +277,9 @@ export class HomomorphicEncryptionService {
   }
 
   // Encrypted inference
-  async performEncryptedInference(request: InferenceRequest): Promise<InferenceResult> {
+  async performEncryptedInference(
+    request: InferenceRequest,
+  ): Promise<InferenceResult> {
     const startTime = Date.now();
 
     try {
@@ -264,7 +292,7 @@ export class HomomorphicEncryptionService {
       const encryptedOutput = await this.encryptedMatrixMultiply(
         model.weights,
         model.bias,
-        request.encryptedInput.values
+        request.encryptedInput.values,
       );
 
       const processingTime = Date.now() - startTime;
@@ -274,47 +302,59 @@ export class HomomorphicEncryptionService {
         encryptedOutput: {
           values: encryptedOutput,
           metadata: {
-            dataType: 'output',
+            dataType: "output",
             shape: [encryptedOutput.length],
-            encryptionScheme: model.metadata.encryptionScheme
-          }
+            encryptionScheme: model.metadata.encryptionScheme,
+          },
         },
         processingTime,
         metadata: {
           modelVersion: model.metadata.modelId,
           timestamp: new Date(),
-          computationSteps: model.weights.length
-        }
+          computationSteps: model.weights.length,
+        },
       };
 
       this.inferenceHistory.set(request.inferenceId, result);
-      logger.info(`Completed encrypted inference ${request.inferenceId} in ${processingTime}ms`);
+      logger.info(
+        `Completed encrypted inference ${request.inferenceId} in ${processingTime}ms`,
+      );
 
       return result;
     } catch (error) {
-      logger.error(`Failed to perform encrypted inference ${request.inferenceId}:`, error);
+      logger.error(
+        `Failed to perform encrypted inference ${request.inferenceId}:`,
+        error,
+      );
       throw error;
     }
   }
 
-  private async encryptedMatrixMultiply(weights: string[], biases: string[], inputs: string[]): Promise<string[]> {
+  private async encryptedMatrixMultiply(
+    weights: string[],
+    biases: string[],
+    inputs: string[],
+  ): Promise<string[]> {
     // Simplified encrypted matrix multiplication (mock)
     // In practice, this would use homomorphic properties for efficient computation
-    
+
     const output: string[] = [];
     const numOutputs = biases.length;
     const numInputs = weights.length / numOutputs;
 
     for (let i = 0; i < numOutputs; i++) {
-      let sum = '0';
-      
+      let sum = "0";
+
       // Multiply and accumulate (encrypted)
       for (let j = 0; j < numInputs; j++) {
         const weightIndex = i * numInputs + j;
-        const product = await this.encryptedMultiply(weights[weightIndex], inputs[j]);
+        const product = await this.encryptedMultiply(
+          weights[weightIndex],
+          inputs[j],
+        );
         sum = await this.encryptedAdd(sum, product);
       }
-      
+
       // Add bias
       const result = await this.encryptedAdd(sum, biases[i]);
       output.push(result);
@@ -326,10 +366,10 @@ export class HomomorphicEncryptionService {
   private async encryptedMultiply(a: string, b: string): Promise<string> {
     // Simplified homomorphic multiplication (mock)
     // In Paillier: E(a) * E(b) mod n^2 = E(a + b)
-    const keyPair = this.keyPairs.get('default');
-    if (!keyPair) throw new Error('Default key pair not found');
+    const keyPair = this.keyPairs.get("default");
+    if (!keyPair) throw new Error("Default key pair not found");
 
-    const [n] = keyPair.publicKey.split(',').map(Number);
+    const [n] = keyPair.publicKey.split(",").map(Number);
     const n2 = n * n;
 
     const result = (BigInt(a) * BigInt(b)) % BigInt(n2);
@@ -339,10 +379,10 @@ export class HomomorphicEncryptionService {
   private async encryptedAdd(a: string, b: string): Promise<string> {
     // Simplified homomorphic addition (mock)
     // In Paillier: E(a) * E(b) mod n^2 = E(a + b)
-    const keyPair = this.keyPairs.get('default');
-    if (!keyPair) throw new Error('Default key pair not found');
+    const keyPair = this.keyPairs.get("default");
+    if (!keyPair) throw new Error("Default key pair not found");
 
-    const [n] = keyPair.publicKey.split(',').map(Number);
+    const [n] = keyPair.publicKey.split(",").map(Number);
     const n2 = n * n;
 
     const result = (BigInt(a) * BigInt(b)) % BigInt(n2);
@@ -350,7 +390,10 @@ export class HomomorphicEncryptionService {
   }
 
   // Utility methods
-  async encryptData(data: number[], metadata: EncryptedData['metadata']): Promise<EncryptedData> {
+  async encryptData(
+    data: number[],
+    metadata: EncryptedData["metadata"],
+  ): Promise<EncryptedData> {
     const encryptedValues: string[] = [];
 
     for (const value of data) {
@@ -360,7 +403,7 @@ export class HomomorphicEncryptionService {
 
     return {
       values: encryptedValues,
-      metadata
+      metadata,
     };
   }
 
@@ -376,14 +419,19 @@ export class HomomorphicEncryptionService {
   }
 
   // Public API methods
-  getAvailableModels(): Array<{ modelId: string; metadata: EncryptedModel['metadata'] }> {
+  getAvailableModels(): Array<{
+    modelId: string;
+    metadata: EncryptedModel["metadata"];
+  }> {
     return Array.from(this.models.entries()).map(([modelId, model]) => ({
       modelId,
-      metadata: model.metadata
+      metadata: model.metadata,
     }));
   }
 
-  getInferenceHistory(inferenceId?: string): InferenceResult | InferenceResult[] {
+  getInferenceHistory(
+    inferenceId?: string,
+  ): InferenceResult | InferenceResult[] {
     if (inferenceId) {
       const result = this.inferenceHistory.get(inferenceId);
       if (!result) {
@@ -398,13 +446,15 @@ export class HomomorphicEncryptionService {
   getKeyInfo(keyId?: string): any {
     if (keyId) {
       const keyPair = this.keyPairs.get(keyId);
-      return keyPair ? { keyId, hasPublicKey: true, hasPrivateKey: true } : null;
+      return keyPair
+        ? { keyId, hasPublicKey: true, hasPrivateKey: true }
+        : null;
     }
 
-    return Array.from(this.keyPairs.keys()).map(id => ({
+    return Array.from(this.keyPairs.keys()).map((id) => ({
       keyId: id,
       hasPublicKey: true,
-      hasPrivateKey: true
+      hasPrivateKey: true,
     }));
   }
 
@@ -415,7 +465,7 @@ export class HomomorphicEncryptionService {
       totalInferences: this.inferenceHistory.size,
       keyPairs: this.keyPairs.size,
       averageProcessingTime: this.calculateAverageProcessingTime(),
-      encryptionSchemes: this.getEncryptionSchemeUsage()
+      encryptionSchemes: this.getEncryptionSchemeUsage(),
     };
   }
 
@@ -423,14 +473,17 @@ export class HomomorphicEncryptionService {
     const results = Array.from(this.inferenceHistory.values());
     if (results.length === 0) return 0;
 
-    const totalTime = results.reduce((sum, result) => sum + result.processingTime, 0);
+    const totalTime = results.reduce(
+      (sum, result) => sum + result.processingTime,
+      0,
+    );
     return totalTime / results.length;
   }
 
   private getEncryptionSchemeUsage(): Record<string, number> {
     const schemes: Record<string, number> = {};
-    
-    this.models.forEach(model => {
+
+    this.models.forEach((model) => {
       const scheme = model.metadata.encryptionScheme;
       schemes[scheme] = (schemes[scheme] || 0) + 1;
     });

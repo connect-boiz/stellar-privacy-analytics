@@ -42,9 +42,10 @@ export function lttbSampling(data: DataPoint[], maxPoints: number): DataPoint[] 
       nextBucketStart,
       Math.min(nextBucketStart + bucketSize, data.length)
     );
-    const nextAvgPoint = nextBucket.length > 0
-      ? nextBucket.reduce((sum, p) => sum + p.value, 0) / nextBucket.length
-      : data[data.length - 1].value;
+    const nextAvgPoint =
+      nextBucket.length > 0
+        ? nextBucket.reduce((sum, p) => sum + p.value, 0) / nextBucket.length
+        : data[data.length - 1].value;
 
     // Find the point in current bucket that creates the largest triangle
     let maxArea = -1;
@@ -52,12 +53,13 @@ export function lttbSampling(data: DataPoint[], maxPoints: number): DataPoint[] 
 
     const prevPoint = sampled[sampled.length - 1];
 
-    currentBucket.forEach(point => {
+    currentBucket.forEach((point) => {
       // Calculate triangle area
-      const area = Math.abs(
-        (prevPoint.value - nextAvgPoint) * (point.timestamp - prevPoint.timestamp) -
-        (prevPoint.value - point.value) * (nextAvgPoint - prevPoint.timestamp)
-      ) / 2;
+      const area =
+        Math.abs(
+          (prevPoint.value - nextAvgPoint) * (point.timestamp - prevPoint.timestamp) -
+            (prevPoint.value - point.value) * (nextAvgPoint - prevPoint.timestamp)
+        ) / 2;
 
       if (area > maxArea) {
         maxArea = area;
@@ -92,7 +94,7 @@ export function minMaxSampling(data: DataPoint[], maxPoints: number): DataPoint[
     let minPoint = bucket[0];
     let maxPoint = bucket[0];
 
-    bucket.forEach(point => {
+    bucket.forEach((point) => {
       if (point.value < minPoint.value) minPoint = point;
       if (point.value > maxPoint.value) maxPoint = point;
     });
@@ -127,18 +129,19 @@ export function adaptiveSampling(data: DataPoint[], maxPoints: number): DataPoin
   for (let i = 0; i < data.length - windowSize; i += windowSize) {
     const window = data.slice(i, i + windowSize);
     const mean = window.reduce((sum, p) => sum + p.value, 0) / window.length;
-    const variance = window.reduce((sum, p) => sum + Math.pow(p.value - mean, 2), 0) / window.length;
+    const variance =
+      window.reduce((sum, p) => sum + Math.pow(p.value - mean, 2), 0) / window.length;
     variances.push(variance);
   }
 
   // Allocate more points to high-variance regions
   const totalVariance = variances.reduce((sum, v) => sum + v, 0);
-  const pointsPerBucket = variances.map(v => 
+  const pointsPerBucket = variances.map((v) =>
     Math.max(1, Math.floor((v / totalVariance) * maxPoints))
   );
 
   const sampled: DataPoint[] = [];
-  let dataIndex = 0;
+  const _dataIndex = 0;
 
   pointsPerBucket.forEach((points, bucketIndex) => {
     const bucketStart = bucketIndex * windowSize;
@@ -158,7 +161,7 @@ export function adaptiveSampling(data: DataPoint[], maxPoints: number): DataPoin
  * Time-based aggregation for time series data
  */
 export function timeBasedAggregation(
-  data: DataPoint[], 
+  data: DataPoint[],
   intervalMs: number,
   aggregationType: 'avg' | 'min' | 'max' | 'sum' = 'avg'
 ): DataPoint[] {
@@ -169,7 +172,7 @@ export function timeBasedAggregation(
 
   for (let time = startTime; time <= data[data.length - 1].timestamp; time += intervalMs) {
     const window = data.filter(
-      point => point.timestamp >= time && point.timestamp < time + intervalMs
+      (point) => point.timestamp >= time && point.timestamp < time + intervalMs
     );
 
     if (window.length === 0) continue;
@@ -180,10 +183,10 @@ export function timeBasedAggregation(
         aggregatedValue = window.reduce((sum, p) => sum + p.value, 0) / window.length;
         break;
       case 'min':
-        aggregatedValue = Math.min(...window.map(p => p.value));
+        aggregatedValue = Math.min(...window.map((p) => p.value));
         break;
       case 'max':
-        aggregatedValue = Math.max(...window.map(p => p.value));
+        aggregatedValue = Math.max(...window.map((p) => p.value));
         break;
       case 'sum':
         aggregatedValue = window.reduce((sum, p) => sum + p.value, 0);
@@ -193,7 +196,7 @@ export function timeBasedAggregation(
     aggregated.push({
       timestamp: time + intervalMs / 2, // Center of the interval
       value: aggregatedValue,
-      count: window.length
+      count: window.length,
     });
   }
 
@@ -204,20 +207,16 @@ export function timeBasedAggregation(
  * Memory-aware sampling that adapts to available memory
  */
 export function memoryAwareSampling(
-  data: DataPoint[], 
+  data: DataPoint[],
   baseMaxPoints: number,
   memoryUsagePercentage: number,
   options: SamplingOptions = {}
 ): DataPoint[] {
-  const {
-    preserveExtrema = true,
-    adaptiveSampling = true,
-    memoryThreshold = 0.8
-  } = options;
+  const { preserveExtrema = true, adaptiveSampling = true, memoryThreshold = 0.8 } = options;
 
   // Adjust max points based on memory pressure
   let adjustedMaxPoints = baseMaxPoints;
-  
+
   if (memoryUsagePercentage > 0.95) {
     adjustedMaxPoints = Math.floor(baseMaxPoints * 0.1); // 90% reduction
   } else if (memoryUsagePercentage > 0.9) {
@@ -247,7 +246,7 @@ export function progressiveDataLoader(
   return new Promise((resolve) => {
     const result: DataPoint[] = [];
     let currentIndex = 0;
-    const totalChunks = Math.ceil(data.length / chunkSize);
+    const _totalChunks = Math.ceil(data.length / chunkSize);
 
     const loadChunk = () => {
       if (currentIndex >= data.length) {
@@ -306,6 +305,6 @@ export function validateDataQuality(data: DataPoint[]): {
   return {
     isValid: issues.length === 0,
     issues,
-    cleanedData
+    cleanedData,
   };
 }

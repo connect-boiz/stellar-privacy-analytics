@@ -6,7 +6,8 @@ const tutorials = [
   {
     id: 1,
     title: 'Differential Privacy',
-    description: 'Add statistical noise to protect individual data while preserving aggregate insights.',
+    description:
+      'Add statistical noise to protect individual data while preserving aggregate insights.',
     steps: [
       'Differential privacy guarantees that query results are nearly identical whether or not any single individual is in the dataset.',
       'The privacy budget ε (epsilon) controls the privacy-utility tradeoff — smaller ε means stronger privacy.',
@@ -17,7 +18,8 @@ const tutorials = [
   {
     id: 2,
     title: 'Secure Multi-Party Computation',
-    description: 'Multiple parties jointly compute a function without revealing their private inputs.',
+    description:
+      'Multiple parties jointly compute a function without revealing their private inputs.',
     steps: [
       'MPC allows parties to collaborate on computations without exposing raw data to each other.',
       'Secret sharing splits data into shares — no single party can reconstruct the original value.',
@@ -58,21 +60,46 @@ const quizzes = [
   },
   {
     id: 3,
-    question: 'Which property ensures a ZK proof reveals nothing beyond the truth of the statement?',
+    question:
+      'Which property ensures a ZK proof reveals nothing beyond the truth of the statement?',
     options: ['Completeness', 'Soundness', 'Zero-knowledge', 'Succinctness'],
     answer: 2,
   },
 ];
 
 const glossary = [
-  { term: 'Differential Privacy', def: 'A mathematical framework guaranteeing individual privacy in statistical datasets.' },
-  { term: 'Epsilon (ε)', def: 'Privacy budget parameter — lower values provide stronger privacy guarantees.' },
-  { term: 'MPC', def: 'Secure Multi-Party Computation — joint computation without revealing private inputs.' },
-  { term: 'ZK Proof', def: 'Zero-Knowledge Proof — proves a statement is true without revealing underlying data.' },
-  { term: 'Homomorphic Encryption', def: 'Encryption that allows computation on ciphertext, producing encrypted results.' },
-  { term: 'Data Minimization', def: 'Collecting only the data strictly necessary for a given purpose.' },
-  { term: 'k-Anonymity', def: 'Each record is indistinguishable from at least k-1 others on quasi-identifiers.' },
-  { term: 'Sensitivity', def: 'Maximum change in a query result from adding/removing one individual.' },
+  {
+    term: 'Differential Privacy',
+    def: 'A mathematical framework guaranteeing individual privacy in statistical datasets.',
+  },
+  {
+    term: 'Epsilon (ε)',
+    def: 'Privacy budget parameter — lower values provide stronger privacy guarantees.',
+  },
+  {
+    term: 'MPC',
+    def: 'Secure Multi-Party Computation — joint computation without revealing private inputs.',
+  },
+  {
+    term: 'ZK Proof',
+    def: 'Zero-Knowledge Proof — proves a statement is true without revealing underlying data.',
+  },
+  {
+    term: 'Homomorphic Encryption',
+    def: 'Encryption that allows computation on ciphertext, producing encrypted results.',
+  },
+  {
+    term: 'Data Minimization',
+    def: 'Collecting only the data strictly necessary for a given purpose.',
+  },
+  {
+    term: 'k-Anonymity',
+    def: 'Each record is indistinguishable from at least k-1 others on quasi-identifiers.',
+  },
+  {
+    term: 'Sensitivity',
+    def: 'Maximum change in a query result from adding/removing one individual.',
+  },
 ];
 
 export const PrivacyEducation: React.FC = () => {
@@ -84,9 +111,7 @@ export const PrivacyEducation: React.FC = () => {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [glossarySearch, setGlossarySearch] = useState('');
 
-  const score = quizSubmitted
-    ? quizzes.filter((q) => quizAnswers[q.id] === q.answer).length
-    : 0;
+  const score = quizSubmitted ? quizzes.filter((q) => quizAnswers[q.id] === q.answer).length : 0;
 
   const filteredGlossary = glossary.filter(
     (g) =>
@@ -101,7 +126,9 @@ export const PrivacyEducation: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Privacy Education</h1>
-          <p className="text-gray-600 mt-1">Learn privacy-preserving techniques through interactive tutorials</p>
+          <p className="text-gray-600 mt-1">
+            Learn privacy-preserving techniques through interactive tutorials
+          </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
           <Award className="h-5 w-5" />
@@ -128,7 +155,12 @@ export const PrivacyEducation: React.FC = () => {
 
       <AnimatePresence mode="wait">
         {activeTab === 'tutorials' && (
-          <motion.div key="tutorials" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            key="tutorials"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             {activeTutorial === null ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {tutorials.map((t) => (
@@ -136,7 +168,10 @@ export const PrivacyEducation: React.FC = () => {
                     key={t.id}
                     whileHover={{ scale: 1.02 }}
                     className="bg-white rounded-lg shadow p-5 cursor-pointer border border-gray-200 hover:border-blue-400 transition-colors"
-                    onClick={() => { setActiveTutorial(t.id); setActiveStep(0); }}
+                    onClick={() => {
+                      setActiveTutorial(t.id);
+                      setActiveStep(0);
+                    }}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <BookOpen className="h-6 w-6 text-blue-500" />
@@ -179,7 +214,9 @@ export const PrivacyEducation: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   className="bg-blue-50 rounded-lg p-5 mb-6"
                 >
-                  <p className="text-sm font-medium text-gray-500 mb-2">Step {activeStep + 1} of {tutorial.steps.length}</p>
+                  <p className="text-sm font-medium text-gray-500 mb-2">
+                    Step {activeStep + 1} of {tutorial.steps.length}
+                  </p>
                   <p className="text-gray-800">{tutorial.steps[activeStep]}</p>
                 </motion.div>
 
@@ -216,7 +253,13 @@ export const PrivacyEducation: React.FC = () => {
         )}
 
         {activeTab === 'quiz' && (
-          <motion.div key="quiz" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <motion.div
+            key="quiz"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
             {quizzes.map((q) => (
               <div key={q.id} className="bg-white rounded-lg shadow p-5">
                 <p className="font-medium text-gray-900 mb-3">{q.question}</p>
@@ -231,10 +274,13 @@ export const PrivacyEducation: React.FC = () => {
                         disabled={quizSubmitted}
                         onClick={() => setQuizAnswers((prev) => ({ ...prev, [q.id]: i }))}
                         className={`w-full text-left px-4 py-2 rounded-lg border text-sm transition-colors flex items-center justify-between ${
-                          correct ? 'border-green-500 bg-green-50 text-green-800' :
-                          wrong ? 'border-red-500 bg-red-50 text-red-800' :
-                          selected ? 'border-blue-500 bg-blue-50' :
-                          'border-gray-200 hover:border-gray-300'
+                          correct
+                            ? 'border-green-500 bg-green-50 text-green-800'
+                            : wrong
+                              ? 'border-red-500 bg-red-50 text-red-800'
+                              : selected
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         {opt}
@@ -258,11 +304,20 @@ export const PrivacyEducation: React.FC = () => {
             ) : (
               <div className="bg-white rounded-lg shadow p-5 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">Score: {score}/{quizzes.length}</p>
-                  <p className="text-sm text-gray-600">{score === quizzes.length ? '🎉 Perfect score!' : 'Review the tutorials and try again.'}</p>
+                  <p className="font-semibold text-gray-900">
+                    Score: {score}/{quizzes.length}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {score === quizzes.length
+                      ? '🎉 Perfect score!'
+                      : 'Review the tutorials and try again.'}
+                  </p>
                 </div>
                 <button
-                  onClick={() => { setQuizAnswers({}); setQuizSubmitted(false); }}
+                  onClick={() => {
+                    setQuizAnswers({});
+                    setQuizSubmitted(false);
+                  }}
                   className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Retry
@@ -273,7 +328,12 @@ export const PrivacyEducation: React.FC = () => {
         )}
 
         {activeTab === 'glossary' && (
-          <motion.div key="glossary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            key="glossary"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input

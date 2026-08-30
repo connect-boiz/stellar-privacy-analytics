@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  Shield, 
-  AlertTriangle, 
-  TrendingUp, 
-  Users, 
-  Clock, 
+import {
+  Shield,
+  AlertTriangle,
+  TrendingUp,
+  Users,
+  Clock,
   Globe,
   Activity,
   CheckCircle,
@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Settings,
   Download,
-  Filter
+  Filter,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -25,12 +25,12 @@ import MemoryEfficientChart from '../charts/MemoryEfficientChart';
 
 import {
   DashboardState,
-  PrivacyMetric,
+  _PrivacyMetric,
   AnomalyDetection,
   PrivacyAlert,
   ComplianceStatus,
   AccessPattern,
-  HistoricalTrend
+  _HistoricalTrend,
 } from '../../types/privacyMetrics';
 
 interface PrivacyDashboardProps {
@@ -41,13 +41,11 @@ interface PrivacyDashboardProps {
   };
 }
 
-const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
-  config = {}
-}) => {
+const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({ config = {} }) => {
   const {
     refreshInterval = 30000, // 30 seconds
     autoRefresh = true,
-    defaultTimeRange = '24h'
+    defaultTimeRange = '24h',
   } = config;
 
   // State management
@@ -63,9 +61,9 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
       timeRange: getTimeRange(defaultTimeRange),
       severity: [],
       categories: [],
-      sources: []
+      sources: [],
     },
-    loading: true
+    loading: true,
   });
 
   const [selectedTimeRange, setSelectedTimeRange] = useState(defaultTimeRange);
@@ -73,63 +71,69 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
   const [showSettings, setShowSettings] = useState(false);
 
   // Service instances
-  const dataService = useMemo(() => PrivacyDataService.getInstance({
-    apiEndpoint: '/api/privacy',
-    wsEndpoint: 'ws://localhost:8080/privacy-ws',
-    refreshInterval,
-    retryAttempts: 3,
-    timeout: 10000
-  }), [refreshInterval]);
+  const dataService = useMemo(
+    () =>
+      PrivacyDataService.getInstance({
+        apiEndpoint: '/api/privacy',
+        wsEndpoint: 'ws://localhost:8080/privacy-ws',
+        refreshInterval,
+        retryAttempts: 3,
+        timeout: 10000,
+      }),
+    [refreshInterval]
+  );
 
-  const anomalyEngine = useMemo(() => AnomalyDetectionEngine.getInstance({
-    sensitivity: 0.7,
-    windowSize: 60,
-    minDataPoints: 30,
-    alertThreshold: 0.8,
-    enableML: false
-  }), []);
+  const anomalyEngine = useMemo(
+    () =>
+      AnomalyDetectionEngine.getInstance({
+        sensitivity: 0.7,
+        windowSize: 60,
+        minDataPoints: 30,
+        alertThreshold: 0.8,
+        enableML: false,
+      }),
+    []
+  );
 
-  const patternAnalyzer = useMemo(() => AccessPatternAnalyzer.getInstance({
-    timeWindow: 60,
-    minAccessCount: 10,
-    riskThresholds: {
-      frequency: 2.5,
-      volume: 3.0,
-      time: 0.8,
-      location: 0.7
-    },
-    enableML: false
-  }), []);
+  const patternAnalyzer = useMemo(
+    () =>
+      AccessPatternAnalyzer.getInstance({
+        timeWindow: 60,
+        minAccessCount: 10,
+        riskThresholds: {
+          frequency: 2.5,
+          volume: 3.0,
+          time: 0.8,
+          location: 0.7,
+        },
+        enableML: false,
+      }),
+    []
+  );
 
-  const complianceMonitor = useMemo(() => ComplianceMonitor.getInstance(), []);
+  const _complianceMonitor = useMemo(() => ComplianceMonitor.getInstance(), []);
 
   // Data fetching
   const fetchDashboardData = useCallback(async () => {
     try {
-      setDashboardState(prev => ({ ...prev, loading: true, error: undefined }));
+      setDashboardState((prev) => ({ ...prev, loading: true, error: undefined }));
 
       // Fetch all data in parallel
-      const [
-        metrics,
-        alerts,
-        anomalies,
-        compliance,
-        accessEvents
-      ] = await Promise.all([
+      const [metrics, alerts, anomalies, compliance, accessEvents] = await Promise.all([
         dataService.fetchMetrics(dashboardState.filters.timeRange),
         dataService.fetchAlerts(),
         dataService.fetchAnomalies(dashboardState.filters.timeRange),
         dataService.fetchComplianceStatus(),
-        dataService.fetchAccessEvents(dashboardState.filters.timeRange)
+        dataService.fetchAccessEvents(dashboardState.filters.timeRange),
       ]);
 
       // Run anomaly detection
       const detectedAnomalies = await anomalyEngine.detectAnomalies(metrics, accessEvents);
-      
+
       // Analyze access patterns
       const accessPatterns = await patternAnalyzer.analyzeAccessPatterns(accessEvents);
 
-      setDashboardState(prev => ({
+      setDashboardState((prev) => ({
         ...prev,
         metrics,
         alerts,
@@ -137,15 +141,14 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
         compliance,
         accessPatterns,
         lastUpdated: Date.now(),
-        loading: false
+        loading: false,
       }));
-
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setDashboardState(prev => ({
+      setDashboardState((prev) => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }));
       toast.error('Failed to load dashboard data');
     }
@@ -158,28 +161,28 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
     const connectWebSocket = async () => {
       try {
         await dataService.connectWebSocket();
-        
+
         // Subscribe to real-time updates
         const unsubscribeMetrics = dataService.subscribe('metrics', (data) => {
-          setDashboardState(prev => ({
+          setDashboardState((prev) => ({
             ...prev,
             metrics: [...prev.metrics.slice(-99), data],
-            lastUpdated: Date.now()
+            lastUpdated: Date.now(),
           }));
         });
 
         const unsubscribeAlerts = dataService.subscribe('alerts', (alert) => {
-          setDashboardState(prev => ({
+          setDashboardState((prev) => ({
             ...prev,
-            alerts: [alert, ...prev.alerts.slice(0, 49)]
+            alerts: [alert, ...prev.alerts.slice(0, 49)],
           }));
           toast.error(`New alert: ${alert.title}`);
         });
 
         const unsubscribeAnomalies = dataService.subscribe('anomalies', (anomaly) => {
-          setDashboardState(prev => ({
+          setDashboardState((prev) => ({
             ...prev,
-            anomalies: [anomaly, ...prev.anomalies.slice(0, 49)]
+            anomalies: [anomaly, ...prev.anomalies.slice(0, 49)],
           }));
           toast.warning(`Anomaly detected: ${anomaly.description}`);
         });
@@ -189,7 +192,6 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
           unsubscribeAlerts();
           unsubscribeAnomalies();
         };
-
       } catch (error) {
         console.error('WebSocket connection failed:', error);
         toast.error('Real-time connection failed');
@@ -199,7 +201,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
     const cleanup = connectWebSocket();
 
     return () => {
-      cleanup.then(cleanupFn => cleanupFn?.());
+      cleanup.then((cleanupFn) => cleanupFn?.());
     };
   }, [isRealTime, dataService]);
 
@@ -219,12 +221,12 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
   // Event handlers
   const handleTimeRangeChange = (newRange: string) => {
     setSelectedTimeRange(newRange);
-    setDashboardState(prev => ({
+    setDashboardState((prev) => ({
       ...prev,
       filters: {
         ...prev.filters,
-        timeRange: getTimeRange(newRange)
-      }
+        timeRange: getTimeRange(newRange),
+      },
     }));
   };
 
@@ -235,13 +237,13 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
   const handleAlertAcknowledge = async (alertId: string) => {
     try {
       await dataService.acknowledgeAlert(alertId);
-      setDashboardState(prev => ({
+      setDashboardState((prev) => ({
         ...prev,
-        alerts: prev.alerts.map(alert =>
+        alerts: prev.alerts.map((alert) =>
           alert.id === alertId
             ? { ...alert, status: 'acknowledged', acknowledgedAt: Date.now() }
             : alert
-        )
+        ),
       }));
       toast.success('Alert acknowledged');
     } catch (error) {
@@ -252,13 +254,11 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
   const handleAlertResolve = async (alertId: string, notes?: string) => {
     try {
       await dataService.resolveAlert(alertId, notes);
-      setDashboardState(prev => ({
+      setDashboardState((prev) => ({
         ...prev,
-        alerts: prev.alerts.map(alert =>
-          alert.id === alertId
-            ? { ...alert, status: 'resolved', resolvedAt: Date.now() }
-            : alert
-        )
+        alerts: prev.alerts.map((alert) =>
+          alert.id === alertId ? { ...alert, status: 'resolved', resolvedAt: Date.now() } : alert
+        ),
       }));
       toast.success('Alert resolved');
     } catch (error) {
@@ -268,8 +268,10 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
 
   // Calculate summary metrics
   const summaryMetrics = useMemo(() => {
-    const criticalAlerts = dashboardState.alerts.filter(a => a.severity === 'critical' && a.status === 'active').length;
-    const activeAnomalies = dashboardState.anomalies.filter(a => a.status === 'active').length;
+    const criticalAlerts = dashboardState.alerts.filter(
+      (a) => a.severity === 'critical' && a.status === 'active'
+    ).length;
+    const activeAnomalies = dashboardState.anomalies.filter((a) => a.status === 'active').length;
     const overallCompliance = calculateOverallCompliance(dashboardState.compliance);
     const riskScore = calculateRiskScore(dashboardState.anomalies, dashboardState.alerts);
 
@@ -278,7 +280,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
       activeAnomalies,
       overallCompliance,
       riskScore,
-      totalAccess: dashboardState.accessPatterns.reduce((sum, p) => sum + p.accessFrequency, 0)
+      totalAccess: dashboardState.accessPatterns.reduce((sum, p) => sum + p.accessFrequency, 0),
     };
   }, [dashboardState]);
 
@@ -304,7 +306,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
               <Shield className="h-8 w-8 text-blue-600 mr-3" />
               <h1 className="text-xl font-semibold text-gray-900">Privacy Monitoring Dashboard</h1>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {/* Time Range Selector */}
               <select
@@ -323,9 +325,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
               <button
                 onClick={() => setIsRealTime(!isRealTime)}
                 className={`p-2 rounded-md ${
-                  isRealTime
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700'
+                  isRealTime ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                 }`}
               >
                 <Activity className="h-4 w-4" />
@@ -359,9 +359,13 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
             value={summaryMetrics.criticalAlerts}
             icon={AlertTriangle}
             color="red"
-            trend={dashboardState.alerts.filter(a => a.severity === 'critical').length > 0 ? 'up' : 'stable'}
+            trend={
+              dashboardState.alerts.filter((a) => a.severity === 'critical').length > 0
+                ? 'up'
+                : 'stable'
+            }
           />
-          
+
           <SummaryCard
             title="Active Anomalies"
             value={summaryMetrics.activeAnomalies}
@@ -369,7 +373,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
             color="yellow"
             trend={summaryMetrics.activeAnomalies > 5 ? 'up' : 'stable'}
           />
-          
+
           <SummaryCard
             title="Compliance Score"
             value={`${summaryMetrics.overallCompliance}%`}
@@ -377,7 +381,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
             color="green"
             trend={summaryMetrics.overallCompliance > 90 ? 'up' : 'down'}
           />
-          
+
           <SummaryCard
             title="Risk Score"
             value={summaryMetrics.riskScore}
@@ -385,7 +389,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
             color="blue"
             trend={summaryMetrics.riskScore > 70 ? 'up' : 'stable'}
           />
-          
+
           <SummaryCard
             title="Total Access"
             value={summaryMetrics.totalAccess.toLocaleString()}
@@ -399,15 +403,14 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
       {/* Main Dashboard Grid */}
       <div className="px-4 sm:px-6 lg:px-8 pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
           {/* Privacy Metrics Chart */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Privacy Metrics</h2>
             <MemoryEfficientChart
-              data={dashboardState.metrics.map(m => ({
+              data={dashboardState.metrics.map((m) => ({
                 timestamp: m.timestamp,
                 value: m.value,
-                type: m.metricType
+                type: m.metricType,
               }))}
               dataKey="value"
               title="Real-time Privacy Metrics"
@@ -421,7 +424,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Alerts</h2>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {dashboardState.alerts.slice(0, 10).map(alert => (
+              {dashboardState.alerts.slice(0, 10).map((alert) => (
                 <AlertItem
                   key={alert.id}
                   alert={alert}
@@ -439,7 +442,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Anomaly Detection</h2>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {dashboardState.anomalies.slice(0, 10).map(anomaly => (
+              {dashboardState.anomalies.slice(0, 10).map((anomaly) => (
                 <AnomalyItem key={anomaly.id} anomaly={anomaly} />
               ))}
               {dashboardState.anomalies.length === 0 && (
@@ -452,7 +455,7 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Compliance Status</h2>
             <div className="space-y-3">
-              {dashboardState.compliance.map(status => (
+              {dashboardState.compliance.map((status) => (
                 <ComplianceItem key={status.id} status={status} />
               ))}
               {dashboardState.compliance.length === 0 && (
@@ -466,11 +469,13 @@ const PrivacyDashboard: React.FC<PrivacyDashboardProps> = ({
         <div className="mt-6 bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Access Patterns</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {dashboardState.accessPatterns.slice(0, 3).map(pattern => (
+            {dashboardState.accessPatterns.slice(0, 3).map((pattern) => (
               <AccessPatternCard key={pattern.userId} pattern={pattern} />
             ))}
             {dashboardState.accessPatterns.length === 0 && (
-              <p className="text-gray-500 text-center py-4 col-span-3">No access pattern data available</p>
+              <p className="text-gray-500 text-center py-4 col-span-3">
+                No access pattern data available
+              </p>
             )}
           </div>
         </div>
@@ -540,13 +545,13 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, icon: Icon, col
     yellow: 'bg-yellow-50 text-yellow-600',
     green: 'bg-green-50 text-green-600',
     blue: 'bg-blue-50 text-blue-600',
-    purple: 'bg-purple-50 text-purple-600'
+    purple: 'bg-purple-50 text-purple-600',
   };
 
   const trendIcons = {
     up: <TrendingUp className="h-4 w-4 text-green-500" />,
     down: <TrendingUp className="h-4 w-4 text-red-500 transform rotate-180" />,
-    stable: <div className="h-4 w-4 bg-gray-300 rounded-full" />
+    stable: <div className="h-4 w-4 bg-gray-300 rounded-full" />,
   };
 
   return (
@@ -581,7 +586,7 @@ const AlertItem: React.FC<AlertItemProps> = ({ alert, onAcknowledge, onResolve }
     low: 'bg-gray-100 text-gray-800',
     medium: 'bg-yellow-100 text-yellow-800',
     high: 'bg-orange-100 text-orange-800',
-    critical: 'bg-red-100 text-red-800'
+    critical: 'bg-red-100 text-red-800',
   };
 
   return (
@@ -595,9 +600,7 @@ const AlertItem: React.FC<AlertItemProps> = ({ alert, onAcknowledge, onResolve }
             <h4 className="ml-2 text-sm font-medium text-gray-900">{alert.title}</h4>
           </div>
           <p className="mt-1 text-sm text-gray-600">{alert.message}</p>
-          <p className="mt-1 text-xs text-gray-500">
-            {new Date(alert.timestamp).toLocaleString()}
-          </p>
+          <p className="mt-1 text-xs text-gray-500">{new Date(alert.timestamp).toLocaleString()}</p>
         </div>
         <div className="ml-4 flex space-x-2">
           {alert.status === 'active' && (
@@ -627,7 +630,7 @@ const AnomalyItem: React.FC<{ anomaly: AnomalyDetection }> = ({ anomaly }) => {
     low: 'bg-gray-100 text-gray-800',
     medium: 'bg-yellow-100 text-yellow-800',
     high: 'bg-orange-100 text-orange-800',
-    critical: 'bg-red-100 text-red-800'
+    critical: 'bg-red-100 text-red-800',
   };
 
   return (
@@ -645,11 +648,15 @@ const AnomalyItem: React.FC<{ anomaly: AnomalyDetection }> = ({ anomaly }) => {
             Confidence: {(anomaly.confidence * 100).toFixed(1)}%
           </p>
         </div>
-        <span className={`px-2 py-1 text-xs rounded ${
-          anomaly.status === 'active' ? 'bg-red-100 text-red-700' :
-          anomaly.status === 'investigating' ? 'bg-yellow-100 text-yellow-700' :
-          'bg-green-100 text-green-700'
-        }`}>
+        <span
+          className={`px-2 py-1 text-xs rounded ${
+            anomaly.status === 'active'
+              ? 'bg-red-100 text-red-700'
+              : anomaly.status === 'investigating'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-green-100 text-green-700'
+          }`}
+        >
           {anomaly.status}
         </span>
       </div>
@@ -662,14 +669,16 @@ const ComplianceItem: React.FC<{ status: ComplianceStatus }> = ({ status }) => {
     compliant: 'bg-green-100 text-green-800',
     non_compliant: 'bg-red-100 text-red-800',
     partial: 'bg-yellow-100 text-yellow-800',
-    pending_review: 'bg-gray-100 text-gray-800'
+    pending_review: 'bg-gray-100 text-gray-800',
   };
 
   return (
     <div className="flex items-center justify-between p-3 border-b border-gray-200">
       <div>
         <h4 className="text-sm font-medium text-gray-900">{status.requirement}</h4>
-        <p className="text-xs text-gray-500">{status.framework} - {status.category}</p>
+        <p className="text-xs text-gray-500">
+          {status.framework} - {status.category}
+        </p>
       </div>
       <div className="text-right">
         <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status.status]}`}>
@@ -682,18 +691,22 @@ const ComplianceItem: React.FC<{ status: ComplianceStatus }> = ({ status }) => {
 };
 
 const AccessPatternCard: React.FC<{ pattern: AccessPattern }> = ({ pattern }) => {
-  const riskLevel = pattern.riskIndicators.unusualFrequency || 
-                   pattern.riskIndicators.unusualTime || 
-                   pattern.riskIndicators.unusualLocation ? 
-                   'high' : 'low';
+  const riskLevel =
+    pattern.riskIndicators.unusualFrequency ||
+    pattern.riskIndicators.unusualTime ||
+    pattern.riskIndicators.unusualLocation
+      ? 'high'
+      : 'low';
 
   return (
     <div className="border border-gray-200 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-medium text-gray-900">{pattern.userId}</h4>
-        <span className={`px-2 py-1 text-xs rounded ${
-          riskLevel === 'high' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-        }`}>
+        <span
+          className={`px-2 py-1 text-xs rounded ${
+            riskLevel === 'high' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          }`}
+        >
           {riskLevel} risk
         </span>
       </div>
@@ -708,11 +721,15 @@ const AccessPatternCard: React.FC<{ pattern: AccessPattern }> = ({ pattern }) =>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Trend:</span>
-          <span className={`font-medium ${
-            pattern.trendDirection === 'increasing' ? 'text-red-600' :
-            pattern.trendDirection === 'decreasing' ? 'text-green-600' :
-            'text-gray-600'
-          }`}>
+          <span
+            className={`font-medium ${
+              pattern.trendDirection === 'increasing'
+                ? 'text-red-600'
+                : pattern.trendDirection === 'decreasing'
+                  ? 'text-green-600'
+                  : 'text-gray-600'
+            }`}
+          >
             {pattern.trendDirection}
           </span>
         </div>
@@ -729,12 +746,12 @@ function getTimeRange(range: string): { start: number; end: number } {
     '6h': now - 6 * 60 * 60 * 1000,
     '24h': now - 24 * 60 * 60 * 1000,
     '7d': now - 7 * 24 * 60 * 60 * 1000,
-    '30d': now - 30 * 24 * 60 * 60 * 1000
+    '30d': now - 30 * 24 * 60 * 60 * 1000,
   };
-  
+
   return {
     start: ranges[range as keyof typeof ranges] || ranges['24h'],
-    end: now
+    end: now,
   };
 }
 
@@ -746,20 +763,30 @@ function calculateOverallCompliance(compliance: ComplianceStatus[]): number {
 function calculateRiskScore(anomalies: AnomalyDetection[], alerts: PrivacyAlert[]): number {
   const anomalyWeight = 0.6;
   const alertWeight = 0.4;
-  
-  const anomalyScore = anomalies.length > 0 ? 
-    Math.min(100, anomalies.reduce((sum, a) => {
-      const severityWeight = { low: 1, medium: 2, high: 3, critical: 4 };
-      return sum + (a.confidence * 100 * severityWeight[a.severity]);
-    }, 0) / anomalies.length) : 0;
-  
-  const alertScore = alerts.length > 0 ?
-    Math.min(100, alerts.reduce((sum, a) => {
-      const severityWeight = { low: 1, medium: 2, high: 3, critical: 4 };
-      return sum + (severityWeight[a.severity] * 25);
-    }, 0) / alerts.length) : 0;
-  
-  return Math.round((anomalyScore * anomalyWeight) + (alertScore * alertWeight));
+
+  const anomalyScore =
+    anomalies.length > 0
+      ? Math.min(
+          100,
+          anomalies.reduce((sum, a) => {
+            const severityWeight = { low: 1, medium: 2, high: 3, critical: 4 };
+            return sum + a.confidence * 100 * severityWeight[a.severity];
+          }, 0) / anomalies.length
+        )
+      : 0;
+
+  const alertScore =
+    alerts.length > 0
+      ? Math.min(
+          100,
+          alerts.reduce((sum, a) => {
+            const severityWeight = { low: 1, medium: 2, high: 3, critical: 4 };
+            return sum + severityWeight[a.severity] * 25;
+          }, 0) / alerts.length
+        )
+      : 0;
+
+  return Math.round(anomalyScore * anomalyWeight + alertScore * alertWeight);
 }
 
 export default PrivacyDashboard;

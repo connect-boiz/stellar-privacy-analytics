@@ -15,10 +15,12 @@ import {
   X,
   ChevronDown,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 import axios from 'axios';
+import { Button } from '../components/ui/button';
 import { Modal, ConfirmDialog } from '../components/ui/Modal';
+import { TrainingAdminSkeleton } from '@/components/skeletons';
 
 interface TrainingModule {
   id: string;
@@ -62,7 +64,7 @@ const AVAILABLE_ROLES = [
   'developer',
   'data_steward',
   'compliance_officer',
-  'end_user'
+  'end_user',
 ];
 
 const DIFFICULTY_LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'];
@@ -74,7 +76,7 @@ const CATEGORIES = [
   'Security',
   'Compliance',
   'Development',
-  'Analytics'
+  'Analytics',
 ];
 
 export function TrainingAdminPage() {
@@ -88,16 +90,20 @@ export function TrainingAdminPage() {
   const [editingModule, setEditingModule] = useState<Partial<TrainingModule> | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; moduleId: string | null }>({
     isOpen: false,
-    moduleId: null
+    moduleId: null,
   });
 
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
@@ -107,7 +113,7 @@ export function TrainingAdminPage() {
 
       const [modulesRes, analyticsRes] = await Promise.all([
         axios.get(`${API_BASE}/training/modules`, { headers }),
-        axios.get(`${API_BASE}/training/analytics/overview`, { headers })
+        axios.get(`${API_BASE}/training/analytics/overview`, { headers }),
       ]);
 
       setModules(modulesRes.data.data || []);
@@ -117,7 +123,10 @@ export function TrainingAdminPage() {
       const analyticsMap = new Map<string, TrainingAnalytics>();
       for (const module of modulesRes.data.data || []) {
         try {
-          const modAnalytics = await axios.get(`${API_BASE}/training/analytics/modules/${module.id}`, { headers });
+          const modAnalytics = await axios.get(
+            `${API_BASE}/training/analytics/modules/${module.id}`,
+            { headers }
+          );
           analyticsMap.set(module.id, modAnalytics.data.data);
         } catch (e) {
           // Use demo data
@@ -134,7 +143,7 @@ export function TrainingAdminPage() {
         totalEnrollments: 127,
         totalCompletions: 89,
         averageCompletionRate: 70.1,
-        certificatesIssued: 89
+        certificatesIssued: 89,
       });
     } finally {
       setLoading(false);
@@ -149,27 +158,43 @@ export function TrainingAdminPage() {
       category: 'Foundations',
       difficulty: 'beginner',
       estimatedDuration: 45,
-      targetRoles: ['admin', 'analyst', 'developer', 'data_steward', 'compliance_officer', 'end_user'],
+      targetRoles: [
+        'admin',
+        'analyst',
+        'developer',
+        'data_steward',
+        'compliance_officer',
+        'end_user',
+      ],
       prerequisites: [],
-      objectives: ['Understand key privacy concepts', 'Learn GDPR principles', 'Apply privacy-by-design'],
+      objectives: [
+        'Understand key privacy concepts',
+        'Learn GDPR principles',
+        'Apply privacy-by-design',
+      ],
       passingScore: 70,
       maxAttempts: 3,
-      isActive: true
+      isActive: true,
     },
     {
       id: 'differential-privacy-deep-dive',
       title: 'Differential Privacy Deep Dive',
-      description: 'Advanced techniques for implementing differential privacy in analytics workflows',
+      description:
+        'Advanced techniques for implementing differential privacy in analytics workflows',
       category: 'Advanced Techniques',
       difficulty: 'advanced',
       estimatedDuration: 90,
       targetRoles: ['developer', 'analyst', 'data_steward'],
       prerequisites: ['privacy-fundamentals'],
-      objectives: ['Master DP mathematics', 'Implement epsilon parameters', 'Balance privacy-utility'],
+      objectives: [
+        'Master DP mathematics',
+        'Implement epsilon parameters',
+        'Balance privacy-utility',
+      ],
       passingScore: 75,
       maxAttempts: 3,
-      isActive: true
-    }
+      isActive: true,
+    },
   ];
 
   const handleCreateModule = () => {
@@ -185,7 +210,7 @@ export function TrainingAdminPage() {
       objectives: [],
       passingScore: 70,
       maxAttempts: 3,
-      isActive: true
+      isActive: true,
     });
   };
 
@@ -205,10 +230,10 @@ export function TrainingAdminPage() {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_BASE}/training/modules/${moduleId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      setModules(modules.filter(m => m.id !== moduleId));
+      setModules(modules.filter((m) => m.id !== moduleId));
       setSaveMessage({ type: 'success', text: 'Module deleted successfully' });
     } catch (error) {
       console.error('Failed to delete module:', error);
@@ -229,15 +254,19 @@ export function TrainingAdminPage() {
 
       if (isCreating) {
         const response = await axios.post(`${API_BASE}/training/modules`, editingModule, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         setModules([...modules, response.data.data]);
         setSaveMessage({ type: 'success', text: 'Module created successfully' });
       } else {
-        const response = await axios.put(`${API_BASE}/training/modules/${editingModule.id}`, editingModule, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setModules(modules.map(m => m.id === editingModule.id ? response.data.data : m));
+        const response = await axios.put(
+          `${API_BASE}/training/modules/${editingModule.id}`,
+          editingModule,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setModules(modules.map((m) => (m.id === editingModule.id ? response.data.data : m)));
         setSaveMessage({ type: 'success', text: 'Module updated successfully' });
       }
 
@@ -254,19 +283,21 @@ export function TrainingAdminPage() {
   const handleToggleActive = async (module: TrainingModule) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_BASE}/training/modules/${module.id}`, {
-        isActive: !module.isActive
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.put(
+        `${API_BASE}/training/modules/${module.id}`,
+        {
+          isActive: !module.isActive,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      setModules(modules.map(m => m.id === module.id ? response.data.data : m));
+      setModules(modules.map((m) => (m.id === module.id ? response.data.data : m)));
     } catch (error) {
       console.error('Failed to toggle module status:', error);
       // Update locally for demo
-      setModules(modules.map(m =>
-        m.id === module.id ? { ...m, isActive: !m.isActive } : m
-      ));
+      setModules(modules.map((m) => (m.id === module.id ? { ...m, isActive: !m.isActive } : m)));
     }
   };
 
@@ -281,7 +312,6 @@ export function TrainingAdminPage() {
         size="lg"
         initialFocusRef={firstInputRef}
       >
-
         <div className="p-6 space-y-4">
           {/* Title */}
           <div>
@@ -317,8 +347,10 @@ export function TrainingAdminPage() {
                 onChange={(e) => setEditingModule({ ...editingModule!, category: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
               </select>
             </div>
@@ -326,11 +358,15 @@ export function TrainingAdminPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
               <select
                 value={editingModule?.difficulty || 'beginner'}
-                onChange={(e) => setEditingModule({ ...editingModule!, difficulty: e.target.value })}
+                onChange={(e) =>
+                  setEditingModule({ ...editingModule!, difficulty: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                {DIFFICULTY_LEVELS.map(level => (
-                  <option key={level} value={level}>{level}</option>
+                {DIFFICULTY_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
                 ))}
               </select>
             </div>
@@ -339,20 +375,31 @@ export function TrainingAdminPage() {
           {/* Duration & Passing Score */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Duration (minutes)
+              </label>
               <input
                 type="number"
                 value={editingModule?.estimatedDuration || 30}
-                onChange={(e) => setEditingModule({ ...editingModule!, estimatedDuration: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setEditingModule({
+                    ...editingModule!,
+                    estimatedDuration: parseInt(e.target.value),
+                  })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Passing Score (%)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Passing Score (%)
+              </label>
               <input
                 type="number"
                 value={editingModule?.passingScore || 70}
-                onChange={(e) => setEditingModule({ ...editingModule!, passingScore: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setEditingModule({ ...editingModule!, passingScore: parseInt(e.target.value) })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -362,13 +409,14 @@ export function TrainingAdminPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Target Roles</label>
             <div className="flex flex-wrap gap-2">
-              {AVAILABLE_ROLES.map(role => (
+              {AVAILABLE_ROLES.map((role) => (
                 <label
                   key={role}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${editingModule?.targetRoles?.includes(role)
-                    ? 'bg-blue-100 border-blue-500 text-blue-800'
-                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                    }`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
+                    editingModule?.targetRoles?.includes(role)
+                      ? 'bg-blue-100 border-blue-500 text-blue-800'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
                 >
                   <input
                     type="checkbox"
@@ -378,7 +426,10 @@ export function TrainingAdminPage() {
                       if (e.target.checked) {
                         setEditingModule({ ...editingModule!, targetRoles: [...roles, role] });
                       } else {
-                        setEditingModule({ ...editingModule!, targetRoles: roles.filter(r => r !== role) });
+                        setEditingModule({
+                          ...editingModule!,
+                          targetRoles: roles.filter((r) => r !== role),
+                        });
                       }
                     }}
                     className="hidden"
@@ -391,7 +442,9 @@ export function TrainingAdminPage() {
 
           {/* Objectives */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Learning Objectives</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Learning Objectives
+            </label>
             {(editingModule?.objectives || []).map((obj, index) => (
               <div key={index} className="flex gap-2 mb-2">
                 <input
@@ -416,10 +469,12 @@ export function TrainingAdminPage() {
               </div>
             ))}
             <button
-              onClick={() => setEditingModule({
-                ...editingModule!,
-                objectives: [...(editingModule?.objectives || []), '']
-              })}
+              onClick={() =>
+                setEditingModule({
+                  ...editingModule!,
+                  objectives: [...(editingModule?.objectives || []), ''],
+                })
+              }
               className="text-sm text-blue-600 hover:text-blue-700"
             >
               + Add Objective
@@ -428,11 +483,15 @@ export function TrainingAdminPage() {
 
           {/* Max Attempts */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Assessment Attempts</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Maximum Assessment Attempts
+            </label>
             <input
               type="number"
               value={editingModule?.maxAttempts || 3}
-              onChange={(e) => setEditingModule({ ...editingModule!, maxAttempts: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setEditingModule({ ...editingModule!, maxAttempts: parseInt(e.target.value) })
+              }
               className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -441,15 +500,19 @@ export function TrainingAdminPage() {
           <div className="flex items-center justify-between pt-4 border-t border-gray-200">
             <span className="text-sm font-medium text-gray-700">Module Active</span>
             <button
-              onClick={() => setEditingModule({ ...editingModule!, isActive: !editingModule?.isActive })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editingModule?.isActive ? 'bg-blue-600' : 'bg-gray-200'
-                }`}
+              onClick={() =>
+                setEditingModule({ ...editingModule!, isActive: !editingModule?.isActive })
+              }
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                editingModule?.isActive ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
               role="switch"
               aria-checked={editingModule?.isActive}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editingModule?.isActive ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  editingModule?.isActive ? 'translate-x-6' : 'translate-x-1'
+                }`}
               />
             </button>
           </div>
@@ -476,15 +539,7 @@ export function TrainingAdminPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <TrainingAdminSkeleton />;
   }
 
   return (
@@ -496,7 +551,9 @@ export function TrainingAdminPage() {
             <Settings className="w-7 h-7" />
             Training Administration
           </h1>
-          <p className="text-gray-600 mt-1">Manage training content, track effectiveness, and configure settings</p>
+          <p className="text-gray-600 mt-1">
+            Manage training content, track effectiveness, and configure settings
+          </p>
         </div>
         <button
           onClick={handleCreateModule}
@@ -512,10 +569,15 @@ export function TrainingAdminPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`flex items-center gap-2 p-4 rounded-lg ${saveMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}
+          className={`flex items-center gap-2 p-4 rounded-lg ${
+            saveMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+          }`}
         >
-          {saveMessage.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          {saveMessage.type === 'success' ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
           {saveMessage.text}
         </motion.div>
       )}
@@ -561,7 +623,9 @@ export function TrainingAdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Completion Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{analytics.averageCompletionRate.toFixed(1)}%</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {analytics.averageCompletionRate.toFixed(1)}%
+                </p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-500" />
             </div>
@@ -591,10 +655,11 @@ export function TrainingAdminPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -609,12 +674,24 @@ export function TrainingAdminPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Module</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Module
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Difficulty
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -623,29 +700,41 @@ export function TrainingAdminPage() {
                     <td className="px-6 py-4">
                       <div>
                         <div className="font-medium text-gray-900">{module.title}</div>
-                        <div className="text-sm text-gray-500 line-clamp-1">{module.description}</div>
+                        <div className="text-sm text-gray-500 line-clamp-1">
+                          {module.description}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{module.category}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${module.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-                        module.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                          module.difficulty === 'advanced' ? 'bg-orange-100 text-orange-800' :
-                            'bg-red-100 text-red-800'
-                        }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          module.difficulty === 'beginner'
+                            ? 'bg-green-100 text-green-800'
+                            : module.difficulty === 'intermediate'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : module.difficulty === 'advanced'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-red-100 text-red-800'
+                        }`}
+                      >
                         {module.difficulty}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{module.estimatedDuration} min</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {module.estimatedDuration} min
+                    </td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleActive(module)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${module.isActive ? 'bg-green-500' : 'bg-gray-300'
-                          }`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          module.isActive ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${module.isActive ? 'translate-x-6' : 'translate-x-1'
-                            }`}
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            module.isActive ? 'translate-x-6' : 'translate-x-1'
+                          }`}
                         />
                       </button>
                     </td>
@@ -675,13 +764,13 @@ export function TrainingAdminPage() {
 
       {activeTab === 'analytics' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {modules.map(module => {
+          {modules.map((module) => {
             const stats = moduleAnalytics.get(module.id) || {
               totalEnrollments: Math.floor(Math.random() * 50) + 10,
               completions: Math.floor(Math.random() * 30) + 5,
               completionRate: Math.random() * 40 + 50,
               averageScore: Math.random() * 20 + 70,
-              passRate: Math.random() * 30 + 60
+              passRate: Math.random() * 30 + 60,
             };
 
             return (
@@ -703,11 +792,15 @@ export function TrainingAdminPage() {
                     <p className="text-sm text-gray-500">Completed</p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">{stats.completionRate.toFixed(1)}%</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {stats.completionRate.toFixed(1)}%
+                    </p>
                     <p className="text-sm text-gray-500">Completion Rate</p>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">{stats.averageScore.toFixed(1)}%</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {stats.averageScore.toFixed(1)}%
+                    </p>
                     <p className="text-sm text-gray-500">Avg Score</p>
                   </div>
                 </div>
@@ -737,7 +830,9 @@ export function TrainingAdminPage() {
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Default Passing Score</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Default Passing Score
+              </label>
               <input
                 type="number"
                 defaultValue={70}
@@ -747,7 +842,9 @@ export function TrainingAdminPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Assessment Attempts</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Maximum Assessment Attempts
+              </label>
               <input
                 type="number"
                 defaultValue={3}
@@ -757,7 +854,9 @@ export function TrainingAdminPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Certificate Validity Period</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Certificate Validity Period
+              </label>
               <select className="w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 <option value="365">1 Year</option>
                 <option value="730">2 Years</option>
@@ -769,7 +868,9 @@ export function TrainingAdminPage() {
             <div className="flex items-center justify-between pt-4 border-t border-gray-200">
               <div>
                 <p className="font-medium text-gray-900">Auto-assign onboarding training</p>
-                <p className="text-sm text-gray-500">Automatically assign required training to new users</p>
+                <p className="text-sm text-gray-500">
+                  Automatically assign required training to new users
+                </p>
               </div>
               <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
                 <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
@@ -787,9 +888,7 @@ export function TrainingAdminPage() {
             </div>
 
             <div className="pt-4">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Save Settings
-              </button>
+              <Button>Save Settings</Button>
             </div>
           </div>
         </div>

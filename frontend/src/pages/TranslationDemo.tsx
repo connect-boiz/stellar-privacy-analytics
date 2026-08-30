@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { 
-  Globe, 
-  Calendar, 
-  DollarSign, 
-  Ruler, 
-  Clock, 
-  CheckCircle, 
+import {
+  Globe,
+  Calendar,
+  DollarSign,
+  Ruler,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Eye,
   EyeOff,
   Settings,
   Database,
-  Shield
+  Shield,
 } from 'lucide-react';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useLocalization } from '../utils/localization';
@@ -21,18 +21,18 @@ import { TranslationFallback } from '../components/TranslationFallback';
 
 export const TranslationDemo: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { 
-    formatDate, 
-    formatCurrency, 
-    formatNumber, 
-    formatPercentage, 
+  const {
+    formatDate,
+    formatCurrency,
+    formatNumber,
+    formatPercentage,
     formatDateTime,
     formatRelativeTime,
     formatFileSize,
     formatMeasurement,
-    getMeasurementSystem
+    getMeasurementSystem,
   } = useLocalization();
-  
+
   const [showMissingDemo, setShowMissingDemo] = useState(false);
   const [testDate] = useState(new Date());
   const [testNumber] = useState(1234567.89);
@@ -52,12 +52,8 @@ export const TranslationDemo: React.FC = () => {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {t('privacy.dashboard.title')}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {t('privacy.dashboard.subtitle')}
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('privacy.dashboard.title')}</h1>
+            <p className="text-gray-600 mt-2">{t('privacy.dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-500">
@@ -77,9 +73,7 @@ export const TranslationDemo: React.FC = () => {
         >
           <div className="flex items-center space-x-2">
             <Globe className="w-5 h-5 text-blue-600" />
-            <span className="text-blue-800">
-              RTL Mode Active: {currentDirection}
-            </span>
+            <span className="text-blue-800">RTL Mode Active: {currentDirection}</span>
           </div>
         </motion.div>
       )}
@@ -94,7 +88,7 @@ export const TranslationDemo: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           {t('privacy.dashboard.tabs.federated')}
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="flex items-center space-x-3">
@@ -103,9 +97,7 @@ export const TranslationDemo: React.FC = () => {
                 <h3 className="font-medium text-blue-900">
                   {t('privacy.dashboard.federated.trainingStatus')}
                 </h3>
-                <p className="text-sm text-blue-700">
-                  {t('privacy.dashboard.federated.active')}
-                </p>
+                <p className="text-sm text-blue-700">{t('privacy.dashboard.federated.active')}</p>
               </div>
             </div>
           </div>
@@ -147,17 +139,15 @@ export const TranslationDemo: React.FC = () => {
         transition={{ delay: 0.2 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Localization Examples
-        </h2>
-        
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Localization Examples</h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900 flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span>Date & Time Formatting</span>
             </h3>
-            
+
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Short Date:</span>
@@ -183,7 +173,7 @@ export const TranslationDemo: React.FC = () => {
               <DollarSign className="w-4 h-4" />
               <span>Number & Currency Formatting</span>
             </h3>
-            
+
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Number:</span>
@@ -216,7 +206,7 @@ export const TranslationDemo: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Measurement Units ({getMeasurementSystem()})
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <h4 className="font-medium text-gray-700 flex items-center space-x-2">
@@ -257,19 +247,13 @@ export const TranslationDemo: React.FC = () => {
         transition={{ delay: 0.4 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          {t('privacy.settings.title')}
-        </h2>
-        
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('privacy.settings.title')}</h2>
+
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>
-              <h3 className="font-medium text-gray-900">
-                {t('privacy.settings.privacyLevel')}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {t('privacy.settings.subtitle')}
-              </p>
+              <h3 className="font-medium text-gray-900">{t('privacy.settings.privacyLevel')}</h3>
+              <p className="text-sm text-gray-600">{t('privacy.settings.subtitle')}</p>
             </div>
             <div className="flex items-center space-x-2">
               <Shield className="h-5 w-5 text-green-500" />
@@ -314,9 +298,7 @@ export const TranslationDemo: React.FC = () => {
         className="bg-white rounded-lg shadow p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Translation Fallback Demo
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-900">Translation Fallback Demo</h2>
           <button
             onClick={() => setShowMissingDemo(!showMissingDemo)}
             className="flex items-center space-x-2 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
@@ -335,27 +317,24 @@ export const TranslationDemo: React.FC = () => {
                   Missing Translation Examples
                 </span>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Missing key with fallback:</span>
-                  <TranslationFallback 
-                    translationKey="nonexistent.key" 
+                  <TranslationFallback
+                    translationKey="nonexistent.key"
                     fallbackValue="Custom Fallback Value"
                   />
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span>Missing key with auto-fallback:</span>
                   <TranslationFallback translationKey="some.missing.key" />
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span>Missing key with warning:</span>
-                  <TranslationFallback 
-                    translationKey="another.missing.key" 
-                    showWarning={true}
-                  />
+                  <TranslationFallback translationKey="another.missing.key" showWarning={true} />
                 </div>
               </div>
             </div>
@@ -370,10 +349,8 @@ export const TranslationDemo: React.FC = () => {
         transition={{ delay: 0.6 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Implementation Status
-        </h2>
-        
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Implementation Status</h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <h3 className="font-medium text-gray-900">✅ Completed Features</h3>

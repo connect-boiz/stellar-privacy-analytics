@@ -1,10 +1,38 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
-import { AlertCircle, Loader2, RefreshCw, Zap, Cpu, Database, Activity, BarChart3, ChevronDown, ChevronUp, Memory, TrendingDown } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+} from 'recharts';
+import {
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Zap,
+  Cpu,
+  Database,
+  Activity,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  _Memory,
+  _TrendingDown,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import MemoryMonitor from '../utils/memoryMonitor';
-import { DataPoint, memoryAwareSampling, progressiveDataLoader, validateDataQuality } from '../utils/dataSampling';
-import { PerformanceProfiler, ChartPerformanceOptimizer } from '../utils/performanceProfiler';
+import {
+  DataPoint,
+  _memoryAwareSampling,
+  _progressiveDataLoader,
+  _validateDataQuality,
+} from '../utils/dataSampling';
 
 interface LargeDatasetChartProps {
   data?: DataPoint[];
@@ -38,11 +66,11 @@ interface ChartConfig {
 const defaultConfig: ChartConfig = {
   colors: {
     primary: '#3b82f6',
-    gradient: 'rgba(59, 130, 246, 0.3)'
+    gradient: 'rgba(59, 130, 246, 0.3)',
   },
   animationDuration: 300,
   samplingStrategy: 'lttb',
-  enableGpuAcceleration: true
+  enableGpuAcceleration: true,
 };
 
 const generateLargeDataset = (count: number): DataPoint[] => {
@@ -54,7 +82,7 @@ const generateLargeDataset = (count: number): DataPoint[] => {
       timestamp: baseTime + i * 1000,
       value: Math.sin(i / 50) * 50 + 50 + Math.random() * 10,
       value2: Math.cos(i / 30) * 30 + 70 + Math.random() * 5,
-      value3: Math.random() * 100
+      value3: Math.random() * 100,
     });
   }
 
@@ -83,7 +111,7 @@ const lttbSampling = (data: DataPoint[], maxPoints: number): DataPoint[] => {
   return sampled;
 };
 
-const randomSampling = (data: DataPoint[], maxPoints: number): DataPoint[] => {
+const _randomSampling = (data: DataPoint[], maxPoints: number): DataPoint[] => {
   if (data.length <= maxPoints) return data;
 
   const indices = new Set<number>();
@@ -97,7 +125,7 @@ const randomSampling = (data: DataPoint[], maxPoints: number): DataPoint[] => {
 
   return Array.from(indices)
     .sort((a, b) => a - b)
-    .map(i => data[i]);
+    .map((i) => data[i]);
 };
 
 const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
@@ -109,7 +137,7 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
   enableSampling = true,
   maxPoints = 5000,
   showProgressiveLoading = true,
-  onPerformanceMetrics
+  onPerformanceMetrics,
 }) => {
   const [data, setData] = useState<DataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,67 +147,73 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
   const [config] = useState<ChartConfig>(defaultConfig);
   const [gpuEnabled, setGpuEnabled] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const _canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
 
-  const processData = useCallback((rawData: DataPoint[], maxPts: number) => {
-    const startTime = performance.now();
+  const processData = useCallback(
+    (rawData: DataPoint[], maxPts: number) => {
+      const startTime = performance.now();
 
-    let processed: DataPoint[];
-    if (enableSampling) {
-      processed = lttbSampling(rawData, maxPts);
-    } else {
-      processed = rawData.slice(0, maxPts);
-    }
-
-    const renderTime = performance.now() - startTime;
-    const memoryUsage = (performance as any).memory?.usedJSHeapSize || 0;
-
-    const metrics: PerformanceMetrics = {
-      renderTime,
-      memoryUsage,
-      pointsRendered: processed.length,
-      samplingRate: rawData.length / processed.length
-    };
-
-    setPerformanceMetrics(metrics);
-
-    if (onPerformanceMetrics) {
-      onPerformanceMetrics(metrics);
-    }
-
-    return processed;
-  }, [enableSampling, onPerformanceMetrics]);
-
-  const loadData = useCallback(async (count: number) => {
-    setIsLoading(true);
-    setLoadProgress(0);
-
-    if (showProgressiveLoading) {
-      const batchSize = count / 10;
-      let loadedData: DataPoint[] = [];
-
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        const batch = generateLargeDataset(Math.floor(batchSize)).map((p, idx) => ({
-          ...p,
-          timestamp: p.timestamp + i * batchSize * 1000
-        }));
-        loadedData = [...loadedData, ...batch];
-        setLoadProgress((i + 1) * 10);
+      let processed: DataPoint[];
+      if (enableSampling) {
+        processed = lttbSampling(rawData, maxPts);
+      } else {
+        processed = rawData.slice(0, maxPts);
       }
 
-      const processed = processData(loadedData, maxPoints);
-      setData(processed);
-    } else {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      const generated = generateLargeDataset(count);
-      const processed = processData(generated, maxPoints);
-      setData(processed);
-    }
+      const renderTime = performance.now() - startTime;
+      const memoryUsage = (performance as any).memory?.usedJSHeapSize || 0;
 
-    setIsLoading(false);
-  }, [maxPoints, processData, showProgressiveLoading]);
+      const metrics: PerformanceMetrics = {
+        renderTime,
+        memoryUsage,
+        pointsRendered: processed.length,
+        samplingRate: rawData.length / processed.length,
+      };
+
+      setPerformanceMetrics(metrics);
+
+      if (onPerformanceMetrics) {
+        onPerformanceMetrics(metrics);
+      }
+
+      return processed;
+    },
+    [enableSampling, onPerformanceMetrics]
+  );
+
+  const loadData = useCallback(
+    async (count: number) => {
+      setIsLoading(true);
+      setLoadProgress(0);
+
+      if (showProgressiveLoading) {
+        const batchSize = count / 10;
+        let loadedData: DataPoint[] = [];
+
+        for (let i = 0; i < 10; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          const batch = generateLargeDataset(Math.floor(batchSize)).map((p, _idx) => ({
+            ...p,
+            timestamp: p.timestamp + i * batchSize * 1000,
+          }));
+          loadedData = [...loadedData, ...batch];
+          setLoadProgress((i + 1) * 10);
+        }
+
+        const processed = processData(loadedData, maxPoints);
+        setData(processed);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const generated = generateLargeDataset(count);
+        const processed = processData(generated, maxPoints);
+        setData(processed);
+      }
+
+      setIsLoading(false);
+    },
+    [maxPoints, processData, showProgressiveLoading]
+  );
 
   useEffect(() => {
     if (initialData) {
@@ -201,10 +235,9 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
       if (performance.memory && performance.memory.jsHeapSizeLimit > 0) {
         const usage = performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit;
         if (usage > 0.8) {
-          toast.warning(
-            `High memory usage detected: ${(usage * 100).toFixed(0)}%`,
-            { icon: <AlertCircle className="w-5 h-5" /> }
-          );
+          toast.warning(`High memory usage detected: ${(usage * 100).toFixed(0)}%`, {
+            icon: <AlertCircle className="w-5 h-5" />,
+          });
         }
       }
     };
@@ -219,7 +252,7 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
   }, [data, enableSampling, maxPoints]);
 
   const toggleGpuAcceleration = useCallback(() => {
-    setGpuEnabled(prev => {
+    setGpuEnabled((prev) => {
       const newValue = !prev;
       toast.success(newValue ? 'GPU acceleration enabled' : 'GPU acceleration disabled');
       return newValue;
@@ -271,16 +304,18 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
             </button>
             <button
               onClick={toggleGpuAcceleration}
-              className={`p-2 rounded-lg ${gpuEnabled ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'
-                }`}
+              className={`p-2 rounded-lg ${
+                gpuEnabled ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'
+              }`}
               title={gpuEnabled ? 'GPU acceleration ON' : 'GPU acceleration OFF'}
             >
               <Zap className="h-4 w-4" />
             </button>
             <button
               onClick={() => setShowStats(!showStats)}
-              className={`p-2 rounded-lg ${showStats ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'
-                }`}
+              className={`p-2 rounded-lg ${
+                showStats ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-100'
+              }`}
             >
               <Activity className="h-4 w-4" />
             </button>
@@ -293,7 +328,9 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Points: </span>
-              <span className="font-medium">{performanceMetrics.pointsRendered.toLocaleString()}</span>
+              <span className="font-medium">
+                {performanceMetrics.pointsRendered.toLocaleString()}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Render: </span>
@@ -323,23 +360,14 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="timestamp"
-              tickFormatter={formatTime}
-              stroke="#9ca3af"
-              fontSize={12}
-            />
-            <YAxis
-              tickFormatter={formatValue}
-              stroke="#9ca3af"
-              fontSize={12}
-            />
+            <XAxis dataKey="timestamp" tickFormatter={formatTime} stroke="#9ca3af" fontSize={12} />
+            <YAxis tickFormatter={formatValue} stroke="#9ca3af" fontSize={12} />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'white',
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
               }}
               labelFormatter={(timestamp) => formatTime(timestamp as number)}
               formatter={(value: number) => [formatValue(value), dataKey]}
@@ -363,13 +391,13 @@ const LargeDatasetChart: React.FC<LargeDatasetChartProps> = ({
           <div className="flex items-center justify-between">
             <span>
               Showing {sampledData.length.toLocaleString()} of {data.length.toLocaleString()} points
-              (sampled {data.length / sampledData.length:.1f}x)
+              (sampled {(data.length / sampledData.length).toFixed(1)}x)
             </span>
             <label className="flex items-center space-x-1">
               <input
                 type="checkbox"
                 checked={enableSampling}
-                onChange={() => { }}
+                onChange={() => {}}
                 className="rounded border-blue-300"
               />
               <span>LTTB Sampling</span>

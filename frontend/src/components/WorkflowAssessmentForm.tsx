@@ -4,12 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, X, Shield, Database, Lock, Globe } from 'lucide-react';
+import { Plus, X, Shield, Lock, Globe } from 'lucide-react';
 
 interface ProcessingStep {
   id: string;
@@ -41,7 +47,10 @@ interface WorkflowAssessmentFormProps {
   loading?: boolean;
 }
 
-const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmit, loading = false }) => {
+const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({
+  onSubmit,
+  loading = false,
+}) => {
   const [formData, setFormData] = useState<WorkflowFormData>({
     name: '',
     description: '',
@@ -53,7 +62,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     legalBasis: '',
     crossBorderTransfer: false,
     encryptionLevel: 'standard',
-    anonymizationTechniques: []
+    anonymizationTechniques: [],
   });
 
   const [newStep, setNewStep] = useState<Partial<ProcessingStep>>({
@@ -63,7 +72,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     dataAccess: [],
     thirdParties: [],
     securityMeasures: [],
-    retentionTime: 30
+    retentionTime: 30,
   });
 
   const [currentDataType, setCurrentDataType] = useState('');
@@ -81,7 +90,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     'communication_data',
     'behavioral_data',
     'technical_data',
-    'anonymous_data'
+    'anonymous_data',
   ];
 
   const dataSubjectOptions = [
@@ -91,7 +100,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     'suppliers',
     'eu_data_subjects',
     'california_residents',
-    'minors'
+    'minors',
   ];
 
   const purposeOptions = [
@@ -102,7 +111,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     'compliance',
     'consent_management',
     'fraud_detection',
-    'personalization'
+    'personalization',
   ];
 
   const anonymizationTechniqueOptions = [
@@ -113,10 +122,10 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     'differential_privacy',
     'k_anonymity',
     'l_diversity',
-    't_closeness'
+    't_closeness',
   ];
 
-  const securityMeasureOptions = [
+  const _securityMeasureOptions = [
     'encryption',
     'pseudonymization',
     'access_controls',
@@ -124,7 +133,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     'data_minimization',
     'privacy_by_design',
     'secure_storage',
-    'transmission_security'
+    'transmission_security',
   ];
 
   const legalBasisOptions = [
@@ -133,74 +142,74 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
     'legal_obligation',
     'vital_interests',
     'public_task',
-    'legitimate_interests'
+    'legitimate_interests',
   ];
 
   const addDataType = () => {
     if (currentDataType && !formData.dataTypes.includes(currentDataType)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        dataTypes: [...prev.dataTypes, currentDataType]
+        dataTypes: [...prev.dataTypes, currentDataType],
       }));
       setCurrentDataType('');
     }
   };
 
   const removeDataType = (type: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      dataTypes: prev.dataTypes.filter(t => t !== type)
+      dataTypes: prev.dataTypes.filter((t) => t !== type),
     }));
   };
 
   const addDataSubject = () => {
     if (currentDataSubject && !formData.dataSubjects.includes(currentDataSubject)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        dataSubjects: [...prev.dataSubjects, currentDataSubject]
+        dataSubjects: [...prev.dataSubjects, currentDataSubject],
       }));
       setCurrentDataSubject('');
     }
   };
 
   const removeDataSubject = (subject: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      dataSubjects: prev.dataSubjects.filter(s => s !== subject)
+      dataSubjects: prev.dataSubjects.filter((s) => s !== subject),
     }));
   };
 
   const addPurpose = () => {
     if (currentPurpose && !formData.purposes.includes(currentPurpose)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        purposes: [...prev.purposes, currentPurpose]
+        purposes: [...prev.purposes, currentPurpose],
       }));
       setCurrentPurpose('');
     }
   };
 
   const removePurpose = (purpose: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      purposes: prev.purposes.filter(p => p !== purpose)
+      purposes: prev.purposes.filter((p) => p !== purpose),
     }));
   };
 
   const addTechnique = () => {
     if (currentTechnique && !formData.anonymizationTechniques.includes(currentTechnique)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        anonymizationTechniques: [...prev.anonymizationTechniques, currentTechnique]
+        anonymizationTechniques: [...prev.anonymizationTechniques, currentTechnique],
       }));
       setCurrentTechnique('');
     }
   };
 
   const removeTechnique = (technique: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      anonymizationTechniques: prev.anonymizationTechniques.filter(t => t !== technique)
+      anonymizationTechniques: prev.anonymizationTechniques.filter((t) => t !== technique),
     }));
   };
 
@@ -214,12 +223,12 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
         dataAccess: newStep.dataAccess || [],
         thirdParties: newStep.thirdParties || [],
         securityMeasures: newStep.securityMeasures || [],
-        retentionTime: newStep.retentionTime || 30
+        retentionTime: newStep.retentionTime || 30,
       };
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        processingSteps: [...prev.processingSteps, step]
+        processingSteps: [...prev.processingSteps, step],
       }));
 
       setNewStep({
@@ -229,26 +238,26 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
         dataAccess: [],
         thirdParties: [],
         securityMeasures: [],
-        retentionTime: 30
+        retentionTime: 30,
       });
     }
   };
 
   const removeProcessingStep = (stepId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      processingSteps: prev.processingSteps.filter(s => s.id !== stepId)
+      processingSteps: prev.processingSteps.filter((s) => s.id !== stepId),
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const workflow = {
       id: `workflow_${Date.now()}`,
       ...formData,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     onSubmit(workflow, 'current_user'); // This would come from authentication
@@ -256,11 +265,16 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
 
   const getEncryptionIcon = (level: string) => {
     switch (level) {
-      case 'none': return <X className="h-4 w-4 text-red-500" />;
-      case 'basic': return <Lock className="h-4 w-4 text-yellow-500" />;
-      case 'standard': return <Lock className="h-4 w-4 text-blue-500" />;
-      case 'advanced': return <Shield className="h-4 w-4 text-green-500" />;
-      default: return null;
+      case 'none':
+        return <X className="h-4 w-4 text-red-500" />;
+      case 'basic':
+        return <Lock className="h-4 w-4 text-yellow-500" />;
+      case 'standard':
+        return <Lock className="h-4 w-4 text-blue-500" />;
+      case 'advanced':
+        return <Shield className="h-4 w-4 text-green-500" />;
+      default:
+        return null;
     }
   };
 
@@ -269,9 +283,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
-          <CardDescription>
-            Provide basic information about the data workflow
-          </CardDescription>
+          <CardDescription>Provide basic information about the data workflow</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -280,7 +292,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Enter workflow name"
                 required
               />
@@ -291,19 +303,21 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
                 id="retentionPeriod"
                 type="number"
                 value={formData.retentionPeriod}
-                onChange={(e) => setFormData(prev => ({ ...prev, retentionPeriod: parseInt(e.target.value) }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, retentionPeriod: parseInt(e.target.value) }))
+                }
                 min="1"
                 required
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the purpose and scope of this workflow"
               rows={3}
             />
@@ -312,12 +326,15 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="legalBasis">Legal Basis</Label>
-              <Select value={formData.legalBasis} onValueChange={(value) => setFormData(prev => ({ ...prev, legalBasis: value }))}>
+              <Select
+                value={formData.legalBasis}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, legalBasis: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select legal basis" />
                 </SelectTrigger>
                 <SelectContent>
-                  {legalBasisOptions.map(option => (
+                  {legalBasisOptions.map((option) => (
                     <SelectItem key={option} value={option}>
                       {option.replace('_', ' ').toUpperCase()}
                     </SelectItem>
@@ -328,7 +345,12 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
             <div>
               <Label htmlFor="encryptionLevel">Encryption Level</Label>
               <div className="flex items-center space-x-2">
-                <Select value={formData.encryptionLevel} onValueChange={(value: any) => setFormData(prev => ({ ...prev, encryptionLevel: value }))}>
+                <Select
+                  value={formData.encryptionLevel}
+                  onValueChange={(value: any) =>
+                    setFormData((prev) => ({ ...prev, encryptionLevel: value }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -348,7 +370,9 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
             <Checkbox
               id="crossBorderTransfer"
               checked={formData.crossBorderTransfer}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, crossBorderTransfer: !!checked }))}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({ ...prev, crossBorderTransfer: !!checked }))
+              }
             />
             <Label htmlFor="crossBorderTransfer" className="flex items-center space-x-2">
               <span>Cross-border data transfer</span>
@@ -361,9 +385,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
       <Card>
         <CardHeader>
           <CardTitle>Data Types</CardTitle>
-          <CardDescription>
-            Select the types of data processed in this workflow
-          </CardDescription>
+          <CardDescription>Select the types of data processed in this workflow</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex space-x-2">
@@ -372,7 +394,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
                 <SelectValue placeholder="Select data type" />
               </SelectTrigger>
               <SelectContent>
-                {dataTypeOptions.map(option => (
+                {dataTypeOptions.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.replace('_', ' ').toUpperCase()}
                   </SelectItem>
@@ -383,9 +405,9 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
-            {formData.dataTypes.map(type => (
+            {formData.dataTypes.map((type) => (
               <Badge key={type} variant="secondary" className="flex items-center space-x-1">
                 <span>{type.replace('_', ' ').toUpperCase()}</span>
                 <button
@@ -404,9 +426,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
       <Card>
         <CardHeader>
           <CardTitle>Data Subjects</CardTitle>
-          <CardDescription>
-            Who are the data subjects in this workflow?
-          </CardDescription>
+          <CardDescription>Who are the data subjects in this workflow?</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex space-x-2">
@@ -415,7 +435,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
                 <SelectValue placeholder="Select data subject" />
               </SelectTrigger>
               <SelectContent>
-                {dataSubjectOptions.map(option => (
+                {dataSubjectOptions.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.replace('_', ' ').toUpperCase()}
                   </SelectItem>
@@ -426,9 +446,9 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
-            {formData.dataSubjects.map(subject => (
+            {formData.dataSubjects.map((subject) => (
               <Badge key={subject} variant="secondary" className="flex items-center space-x-1">
                 <span>{subject.replace('_', ' ').toUpperCase()}</span>
                 <button
@@ -447,9 +467,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
       <Card>
         <CardHeader>
           <CardTitle>Purposes</CardTitle>
-          <CardDescription>
-            What are the purposes for processing this data?
-          </CardDescription>
+          <CardDescription>What are the purposes for processing this data?</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex space-x-2">
@@ -458,7 +476,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
                 <SelectValue placeholder="Select purpose" />
               </SelectTrigger>
               <SelectContent>
-                {purposeOptions.map(option => (
+                {purposeOptions.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.replace('_', ' ').toUpperCase()}
                   </SelectItem>
@@ -469,9 +487,9 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
-            {formData.purposes.map(purpose => (
+            {formData.purposes.map((purpose) => (
               <Badge key={purpose} variant="secondary" className="flex items-center space-x-1">
                 <span>{purpose.replace('_', ' ').toUpperCase()}</span>
                 <button
@@ -490,9 +508,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
       <Card>
         <CardHeader>
           <CardTitle>Processing Steps</CardTitle>
-          <CardDescription>
-            Define the processing steps in this workflow
-          </CardDescription>
+          <CardDescription>Define the processing steps in this workflow</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -501,13 +517,16 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               <Input
                 id="stepName"
                 value={newStep.name}
-                onChange={(e) => setNewStep(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setNewStep((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Enter step name"
               />
             </div>
             <div>
               <Label htmlFor="stepType">Step Type</Label>
-              <Select value={newStep.type} onValueChange={(value: any) => setNewStep(prev => ({ ...prev, type: value }))}>
+              <Select
+                value={newStep.type}
+                onValueChange={(value: any) => setNewStep((prev) => ({ ...prev, type: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -527,7 +546,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
             <Textarea
               id="stepDescription"
               value={newStep.description}
-              onChange={(e) => setNewStep(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setNewStep((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Describe this processing step"
               rows={2}
             />
@@ -539,7 +558,9 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               id="retentionTime"
               type="number"
               value={newStep.retentionTime}
-              onChange={(e) => setNewStep(prev => ({ ...prev, retentionTime: parseInt(e.target.value) }))}
+              onChange={(e) =>
+                setNewStep((prev) => ({ ...prev, retentionTime: parseInt(e.target.value) }))
+              }
               min="1"
             />
           </div>
@@ -569,9 +590,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  {step.description && (
-                    <p className="text-sm mt-2">{step.description}</p>
-                  )}
+                  {step.description && <p className="text-sm mt-2">{step.description}</p>}
                 </CardContent>
               </Card>
             ))}
@@ -593,7 +612,7 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
                 <SelectValue placeholder="Select technique" />
               </SelectTrigger>
               <SelectContent>
-                {anonymizationTechniqueOptions.map(option => (
+                {anonymizationTechniqueOptions.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option.replace('_', ' ').toUpperCase()}
                   </SelectItem>
@@ -604,9 +623,9 @@ const WorkflowAssessmentForm: React.FC<WorkflowAssessmentFormProps> = ({ onSubmi
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
-            {formData.anonymizationTechniques.map(technique => (
+            {formData.anonymizationTechniques.map((technique) => (
               <Badge key={technique} variant="secondary" className="flex items-center space-x-1">
                 <span>{technique.replace('_', ' ').toUpperCase()}</span>
                 <button

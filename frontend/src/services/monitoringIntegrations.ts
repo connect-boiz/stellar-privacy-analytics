@@ -2,11 +2,11 @@
  * Monitoring System Integrations Service
  */
 
-import { 
-  MonitoringIntegration, 
-  PrivacyMetric, 
+import {
+  MonitoringIntegration,
+  PrivacyMetric,
   PrivacyAlert,
-  AnomalyDetection 
+  _AnomalyDetection,
 } from '../types/privacyMetrics';
 
 export interface MonitoringConfig {
@@ -80,16 +80,16 @@ export class MonitoringIntegrations {
       config: {
         endpoint: 'http://localhost:9090',
         jobName: 'privacy-monitoring',
-        metricsPrefix: 'privacy_'
+        metricsPrefix: 'privacy_',
       },
       metrics: [
         'privacy_access_total',
         'privacy_anomaly_detected',
         'privacy_compliance_score',
-        'privacy_alert_count'
+        'privacy_alert_count',
       ],
       lastSync: 0,
-      status: 'disconnected'
+      status: 'disconnected',
     };
 
     // Grafana integration
@@ -101,11 +101,11 @@ export class MonitoringIntegrations {
       config: {
         endpoint: 'http://localhost:3000',
         apiKey: '',
-        dashboardFolder: 'Privacy Monitoring'
+        dashboardFolder: 'Privacy Monitoring',
       },
       metrics: [],
       lastSync: 0,
-      status: 'disconnected'
+      status: 'disconnected',
     };
 
     // Datadog integration
@@ -117,15 +117,11 @@ export class MonitoringIntegrations {
       config: {
         apiKey: '',
         site: 'datadoghq.com',
-        metricsPrefix: 'privacy.'
+        metricsPrefix: 'privacy.',
       },
-      metrics: [
-        'privacy.access.count',
-        'privacy.anomaly.count',
-        'privacy.compliance.score'
-      ],
+      metrics: ['privacy.access.count', 'privacy.anomaly.count', 'privacy.compliance.score'],
       lastSync: 0,
-      status: 'disconnected'
+      status: 'disconnected',
     };
 
     // Splunk integration
@@ -137,11 +133,11 @@ export class MonitoringIntegrations {
       config: {
         endpoint: 'https://splunk.example.com:8089',
         token: '',
-        index: 'privacy_events'
+        index: 'privacy_events',
       },
       metrics: [],
       lastSync: 0,
-      status: 'disconnected'
+      status: 'disconnected',
     };
 
     // Webhook integration
@@ -155,14 +151,14 @@ export class MonitoringIntegrations {
           {
             url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK',
             headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        ]
+              'Content-Type': 'application/json',
+            },
+          },
+        ],
       },
       metrics: [],
       lastSync: 0,
-      status: 'disconnected'
+      status: 'disconnected',
     };
 
     this.integrations.set('prometheus', prometheus);
@@ -209,7 +205,7 @@ export class MonitoringIntegrations {
   // Configuration management
   public updateConfig(config: MonitoringConfig): void {
     this.config = { ...this.config, ...config };
-    
+
     // Update integration configs
     if (config.prometheus) {
       this.updateIntegration('prometheus', { config: config.prometheus });
@@ -234,20 +230,21 @@ export class MonitoringIntegrations {
 
   // Metrics publishing
   public async publishMetrics(metrics: PrivacyMetric[]): Promise<void> {
-    const enabledIntegrations = Array.from(this.integrations.values())
-      .filter(integration => integration.enabled);
+    const enabledIntegrations = Array.from(this.integrations.values()).filter(
+      (integration) => integration.enabled
+    );
 
     const monitoringMetrics = this.convertToMonitoringMetrics(metrics);
 
     await Promise.allSettled(
-      enabledIntegrations.map(integration => 
+      enabledIntegrations.map((integration) =>
         this.publishToIntegration(integration, monitoringMetrics)
       )
     );
   }
 
   private async publishToIntegration(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     metrics: MonitoringMetric[]
   ): Promise<void> {
     try {
@@ -268,7 +265,6 @@ export class MonitoringIntegrations {
       // Update last sync
       integration.lastSync = Date.now();
       integration.status = 'connected';
-
     } catch (error) {
       console.error(`Failed to publish to ${integration.name}:`, error);
       integration.status = 'error';
@@ -277,20 +273,20 @@ export class MonitoringIntegrations {
   }
 
   private convertToMonitoringMetrics(metrics: PrivacyMetric[]): MonitoringMetric[] {
-    return metrics.map(metric => ({
+    return metrics.map((metric) => ({
       name: `privacy_${metric.metricType}`,
       value: metric.value,
       labels: {
         source: metric.source,
         status: metric.status,
-        ...metric.metadata
+        ...metric.metadata,
       },
-      timestamp: metric.timestamp
+      timestamp: metric.timestamp,
     }));
   }
 
   private async publishToPrometheus(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     metrics: MonitoringMetric[]
   ): Promise<void> {
     const config = integration.config as any;
@@ -299,25 +295,27 @@ export class MonitoringIntegrations {
     const metricsPrefix = config.metricsPrefix || '';
 
     // Convert to Prometheus exposition format
-    const prometheusMetrics = metrics.map(metric => {
-      const labels = Object.entries(metric.labels)
-        .map(([key, value]) => `${key}="${value}"`)
-        .join(',');
-      
-      return `${metricsPrefix}${metric.name}{${labels}} ${metric.value} ${metric.timestamp}`;
-    }).join('\n');
+    const prometheusMetrics = metrics
+      .map((metric) => {
+        const labels = Object.entries(metric.labels)
+          .map(([key, value]) => `${key}="${value}"`)
+          .join(',');
+
+        return `${metricsPrefix}${metric.name}{${labels}} ${metric.value} ${metric.timestamp}`;
+      })
+      .join('\n');
 
     await fetch(`${endpoint}/metrics/job/${jobName}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain'
+        'Content-Type': 'text/plain',
       },
-      body: prometheusMetrics
+      body: prometheusMetrics,
     });
   }
 
   private async publishToDatadog(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     metrics: MonitoringMetric[]
   ): Promise<void> {
     const config = integration.config as any;
@@ -325,25 +323,25 @@ export class MonitoringIntegrations {
     const site = config.site;
     const metricsPrefix = config.metricsPrefix || '';
 
-    const datadogMetrics = metrics.map(metric => ({
+    const datadogMetrics = metrics.map((metric) => ({
       metric: `${metricsPrefix}${metric.name}`,
       points: [[metric.timestamp / 1000, metric.value]], // Datadog uses seconds
       tags: Object.entries(metric.labels).map(([key, value]) => `${key}:${value}`),
-      type: 'gauge'
+      type: 'gauge',
     }));
 
     await fetch(`https://api.${site}/api/v1/series`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'DD-API-KEY': apiKey
+        'DD-API-KEY': apiKey,
       },
-      body: JSON.stringify({ series: datadogMetrics })
+      body: JSON.stringify({ series: datadogMetrics }),
     });
   }
 
   private async publishToWebhook(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     metrics: MonitoringMetric[]
   ): Promise<void> {
     const config = integration.config as any;
@@ -354,12 +352,12 @@ export class MonitoringIntegrations {
         const payload = {
           metrics,
           timestamp: Date.now(),
-          source: 'privacy-monitoring'
+          source: 'privacy-monitoring',
         };
 
         const headers = {
           'Content-Type': 'application/json',
-          ...endpoint.headers
+          ...endpoint.headers,
         };
 
         // Add signature if secret is provided
@@ -371,7 +369,7 @@ export class MonitoringIntegrations {
         await fetch(endpoint.url, {
           method: 'POST',
           headers,
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
       })
     );
@@ -379,13 +377,14 @@ export class MonitoringIntegrations {
 
   // Alert publishing
   public async publishAlert(alert: PrivacyAlert): Promise<void> {
-    const enabledIntegrations = Array.from(this.integrations.values())
-      .filter(integration => integration.enabled);
+    const enabledIntegrations = Array.from(this.integrations.values()).filter(
+      (integration) => integration.enabled
+    );
 
     const monitoringAlert = this.convertToMonitoringAlert(alert);
 
     await Promise.allSettled(
-      enabledIntegrations.map(integration => 
+      enabledIntegrations.map((integration) =>
         this.publishAlertToIntegration(integration, monitoringAlert)
       )
     );
@@ -401,14 +400,14 @@ export class MonitoringIntegrations {
         config_id: alert.configId,
         status: alert.status,
         metric_value: alert.metricValue.toString(),
-        threshold: alert.threshold.toString()
+        threshold: alert.threshold.toString(),
       },
-      timestamp: alert.timestamp
+      timestamp: alert.timestamp,
     };
   }
 
   private async publishAlertToIntegration(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     alert: MonitoringAlert
   ): Promise<void> {
     try {
@@ -431,7 +430,7 @@ export class MonitoringIntegrations {
   }
 
   private async publishAlertToPrometheus(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     alert: MonitoringAlert
   ): Promise<void> {
     const config = integration.config as any;
@@ -448,14 +447,14 @@ export class MonitoringIntegrations {
     await fetch(`${endpoint}/metrics/job/${jobName}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain'
+        'Content-Type': 'text/plain',
       },
-      body: prometheusAlert
+      body: prometheusAlert,
     });
   }
 
   private async publishAlertToDatadog(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     alert: MonitoringAlert
   ): Promise<void> {
     const config = integration.config as any;
@@ -468,21 +467,21 @@ export class MonitoringIntegrations {
       alert_type: 'error',
       priority: this.getDatadogPriority(alert.severity),
       tags: Object.entries(alert.labels).map(([key, value]) => `${key}:${value}`),
-      timestamp: alert.timestamp / 1000 // Datadog uses seconds
+      timestamp: alert.timestamp / 1000, // Datadog uses seconds
     };
 
     await fetch(`https://api.${site}/api/v1/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'DD-API-KEY': apiKey
+        'DD-API-KEY': apiKey,
       },
-      body: JSON.stringify(event)
+      body: JSON.stringify(event),
     });
   }
 
   private async publishAlertToWebhook(
-    integration: MonitoringIntegration, 
+    integration: MonitoringIntegration,
     alert: MonitoringAlert
   ): Promise<void> {
     const config = integration.config as any;
@@ -493,12 +492,12 @@ export class MonitoringIntegrations {
         const payload = {
           alert,
           timestamp: Date.now(),
-          source: 'privacy-monitoring'
+          source: 'privacy-monitoring',
         };
 
         const headers = {
           'Content-Type': 'application/json',
-          ...endpoint.headers
+          ...endpoint.headers,
         };
 
         if (endpoint.secret) {
@@ -509,7 +508,7 @@ export class MonitoringIntegrations {
         await fetch(endpoint.url, {
           method: 'POST',
           headers,
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
       })
     );
@@ -536,11 +535,11 @@ export class MonitoringIntegrations {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          title: folder
-        })
+          title: folder,
+        }),
       });
 
       const folderData = await folderResponse.json();
@@ -555,28 +554,27 @@ export class MonitoringIntegrations {
           timezone: 'browser',
           panels: dashboardConfig.panels || [],
           schemaVersion: 30,
-          refresh: '5m'
+          refresh: '5m',
         },
         folderId,
-        overwrite: true
+        overwrite: true,
       };
 
       const response = await fetch(`${endpoint}/api/dashboards/db`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(dashboardPayload)
+        body: JSON.stringify(dashboardPayload),
       });
 
       const result = await response.json();
-      
+
       return {
         uid: result.uid,
-        url: `${endpoint}/d/${result.uid}`
+        url: `${endpoint}/d/${result.uid}`,
       };
-
     } catch (error) {
       console.error('Failed to create Grafana dashboard:', error);
       return null;
@@ -616,12 +614,11 @@ export class MonitoringIntegrations {
 
       const latency = Date.now() - startTime;
       return { healthy: true, latency };
-
     } catch (error) {
       return {
         healthy: false,
         latency: Date.now() - startTime,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -629,7 +626,7 @@ export class MonitoringIntegrations {
   private async checkPrometheusHealth(integration: MonitoringIntegration): Promise<void> {
     const config = integration.config as any;
     const response = await fetch(`${config.endpoint}/api/v1/query?query=up`);
-    
+
     if (!response.ok) {
       throw new Error('Prometheus health check failed');
     }
@@ -638,7 +635,7 @@ export class MonitoringIntegrations {
   private async checkGrafanaHealth(integration: MonitoringIntegration): Promise<void> {
     const config = integration.config as any;
     const response = await fetch(`${config.endpoint}/api/health`);
-    
+
     if (!response.ok) {
       throw new Error('Grafana health check failed');
     }
@@ -648,10 +645,10 @@ export class MonitoringIntegrations {
     const config = integration.config as any;
     const response = await fetch(`https://api.${config.site}/api/v1/validate`, {
       headers: {
-        'DD-API-KEY': config.apiKey
-      }
+        'DD-API-KEY': config.apiKey,
+      },
     });
-    
+
     if (!response.ok) {
       throw new Error('Datadog health check failed');
     }
@@ -662,14 +659,14 @@ export class MonitoringIntegrations {
     const response = await fetch(`${config.endpoint}/servicesNS/admin/search/auth/login`, {
       method: 'POST',
       headers: {
-        'Authorization': `Splunk ${config.token}`
+        Authorization: `Splunk ${config.token}`,
       },
       body: new URLSearchParams({
         username: 'admin',
-        password: 'changeme'
-      })
+        password: config.password ?? process.env.SPLUNK_PASSWORD ?? '',
+      }),
     });
-    
+
     if (!response.ok) {
       throw new Error('Splunk health check failed');
     }
@@ -692,9 +689,9 @@ export class MonitoringIntegrations {
   private generateSignature(payload: string, secret: string): string {
     // Simple HMAC-like signature (in production, use crypto library)
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const messageData = encoder.encode(payload);
-    
+    const _keyData = encoder.encode(secret);
+    const _messageData = encoder.encode(payload);
+
     // This is a simplified version - use crypto.subtle.sign in production
     return btoa(payload + secret).slice(0, 64);
   }
@@ -708,19 +705,25 @@ export class MonitoringIntegrations {
     lastSyncTimes: Record<string, number>;
   } {
     const integrations = Array.from(this.integrations.values());
-    
+
     return {
       total: integrations.length,
-      enabled: integrations.filter(i => i.enabled).length,
-      healthy: integrations.filter(i => i.status === 'connected').length,
-      byType: integrations.reduce((acc, i) => {
-        acc[i.type] = (acc[i.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
-      lastSyncTimes: integrations.reduce((acc, i) => {
-        acc[i.id] = i.lastSync;
-        return acc;
-      }, {} as Record<string, number>)
+      enabled: integrations.filter((i) => i.enabled).length,
+      healthy: integrations.filter((i) => i.status === 'connected').length,
+      byType: integrations.reduce(
+        (acc, i) => {
+          acc[i.type] = (acc[i.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+      lastSyncTimes: integrations.reduce(
+        (acc, i) => {
+          acc[i.id] = i.lastSync;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     };
   }
 

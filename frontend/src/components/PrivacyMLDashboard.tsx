@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { 
-  Brain, 
-  Shield, 
-  Network, 
-  Lock, 
-  Play, 
-  Pause, 
+import {
+  Brain,
+  Shield,
+  Network,
+  Lock,
+  Play,
+  Pause,
   BarChart3,
   Users,
   Key,
   Eye,
-  Activity
+  Activity,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
+import { useSocketIO } from '../hooks/useSocketIO';
 
 interface FederatedLearningStatus {
   isTraining: boolean;
@@ -63,48 +66,75 @@ export const PrivacyMLDashboard: React.FC = () => {
   const [federatedStatus, setFederatedStatus] = useState<FederatedLearningStatus | null>(null);
   const [privacyMetrics, setPrivacyMetrics] = useState<PrivacyMetrics | null>(null);
   const [encryptionStatus, setEncryptionStatus] = useState<EncryptionStatus | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const { socket, connectionState, reconnect, isOnline, reconnectAttempts, lastError } =
+    useSocketIO({
+      enableOfflineQueue: true,
+      maxReconnectAttempts: 10,
+      enableHeartbeat: true,
+    });
+
   useEffect(() => {
-    // Initialize WebSocket connection
-    const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:3001');
-    setSocket(newSocket);
+    if (socket) {
+      // Listen for federated learning updates
+      socket.on('training-status', (status: FederatedLearningStatus) => {
+        setFederatedStatus(status);
+      });
 
-    // Listen for federated learning updates
-    newSocket.on('training-status', (status: FederatedLearningStatus) => {
-      setFederatedStatus(status);
-    });
+      socket.on('round-completed', (metrics: any) => {
+        if (federatedStatus) {
+          setFederatedStatus((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  metrics: [...prev.metrics, metrics],
+                }
+              : null
+          );
+        }
+      });
 
-    newSocket.on('round-completed', (metrics: any) => {
-      if (federatedStatus) {
-        setFederatedStatus(prev => prev ? {
-          ...prev,
-          metrics: [...prev.metrics, metrics]
-        } : null);
-      }
-    });
+      // Listen for connection issues
+      socket.on('connect_error', () => {
+        console.error('Federated learning connection error');
+      });
+
+      socket.on('disconnect', () => {
+        // Federated learning disconnected
+      });
+    }
 
     // Fetch initial data
     fetchInitialData();
 
     return () => {
-      newSocket.disconnect();
+      if (socket) {
+        socket.off('training-status');
+        socket.off('round-completed');
+        socket.off('connect_error');
+        socket.off('disconnect');
+      }
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
 
   const fetchInitialData = async () => {
     try {
-      const [federatedRes, privacyRes, encryptionRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/status`),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/privacy/metrics`),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/audit`)
+      const [federatedRes, privacyRes, _encryptionRes] = await Promise.all([
+        fetch(
+          `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/status`
+        ),
+        fetch(
+          `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/privacy/metrics`
+        ),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/audit`),
       ]);
 
       const [federatedData, privacyData, auditData] = await Promise.all([
         federatedRes.json(),
         privacyRes.json(),
-        auditRes.json()
+        auditRes.json(),
       ]);
 
       setFederatedStatus(federatedData);
@@ -119,20 +149,25 @@ export const PrivacyMLDashboard: React.FC = () => {
 
   const startFederatedTraining = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          initialModel: Array(100).fill(0).map(() => Math.random()),
-          config: {
-            rounds: 50,
-            targetAccuracy: 0.9
-          }
-        })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/start`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            initialModel: Array(100)
+              .fill(0)
+              .map(() => Math.random()),
+            config: {
+              rounds: 50,
+              targetAccuracy: 0.9,
+            },
+          }),
+        }
+      );
 
       if (response.ok) {
-        console.log('Federated training started');
+        // Federated training started
       }
     } catch (error) {
       console.error('Failed to start federated training:', error);
@@ -141,12 +176,15 @@ export const PrivacyMLDashboard: React.FC = () => {
 
   const stopFederatedTraining = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/stop`, {
-        method: 'POST'
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/federated/stop`,
+        {
+          method: 'POST',
+        }
+      );
 
       if (response.ok) {
-        console.log('Federated training stopped');
+        // Federated training stopped
       }
     } catch (error) {
       console.error('Failed to stop federated training:', error);
@@ -155,14 +193,17 @@ export const PrivacyMLDashboard: React.FC = () => {
 
   const initializePrivacyBudget = async (userId: string, epsilon: number = 5.0) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/privacy/initialize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, epsilon })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/privacy/initialize`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, epsilon }),
+        }
+      );
 
       if (response.ok) {
-        console.log('Privacy budget initialized');
+        // Privacy budget initialized
         fetchInitialData(); // Refresh data
       }
     } catch (error) {
@@ -172,17 +213,20 @@ export const PrivacyMLDashboard: React.FC = () => {
 
   const generateEncryptionKeys = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/encryption/keys`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keyId: `key-${Date.now()}`,
-          keySize: 2048
-        })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/ml/encryption/keys`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keyId: `key-${Date.now()}`,
+            keySize: 2048,
+          }),
+        }
+      );
 
       if (response.ok) {
-        console.log('Encryption keys generated');
+        // Encryption keys generated
         fetchInitialData(); // Refresh data
       }
     } catch (error) {
@@ -207,11 +251,77 @@ export const PrivacyMLDashboard: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">{t('privacy.dashboard.title')}</h1>
             <p className="text-gray-600 mt-1">{t('privacy.dashboard.subtitle')}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Shield className="h-5 w-5 text-green-500" />
-            <span className="text-sm font-medium text-green-600">{t('privacy.dashboard.badge')}</span>
+          <div className="flex items-center space-x-4">
+            {/* Connection Status */}
+            <div className="flex items-center space-x-2">
+              {connectionState === 'connected' && (
+                <div className="flex items-center space-x-1 text-green-600">
+                  <Wifi className="h-4 w-4" />
+                  <span className="text-sm">Live</span>
+                </div>
+              )}
+              {connectionState === 'reconnecting' && (
+                <div className="flex items-center space-x-1 text-yellow-600">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Reconnecting</span>
+                </div>
+              )}
+              {(connectionState === 'disconnected' || connectionState === 'failed') && (
+                <div className="flex items-center space-x-1 text-red-600">
+                  <WifiOff className="h-4 w-4" />
+                  <span className="text-sm">Offline</span>
+                  <button
+                    onClick={reconnect}
+                    className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                    title="Reconnect"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              {connectionState === 'connecting' && (
+                <div className="flex items-center space-x-1 text-gray-600">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+                  <span className="text-sm">Connecting</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              <span className="text-sm font-medium text-green-600">
+                {t('privacy.dashboard.badge')}
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Connection Diagnostics */}
+        {(connectionState !== 'connected' || reconnectAttempts > 0 || lastError) && (
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600">Real-time updates:</span>
+                <span
+                  className={`font-medium capitalize ${
+                    connectionState === 'connected'
+                      ? 'text-green-600'
+                      : connectionState === 'reconnecting'
+                        ? 'text-yellow-600'
+                        : 'text-red-600'
+                  }`}
+                >
+                  {connectionState}
+                </span>
+                {reconnectAttempts > 0 && (
+                  <span className="text-gray-500">(Attempt {reconnectAttempts})</span>
+                )}
+              </div>
+              {!isOnline && <span className="text-red-600 font-medium">Network offline</span>}
+            </div>
+            {lastError && <p className="text-sm text-red-600 mt-1">{lastError}</p>}
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}
@@ -221,7 +331,7 @@ export const PrivacyMLDashboard: React.FC = () => {
             {[
               { id: 'federated', name: t('privacy.dashboard.tabs.federated'), icon: Network },
               { id: 'privacy', name: t('privacy.dashboard.tabs.privacy'), icon: Shield },
-              { id: 'encryption', name: t('privacy.dashboard.tabs.encryption'), icon: Lock }
+              { id: 'encryption', name: t('privacy.dashboard.tabs.encryption'), icon: Lock },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -283,7 +393,8 @@ export const PrivacyMLDashboard: React.FC = () => {
                       <div>
                         <h3 className="font-medium text-purple-900">Current Round</h3>
                         <p className="text-sm text-purple-700">
-                          {federatedStatus?.currentRound || 0} / {federatedStatus?.config.rounds || 100}
+                          {federatedStatus?.currentRound || 0} /{' '}
+                          {federatedStatus?.config.rounds || 100}
                         </p>
                       </div>
                     </div>
@@ -319,9 +430,13 @@ export const PrivacyMLDashboard: React.FC = () => {
                         <div key={index} className="flex items-center justify-between text-sm">
                           <span className="text-gray-600">Round {metric.round}</span>
                           <div className="flex items-center space-x-4">
-                            <span className="text-gray-900">Accuracy: {metric.accuracy.toFixed(3)}</span>
+                            <span className="text-gray-900">
+                              Accuracy: {metric.accuracy.toFixed(3)}
+                            </span>
                             <span className="text-gray-500">Loss: {metric.loss.toFixed(3)}</span>
-                            <span className="text-blue-600">{metric.participatingClients} clients</span>
+                            <span className="text-blue-600">
+                              {metric.participatingClients} clients
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -335,14 +450,21 @@ export const PrivacyMLDashboard: React.FC = () => {
                     <h3 className="font-medium text-gray-900 mb-4">Connected Clients</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {federatedStatus.clients.map((client, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 bg-white rounded-lg border"
+                        >
                           <div className="flex items-center space-x-3">
-                            <div className={`w-2 h-2 rounded-full ${
-                              client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
-                            }`} />
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                              }`}
+                            />
                             <span className="text-sm font-medium">Client {index + 1}</span>
                           </div>
-                          <span className="text-sm text-gray-500">{client.dataSamples} samples</span>
+                          <span className="text-sm text-gray-500">
+                            {client.dataSamples} samples
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -390,9 +512,7 @@ export const PrivacyMLDashboard: React.FC = () => {
                       <Activity className="h-8 w-8 text-blue-600" />
                       <div>
                         <h3 className="font-medium text-blue-900">Total Queries</h3>
-                        <p className="text-sm text-blue-700">
-                          {privacyMetrics?.totalQueries || 0}
-                        </p>
+                        <p className="text-sm text-blue-700">{privacyMetrics?.totalQueries || 0}</p>
                       </div>
                     </div>
                   </div>
@@ -415,11 +535,16 @@ export const PrivacyMLDashboard: React.FC = () => {
                     <h3 className="font-medium text-gray-900 mb-4">Recent Queries</h3>
                     <div className="space-y-2">
                       {privacyMetrics.queryHistory.slice(-5).map((query, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm p-2 bg-white rounded">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between text-sm p-2 bg-white rounded"
+                        >
                           <span className="text-gray-600">{query.type}</span>
                           <div className="flex items-center space-x-4">
                             <span className="text-gray-900">ε = {query.epsilon}</span>
-                            <span className="text-gray-500">{new Date(query.timestamp).toLocaleTimeString()}</span>
+                            <span className="text-gray-500">
+                              {new Date(query.timestamp).toLocaleTimeString()}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -456,9 +581,7 @@ export const PrivacyMLDashboard: React.FC = () => {
                       <Key className="h-8 w-8 text-blue-600" />
                       <div>
                         <h3 className="font-medium text-blue-900">Key Pairs</h3>
-                        <p className="text-sm text-blue-700">
-                          {encryptionStatus?.keyPairs || 0}
-                        </p>
+                        <p className="text-sm text-blue-700">{encryptionStatus?.keyPairs || 0}</p>
                       </div>
                     </div>
                   </div>
@@ -493,7 +616,10 @@ export const PrivacyMLDashboard: React.FC = () => {
                     <h3 className="font-medium text-gray-900 mb-4">Encryption Schemes</h3>
                     <div className="space-y-2">
                       {Object.entries(encryptionStatus.encryptionSchemes).map(([scheme, count]) => (
-                        <div key={scheme} className="flex items-center justify-between text-sm p-2 bg-white rounded">
+                        <div
+                          key={scheme}
+                          className="flex items-center justify-between text-sm p-2 bg-white rounded"
+                        >
                           <span className="text-gray-900 capitalize">{scheme}</span>
                           <span className="text-gray-600">{count} models</span>
                         </div>

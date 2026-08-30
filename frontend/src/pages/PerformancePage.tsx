@@ -1,5 +1,5 @@
 import React from 'react';
-import LargeDatasetChart from './components/PerformanceCharts';
+import LargeDatasetChart from '../components/PerformanceCharts';
 
 const PerformancePage: React.FC = () => {
   return (
@@ -9,7 +9,7 @@ const PerformancePage: React.FC = () => {
         <p className="text-gray-600">Optimized rendering for large datasets</p>
       </div>
 
-      <LargeDatasetChart 
+      <LargeDatasetChart
         title="Real-Time Data Visualization"
         height={400}
         maxPoints={5000}
@@ -19,15 +19,15 @@ const PerformancePage: React.FC = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <LargeDatasetChart 
+        <LargeDatasetChart
           title="Secondary Metrics"
           dataKey="value2"
           height={300}
           maxPoints={3000}
           enableSampling={true}
         />
-        
-        <LargeDatasetChart 
+
+        <LargeDatasetChart
           title="Tertiary Metrics"
           dataKey="value3"
           height={300}

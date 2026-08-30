@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, TrendingDown, TrendingUp, Info, RefreshCw, Download, Settings } from 'lucide-react';
+import {
+  AlertCircle,
+  TrendingDown,
+  TrendingUp,
+  Info,
+  RefreshCw,
+  Download,
+  Settings,
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
 
 // Mock data for demonstration
 const mockBudgetData = {
@@ -11,7 +18,7 @@ const mockBudgetData = {
   maxEpsilon: 1.0,
   percentageUsed: 73,
   lastUpdated: new Date().toISOString(),
-  status: 'warning' as const
+  status: 'warning' as const,
 };
 
 const mockHistoryData = [
@@ -20,7 +27,7 @@ const mockHistoryData = [
   { date: '2024-03-03', epsilon: 0.88, percentageUsed: 88, operation: 'Export' },
   { date: '2024-03-04', epsilon: 0.85, percentageUsed: 85, operation: 'Query' },
   { date: '2024-03-05', epsilon: 0.82, percentageUsed: 82, operation: 'Analysis' },
-  { date: '2024-03-06', epsilon: 0.80, percentageUsed: 80, operation: 'Query' },
+  { date: '2024-03-06', epsilon: 0.8, percentageUsed: 80, operation: 'Query' },
   { date: '2024-03-07', epsilon: 0.78, percentageUsed: 78, operation: 'Export' },
   { date: '2024-03-08', epsilon: 0.76, percentageUsed: 76, operation: 'Query' },
   { date: '2024-03-09', epsilon: 0.74, percentageUsed: 74, operation: 'Analysis' },
@@ -43,22 +50,26 @@ const PrivacyBudgetDemo: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'critical': return '#ef4444';
-      case 'warning': return '#f59e0b';
-      case 'healthy': return '#10b981';
-      default: return '#6b7280';
+      case 'critical':
+        return '#ef4444';
+      case 'warning':
+        return '#f59e0b';
+      case 'healthy':
+        return '#10b981';
+      default:
+        return '#6b7280';
     }
   };
 
   // Simulate real-time updates
   const simulateConsumption = () => {
     setLoading(true);
-    
+
     setTimeout(() => {
       const consumption = Math.random() * 0.05; // Random consumption
       const newEpsilon = Math.min(budget.currentEpsilon + consumption, budget.maxEpsilon);
       const newPercentage = (newEpsilon / budget.maxEpsilon) * 100;
-      
+
       let newStatus: 'healthy' | 'warning' | 'critical';
       if (newPercentage >= 90) {
         newStatus = 'critical';
@@ -73,7 +84,7 @@ const PrivacyBudgetDemo: React.FC = () => {
         currentEpsilon: newEpsilon,
         percentageUsed: parseFloat(newPercentage.toFixed(2)),
         lastUpdated: new Date().toISOString(),
-        status: newStatus
+        status: newStatus,
       };
 
       setBudget(updatedBudget);
@@ -83,7 +94,7 @@ const PrivacyBudgetDemo: React.FC = () => {
         date: new Date().toISOString().split('T')[0],
         epsilon: parseFloat(newEpsilon.toFixed(3)),
         percentageUsed: parseFloat(newPercentage.toFixed(2)),
-        operation: ['Query', 'Analysis', 'Export'][Math.floor(Math.random() * 3)]
+        operation: ['Query', 'Analysis', 'Export'][Math.floor(Math.random() * 3)],
       };
 
       setHistory([newHistoryEntry, ...history.slice(0, 29)]);
@@ -99,13 +110,10 @@ const PrivacyBudgetDemo: React.FC = () => {
         );
         setAlertShown(true);
       } else if (newPercentage >= 70 && newPercentage < 90 && budget.status !== 'warning') {
-        toast.warning(
-          `Privacy budget warning: ${(100 - newPercentage).toFixed(1)}% remaining.`,
-          {
-            duration: 4000,
-            icon: <TrendingDown className="w-5 h-5" />,
-          }
-        );
+        toast.warning(`Privacy budget warning: ${(100 - newPercentage).toFixed(1)}% remaining.`, {
+          duration: 4000,
+          icon: <TrendingDown className="w-5 h-5" />,
+        });
       }
 
       setLoading(false);
@@ -120,7 +128,7 @@ const PrivacyBudgetDemo: React.FC = () => {
       currentEpsilon: 0,
       percentageUsed: 0,
       lastUpdated: new Date().toISOString(),
-      status: 'healthy'
+      status: 'healthy',
     });
     setHistory([]);
     setAlertShown(false);
@@ -128,9 +136,9 @@ const PrivacyBudgetDemo: React.FC = () => {
   };
 
   // Prepare data for gauge chart
-  const gaugeData = [
+  const _gaugeData = [
     { name: 'Used', value: budget.percentageUsed, color: getBudgetColor(budget.percentageUsed) },
-    { name: 'Remaining', value: 100 - budget.percentageUsed, color: '#e5e7eb' }
+    { name: 'Remaining', value: 100 - budget.percentageUsed, color: '#e5e7eb' },
   ];
 
   return (
@@ -140,11 +148,15 @@ const PrivacyBudgetDemo: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Privacy Budget Dashboard</h2>
-            <p className="text-gray-600">Real-time monitoring of differential privacy budget consumption</p>
+            <p className="text-gray-600">
+              Real-time monitoring of differential privacy budget consumption
+            </p>
           </div>
           <div className="flex items-center space-x-3">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium text-white`}
-                 style={{ backgroundColor: getStatusColor(budget.status) }}>
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium text-white`}
+              style={{ backgroundColor: getStatusColor(budget.status) }}
+            >
               {budget.status.toUpperCase()}
             </div>
             <button
@@ -169,8 +181,10 @@ const PrivacyBudgetDemo: React.FC = () => {
           {/* Gauge Chart */}
           <div className="lg:col-span-1">
             <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Current Status</h3>
-              
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+                Current Status
+              </h3>
+
               {/* Simple SVG Gauge */}
               <div className="relative w-48 h-32 mx-auto">
                 <svg viewBox="0 0 200 120" className="w-full h-full">
@@ -193,22 +207,33 @@ const PrivacyBudgetDemo: React.FC = () => {
                   />
                   {/* Scale markers */}
                   {[0, 25, 50, 75, 100].map((value) => {
-                    const angle = 180 + (value * 1.8); // Convert to degrees
+                    const angle = 180 + value * 1.8; // Convert to degrees
                     const radian = (angle * Math.PI) / 180;
                     const x1 = 100 + Math.cos(radian) * 75;
                     const y1 = 90 + Math.sin(radian) * 75;
                     const x2 = 100 + Math.cos(radian) * 85;
                     const y2 = 90 + Math.sin(radian) * 85;
-                    
+
                     return (
-                      <line key={value} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#9ca3af" strokeWidth="2" />
+                      <line
+                        key={value}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#9ca3af"
+                        strokeWidth="2"
+                      />
                     );
                   })}
                 </svg>
-                
+
                 {/* Center text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ top: '60%' }}>
-                  <div 
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center"
+                  style={{ top: '60%' }}
+                >
+                  <div
                     className="text-3xl font-bold"
                     style={{ color: getBudgetColor(budget.percentageUsed) }}
                   >
@@ -234,11 +259,11 @@ const PrivacyBudgetDemo: React.FC = () => {
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
+                <div
                   className="h-3 rounded-full transition-all duration-500"
-                  style={{ 
+                  style={{
                     width: `${budget.percentageUsed}%`,
-                    backgroundColor: getBudgetColor(budget.percentageUsed)
+                    backgroundColor: getBudgetColor(budget.percentageUsed),
                   }}
                 ></div>
               </div>
@@ -247,9 +272,7 @@ const PrivacyBudgetDemo: React.FC = () => {
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-blue-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {budget.maxEpsilon}
-                </div>
+                <div className="text-2xl font-bold text-blue-600">{budget.maxEpsilon}</div>
                 <div className="text-sm text-blue-800">Max Epsilon</div>
               </div>
               <div className="bg-green-50 rounded-lg p-4 text-center">
@@ -273,8 +296,9 @@ const PrivacyBudgetDemo: React.FC = () => {
                 <div>
                   <h4 className="font-semibold text-blue-900">Understanding Epsilon (ε)</h4>
                   <p className="text-sm text-blue-800 mt-1">
-                    Epsilon measures privacy loss in differential privacy. Lower values mean stronger privacy protection. 
-                    Each analytics query consumes some epsilon, and when it's depleted, no further queries can be made safely.
+                    Epsilon measures privacy loss in differential privacy. Lower values mean
+                    stronger privacy protection. Each analytics query consumes some epsilon, and
+                    when it's depleted, no further queries can be made safely.
                   </p>
                 </div>
               </div>
@@ -306,7 +330,7 @@ const PrivacyBudgetDemo: React.FC = () => {
       {showHistory && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">30-Day Budget History</h3>
-          
+
           {/* Simple Line Chart Representation */}
           <div className="space-y-2">
             {history.slice(0, 10).map((entry, index) => (
@@ -315,11 +339,11 @@ const PrivacyBudgetDemo: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <div className="w-32 bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="h-2 rounded-full"
-                        style={{ 
+                        style={{
                           width: `${entry.percentageUsed}%`,
-                          backgroundColor: getBudgetColor(entry.percentageUsed)
+                          backgroundColor: getBudgetColor(entry.percentageUsed),
                         }}
                       ></div>
                     </div>

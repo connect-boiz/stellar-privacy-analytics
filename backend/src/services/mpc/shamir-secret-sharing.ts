@@ -1,5 +1,5 @@
-import { createHash, randomBytes, Buffer } from 'crypto';
-import { BigInteger } from 'jsbn';
+import { randomBytes } from "crypto";
+import { BigInteger } from "jsbn";
 
 /**
  * Shamir's Secret Sharing implementation for MPC
@@ -12,13 +12,15 @@ export class ShamirSecretSharing {
 
   constructor(threshold: number, totalShares: number) {
     if (threshold > totalShares) {
-      throw new Error('Threshold cannot be greater than total shares');
+      throw new Error("Threshold cannot be greater than total shares");
     }
 
     this.threshold = threshold;
     this.totalShares = totalShares;
     // Use a large prime number (2^255 - 19, commonly used in cryptography)
-    this.prime = new BigInteger('57896044618658097711785492504343953926634992332820282019728792003956564819949');
+    this.prime = new BigInteger(
+      "57896044618658097711785492504343953926634992332820282019728792003956564819949",
+    );
   }
 
   /**
@@ -38,7 +40,7 @@ export class ShamirSecretSharing {
         x: x.toString(),
         y: y.toString(),
         threshold: this.threshold,
-        totalShares: this.totalShares
+        totalShares: this.totalShares,
       });
     }
 
@@ -54,14 +56,14 @@ export class ShamirSecretSharing {
     }
 
     // Use Lagrange interpolation
-    let secret = new BigInteger('0');
+    let secret = new BigInteger("0");
 
     for (let i = 0; i < this.threshold; i++) {
       const share = shares[i];
       const xi = new BigInteger(share.x);
       const yi = new BigInteger(share.y);
 
-      let lagrange = new BigInteger('1');
+      let lagrange = new BigInteger("1");
 
       for (let j = 0; j < this.threshold; j++) {
         if (i !== j) {
@@ -80,17 +82,19 @@ export class ShamirSecretSharing {
       secret = secret.add(contribution).mod(this.prime);
     }
 
-    return this.bigIntToBuffer(secret).toString('utf8');
+    return this.bigIntToBuffer(secret).toString("utf8");
   }
 
   /**
    * Verify if a share is valid for the given configuration
    */
   verifyShare(share: Share): boolean {
-    return share.id > 0 &&
+    return (
+      share.id > 0 &&
       share.id <= this.totalShares &&
       share.threshold === this.threshold &&
-      share.totalShares === this.totalShares;
+      share.totalShares === this.totalShares
+    );
   }
 
   /**
@@ -100,8 +104,8 @@ export class ShamirSecretSharing {
     const coefficients: BigInteger[] = [secret];
 
     for (let i = 1; i < this.threshold; i++) {
-      const randomBytes = randomBytes(32);
-      const randomInt = this.bufferToBigInt(randomBytes);
+      const randomBytesValue = randomBytes(32);
+      const randomInt = this.bufferToBigInt(randomBytesValue);
       coefficients.push(randomInt.mod(this.prime));
     }
 
@@ -111,9 +115,12 @@ export class ShamirSecretSharing {
   /**
    * Evaluate polynomial at point x
    */
-  private evaluatePolynomial(coefficients: BigInteger[], x: BigInteger): BigInteger {
-    let result = new BigInteger('0');
-    let powerOfX = new BigInteger('1');
+  private evaluatePolynomial(
+    coefficients: BigInteger[],
+    x: BigInteger,
+  ): BigInteger {
+    let result = new BigInteger("0");
+    let powerOfX = new BigInteger("1");
 
     for (const coefficient of coefficients) {
       const term = powerOfX.multiply(coefficient).mod(this.prime);
@@ -128,10 +135,10 @@ export class ShamirSecretSharing {
    * Convert buffer to BigInteger
    */
   private bufferToBigInt(buffer: Buffer | string): BigInteger {
-    if (typeof buffer === 'string') {
-      buffer = Buffer.from(buffer, 'utf8');
+    if (typeof buffer === "string") {
+      buffer = Buffer.from(buffer, "utf8");
     }
-    return new BigInteger(buffer.toString('hex'), 16);
+    return new BigInteger(buffer.toString("hex"), 16);
   }
 
   /**
@@ -140,8 +147,8 @@ export class ShamirSecretSharing {
   private bigIntToBuffer(bigInt: BigInteger): Buffer {
     const hex = bigInt.toString(16);
     // Ensure even length for proper byte conversion
-    const paddedHex = hex.length % 2 === 0 ? hex : '0' + hex;
-    return Buffer.from(paddedHex, 'hex');
+    const paddedHex = hex.length % 2 === 0 ? hex : "0" + hex;
+    return Buffer.from(paddedHex, "hex");
   }
 }
 
@@ -171,18 +178,18 @@ export interface MPCSession {
 }
 
 export enum MPCOperation {
-  SUM = 'SUM',
-  AVG = 'AVG',
-  COUNT = 'COUNT'
+  SUM = "SUM",
+  AVG = "AVG",
+  COUNT = "COUNT",
 }
 
 export enum MPCSessionStatus {
-  INITIALIZING = 'INITIALIZING',
-  SHARING = 'SHARING',
-  COMPUTING = 'COMPUTING',
-  REVEALING = 'REVEALING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED'
+  INITIALIZING = "INITIALIZING",
+  SHARING = "SHARING",
+  COMPUTING = "COMPUTING",
+  REVEALING = "REVEALING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
 }
 
 /**
@@ -200,18 +207,18 @@ export class MPCArithmetic {
    */
   add(shares1: Share[], shares2: Share[]): Share[] {
     if (shares1.length !== shares2.length) {
-      throw new Error('Share arrays must have same length');
+      throw new Error("Share arrays must have same length");
     }
 
     return shares1.map((share1, index) => {
       const share2 = shares2[index];
       const y1 = new BigInteger(share1.y);
       const y2 = new BigInteger(share2.y);
-      const sum = y1.add(y2).mod(this.shamir['prime']);
+      const sum = y1.add(y2).mod(this.shamir["prime"]);
 
       return {
         ...share1,
-        y: sum.toString()
+        y: sum.toString(),
       };
     });
   }
@@ -222,13 +229,13 @@ export class MPCArithmetic {
   multiplyByConstant(shares: Share[], constant: number): Share[] {
     const constantBigInt = new BigInteger(constant.toString());
 
-    return shares.map(share => {
+    return shares.map((share) => {
       const y = new BigInteger(share.y);
-      const product = y.multiply(constantBigInt).mod(this.shamir['prime']);
+      const product = y.multiply(constantBigInt).mod(this.shamir["prime"]);
 
       return {
         ...share,
-        y: product.toString()
+        y: product.toString(),
       };
     });
   }
@@ -238,7 +245,7 @@ export class MPCArithmetic {
    */
   average(shareArrays: Share[][]): Share[] {
     if (shareArrays.length === 0) {
-      throw new Error('No shares provided');
+      throw new Error("No shares provided");
     }
 
     // Sum all shares
@@ -248,7 +255,10 @@ export class MPCArithmetic {
     }
 
     // Divide by count (multiply by modular inverse)
-    return this.multiplyByConstant(sumShares, this.modInverse(shareArrays.length, this.shamir['prime']));
+    return this.multiplyByConstant(
+      sumShares,
+      this.modInverse(shareArrays.length, this.shamir["prime"]),
+    );
   }
 
   /**

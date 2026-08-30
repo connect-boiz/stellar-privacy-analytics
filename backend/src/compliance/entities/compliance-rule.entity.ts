@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-@Entity('compliance_rules')
+@Entity("compliance_rules")
 export class ComplianceRule {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column()
@@ -15,7 +15,7 @@ export class ComplianceRule {
   description: string;
 
   @Column()
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
 
   @Column()
   query: string;

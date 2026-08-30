@@ -7,14 +7,14 @@ import {
   SearchRequest,
   SearchResult,
   SearchFilter,
-  SearchPrivacy,
-  ResultPrivacy,
+  _SearchPrivacy,
+  _ResultPrivacy,
   PrivacyMetadata,
-  FieldPrivacy,
-  DataType,
-  AccessPermission,
-  AccessPolicy,
-  ComplianceFramework
+  _FieldPrivacy,
+  _DataType,
+  _AccessPermission,
+  _AccessPolicy,
+  _ComplianceFramework,
 } from '../types/dataCatalog';
 
 export interface PrivacyPreservingConfig {
@@ -59,7 +59,14 @@ export interface AnonymizationRule {
   name: string;
   description: string;
   fieldType: string;
-  method: 'hashing' | 'masking' | 'tokenization' | 'encryption' | 'aggregation' | 'suppression' | 'generalization';
+  method:
+    | 'hashing'
+    | 'masking'
+    | 'tokenization'
+    | 'encryption'
+    | 'aggregation'
+    | 'suppression'
+    | 'generalization';
   parameters: Record<string, any>;
   privacyLevel: string;
   reversible: boolean;
@@ -124,7 +131,7 @@ export class PrivacyPreservingDiscovery {
           auditEnabled: true,
           encryptionEnabled: true,
           dataMinimization: true,
-          purposeLimitation: true
+          purposeLimitation: true,
         };
       }
       PrivacyPreservingDiscovery.instance = new PrivacyPreservingDiscovery(config);
@@ -143,7 +150,7 @@ export class PrivacyPreservingDiscovery {
         parameters: { algorithm: 'sha256', salt: 'privacy_salt' },
         privacyLevel: 'confidential',
         reversible: false,
-        strength: 0.9
+        strength: 0.9,
       },
       {
         id: 'phone_mask',
@@ -154,7 +161,7 @@ export class PrivacyPreservingDiscovery {
         parameters: { maskPattern: '***-***-####', preserveLength: true },
         privacyLevel: 'internal',
         reversible: false,
-        strength: 0.7
+        strength: 0.7,
       },
       {
         id: 'name_tokenization',
@@ -165,7 +172,7 @@ export class PrivacyPreservingDiscovery {
         parameters: { tokenLength: 16, preserveFormat: false },
         privacyLevel: 'confidential',
         reversible: true,
-        strength: 0.8
+        strength: 0.8,
       },
       {
         id: 'address_generalization',
@@ -176,7 +183,7 @@ export class PrivacyPreservingDiscovery {
         parameters: { level: 'city', preserveCountry: true },
         privacyLevel: 'internal',
         reversible: false,
-        strength: 0.6
+        strength: 0.6,
       },
       {
         id: 'financial_aggregation',
@@ -187,7 +194,7 @@ export class PrivacyPreservingDiscovery {
         parameters: { binSize: 1000, method: 'range' },
         privacyLevel: 'restricted',
         reversible: false,
-        strength: 0.8
+        strength: 0.8,
       },
       {
         id: 'health_suppression',
@@ -198,11 +205,11 @@ export class PrivacyPreservingDiscovery {
         parameters: { suppressAll: true },
         privacyLevel: 'restricted',
         reversible: false,
-        strength: 1.0
-      }
+        strength: 1.0,
+      },
     ];
 
-    rules.forEach(rule => {
+    rules.forEach((rule) => {
       this.anonymizationRules.set(rule.id, rule);
     });
   }
@@ -218,10 +225,10 @@ export class PrivacyPreservingDiscovery {
             type: 'user_role',
             operator: 'in',
             value: ['guest', 'public'],
-            description: 'Public access for guest users'
-          }
+            description: 'Public access for guest users',
+          },
         ],
-        actions: ['read']
+        actions: ['read'],
       },
       {
         level: 'internal',
@@ -232,16 +239,16 @@ export class PrivacyPreservingDiscovery {
             type: 'user_role',
             operator: 'in',
             value: ['employee', 'contractor'],
-            description: 'Internal access for employees'
+            description: 'Internal access for employees',
           },
           {
             type: 'department',
             operator: 'equals',
             value: 'same',
-            description: 'Same department access'
-          }
+            description: 'Same department access',
+          },
         ],
-        actions: ['read', 'write']
+        actions: ['read', 'write'],
       },
       {
         level: 'confidential',
@@ -252,16 +259,16 @@ export class PrivacyPreservingDiscovery {
             type: 'user_role',
             operator: 'in',
             value: ['manager', 'analyst', 'admin'],
-            description: 'Confidential access for privileged roles'
+            description: 'Confidential access for privileged roles',
           },
           {
             type: 'purpose',
             operator: 'in',
             value: ['business_analysis', 'compliance', 'audit'],
-            description: 'Business purpose requirement'
-          }
+            description: 'Business purpose requirement',
+          },
         ],
-        actions: ['read', 'write', 'share']
+        actions: ['read', 'write', 'share'],
       },
       {
         level: 'restricted',
@@ -272,20 +279,20 @@ export class PrivacyPreservingDiscovery {
             type: 'user_role',
             operator: 'equals',
             value: 'admin',
-            description: 'Admin only access'
+            description: 'Admin only access',
           },
           {
             type: 'consent',
             operator: 'equals',
             value: 'explicit',
-            description: 'Explicit consent required'
-          }
+            description: 'Explicit consent required',
+          },
         ],
-        actions: ['read', 'write', 'share', 'admin']
-      }
+        actions: ['read', 'write', 'share', 'admin'],
+      },
     ];
 
-    filters.forEach(filter => {
+    filters.forEach((filter) => {
       this.privacyFilters.set(filter.level, filter);
     });
   }
@@ -338,7 +345,7 @@ export class PrivacyPreservingDiscovery {
     if (this.config.accessControlEnabled) {
       enhancedRequest.filters = [
         ...enhancedRequest.filters,
-        ...this.generateAccessFilters(context)
+        ...this.generateAccessFilters(context),
       ];
     }
 
@@ -346,7 +353,7 @@ export class PrivacyPreservingDiscovery {
     if (this.config.purposeLimitation) {
       enhancedRequest.filters = [
         ...enhancedRequest.filters,
-        ...this.generatePurposeFilters(context)
+        ...this.generatePurposeFilters(context),
       ];
     }
 
@@ -355,7 +362,7 @@ export class PrivacyPreservingDiscovery {
       level: this.determinePrivacyLevel(context),
       anonymizeResults: this.config.anonymizationEnabled,
       maskSensitiveFields: this.config.maskingEnabled,
-      requireConsent: this.config.consentRequired
+      requireConsent: this.config.consentRequired,
     };
 
     return enhancedRequest;
@@ -368,14 +375,14 @@ export class PrivacyPreservingDiscovery {
     filters.push({
       field: 'access.roles',
       operator: 'contains',
-      value: context.userRole
+      value: context.userRole,
     });
 
     // Department-based access filter
     filters.push({
       field: 'access.departments',
       operator: 'contains',
-      value: context.department
+      value: context.department,
     });
 
     // Location-based access filter
@@ -383,7 +390,7 @@ export class PrivacyPreservingDiscovery {
       filters.push({
         field: 'access.allowedLocations',
         operator: 'contains',
-        value: context.location
+        value: context.location,
       });
     }
 
@@ -398,7 +405,7 @@ export class PrivacyPreservingDiscovery {
       filters.push({
         field: 'access.allowedPurposes',
         operator: 'contains',
-        value: context.purpose
+        value: context.purpose,
       });
     }
 
@@ -407,14 +414,16 @@ export class PrivacyPreservingDiscovery {
       filters.push({
         field: 'privacy.consentRequirements.level',
         operator: 'less_than_or_equal',
-        value: context.consentLevel
+        value: context.consentLevel,
       });
     }
 
     return filters;
   }
 
-  private determinePrivacyLevel(context: DiscoveryContext): 'public' | 'internal' | 'confidential' | 'restricted' {
+  private determinePrivacyLevel(
+    context: DiscoveryContext
+  ): 'public' | 'internal' | 'confidential' | 'restricted' {
     // Determine privacy level based on user context
     if (context.userRole === 'guest') {
       return 'public';
@@ -439,25 +448,25 @@ export class PrivacyPreservingDiscovery {
     // Check role-based access
     const privacyLevel = this.determinePrivacyLevel(context);
     const privacyFilter = this.privacyFilters.get(privacyLevel);
-    
+
     if (!privacyFilter) {
       return { allowed: false, reason: 'Privacy level not supported' };
     }
 
     // Validate user role
-    const roleCondition = privacyFilter.conditions.find(c => c.type === 'user_role');
+    const roleCondition = privacyFilter.conditions.find((c) => c.type === 'user_role');
     if (roleCondition && !this.evaluateCondition(roleCondition, context)) {
       return { allowed: false, reason: 'Insufficient role permissions' };
     }
 
     // Validate department access
-    const deptCondition = privacyFilter.conditions.find(c => c.type === 'department');
+    const deptCondition = privacyFilter.conditions.find((c) => c.type === 'department');
     if (deptCondition && !this.evaluateCondition(deptCondition, context)) {
       return { allowed: false, reason: 'Department access not permitted' };
     }
 
     // Validate purpose
-    const purposeCondition = privacyFilter.conditions.find(c => c.type === 'purpose');
+    const purposeCondition = privacyFilter.conditions.find((c) => c.type === 'purpose');
     if (purposeCondition && !this.evaluateCondition(purposeCondition, context)) {
       return { allowed: false, reason: 'Purpose not authorized' };
     }
@@ -468,25 +477,25 @@ export class PrivacyPreservingDiscovery {
   private evaluateCondition(condition: PrivacyCondition, context: DiscoveryContext): boolean {
     switch (condition.type) {
       case 'user_role':
-        return Array.isArray(condition.value) 
+        return Array.isArray(condition.value)
           ? condition.value.includes(context.userRole)
           : condition.value === context.userRole;
-      
+
       case 'department':
         if (condition.value === 'same') {
           // Would check if user's department matches dataset's department
           return true; // Simplified for now
         }
         return condition.value === context.department;
-      
+
       case 'purpose':
         return Array.isArray(condition.value)
           ? condition.value.includes(context.purpose)
           : condition.value === context.purpose;
-      
+
       case 'location':
         return condition.value === context.location;
-      
+
       default:
         return true;
     }
@@ -506,7 +515,7 @@ export class PrivacyPreservingDiscovery {
         filteredRequest.filters.push({
           field: 'privacy.dataTypes.type',
           operator: 'in',
-          value: privacyFilter.dataTypes
+          value: privacyFilter.dataTypes,
         });
       }
 
@@ -515,7 +524,7 @@ export class PrivacyPreservingDiscovery {
         filteredRequest.filters.push({
           field: 'schema.fields.name',
           operator: 'in',
-          value: privacyFilter.fields
+          value: privacyFilter.fields,
         });
       }
     }
@@ -524,8 +533,8 @@ export class PrivacyPreservingDiscovery {
   }
 
   private async executePrivacyAwareSearch(
-    request: SearchRequest,
-    context: DiscoveryContext
+    _request: SearchRequest,
+    _context: DiscoveryContext
   ): Promise<SearchResult> {
     // This would integrate with the actual search engine
     // For now, return a mock result
@@ -541,8 +550,8 @@ export class PrivacyPreservingDiscovery {
         maskedFields: [],
         anonymizedResults: 0,
         consentRequired: 0,
-        accessDenied: 0
-      }
+        accessDenied: 0,
+      },
     };
   }
 
@@ -556,12 +565,12 @@ export class PrivacyPreservingDiscovery {
 
     const anonymizedResult = { ...result };
     const privacyLevel = this.determinePrivacyLevel(context);
-    
-    anonymizedResult.datasets = result.datasets.map(datasetResult => {
+
+    anonymizedResult.datasets = result.datasets.map((datasetResult) => {
       const anonymizedDataset = { ...datasetResult.dataset };
-      
+
       // Apply field-level anonymization
-      anonymizedDataset.schema.fields = anonymizedDataset.schema.fields.map(field => {
+      anonymizedDataset.schema.fields = anonymizedDataset.schema.fields.map((field) => {
         if (this.shouldAnonymizeField(field, privacyLevel)) {
           return this.anonymizeField(field, privacyLevel);
         }
@@ -569,7 +578,10 @@ export class PrivacyPreservingDiscovery {
       });
 
       // Apply metadata anonymization
-      anonymizedDataset.privacy = this.anonymizePrivacyMetadata(anonymizedDataset.privacy, privacyLevel);
+      anonymizedDataset.privacy = this.anonymizePrivacyMetadata(
+        anonymizedDataset.privacy,
+        privacyLevel
+      );
 
       return {
         ...datasetResult,
@@ -579,8 +591,8 @@ export class PrivacyPreservingDiscovery {
           maskedFields: this.getMaskedFields(anonymizedDataset, privacyLevel),
           anonymizedFields: this.getAnonymizedFields(anonymizedDataset, privacyLevel),
           accessRequired: this.requiresAccess(anonymizedDataset, privacyLevel),
-          consentRequired: this.requiresConsent(anonymizedDataset, privacyLevel)
-        }
+          consentRequired: this.requiresConsent(anonymizedDataset, privacyLevel),
+        },
       };
     });
 
@@ -590,13 +602,13 @@ export class PrivacyPreservingDiscovery {
       maskedFields: this.countMaskedFields(anonymizedResult.datasets),
       anonymizedResults: anonymizedResult.datasets.length,
       consentRequired: this.countConsentRequired(anonymizedResult.datasets),
-      accessDenied: 0
+      accessDenied: 0,
     };
 
     return anonymizedResult;
   }
 
-  private shouldAnonymizeField(field: any, privacyLevel: string): boolean {
+  private shouldAnonymizeField(field: any, _privacyLevel: string): boolean {
     if (!field.privacy) return false;
 
     // Check if field is personal data
@@ -622,7 +634,7 @@ export class PrivacyPreservingDiscovery {
 
     // Find appropriate anonymization rule
     const rule = this.findAnonymizationRule(field.type, privacyLevel);
-    
+
     if (rule) {
       switch (rule.method) {
         case 'hashing':
@@ -652,14 +664,17 @@ export class PrivacyPreservingDiscovery {
       anonymizedField.privacy = {
         ...field.privacy,
         anonymizationMethod: rule.method,
-        anonymizationLevel: rule.strength
+        anonymizationLevel: rule.strength,
       };
     }
 
     return anonymizedField;
   }
 
-  private findAnonymizationRule(fieldType: string, privacyLevel: string): AnonymizationRule | undefined {
+  private findAnonymizationRule(
+    fieldType: string,
+    privacyLevel: string
+  ): AnonymizationRule | undefined {
     for (const rule of this.anonymizationRules.values()) {
       if (rule.fieldType === fieldType && rule.privacyLevel === privacyLevel) {
         return rule;
@@ -673,17 +688,20 @@ export class PrivacyPreservingDiscovery {
     const crypto = require('crypto');
     const algorithm = parameters.algorithm || 'sha256';
     const salt = parameters.salt || '';
-    return crypto.createHash(algorithm).update(value + salt).digest('hex');
+    return crypto
+      .createHash(algorithm)
+      .update(value + salt)
+      .digest('hex');
   }
 
   private maskValue(value: any, parameters: Record<string, any>): string {
     const maskPattern = parameters.maskPattern || '***';
     const preserveLength = parameters.preserveLength || false;
-    
+
     if (preserveLength && typeof value === 'string') {
       return maskPattern.slice(0, value.length - 4) + value.slice(-4);
     }
-    
+
     return maskPattern;
   }
 
@@ -697,7 +715,7 @@ export class PrivacyPreservingDiscovery {
     return token;
   }
 
-  private encryptValue(value: any, parameters: Record<string, any>): string {
+  private encryptValue(value: any, _parameters: Record<string, any>): string {
     // Simplified encryption - in production, use proper encryption
     return `encrypted_${Buffer.from(value.toString()).toString('base64')}`;
   }
@@ -706,7 +724,7 @@ export class PrivacyPreservingDiscovery {
     const binSize = parameters.binSize || 1000;
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return 'aggregated';
-    
+
     const bin = Math.floor(numValue / binSize) * binSize;
     return `${bin}-${bin + binSize}`;
   }
@@ -717,9 +735,12 @@ export class PrivacyPreservingDiscovery {
     return `generalized_${level}_${value}`;
   }
 
-  private anonymizePrivacyMetadata(privacy: PrivacyMetadata, privacyLevel: string): PrivacyMetadata {
+  private anonymizePrivacyMetadata(
+    privacy: PrivacyMetadata,
+    privacyLevel: string
+  ): PrivacyMetadata {
     const anonymized = { ...privacy };
-    
+
     // Reduce sensitivity based on privacy level
     if (privacyLevel === 'public') {
       anonymized.sensitivity = 'low';
@@ -731,40 +752,40 @@ export class PrivacyPreservingDiscovery {
       anonymized.sensitivity = 'high';
       anonymized.anonymizationLevel = 0.6;
     }
-    
+
     return anonymized;
   }
 
-  private getMaskedFields(dataset: DatasetMetadata, privacyLevel: string): string[] {
+  private getMaskedFields(dataset: DatasetMetadata, _privacyLevel: string): string[] {
     return dataset.schema.fields
-      .filter(field => field.privacy?.accessRestricted)
-      .map(field => field.name);
+      .filter((field) => field.privacy?.accessRestricted)
+      .map((field) => field.name);
   }
 
-  private getAnonymizedFields(dataset: DatasetMetadata, privacyLevel: string): string[] {
+  private getAnonymizedFields(dataset: DatasetMetadata, _privacyLevel: string): string[] {
     return dataset.schema.fields
-      .filter(field => field.privacy?.anonymizationMethod)
-      .map(field => field.name);
+      .filter((field) => field.privacy?.anonymizationMethod)
+      .map((field) => field.name);
   }
 
-  private requiresAccess(dataset: DatasetMetadata, privacyLevel: string): boolean {
+  private requiresAccess(dataset: DatasetMetadata, _privacyLevel: string): boolean {
     return dataset.privacy.level !== 'public';
   }
 
-  private requiresConsent(dataset: DatasetMetadata, privacyLevel: string): boolean {
+  private requiresConsent(dataset: DatasetMetadata, _privacyLevel: string): boolean {
     return dataset.privacy.consentRequirements.length > 0;
   }
 
   private countMaskedFields(datasets: any[]): string[] {
     const allMaskedFields: string[] = [];
-    datasets.forEach(dataset => {
+    datasets.forEach((dataset) => {
       allMaskedFields.push(...dataset.privacy.maskedFields);
     });
     return [...new Set(allMaskedFields)];
   }
 
   private countConsentRequired(datasets: any[]): number {
-    return datasets.filter(dataset => dataset.privacy.consentRequired).length;
+    return datasets.filter((dataset) => dataset.privacy.consentRequired).length;
   }
 
   private async filterByConsent(
@@ -776,8 +797,8 @@ export class PrivacyPreservingDiscovery {
     }
 
     const consentFilteredResult = { ...result };
-    
-    consentFilteredResult.datasets = result.datasets.filter(datasetResult => {
+
+    consentFilteredResult.datasets = result.datasets.filter((datasetResult) => {
       return this.hasValidConsent(datasetResult.dataset.id, context.userId, context.purpose);
     });
 
@@ -790,12 +811,13 @@ export class PrivacyPreservingDiscovery {
 
   private hasValidConsent(datasetId: string, userId: string, purpose: string): boolean {
     const userConsents = this.consentRecords.get(userId) || [];
-    
-    return userConsents.some(consent => 
-      consent.datasetId === datasetId &&
-      consent.purpose === purpose &&
-      consent.status === 'active' &&
-      consent.expiresAt > Date.now()
+
+    return userConsents.some(
+      (consent) =>
+        consent.datasetId === datasetId &&
+        consent.purpose === purpose &&
+        consent.status === 'active' &&
+        consent.expiresAt > Date.now()
     );
   }
 
@@ -808,19 +830,19 @@ export class PrivacyPreservingDiscovery {
     }
 
     const minimizedResult = { ...result };
-    
-    minimizedResult.datasets = result.datasets.map(datasetResult => {
+
+    minimizedResult.datasets = result.datasets.map((datasetResult) => {
       const minimizedDataset = { ...datasetResult.dataset };
-      
+
       // Apply data minimization - only return necessary fields
       const necessaryFields = this.determineNecessaryFields(minimizedDataset, context);
-      minimizedDataset.schema.fields = minimizedDataset.schema.fields.filter(field =>
+      minimizedDataset.schema.fields = minimizedDataset.schema.fields.filter((field) =>
         necessaryFields.includes(field.name)
       );
 
       return {
         ...datasetResult,
-        dataset: minimizedDataset
+        dataset: minimizedDataset,
       };
     });
 
@@ -829,7 +851,7 @@ export class PrivacyPreservingDiscovery {
 
   private determineNecessaryFields(dataset: DatasetMetadata, context: DiscoveryContext): string[] {
     const necessaryFields = ['id', 'name', 'description', 'created_at', 'updated_at'];
-    
+
     // Add fields based on purpose
     if (context.purpose === 'business_analysis') {
       necessaryFields.push('department', 'category', 'tags');
@@ -842,7 +864,7 @@ export class PrivacyPreservingDiscovery {
     return necessaryFields;
   }
 
-  private createAccessDeniedResult(reason: string): SearchResult {
+  private createAccessDeniedResult(_reason: string): SearchResult {
     return {
       datasets: [],
       total: 0,
@@ -855,8 +877,8 @@ export class PrivacyPreservingDiscovery {
         maskedFields: [],
         anonymizedResults: 0,
         consentRequired: 0,
-        accessDenied: 1
-      }
+        accessDenied: 1,
+      },
     };
   }
 
@@ -874,10 +896,10 @@ export class PrivacyPreservingDiscovery {
       datasetId,
       purpose,
       grantedAt: Date.now(),
-      expiresAt: Date.now() + (duration * 24 * 60 * 60 * 1000),
+      expiresAt: Date.now() + duration * 24 * 60 * 60 * 1000,
       status: 'active',
       scope: ['read'],
-      conditions
+      conditions,
     };
 
     const userConsents = this.consentRecords.get(userId) || [];
@@ -891,14 +913,14 @@ export class PrivacyPreservingDiscovery {
 
   public async revokeConsent(consentId: string, userId: string): Promise<boolean> {
     const userConsents = this.consentRecords.get(userId) || [];
-    const consent = userConsents.find(c => c.id === consentId);
-    
+    const consent = userConsents.find((c) => c.id === consentId);
+
     if (consent) {
       consent.status = 'revoked';
       await this.logConsentRevoked(consent);
       return true;
     }
-    
+
     return false;
   }
 
@@ -921,7 +943,7 @@ export class PrivacyPreservingDiscovery {
       type: 'data_sensitivity',
       weight: 0.3,
       value: sensitivityScore,
-      description: 'Based on data types in request'
+      description: 'Based on data types in request',
     });
     totalScore += sensitivityScore * 0.3;
 
@@ -931,7 +953,7 @@ export class PrivacyPreservingDiscovery {
       type: 'user_role',
       weight: 0.2,
       value: roleScore,
-      description: 'Based on user role and permissions'
+      description: 'Based on user role and permissions',
     });
     totalScore += roleScore * 0.2;
 
@@ -941,7 +963,7 @@ export class PrivacyPreservingDiscovery {
       type: 'purpose',
       weight: 0.2,
       value: purposeScore,
-      description: 'Based on stated purpose'
+      description: 'Based on stated purpose',
     });
     totalScore += purposeScore * 0.2;
 
@@ -951,7 +973,7 @@ export class PrivacyPreservingDiscovery {
       type: 'location',
       weight: 0.15,
       value: locationScore,
-      description: 'Based on access location'
+      description: 'Based on access location',
     });
     totalScore += locationScore * 0.15;
 
@@ -961,7 +983,7 @@ export class PrivacyPreservingDiscovery {
       type: 'time',
       weight: 0.15,
       value: timeScore,
-      description: 'Based on access time patterns'
+      description: 'Based on access time patterns',
     });
     totalScore += timeScore * 0.15;
 
@@ -974,11 +996,11 @@ export class PrivacyPreservingDiscovery {
       factors,
       score: totalScore,
       recommendations,
-      mitigations
+      mitigations,
     };
   }
 
-  private extractDataTypes(request: SearchRequest): string[] {
+  private extractDataTypes(_request: SearchRequest): string[] {
     // Extract data types from search request
     // Simplified implementation
     return ['technical', 'demographic'];
@@ -986,28 +1008,28 @@ export class PrivacyPreservingDiscovery {
 
   private calculateDataSensitivity(dataTypes: string[]): number {
     const sensitivityMap: Record<string, number> = {
-      'technical': 0.2,
-      'demographic': 0.4,
-      'behavioral': 0.6,
-      'personal': 0.8,
-      'sensitive_personal': 0.9,
-      'financial': 0.85,
-      'health': 0.95,
-      'location': 0.7
+      technical: 0.2,
+      demographic: 0.4,
+      behavioral: 0.6,
+      personal: 0.8,
+      sensitive_personal: 0.9,
+      financial: 0.85,
+      health: 0.95,
+      location: 0.7,
     };
 
-    const scores = dataTypes.map(type => sensitivityMap[type] || 0.5);
+    const scores = dataTypes.map((type) => sensitivityMap[type] || 0.5);
     return scores.reduce((sum, score) => sum + score, 0) / scores.length;
   }
 
   private calculateRoleRisk(userRole: string): number {
     const riskMap: Record<string, number> = {
-      'guest': 0.2,
-      'employee': 0.4,
-      'contractor': 0.5,
-      'analyst': 0.6,
-      'manager': 0.7,
-      'admin': 0.9
+      guest: 0.2,
+      employee: 0.4,
+      contractor: 0.5,
+      analyst: 0.6,
+      manager: 0.7,
+      admin: 0.9,
     };
 
     return riskMap[userRole] || 0.5;
@@ -1015,19 +1037,19 @@ export class PrivacyPreservingDiscovery {
 
   private calculatePurposeRisk(purpose: string): number {
     const riskMap: Record<string, number> = {
-      'research': 0.3,
-      'business_analysis': 0.4,
-      'compliance': 0.5,
-      'audit': 0.6,
-      'marketing': 0.7,
-      'law_enforcement': 0.8,
-      'data_broker': 0.9
+      research: 0.3,
+      business_analysis: 0.4,
+      compliance: 0.5,
+      audit: 0.6,
+      marketing: 0.7,
+      law_enforcement: 0.8,
+      data_broker: 0.9,
     };
 
     return riskMap[purpose] || 0.5;
   }
 
-  private calculateLocationRisk(location: string): number {
+  private calculateLocationRisk(_location: string): number {
     // Simplified location risk calculation
     // In production, would use geolocation and cross-border transfer rules
     return 0.3;
@@ -1057,7 +1079,7 @@ export class PrivacyPreservingDiscovery {
   private generateRecommendations(factors: PrivacyFactor[], level: string): string[] {
     const recommendations: string[] = [];
 
-    factors.forEach(factor => {
+    factors.forEach((factor) => {
       if (factor.value > 0.7) {
         switch (factor.type) {
           case 'data_sensitivity':
@@ -1109,7 +1131,10 @@ export class PrivacyPreservingDiscovery {
   }
 
   // Audit logging
-  private async logDiscoveryAttempt(request: SearchRequest, context: DiscoveryContext): Promise<void> {
+  private async logDiscoveryAttempt(
+    request: SearchRequest,
+    context: DiscoveryContext
+  ): Promise<void> {
     if (!this.config.auditEnabled) return;
 
     const auditEntry: DiscoveryAuditEntry = {
@@ -1126,18 +1151,21 @@ export class PrivacyPreservingDiscovery {
           userRole: context.userRole,
           department: context.department,
           location: context.location,
-          purpose: context.purpose
-        }
+          purpose: context.purpose,
+        },
       },
       result: 'pending',
       ipAddress: 'unknown', // Would get from request
-      userAgent: 'unknown' // Would get from request
+      userAgent: 'unknown', // Would get from request
     };
 
     this.auditLog.push(auditEntry);
   }
 
-  private async logDiscoverySuccess(result: SearchResult, context: DiscoveryContext): Promise<void> {
+  private async logDiscoverySuccess(
+    result: SearchResult,
+    context: DiscoveryContext
+  ): Promise<void> {
     if (!this.config.auditEnabled) return;
 
     const auditEntry: DiscoveryAuditEntry = {
@@ -1153,12 +1181,12 @@ export class PrivacyPreservingDiscovery {
           userRole: context.userRole,
           department: context.department,
           location: context.location,
-          purpose: context.purpose
-        }
+          purpose: context.purpose,
+        },
       },
       result: 'success',
       ipAddress: 'unknown',
-      userAgent: 'unknown'
+      userAgent: 'unknown',
     };
 
     this.auditLog.push(auditEntry);
@@ -1177,11 +1205,11 @@ export class PrivacyPreservingDiscovery {
         consentId: consent.id,
         purpose: consent.purpose,
         expiresAt: consent.expiresAt,
-        conditions: consent.conditions
+        conditions: consent.conditions,
       },
       result: 'success',
       ipAddress: 'unknown',
-      userAgent: 'unknown'
+      userAgent: 'unknown',
     };
 
     this.auditLog.push(auditEntry);
@@ -1199,11 +1227,11 @@ export class PrivacyPreservingDiscovery {
       details: {
         consentId: consent.id,
         purpose: consent.purpose,
-        grantedAt: consent.grantedAt
+        grantedAt: consent.grantedAt,
       },
       result: 'success',
       ipAddress: 'unknown',
-      userAgent: 'unknown'
+      userAgent: 'unknown',
     };
 
     this.auditLog.push(auditEntry);

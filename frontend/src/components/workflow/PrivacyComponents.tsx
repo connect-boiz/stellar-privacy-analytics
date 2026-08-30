@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Shield, 
-  Users, 
-  Eye, 
-  Lock, 
-  Settings, 
+import {
+  Shield,
+  Users,
+  Eye,
+  Lock,
+  _Settings,
   AlertCircle,
   CheckCircle,
   Info,
   BarChart3,
   Filter,
-  Database
+  Database,
 } from 'lucide-react';
 
 interface PrivacyComponentProps {
@@ -19,9 +18,9 @@ interface PrivacyComponentProps {
   onConfigChange?: (config: Record<string, any>) => void;
 }
 
-export const DifferentialPrivacyComponent: React.FC<PrivacyComponentProps> = ({ 
-  config = {}, 
-  onConfigChange 
+export const DifferentialPrivacyComponent: React.FC<PrivacyComponentProps> = ({
+  config = {},
+  onConfigChange,
 }) => {
   const [epsilon, setEpsilon] = useState(config.epsilon || 0.1);
   const [mechanism, setMechanism] = useState(config.mechanism || 'laplace');
@@ -39,7 +38,9 @@ export const DifferentialPrivacyComponent: React.FC<PrivacyComponentProps> = ({
         </div>
         <div className="ml-3">
           <h3 className="font-semibold text-gray-900">Differential Privacy</h3>
-          <p className="text-sm text-gray-600">Add mathematical noise to protect individual records</p>
+          <p className="text-sm text-gray-600">
+            Add mathematical noise to protect individual records
+          </p>
         </div>
       </div>
 
@@ -75,9 +76,7 @@ export const DifferentialPrivacyComponent: React.FC<PrivacyComponentProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Noise Mechanism
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Noise Mechanism</label>
           <select
             value={mechanism}
             onChange={(e) => {
@@ -97,8 +96,8 @@ export const DifferentialPrivacyComponent: React.FC<PrivacyComponentProps> = ({
             <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
             <div className="ml-2">
               <p className="text-sm text-blue-800">
-                This component adds calibrated noise to your query results, ensuring that 
-                individual data points cannot be identified while maintaining statistical utility.
+                This component adds calibrated noise to your query results, ensuring that individual
+                data points cannot be identified while maintaining statistical utility.
               </p>
             </div>
           </div>
@@ -108,9 +107,9 @@ export const DifferentialPrivacyComponent: React.FC<PrivacyComponentProps> = ({
   );
 };
 
-export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({ 
-  config = {}, 
-  onConfigChange 
+export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
+  config = {},
+  onConfigChange,
 }) => {
   const [kValue, setKValue] = useState(config.kValue || 5);
   const [quasiIdentifiers, setQuasiIdentifiers] = useState(config.quasiIdentifiers || []);
@@ -128,9 +127,7 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
   };
 
   const updateQuasiIdentifier = (index: number, field: string, value: any) => {
-    const updated = quasiIdentifiers.map((qi, i) => 
-      i === index ? { ...qi, [field]: value } : qi
-    );
+    const updated = quasiIdentifiers.map((qi, i) => (i === index ? { ...qi, [field]: value } : qi));
     setQuasiIdentifiers(updated);
     updateConfig({ quasiIdentifiers: updated });
   };
@@ -149,7 +146,9 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
         </div>
         <div className="ml-3">
           <h3 className="font-semibold text-gray-900">K-Anonymity</h3>
-          <p className="text-sm text-gray-600">Ensure each record is indistinguishable from at least K others</p>
+          <p className="text-sm text-gray-600">
+            Ensure each record is indistinguishable from at least K others
+          </p>
         </div>
       </div>
 
@@ -157,9 +156,7 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             K Value
-            <span className="ml-1 text-xs text-gray-500">
-              (Minimum group size for anonymity)
-            </span>
+            <span className="ml-1 text-xs text-gray-500">(Minimum group size for anonymity)</span>
           </label>
           <div className="flex items-center space-x-4">
             <input
@@ -180,9 +177,7 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">
-              Quasi-Identifiers
-            </label>
+            <label className="text-sm font-medium text-gray-700">Quasi-Identifiers</label>
             <button
               onClick={addQuasiIdentifier}
               className="text-sm text-blue-600 hover:text-blue-700"
@@ -190,7 +185,7 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
               + Add Field
             </button>
           </div>
-          
+
           <div className="space-y-2">
             {quasiIdentifiers.map((qi, index) => (
               <div key={qi.id} className="flex items-center space-x-2">
@@ -218,7 +213,7 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
                 </button>
               </div>
             ))}
-            
+
             {quasiIdentifiers.length === 0 && (
               <div className="text-center py-4 text-gray-500 text-sm">
                 No quasi-identifiers defined. Add fields to anonymize.
@@ -232,8 +227,8 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
             <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
             <div className="ml-2">
               <p className="text-sm text-green-800">
-                K-Anonymity ensures that any individual's record cannot be distinguished from 
-                at least K-1 other records in the dataset.
+                K-Anonymity ensures that any individual's record cannot be distinguished from at
+                least K-1 other records in the dataset.
               </p>
             </div>
           </div>
@@ -243,12 +238,12 @@ export const KAnonymityComponent: React.FC<PrivacyComponentProps> = ({
   );
 };
 
-export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({ 
-  config = {}, 
-  onConfigChange 
+export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
+  config = {},
+  onConfigChange,
 }) => {
   const [maskingRules, setMaskingRules] = useState(config.maskingRules || []);
-  const [maskingType, setMaskingType] = useState('partial');
+  const [maskingType, _setMaskingType] = useState('partial');
 
   const updateConfig = (newConfig: Record<string, any>) => {
     const updated = { ...config, ...newConfig };
@@ -260,7 +255,7 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
       id: `rule_${maskingRules.length + 1}`,
       field: '',
       type: maskingType,
-      pattern: ''
+      pattern: '',
     };
     const updated = [...maskingRules, newRule];
     setMaskingRules(updated);
@@ -268,7 +263,7 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
   };
 
   const updateMaskingRule = (index: number, field: string, value: any) => {
-    const updated = maskingRules.map((rule, i) => 
+    const updated = maskingRules.map((rule, i) =>
       i === index ? { ...rule, [field]: value } : rule
     );
     setMaskingRules(updated);
@@ -296,17 +291,12 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">
-              Masking Rules
-            </label>
-            <button
-              onClick={addMaskingRule}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
+            <label className="text-sm font-medium text-gray-700">Masking Rules</label>
+            <button onClick={addMaskingRule} className="text-sm text-blue-600 hover:text-blue-700">
               + Add Rule
             </button>
           </div>
-          
+
           <div className="space-y-2">
             {maskingRules.map((rule, index) => (
               <div key={rule.id} className="border border-gray-200 rounded-lg p-3">
@@ -338,7 +328,7 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
                 </div>
               </div>
             ))}
-            
+
             {maskingRules.length === 0 && (
               <div className="text-center py-4 text-gray-500 text-sm">
                 No masking rules defined. Add rules to protect sensitive fields.
@@ -352,8 +342,8 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
             <Lock className="h-4 w-4 text-orange-500 mt-0.5" />
             <div className="ml-2">
               <p className="text-sm text-orange-800">
-                Data masking replaces sensitive information with masked values while preserving 
-                the format and structure of the original data.
+                Data masking replaces sensitive information with masked values while preserving the
+                format and structure of the original data.
               </p>
             </div>
           </div>
@@ -363,9 +353,9 @@ export const DataMaskingComponent: React.FC<PrivacyComponentProps> = ({
   );
 };
 
-export const AggregationComponent: React.FC<PrivacyComponentProps> = ({ 
-  config = {}, 
-  onConfigChange 
+export const AggregationComponent: React.FC<PrivacyComponentProps> = ({
+  config = {},
+  onConfigChange,
 }) => {
   const [aggregationType, setAggregationType] = useState(config.aggregationType || 'sum');
   const [groupBy, setGroupBy] = useState(config.groupBy || []);
@@ -383,9 +373,7 @@ export const AggregationComponent: React.FC<PrivacyComponentProps> = ({
   };
 
   const updateGroupByField = (index: number, field: string, value: any) => {
-    const updated = groupBy.map((gb, i) => 
-      i === index ? { ...gb, [field]: value } : gb
-    );
+    const updated = groupBy.map((gb, i) => (i === index ? { ...gb, [field]: value } : gb));
     setGroupBy(updated);
     updateConfig({ groupBy: updated });
   };
@@ -433,17 +421,12 @@ export const AggregationComponent: React.FC<PrivacyComponentProps> = ({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700">
-              Group By Fields
-            </label>
-            <button
-              onClick={addGroupByField}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
+            <label className="text-sm font-medium text-gray-700">Group By Fields</label>
+            <button onClick={addGroupByField} className="text-sm text-blue-600 hover:text-blue-700">
               + Add Field
             </button>
           </div>
-          
+
           <div className="space-y-2">
             {groupBy.map((gb, index) => (
               <div key={index} className="flex items-center space-x-2">
@@ -469,7 +452,7 @@ export const AggregationComponent: React.FC<PrivacyComponentProps> = ({
                 </button>
               </div>
             ))}
-            
+
             {groupBy.length === 0 && (
               <div className="text-center py-4 text-gray-500 text-sm">
                 No grouping fields added. Results will be aggregated across all data.
@@ -499,8 +482,8 @@ export const AggregationComponent: React.FC<PrivacyComponentProps> = ({
             <Filter className="h-4 w-4 text-blue-500 mt-0.5" />
             <div className="ml-2">
               <p className="text-sm text-blue-800">
-                This aggregation component automatically applies differential privacy to 
-                protect individual contributions while maintaining statistical accuracy.
+                This aggregation component automatically applies differential privacy to protect
+                individual contributions while maintaining statistical accuracy.
               </p>
             </div>
           </div>
@@ -510,9 +493,9 @@ export const AggregationComponent: React.FC<PrivacyComponentProps> = ({
   );
 };
 
-export const DataSourceComponent: React.FC<PrivacyComponentProps> = ({ 
-  config = {}, 
-  onConfigChange 
+export const DataSourceComponent: React.FC<PrivacyComponentProps> = ({
+  config = {},
+  onConfigChange,
 }) => {
   const [sourceType, setSourceType] = useState(config.sourceType || 'database');
   const [connectionString, setConnectionString] = useState(config.connectionString || '');
@@ -538,9 +521,7 @@ export const DataSourceComponent: React.FC<PrivacyComponentProps> = ({
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Source Type
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Source Type</label>
           <select
             value={sourceType}
             onChange={(e) => {
@@ -633,8 +614,8 @@ export const DataSourceComponent: React.FC<PrivacyComponentProps> = ({
             <Lock className="h-4 w-4 text-gray-500 mt-0.5" />
             <div className="ml-2">
               <p className="text-sm text-gray-800">
-                All data connections are secured with TLS 1.3 and AES-256 encryption. 
-                Your data never leaves the secure environment in unencrypted form.
+                All data connections are secured with TLS 1.3 and AES-256 encryption. Your data
+                never leaves the secure environment in unencrypted form.
               </p>
             </div>
           </div>

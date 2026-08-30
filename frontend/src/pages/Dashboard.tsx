@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Database, Activity, Lock, Eye, AlertCircle } from 'lucide-react';
+import { Shield, Database, Activity, Lock, Eye } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const stats = [
@@ -9,29 +9,29 @@ export const Dashboard: React.FC = () => {
       value: '95%',
       icon: Shield,
       color: 'bg-green-500',
-      description: 'Excellent privacy protection'
+      description: 'Excellent privacy protection',
     },
     {
       name: 'Encrypted Datasets',
       value: '12',
       icon: Database,
       color: 'bg-blue-500',
-      description: 'Securely stored data'
+      description: 'Securely stored data',
     },
     {
       name: 'Active Analyses',
       value: '3',
       icon: Activity,
       color: 'bg-purple-500',
-      description: 'Privacy-preserving analytics'
+      description: 'Privacy-preserving analytics',
     },
     {
       name: 'Data Requests',
       value: '247',
       icon: Eye,
       color: 'bg-indigo-500',
-      description: 'Total access requests'
-    }
+      description: 'Total access requests',
+    },
   ];
 
   const recentActivity = [
@@ -41,7 +41,7 @@ export const Dashboard: React.FC = () => {
       resource: 'Customer Behavior Dataset',
       time: '2 hours ago',
       privacy: 'High',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 2,
@@ -49,7 +49,7 @@ export const Dashboard: React.FC = () => {
       resource: 'Sales Q4 2023',
       time: '4 hours ago',
       privacy: 'Maximum',
-      status: 'success'
+      status: 'success',
     },
     {
       id: 3,
@@ -57,7 +57,7 @@ export const Dashboard: React.FC = () => {
       resource: 'User Preferences',
       time: '6 hours ago',
       privacy: 'High',
-      status: 'info'
+      status: 'info',
     },
     {
       id: 4,
@@ -65,8 +65,8 @@ export const Dashboard: React.FC = () => {
       resource: 'Marketing Campaign Data',
       time: '1 day ago',
       privacy: 'Standard',
-      status: 'warning'
-    }
+      status: 'warning',
+    },
   ];
 
   return (
@@ -124,9 +124,11 @@ export const Dashboard: React.FC = () => {
                 <p className="text-xs text-green-700">All datasets are end-to-end encrypted</p>
               </div>
             </div>
-            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
+            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+              Active
+            </span>
           </div>
-          
+
           <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
             <div className="flex items-center">
               <Eye className="h-5 w-5 text-blue-600 mr-3" />
@@ -135,7 +137,9 @@ export const Dashboard: React.FC = () => {
                 <p className="text-xs text-blue-700">Statistical noise applied to queries</p>
               </div>
             </div>
-            <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">Enabled</span>
+            <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+              Enabled
+            </span>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
@@ -146,7 +150,9 @@ export const Dashboard: React.FC = () => {
                 <p className="text-xs text-purple-700">Role-based permissions enforced</p>
               </div>
             </div>
-            <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded">Enforced</span>
+            <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded">
+              Enforced
+            </span>
           </div>
         </div>
       </div>
@@ -164,12 +170,17 @@ export const Dashboard: React.FC = () => {
               className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <div className="flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-3 ${
-                  activity.status === 'success' ? 'bg-green-500' :
-                  activity.status === 'warning' ? 'bg-yellow-500' :
-                  activity.status === 'error' ? 'bg-red-500' :
-                  'bg-blue-500'
-                }`} />
+                <div
+                  className={`w-2 h-2 rounded-full mr-3 ${
+                    activity.status === 'success'
+                      ? 'bg-green-500'
+                      : activity.status === 'warning'
+                        ? 'bg-yellow-500'
+                        : activity.status === 'error'
+                          ? 'bg-red-500'
+                          : 'bg-blue-500'
+                  }`}
+                />
                 <div>
                   <p className="text-sm font-medium text-gray-900">{activity.action}</p>
                   <p className="text-xs text-gray-500">{activity.resource}</p>
@@ -177,12 +188,17 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500">{activity.time}</p>
-                <span className={`text-xs font-medium px-2 py-1 rounded ${
-                  activity.privacy === 'Maximum' ? 'bg-purple-100 text-purple-700' :
-                  activity.privacy === 'High' ? 'bg-green-100 text-green-700' :
-                  activity.privacy === 'Standard' ? 'bg-blue-100 text-blue-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
+                <span
+                  className={`text-xs font-medium px-2 py-1 rounded ${
+                    activity.privacy === 'Maximum'
+                      ? 'bg-purple-100 text-purple-700'
+                      : activity.privacy === 'High'
+                        ? 'bg-green-100 text-green-700'
+                        : activity.privacy === 'Standard'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
                   {activity.privacy}
                 </span>
               </div>

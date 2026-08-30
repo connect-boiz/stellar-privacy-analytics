@@ -10,14 +10,14 @@ export const NetworkErrorTest: React.FC = () => {
   const networkStatus = useNetworkStatus();
 
   const addResult = (message: string) => {
-    setTestResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    setTestResults((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
   const testSuccessfulRequest = async () => {
     setIsLoading(true);
     try {
       addResult('Testing successful request...');
-      const result = await api.get('/test-endpoint');
+      const _result = await api.get('/test-endpoint');
       addResult('✅ Success: Request completed');
       toast.success('Test request successful');
     } catch (error) {
@@ -36,7 +36,9 @@ export const NetworkErrorTest: React.FC = () => {
       await api.get('http://invalid-endpoint-that-does-not-exist.com/api/test');
       addResult('❌ Unexpected: Request should have failed');
     } catch (error) {
-      addResult(`✅ Expected error caught: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addResult(
+        `✅ Expected error caught: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       toast.success('Network error handled correctly');
     } finally {
       setIsLoading(false);
@@ -48,10 +50,12 @@ export const NetworkErrorTest: React.FC = () => {
     try {
       addResult('Testing timeout handling...');
       // Create a custom request with very short timeout
-      const result = await api.get('/slow-endpoint', { timeout: 1 });
+      const _result = await api.get('/slow-endpoint', { timeout: 1 });
       addResult('❌ Unexpected: Request should have timed out');
     } catch (error) {
-      addResult(`✅ Timeout error handled: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addResult(
+        `✅ Timeout error handled: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       toast.success('Timeout handled correctly');
     } finally {
       setIsLoading(false);
@@ -86,7 +90,9 @@ export const NetworkErrorTest: React.FC = () => {
         toast.info('Currently online');
       }
     } catch (error) {
-      addResult(`❌ Offline test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addResult(
+        `❌ Offline test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -103,7 +109,9 @@ export const NetworkErrorTest: React.FC = () => {
       const isOnline = await networkStatus.testConnection();
       addResult(isOnline ? '✅ Connection test successful' : '❌ Connection test failed');
     } catch (error) {
-      addResult(`❌ Connection test error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addResult(
+        `❌ Connection test error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -112,14 +120,16 @@ export const NetworkErrorTest: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Network Error Handling Test Suite</h2>
-      
+
       {/* Network Status */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Current Network Status</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <span className="font-medium">Status:</span>
-            <span className={`ml-2 font-bold ${networkStatus.isOnline ? 'text-green-600' : 'text-red-600'}`}>
+            <span
+              className={`ml-2 font-bold ${networkStatus.isOnline ? 'text-green-600' : 'text-red-600'}`}
+            >
               {networkStatus.isOnline ? 'Online' : 'Offline'}
             </span>
           </div>
@@ -142,14 +152,10 @@ export const NetworkErrorTest: React.FC = () => {
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Scenarios</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Button
-            onClick={testSuccessfulRequest}
-            disabled={isLoading}
-            className="w-full"
-          >
+          <Button onClick={testSuccessfulRequest} disabled={isLoading} className="w-full">
             Test Success Case
           </Button>
-          
+
           <Button
             onClick={testNetworkFailure}
             disabled={isLoading}
@@ -158,16 +164,11 @@ export const NetworkErrorTest: React.FC = () => {
           >
             Test Network Failure
           </Button>
-          
-          <Button
-            onClick={testTimeout}
-            disabled={isLoading}
-            variant="outline"
-            className="w-full"
-          >
+
+          <Button onClick={testTimeout} disabled={isLoading} variant="outline" className="w-full">
             Test Timeout
           </Button>
-          
+
           <Button
             onClick={testRetryLogic}
             disabled={isLoading}
@@ -176,7 +177,7 @@ export const NetworkErrorTest: React.FC = () => {
           >
             Test Retry Logic
           </Button>
-          
+
           <Button
             onClick={testOfflineMode}
             disabled={isLoading}
@@ -185,7 +186,7 @@ export const NetworkErrorTest: React.FC = () => {
           >
             Test Offline Mode
           </Button>
-          
+
           <Button
             onClick={testConnection}
             disabled={isLoading || networkStatus.isTesting}
@@ -201,11 +202,7 @@ export const NetworkErrorTest: React.FC = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Test Results</h3>
-          <Button
-            onClick={clearResults}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={clearResults} variant="outline" size="sm">
             Clear Results
           </Button>
         </div>
@@ -217,24 +214,20 @@ export const NetworkErrorTest: React.FC = () => {
               </div>
             ))
           ) : (
-            <div className="text-gray-500">No test results yet. Run a test to see results here.</div>
+            <div className="text-gray-500">
+              No test results yet. Run a test to see results here.
+            </div>
           )}
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex gap-4">
-        <Button
-          onClick={() => networkStatus.clearCache()}
-          variant="outline"
-        >
+        <Button onClick={() => networkStatus.clearCache()} variant="outline">
           Clear Cache
         </Button>
-        
-        <Button
-          onClick={() => networkStatus.retryQueuedRequests()}
-          variant="outline"
-        >
+
+        <Button onClick={() => networkStatus.retryQueuedRequests()} variant="outline">
           Retry Queued Requests
         </Button>
       </div>

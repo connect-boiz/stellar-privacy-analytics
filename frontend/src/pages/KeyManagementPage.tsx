@@ -21,16 +21,21 @@ const KeyManagementPage: React.FC = () => {
   const [privateKeyPem, setPrivateKeyPem] = useState<string>('');
   const [importPem, setImportPem] = useState<string>('');
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
-  const [statusMessage, setStatusMessage] = useState<string>('Initializing key management interface...');
+  const [statusMessage, setStatusMessage] = useState<string>(
+    'Initializing key management interface...'
+  );
   const [isHsmEnabled, setIsHsmEnabled] = useState(false);
 
   useEffect(() => {
     const cryptoAvailable = !!window.crypto?.subtle;
-    const wasmAvailable = typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function';
+    const wasmAvailable =
+      typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function';
     setCryptoSupported(cryptoAvailable);
     setWasmSupported(wasmAvailable);
     setIsLoading(false);
-    setStatusMessage(cryptoAvailable ? 'Ready to manage encryption keys.' : 'Web Crypto API not available.');
+    setStatusMessage(
+      cryptoAvailable ? 'Ready to manage encryption keys.' : 'Web Crypto API not available.'
+    );
   }, []);
 
   const addAuditLog = (action: string, status: AuditEntry['status']) => {
@@ -39,9 +44,9 @@ const KeyManagementPage: React.FC = () => {
         id: `${Date.now()}`,
         timestamp: new Date().toISOString(),
         action,
-        status
+        status,
       },
-      ...prev
+      ...prev,
     ]);
   };
 
@@ -103,7 +108,7 @@ const KeyManagementPage: React.FC = () => {
       publicKey: publicKeyPem,
       privateKey: privateKeyPem,
       backupTimestamp: new Date().toISOString(),
-      source: isHsmEnabled ? 'HSM-Integrated' : 'Local Browser Crypto'
+      source: isHsmEnabled ? 'HSM-Integrated' : 'Local Browser Crypto',
     };
 
     downloadBackup(`stellar-key-backup-${Date.now()}.json`, JSON.stringify(payload, null, 2));
@@ -147,7 +152,8 @@ const KeyManagementPage: React.FC = () => {
               <h1 className="text-2xl font-semibold text-slate-900">Encryption Key Management</h1>
             </div>
             <p className="text-sm text-slate-600 mt-2">
-              Manage encryption, rotation, backup, and import/export operations with fallback support for non-WASM browsers.
+              Manage encryption, rotation, backup, and import/export operations with fallback
+              support for non-WASM browsers.
             </p>
           </div>
           <Badge variant="secondary" className="text-sm">
@@ -162,7 +168,8 @@ const KeyManagementPage: React.FC = () => {
             <ShieldCheck className="h-4 w-4" /> Fallback Mode
           </AlertTitle>
           <AlertDescription>
-            Your browser does not support the Web Crypto API. Key management remains available in read-only mode, but full generation and export may be limited.
+            Your browser does not support the Web Crypto API. Key management remains available in
+            read-only mode, but full generation and export may be limited.
           </AlertDescription>
         </Alert>
       )}
@@ -171,7 +178,8 @@ const KeyManagementPage: React.FC = () => {
         <Alert className="bg-blue-50 border-blue-200">
           <AlertTitle className="text-blue-800">WASM Unsupported</AlertTitle>
           <AlertDescription>
-            WebAssembly is not available in this browser. The interface will still work using browser-native cryptography and audited fallback behavior.
+            WebAssembly is not available in this browser. The interface will still work using
+            browser-native cryptography and audited fallback behavior.
           </AlertDescription>
         </Alert>
       )}
@@ -192,7 +200,9 @@ const KeyManagementPage: React.FC = () => {
             <div className="space-y-2">
               <p className="text-sm text-slate-500">Private Key</p>
               <p className="break-words text-xs text-slate-700 bg-slate-50 p-3 rounded-lg min-h-[120px]">
-                {privateKeyPem ? 'A private key is available locally for backup.' : 'Generate keys to enable backup and export.'}
+                {privateKeyPem
+                  ? 'A private key is available locally for backup.'
+                  : 'Generate keys to enable backup and export.'}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -234,12 +244,17 @@ const KeyManagementPage: React.FC = () => {
               <Badge variant={isHsmEnabled ? 'default' : 'secondary'}>
                 {isHsmEnabled ? 'HSM Enabled' : 'HSM Disabled'}
               </Badge>
-              <Button variant="ghost" onClick={() => setIsHsmEnabled((prev) => !prev)} className="touch-target">
+              <Button
+                variant="ghost"
+                onClick={() => setIsHsmEnabled((prev) => !prev)}
+                className="touch-target"
+              >
                 {isHsmEnabled ? 'Disable' : 'Enable'} HSM
               </Button>
             </div>
             <p className="text-sm text-slate-600">
-              When HSM mode is enabled, key operations are treated as if they are backed by secure hardware with audit tracing.
+              When HSM mode is enabled, key operations are treated as if they are backed by secure
+              hardware with audit tracing.
             </p>
           </CardContent>
         </Card>
@@ -285,11 +300,21 @@ const KeyManagementPage: React.FC = () => {
                 <div key={entry.id} className="rounded-lg border border-slate-200 p-3 bg-slate-50">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium text-slate-900">{entry.action}</p>
-                    <Badge variant={entry.status === 'success' ? 'default' : entry.status === 'warning' ? 'secondary' : 'destructive'}>
+                    <Badge
+                      variant={
+                        entry.status === 'success'
+                          ? 'default'
+                          : entry.status === 'warning'
+                            ? 'secondary'
+                            : 'destructive'
+                      }
+                    >
                       {entry.status}
                     </Badge>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">{new Date(entry.timestamp).toLocaleString()}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(entry.timestamp).toLocaleString()}
+                  </p>
                 </div>
               ))
             )}

@@ -7,6 +7,25 @@ import { ZKProofService } from '../zkProof';
 import { StellarWalletService } from '../stellarWallet';
 
 describe('Secure Data Upload', () => {
+  // Mock browser-only APIs that jsdom doesn't fully support
+  beforeAll(() => {
+    // Patch File.prototype.arrayBuffer for jsdom
+    const origFile = (globalThis as any).File;
+    if (origFile && !origFile.prototype._arrayBufferPatched) {
+      origFile.prototype._arrayBufferPatched = true;
+      origFile.prototype.arrayBuffer = async function () {
+        // Read the file content from the internal slots
+        const reader = new FileReader();
+        return new Promise<ArrayBuffer>((resolve) => {
+          reader.onload = () => resolve(reader.result as ArrayBuffer);
+          reader.readAsArrayBuffer(this);
+        });
+      };
+    }
+    if (typeof URL.createObjectURL === 'undefined') {
+      URL.createObjectURL = (_blob: any) => `blob:mock-${Math.random()}`;
+    }
+  });
   describe('WebCryptoService', () => {
     test('should generate secure password', () => {
       const password = WebCryptoService.generateSecurePassword(32);
@@ -24,12 +43,12 @@ describe('Secure Data Upload', () => {
       const testData = 'test data for integrity';
       const buffer = new TextEncoder().encode(testData);
       const checksum = await WebCryptoService.generateChecksum(buffer);
-      
+
       const mockFile = new File([buffer], 'test.txt', { type: 'text/plain' });
-      const isValid = await WebCryptoService.verifyFileIntegrity(mockFile, checksum);
-      
+      const isValid = await WebCryptoService.verifyFileIntegrity(mockFile as any, checksum);
+
       expect(isValid).toBe(true);
-    });
+    }, 10000);
   });
 
   describe('ZKProofService', () => {
@@ -41,7 +60,7 @@ describe('Secure Data Upload', () => {
       const mockProof = {
         proof: new Uint8Array([1, 2, 3, 4]),
         publicInputs: new Uint8Array([5, 6, 7, 8]),
-        verificationKey: 'test-key'
+        verificationKey: 'test-key',
       };
 
       const serialized = await ZKProofService.serializeProof(mockProof);
@@ -61,7 +80,7 @@ describe('Secure Data Upload', () => {
         zkProofHash: 'test-zk-hash',
         timestamp: Date.now(),
         network: 'testnet',
-        verificationUrl: 'https://test.stellar.org/tx/test-tx-hash'
+        verificationUrl: 'https://test.stellar.org/tx/test-tx-hash',
       };
 
       const receiptUrl = StellarWalletService.generateReceiptPDF(mockReceipt);

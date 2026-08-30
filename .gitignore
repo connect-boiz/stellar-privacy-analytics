@@ -42,6 +42,10 @@ pids
 *.seed
 *.pid.lock
 
+# Gateway runtime persistence (privacy metrics store, encryption keys, etc.)
+backend/data/
+data/gateway/
+
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
@@ -126,6 +130,7 @@ test_snapshots/
 *.bak
 *.backup
 *.old
+backend/backups/
 
 # Temporary files
 tmp/
@@ -168,3 +173,6 @@ settings/override.*
 # User-specific files
 user-config.*
 personal-settings.*
+
+# Soroban testutils snapshot artifacts (regenerated per-test, not source)
+**/test_snapshots/

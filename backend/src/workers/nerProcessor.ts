@@ -1,6 +1,6 @@
-import { logger } from '../utils/logger';
-import * as fs from 'fs';
-import * as path from 'path';
+import { logger } from "../utils/logger";
+import * as _fs from "fs";
+import * as _path from "path";
 
 export interface NEREntity {
   text: string;
@@ -25,7 +25,7 @@ export interface PIIDetection {
     end: number;
   };
   confidence: number;
-  method: 'ner';
+  method: "ner";
 }
 
 export interface NERModel {
@@ -61,7 +61,7 @@ export class NERProcessor {
     this.initializeEntityPatterns();
     this.loadModels();
 
-    logger.info('NER Processor initialized', {
+    logger.info("NER Processor initialized", {
       modelsPath: this.modelsPath,
       languages: this.languages,
       confidenceThreshold: this.confidenceThreshold,
@@ -71,39 +71,39 @@ export class NERProcessor {
 
   private initializeEntityMappings(): void {
     // Map NER labels to PII types
-    this.entityMappings.set('PERSON', 'name');
-    this.entityMappings.set('ORG', 'organization');
-    this.entityMappings.set('GPE', 'location');
-    this.entityMappings.set('EMAIL', 'email');
-    this.entityMappings.set('PHONE', 'phone');
-    this.entityMappings.set('ADDRESS', 'address');
-    this.entityMappings.set('DATE', 'date');
-    this.entityMappings.set('CARDINAL', 'number');
-    this.entityMappings.set('MONEY', 'financial');
-    this.entityMappings.set('ID', 'identifier');
-    this.entityMappings.set('URL', 'url');
+    this.entityMappings.set("PERSON", "name");
+    this.entityMappings.set("ORG", "organization");
+    this.entityMappings.set("GPE", "location");
+    this.entityMappings.set("EMAIL", "email");
+    this.entityMappings.set("PHONE", "phone");
+    this.entityMappings.set("ADDRESS", "address");
+    this.entityMappings.set("DATE", "date");
+    this.entityMappings.set("CARDINAL", "number");
+    this.entityMappings.set("MONEY", "financial");
+    this.entityMappings.set("ID", "identifier");
+    this.entityMappings.set("URL", "url");
   }
 
   private initializeEntityPatterns(): void {
     // Simple regex patterns for entity recognition as fallback
-    this.entityPatterns.set('PERSON', [
+    this.entityPatterns.set("PERSON", [
       /\b[A-Z][a-z]+ [A-Z][a-z]+\b/g, // First name + Last name
       /\b[A-Z][a-z]+ [A-Z][a-z]+ [A-Z][a-z]+\b/g, // First + Middle + Last name
     ]);
 
-    this.entityPatterns.set('EMAIL', [
+    this.entityPatterns.set("EMAIL", [
       /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
     ]);
 
-    this.entityPatterns.set('PHONE', [
+    this.entityPatterns.set("PHONE", [
       /\b(?:\+1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b/g,
     ]);
 
-    this.entityPatterns.set('ADDRESS', [
+    this.entityPatterns.set("ADDRESS", [
       /\d+\s+[A-Z][a-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd)\b/gi,
     ]);
 
-    this.entityPatterns.set('ORGANIZATION', [
+    this.entityPatterns.set("ORGANIZATION", [
       /\b(?:[A-Z][a-z]+\s)+(?:Inc|Corp|LLC|Ltd|Company|Co|Incorporated)\b/g,
     ]);
   }
@@ -111,16 +111,16 @@ export class NERProcessor {
   private async loadModels(): Promise<void> {
     // In a real implementation, this would load actual NLP models
     // For now, we'll create mock models
-    
+
     for (const language of this.languages) {
       const model: NERModel = {
         name: `ner_${language}`,
         language,
-        entities: ['PERSON', 'ORG', 'GPE', 'EMAIL', 'PHONE', 'ADDRESS', 'DATE'],
+        entities: ["PERSON", "ORG", "GPE", "EMAIL", "PHONE", "ADDRESS", "DATE"],
         loaded: true,
         loadTime: Date.now(),
       };
-      
+
       this.models.set(language, model);
     }
 
@@ -149,7 +149,7 @@ export class NERProcessor {
         detections,
       };
     } catch (error) {
-      logger.error('NER processing failed:', error);
+      logger.error("NER processing failed:", error);
       return {
         entities: [],
         maskedText: text,
@@ -168,11 +168,11 @@ export class NERProcessor {
     for (const [label, patterns] of this.entityPatterns) {
       for (const pattern of patterns) {
         const matches = Array.from(text.matchAll(pattern));
-        
+
         for (const match of matches) {
           const startIndex = match.index || 0;
           const endIndex = startIndex + match[0].length;
-          
+
           entities.push({
             text: match[0],
             label,
@@ -187,8 +187,8 @@ export class NERProcessor {
     // Remove overlapping entities (keep the one with higher confidence)
     const nonOverlappingEntities = this.removeOverlappingEntities(entities);
 
-    return nonOverlappingEntities.filter(entity => 
-      entity.confidence >= this.confidenceThreshold
+    return nonOverlappingEntities.filter(
+      (entity) => entity.confidence >= this.confidenceThreshold,
     );
   }
 
@@ -200,7 +200,7 @@ export class NERProcessor {
 
     // Boost confidence based on entity characteristics
     switch (label) {
-      case 'PERSON':
+      case "PERSON":
         // Higher confidence for proper names
         if (/^[A-Z][a-z]+ [A-Z][a-z]+$/.test(text)) {
           confidence += 0.3;
@@ -210,21 +210,21 @@ export class NERProcessor {
         }
         break;
 
-      case 'EMAIL':
+      case "EMAIL":
         // High confidence for valid email format
         if (/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$/.test(text)) {
           confidence += 0.4;
         }
         break;
 
-      case 'PHONE':
+      case "PHONE":
         // High confidence for phone number patterns
         if (/^\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/.test(text)) {
           confidence += 0.4;
         }
         break;
 
-      case 'ORGANIZATION':
+      case "ORGANIZATION":
         // Medium confidence for organization names
         if (/(Inc|Corp|LLC|Ltd|Company)$/i.test(text)) {
           confidence += 0.2;
@@ -234,7 +234,7 @@ export class NERProcessor {
         }
         break;
 
-      case 'ADDRESS':
+      case "ADDRESS":
         // Medium confidence for address patterns
         if (/\d+\s+[A-Z][a-z]+/.test(text)) {
           confidence += 0.3;
@@ -258,8 +258,9 @@ export class NERProcessor {
     const nonOverlapping: NEREntity[] = [];
 
     for (const entity of sortedEntities) {
-      const hasOverlap = nonOverlapping.some(existing => 
-        entity.start < existing.end && entity.end > existing.start
+      const hasOverlap = nonOverlapping.some(
+        (existing) =>
+          entity.start < existing.end && entity.end > existing.start,
       );
 
       if (!hasOverlap) {
@@ -273,7 +274,10 @@ export class NERProcessor {
   /**
    * Mask detected entities in text
    */
-  private maskEntities(text: string, entities: NEREntity[]): { maskedText: string; detections: PIIDetection[] } {
+  private maskEntities(
+    text: string,
+    entities: NEREntity[],
+  ): { maskedText: string; detections: PIIDetection[] } {
     const detections: PIIDetection[] = [];
     let maskedText = text;
 
@@ -281,9 +285,10 @@ export class NERProcessor {
     const sortedEntities = entities.sort((a, b) => b.start - a.start);
 
     for (const entity of sortedEntities) {
-      const piiType = this.entityMappings.get(entity.label) || entity.label.toLowerCase();
+      const piiType =
+        this.entityMappings.get(entity.label) || entity.label.toLowerCase();
       const maskedValue = this.maskEntityValue(entity.text, entity.label);
-      
+
       // Replace in text
       const before = maskedText.substring(0, entity.start);
       const after = maskedText.substring(entity.end);
@@ -298,7 +303,7 @@ export class NERProcessor {
           end: entity.end,
         },
         confidence: entity.confidence,
-        method: 'ner',
+        method: "ner",
       });
     }
 
@@ -310,50 +315,53 @@ export class NERProcessor {
    */
   private maskEntityValue(text: string, label: string): string {
     switch (label) {
-      case 'PERSON':
+      case "PERSON":
         // Mask name, keep first letter of first name and last name
-        const parts = text.split(' ');
+        const parts = text.split(" ");
         if (parts.length >= 2) {
           return `${parts[0][0]}*** ${parts[parts.length - 1][0]}***`;
         }
         return `${text[0]}***`;
 
-      case 'EMAIL':
+      case "EMAIL":
         // Mask email like in PII masker
-        const [username, domain] = text.split('@');
-        const maskedUsername = username.substring(0, 2) + '*'.repeat(username.length - 2);
-        const domainParts = domain.split('.');
-        const maskedDomain = domainParts.map((part, index) => {
-          if (index === domainParts.length - 1) {
-            return part;
-          }
-          return part.substring(0, 1) + '*'.repeat(part.length - 1);
-        }).join('.');
+        const [username, domain] = text.split("@");
+        const maskedUsername =
+          username.substring(0, 2) + "*".repeat(username.length - 2);
+        const domainParts = domain.split(".");
+        const maskedDomain = domainParts
+          .map((part, index) => {
+            if (index === domainParts.length - 1) {
+              return part;
+            }
+            return part.substring(0, 1) + "*".repeat(part.length - 1);
+          })
+          .join(".");
         return `${maskedUsername}@${maskedDomain}`;
 
-      case 'PHONE':
+      case "PHONE":
         // Mask phone number
-        return '***-***-****';
+        return "***-***-****";
 
-      case 'ADDRESS':
+      case "ADDRESS":
         // Mask address, keep general structure
-        return '*** Address ***';
+        return "*** Address ***";
 
-      case 'ORGANIZATION':
+      case "ORGANIZATION":
         // Mask organization name
         return `${text.substring(0, 2)}***`;
 
-      case 'GPE': // Geopolitical Entity
+      case "GPE": // Geopolitical Entity
         // Mask location
         return `${text.substring(0, 2)}***`;
 
-      case 'DATE':
+      case "DATE":
         // Mask date
-        return '**/**/****';
+        return "**/**/****";
 
       default:
         // Generic masking
-        return '***';
+        return "***";
     }
   }
 
@@ -385,7 +393,7 @@ export class NERProcessor {
     if (!this.entityPatterns.has(label)) {
       this.entityPatterns.set(label, []);
     }
-    
+
     this.entityPatterns.get(label)!.push(pattern);
     logger.info(`Added custom pattern for ${label}`);
   }
@@ -424,13 +432,13 @@ export class NERProcessor {
   /**
    * Get entity statistics
    */
-  getEntityStatistics(text: string): {
+  async getEntityStatistics(text: string): Promise<{
     totalEntities: number;
     entitiesByType: Record<string, number>;
     averageConfidence: number;
     highConfidenceEntities: number;
-  } {
-    const result = this.extractEntities(text);
+  }> {
+    const result = await this.extractEntities(text);
     const entitiesByType: Record<string, number> = {};
     let totalConfidence = 0;
     let highConfidenceCount = 0;
@@ -438,7 +446,7 @@ export class NERProcessor {
     for (const entity of result) {
       entitiesByType[entity.label] = (entitiesByType[entity.label] || 0) + 1;
       totalConfidence += entity.confidence;
-      
+
       if (entity.confidence >= 0.8) {
         highConfidenceCount++;
       }
@@ -447,7 +455,8 @@ export class NERProcessor {
     return {
       totalEntities: result.length,
       entitiesByType,
-      averageConfidence: result.length > 0 ? totalConfidence / result.length : 0,
+      averageConfidence:
+        result.length > 0 ? totalConfidence / result.length : 0,
       highConfidenceEntities: highConfidenceCount,
     };
   }
@@ -455,14 +464,15 @@ export class NERProcessor {
   /**
    * Health check
    */
-  isHealthy(): boolean {
+  async isHealthy(): Promise<boolean> {
     try {
       // Test with a simple text
-      const testText = 'John Doe works at Acme Corp and can be reached at john@example.com';
-      const result = this.maskWithNER(testText);
-      return result.then(r => r.maskedText !== testText).catch(() => false);
+      const testText =
+        "John Doe works at Acme Corp and can be reached at john@example.com";
+      const result = await this.maskWithNER(testText);
+      return result.maskedText !== testText;
     } catch (error) {
-      logger.error('NER Processor health check failed:', error);
+      logger.error("NER Processor health check failed:", error);
       return false;
     }
   }
@@ -478,17 +488,17 @@ export class NERProcessor {
     if (config.enableNER !== undefined) {
       this.enableNER = config.enableNER;
     }
-    
+
     if (config.confidenceThreshold !== undefined) {
       this.confidenceThreshold = config.confidenceThreshold;
     }
-    
+
     if (config.languages) {
       this.languages = config.languages;
       this.loadModels();
     }
 
-    logger.info('NER Processor configuration updated', {
+    logger.info("NER Processor configuration updated", {
       enableNER: this.enableNER,
       confidenceThreshold: this.confidenceThreshold,
       languages: this.languages,
@@ -502,8 +512,8 @@ export class NERProcessor {
     this.models.clear();
     this.entityPatterns.clear();
     this.entityMappings.clear();
-    
-    logger.info('NER Processor cleaned up');
+
+    logger.info("NER Processor cleaned up");
   }
 
   /**
@@ -516,9 +526,9 @@ export class NERProcessor {
     confidenceThreshold: number;
   } {
     const entityPatterns: Record<string, string[]> = {};
-    
+
     for (const [label, patterns] of this.entityPatterns) {
-      entityPatterns[label] = patterns.map(p => p.source);
+      entityPatterns[label] = patterns.map((p) => p.source);
     }
 
     return {
@@ -547,7 +557,10 @@ export class NERProcessor {
     if (config.entityPatterns) {
       this.entityPatterns.clear();
       for (const [label, patterns] of Object.entries(config.entityPatterns)) {
-        this.entityPatterns.set(label, patterns.map(p => new RegExp(p, 'g')));
+        this.entityPatterns.set(
+          label,
+          patterns.map((p) => new RegExp(p, "g")),
+        );
       }
     }
 
@@ -555,7 +568,7 @@ export class NERProcessor {
       this.confidenceThreshold = config.confidenceThreshold;
     }
 
-    logger.info('NER Processor configuration imported');
+    logger.info("NER Processor configuration imported");
   }
 }
 

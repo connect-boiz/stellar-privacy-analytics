@@ -133,7 +133,10 @@ class CertificationService {
     }
   }
 
-  async validateCertification(id: string, validatorType: 'automated' | 'manual' | 'third_party'): Promise<ValidationRecord> {
+  async validateCertification(
+    id: string,
+    validatorType: 'automated' | 'manual' | 'third_party'
+  ): Promise<ValidationRecord> {
     try {
       const response = await axios.post(`${this.baseUrl}/${id}/validate`, { validatorType });
       return response.data;
@@ -167,7 +170,7 @@ class CertificationService {
     try {
       const response = await axios.get(`${this.baseUrl}/${certificationId}/badge/download`, {
         params: { format },
-        responseType: 'blob'
+        responseType: 'blob',
       });
       return response.data;
     } catch (error) {
@@ -242,8 +245,8 @@ class CertificationService {
             score: 95,
             maxScore: 100,
             details: 'Full compliance with GDPR requirements',
-            evidence: ['audit_report.pdf', 'compliance_checklist.xlsx']
-          }
+            evidence: ['audit_report.pdf', 'compliance_checklist.xlsx'],
+          },
         ],
         complianceHistory: [
           {
@@ -257,15 +260,15 @@ class CertificationService {
                 passed: true,
                 score: 90,
                 maxScore: 100,
-                details: 'Security of processing'
-              }
+                details: 'Security of processing',
+              },
             ],
             checkedAt: '2024-01-15T10:00:00Z',
-            checkedBy: 'system'
-          }
+            checkedBy: 'system',
+          },
         ],
         badgeUrl: '/api/badges/cert-1.svg',
-        publicVerificationUrl: 'https://stellar-privacy-analytics.com/verify/abc123def456'
+        publicVerificationUrl: 'https://stellar-privacy-analytics.com/verify/abc123def456',
       },
       {
         id: 'cert-2',
@@ -281,8 +284,8 @@ class CertificationService {
         createdAt: '2024-02-01T14:30:00Z',
         updatedAt: '2024-02-01T14:30:00Z',
         validationHistory: [],
-        complianceHistory: []
-      }
+        complianceHistory: [],
+      },
     ];
   }
 
@@ -298,15 +301,15 @@ class CertificationService {
           'Data subject rights',
           'Privacy by design',
           'Data protection impact assessment',
-          'Data breach notification'
+          'Data breach notification',
         ],
         validationCriteria: [
           'Consent management',
           'Data minimization',
           'Purpose limitation',
           'Storage limitation',
-          'Security measures'
-        ]
+          'Security measures',
+        ],
       },
       {
         id: 'ccpa',
@@ -318,15 +321,15 @@ class CertificationService {
           'Right to delete',
           'Right to opt-out',
           'Non-discrimination',
-          'Data portability'
+          'Data portability',
         ],
         validationCriteria: [
           'Consumer disclosure',
           'Opt-out mechanisms',
           'Data deletion processes',
           'Privacy policy compliance',
-          'Vendor contracts'
-        ]
+          'Vendor contracts',
+        ],
       },
       {
         id: 'hipaa',
@@ -338,16 +341,16 @@ class CertificationService {
           'Physical safeguards',
           'Technical safeguards',
           'Breach notification',
-          'Business associate agreements'
+          'Business associate agreements',
         ],
         validationCriteria: [
           'Access controls',
           'Audit controls',
           'Integrity controls',
           'Transmission security',
-          'Workforce training'
-        ]
-      }
+          'Workforce training',
+        ],
+      },
     ];
   }
 }

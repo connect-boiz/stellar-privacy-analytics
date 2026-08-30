@@ -1,9 +1,15 @@
-import { createCipheriv, createDecipheriv, randomBytes, createHash, timingSafeEqual } from 'crypto';
-import { Agent } from 'https';
-import axios, { AxiosInstance } from 'axios';
-import { logger } from '../utils/logger';
-import { EventEmitter } from 'events';
-import { auditService } from '../utils/audit';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  createHash,
+  timingSafeEqual,
+} from "crypto";
+import { Agent } from "https";
+import axios, { AxiosInstance } from "axios";
+import { logger } from "../utils/logger";
+import { EventEmitter } from "events";
+import { auditService } from "../utils/audit";
 
 export interface HSMConfig {
   endpoint: string;
@@ -24,7 +30,7 @@ export interface KeyMetadata {
   algorithm: string;
   createdAt: Date;
   lastRotated?: Date;
-  status: 'active' | 'rotating' | 'revoked' | 'disabled';
+  status: "active" | "rotating" | "revoked" | "disabled";
   usageCount: number;
 }
 
@@ -39,7 +45,12 @@ export interface WrappedKey {
 
 export interface AuditLogEntry {
   timestamp: Date;
-  action: 'key_wrap' | 'key_unwrap' | 'key_rotate' | 'key_revoke' | 'access_denied';
+  action:
+    | "key_wrap"
+    | "key_unwrap"
+    | "key_rotate"
+    | "key_revoke"
+    | "access_denied";
   keyId?: string;
   userId?: string;
   ipAddress?: string;
@@ -65,6 +76,9 @@ export class HSMService extends EventEmitter {
   private killSwitchActive: boolean = false;
   private connectionHealth: boolean = true;
   private lastHealthCheck: Date = new Date();
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+  private rotationSchedulerInterval: NodeJS.Timeout | null = null;
+  private rotationTimers: Set<NodeJS.Timeout> = new Set();
 
   constructor(config: HSMConfig) {
     super();
@@ -72,14 +86,14 @@ export class HSMService extends EventEmitter {
       keyRotationDays: 90,
       connectionTimeout: 10000,
       requestTimeout: 30000,
-      ...config
+      ...config,
     };
 
     this.rotationPolicy = {
       rotationIntervalDays: this.config.keyRotationDays || 90,
       gracePeriodDays: 7,
       autoRotate: true,
-      notificationThresholdDays: 14
+      notificationThresholdDays: 14,
     };
 
     this.client = this.createSecureClient();
@@ -92,10 +106,12 @@ export class HSMService extends EventEmitter {
       keepAlive: true,
       timeout: this.config.connectionTimeout,
       ...(this.config.clientCertPath && {
-        cert: require('fs').readFileSync(this.config.clientCertPath),
-        key: require('fs').readFileSync(this.config.clientKeyPath),
-        ca: this.config.caCertPath ? require('fs').readFileSync(this.config.caCertPath) : undefined
-      })
+        cert: require("fs").readFileSync(this.config.clientCertPath),
+        key: require("fs").readFileSync(this.config.clientKeyPath),
+        ca: this.config.caCertPath
+          ? require("fs").readFileSync(this.config.caCertPath)
+          : undefined,
+      }),
     });
 
     return axios.create({
@@ -103,17 +119,19 @@ export class HSMService extends EventEmitter {
       timeout: this.config.requestTimeout,
       httpsAgent,
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'X-Client-ID': this.config.clientId,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "X-Client-ID": this.config.clientId,
+        "Content-Type": "application/json",
+      },
     });
   }
 
-  private async logAudit(entry: Omit<AuditLogEntry, 'timestamp'>): Promise<void> {
+  private async logAudit(
+    entry: Omit<AuditLogEntry, "timestamp">,
+  ): Promise<void> {
     const auditEntry: AuditLogEntry = {
       timestamp: new Date(),
-      ...entry
+      ...entry,
     };
 
     this.auditLog.push(auditEntry);
@@ -124,65 +142,69 @@ export class HSMService extends EventEmitter {
     }
 
     // Emit for external logging systems
-    this.emit('audit', auditEntry);
+    this.emit("audit", auditEntry);
 
     // Log to central audit service
-    auditService.log({
-      category: 'key_management',
-      action: auditEntry.action,
-      actor: {
-        userId: auditEntry.userId,
-      },
-      resource: {
-        type: 'hsm_key',
-        id: auditEntry.keyId,
-        metadata: auditEntry.metadata
-      },
-      outcome: auditEntry.success ? 'success' : 'failure',
-      riskLevel: auditEntry.action === 'key_revoke' ? 'critical' : 'high',
-      complianceTags: ['PCI-DSS', 'HIPAA'],
-      details: {
-        errorMessage: auditEntry.errorMessage
-      }
-    }).catch(err => logger.error('Failed to log to central audit service from HSM:', err));
+    auditService
+      .log({
+        category: "key_management",
+        action: auditEntry.action,
+        actor: {
+          userId: auditEntry.userId,
+        },
+        resource: {
+          type: "hsm_key",
+          id: auditEntry.keyId,
+          metadata: auditEntry.metadata,
+        },
+        outcome: auditEntry.success ? "success" : "failure",
+        riskLevel: auditEntry.action === "key_revoke" ? "critical" : "high",
+        complianceTags: ["PCI-DSS", "HIPAA"],
+        details: {
+          errorMessage: auditEntry.errorMessage,
+        },
+      })
+      .catch((err) =>
+        logger.error("Failed to log to central audit service from HSM:", err),
+      );
 
-    logger.info('HSM Audit', {
+    logger.info("HSM Audit", {
       action: auditEntry.action,
       keyId: auditEntry.keyId,
       success: auditEntry.success,
-      timestamp: auditEntry.timestamp
+      timestamp: auditEntry.timestamp,
     });
   }
 
   private async makeHSMRequest<T>(
     operation: string,
     keyId?: string,
-    data?: any
+    data?: any,
   ): Promise<T> {
     if (this.killSwitchActive) {
       await this.logAudit({
-        action: 'access_denied',
+        action: "access_denied",
         keyId,
         success: false,
-        errorMessage: 'Kill switch is active'
+        errorMessage: "Kill switch is active",
       });
-      throw new Error('HSM access revoked by kill switch');
+      throw new Error("HSM access revoked by kill switch");
     }
 
     if (!this.connectionHealth) {
-      throw new Error('HSM connection is unhealthy');
+      throw new Error("HSM connection is unhealthy");
     }
 
     try {
       const response = await this.client.post(`/v1/keys/${operation}`, {
         keyId,
-        ...data
+        ...data,
       });
 
       await this.logAudit({
         action: this.mapOperationToAuditAction(operation),
         keyId,
-        success: true
+        success: true,
       });
 
       return response.data;
@@ -192,50 +214,66 @@ export class HSMService extends EventEmitter {
         keyId,
         success: false,
         errorMessage: error.message,
-        metadata: { status: error.response?.status }
+        metadata: { status: error.response?.status },
       });
 
       throw new Error(`HSM operation failed: ${error.message}`);
     }
   }
 
-  private mapOperationToAuditAction(operation: string): AuditLogEntry['action'] {
+  private mapOperationToAuditAction(
+    operation: string,
+  ): AuditLogEntry["action"] {
     switch (operation) {
-      case 'wrap': return 'key_wrap';
-      case 'unwrap': return 'key_unwrap';
-      case 'rotate': return 'key_rotate';
-      case 'revoke': return 'key_revoke';
-      default: return 'access_denied';
+      case "wrap":
+        return "key_wrap";
+      case "unwrap":
+        return "key_unwrap";
+      case "rotate":
+        return "key_rotate";
+      case "revoke":
+        return "key_revoke";
+      default:
+        return "access_denied";
     }
   }
 
   async wrapKey(
     plaintextKey: Buffer,
     keyId?: string,
-    algorithm: string = 'aes-256-gcm'
+    algorithm: string = "aes-256-gcm",
   ): Promise<WrappedKey> {
     try {
       const iv = randomBytes(16);
-      const response = await this.makeHSMRequest<{ wrappedKey: string; keyId: string; version: number }>(
-        'wrap',
-        keyId,
-        {
-          plaintext: plaintextKey.toString('base64'),
-          algorithm,
-          iv: iv.toString('base64')
-        }
-      );
+      const response = await this.makeHSMRequest<{
+        wrappedKey: string;
+        keyId: string;
+        version: number;
+        tag?: string;
+      }>("wrap", keyId, {
+        plaintext: plaintextKey.toString("base64"),
+        algorithm,
+        iv: iv.toString("base64"),
+      });
 
-      // Extract tag from response if using GCM
-      const tag = algorithm.includes('gcm') ? randomBytes(16).toString('base64') : '';
+      // WS2: the GCM authentication tag MUST come from the HSM's response.
+      // Fabricating a random tag client-side would break authentication on
+      // unwrap (or silently disable integrity). Fail closed when it is absent.
+      const isGcm = algorithm.includes("gcm");
+      if (isGcm && !response.tag) {
+        throw new Error(
+          "HSM did not return a GCM authentication tag for wrap operation",
+        );
+      }
+      const tag = response.tag || "";
 
       const wrappedKey: WrappedKey = {
         ciphertext: response.wrappedKey,
-        iv: iv.toString('base64'),
+        iv: iv.toString("base64"),
         tag,
         keyId: response.keyId,
         version: response.version,
-        algorithm
+        algorithm,
       };
 
       // Cache key metadata
@@ -244,13 +282,117 @@ export class HSMService extends EventEmitter {
         version: response.version,
         algorithm,
         createdAt: new Date(),
-        status: 'active',
-        usageCount: 1
+        status: "active",
+        usageCount: 1,
       });
 
       return wrappedKey;
     } catch (error) {
-      logger.error('Failed to wrap key:', error);
+      logger.error("Failed to wrap key:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * WS2 — HSM-side key generation.
+   *
+   * The HSM generates the key internally and returns ONLY the wrapped form
+   * plus a key ID; the plaintext never exists in application memory. This is
+   * the authoritative path for master-key creation.
+   */
+  async generateKey(
+    algorithm: string = "aes-256-gcm",
+  ): Promise<WrappedKey> {
+    try {
+      const response = await this.makeHSMRequest<{
+        wrappedKey: string;
+        keyId: string;
+        version: number;
+        algorithm: string;
+        tag?: string;
+      }>("generate", undefined, { algorithm });
+
+      const isGcm = algorithm.includes("gcm");
+      if (isGcm && !response.tag) {
+        throw new Error(
+          "HSM did not return a GCM authentication tag for generated key",
+        );
+      }
+
+      const iv = randomBytes(16);
+      const wrappedKey: WrappedKey = {
+        ciphertext: response.wrappedKey,
+        iv: iv.toString("base64"),
+        tag: response.tag || "",
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: response.algorithm || algorithm,
+      };
+
+      this.keyCache.set(response.keyId, {
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: response.algorithm || algorithm,
+        createdAt: new Date(),
+        status: "active",
+        usageCount: 0,
+      });
+
+      return wrappedKey;
+    } catch (error) {
+      logger.error("Failed to generate key in HSM:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * WS2 — HSM-side re-wrap.
+   *
+   * Re-wraps a wrapped key (previously wrapped under `oldKeyId`) under the
+   * new wrapping key. The HSM performs unwrap+rewrap internally; plaintext
+   * never reaches the application. Used to re-protect data keys after a
+   * master-key rotation.
+   */
+  async reWrapKey(
+    wrappedKey: WrappedKey,
+    newKeyId: string,
+  ): Promise<WrappedKey> {
+    try {
+      const response = await this.makeHSMRequest<{
+        wrappedKey: string;
+        keyId: string;
+        version: number;
+        tag?: string;
+      }>("re-wrap", wrappedKey.keyId, {
+        wrappedKey: wrappedKey.ciphertext,
+        oldKeyId: wrappedKey.keyId,
+        newKeyId,
+        tag: wrappedKey.tag,
+        algorithm: wrappedKey.algorithm,
+      });
+
+      const iv = randomBytes(16);
+      const reWrapped: WrappedKey = {
+        ciphertext: response.wrappedKey,
+        iv: iv.toString("base64"),
+        tag: response.tag || wrappedKey.tag,
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: wrappedKey.algorithm,
+      };
+
+      this.keyCache.set(response.keyId, {
+        keyId: response.keyId,
+        version: response.version,
+        algorithm: wrappedKey.algorithm,
+        createdAt: new Date(),
+        status: "active",
+        usageCount: 0,
+      });
+
+      return reWrapped;
+    } catch (error) {
+      logger.error("Failed to re-wrap key in HSM:", error);
       throw error;
     }
   }
@@ -258,18 +400,18 @@ export class HSMService extends EventEmitter {
   async unwrapKey(wrappedKey: WrappedKey): Promise<Buffer> {
     try {
       const response = await this.makeHSMRequest<{ plaintext: string }>(
-        'unwrap',
+        "unwrap",
         wrappedKey.keyId,
         {
           wrappedKey: wrappedKey.ciphertext,
           iv: wrappedKey.iv,
           tag: wrappedKey.tag,
           algorithm: wrappedKey.algorithm,
-          version: wrappedKey.version
-        }
+          version: wrappedKey.version,
+        },
       );
 
-      const plaintext = Buffer.from(response.plaintext, 'base64');
+      const plaintext = Buffer.from(response.plaintext, "base64");
 
       // Update usage count
       const metadata = this.keyCache.get(wrappedKey.keyId);
@@ -280,7 +422,7 @@ export class HSMService extends EventEmitter {
 
       return plaintext;
     } catch (error) {
-      logger.error('Failed to unwrap key:', error);
+      logger.error("Failed to unwrap key:", error);
       throw error;
     }
   }
@@ -293,13 +435,13 @@ export class HSMService extends EventEmitter {
       }
 
       // Mark as rotating
-      metadata.status = 'rotating';
+      metadata.status = "rotating";
       this.keyCache.set(keyId, metadata);
 
-      const response = await this.makeHSMRequest<{ newKeyId: string; newVersion: number }>(
-        'rotate',
-        keyId
-      );
+      const response = await this.makeHSMRequest<{
+        newKeyId: string;
+        newVersion: number;
+      }>("rotate", keyId);
 
       const newMetadata: KeyMetadata = {
         keyId: response.newKeyId,
@@ -307,30 +449,35 @@ export class HSMService extends EventEmitter {
         algorithm: metadata.algorithm,
         createdAt: new Date(),
         lastRotated: new Date(),
-        status: 'active',
-        usageCount: 0
+        status: "active",
+        usageCount: 0,
       };
 
       // Update cache
       this.keyCache.set(response.newKeyId, newMetadata);
 
       // Mark old key as revoked after grace period
-      setTimeout(() => {
-        const oldMetadata = this.keyCache.get(keyId);
-        if (oldMetadata) {
-          oldMetadata.status = 'revoked';
-          this.keyCache.set(keyId, oldMetadata);
-        }
-      }, this.rotationPolicy.gracePeriodDays * 24 * 60 * 60 * 1000);
+      const timer = setTimeout(
+        () => {
+          this.rotationTimers.delete(timer);
+          const oldMetadata = this.keyCache.get(keyId);
+          if (oldMetadata) {
+            oldMetadata.status = "revoked";
+            this.keyCache.set(keyId, oldMetadata);
+          }
+        },
+        this.rotationPolicy.gracePeriodDays * 24 * 60 * 60 * 1000,
+      );
+      this.rotationTimers.add(timer);
 
-      this.emit('keyRotated', { oldKeyId: keyId, newKeyId: response.newKeyId });
+      this.emit("keyRotated", { oldKeyId: keyId, newKeyId: response.newKeyId });
 
       return newMetadata;
     } catch (error) {
       // Reset status on failure
       const metadata = this.keyCache.get(keyId);
       if (metadata) {
-        metadata.status = 'active';
+        metadata.status = "active";
         this.keyCache.set(keyId, metadata);
       }
       throw error;
@@ -339,15 +486,15 @@ export class HSMService extends EventEmitter {
 
   async revokeKey(keyId: string, reason?: string): Promise<void> {
     try {
-      await this.makeHSMRequest('revoke', keyId, { reason });
+      await this.makeHSMRequest("revoke", keyId, { reason });
 
       const metadata = this.keyCache.get(keyId);
       if (metadata) {
-        metadata.status = 'revoked';
+        metadata.status = "revoked";
         this.keyCache.set(keyId, metadata);
       }
 
-      this.emit('keyRevoked', { keyId, reason });
+      this.emit("keyRevoked", { keyId, reason });
     } catch (error) {
       logger.error(`Failed to revoke key ${keyId}:`, error);
       throw error;
@@ -361,7 +508,10 @@ export class HSMService extends EventEmitter {
     }
 
     try {
-      const response = await this.makeHSMRequest<KeyMetadata>('metadata', keyId);
+      const response = await this.makeHSMRequest<KeyMetadata>(
+        "metadata",
+        keyId,
+      );
       this.keyCache.set(keyId, response);
       return response;
     } catch (error) {
@@ -370,21 +520,21 @@ export class HSMService extends EventEmitter {
     }
   }
 
-  async listKeys(status?: KeyMetadata['status']): Promise<KeyMetadata[]> {
+  async listKeys(status?: KeyMetadata["status"]): Promise<KeyMetadata[]> {
     const keys = Array.from(this.keyCache.values());
-    return status ? keys.filter(key => key.status === status) : keys;
+    return status ? keys.filter((key) => key.status === status) : keys;
   }
 
-  activateKillSwitch(reason: string = 'Emergency shutdown'): void {
+  activateKillSwitch(reason: string = "Emergency shutdown"): void {
     this.killSwitchActive = true;
-    logger.warn('HSM kill switch activated', { reason });
-    this.emit('killSwitchActivated', { reason, timestamp: new Date() });
+    logger.warn("HSM kill switch activated", { reason });
+    this.emit("killSwitchActivated", { reason, timestamp: new Date() });
   }
 
   deactivateKillSwitch(): void {
     this.killSwitchActive = false;
-    logger.info('HSM kill switch deactivated');
-    this.emit('killSwitchDeactivated', { timestamp: new Date() });
+    logger.info("HSM kill switch deactivated");
+    this.emit("killSwitchDeactivated", { timestamp: new Date() });
   }
 
   isKillSwitchActive(): boolean {
@@ -392,15 +542,15 @@ export class HSMService extends EventEmitter {
   }
 
   private startHealthCheck(): void {
-    setInterval(async () => {
+    this.healthCheckInterval = setInterval(async () => {
       try {
-        await this.client.get('/v1/health');
+        await this.client.get("/v1/health");
         this.connectionHealth = true;
         this.lastHealthCheck = new Date();
       } catch (error) {
         this.connectionHealth = false;
-        logger.error('HSM health check failed:', error);
-        this.emit('connectionUnhealthy', { error, timestamp: new Date() });
+        logger.error("HSM health check failed:", error);
+        this.emit("connectionUnhealthy", { error, timestamp: new Date() });
       }
     }, 30000); // Check every 30 seconds
   }
@@ -410,30 +560,54 @@ export class HSMService extends EventEmitter {
       return;
     }
 
-    setInterval(async () => {
-      try {
-        const keys = await this.listKeys('active');
-        const now = new Date();
+    this.rotationSchedulerInterval = setInterval(
+      async () => {
+        try {
+          const keys = await this.listKeys("active");
+          const now = new Date();
 
-        for (const key of keys) {
-          const daysSinceRotation = key.lastRotated
-            ? (now.getTime() - key.lastRotated.getTime()) / (1000 * 60 * 60 * 24)
-            : (now.getTime() - key.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+          for (const key of keys) {
+            const daysSinceRotation = key.lastRotated
+              ? (now.getTime() - key.lastRotated.getTime()) /
+                (1000 * 60 * 60 * 24)
+              : (now.getTime() - key.createdAt.getTime()) /
+                (1000 * 60 * 60 * 24);
 
-          if (daysSinceRotation >= this.rotationPolicy.rotationIntervalDays) {
-            logger.info(`Auto-rotating key ${key.keyId}`);
-            await this.rotateKey(key.keyId);
-          } else if (daysSinceRotation >= this.rotationPolicy.notificationThresholdDays) {
-            this.emit('rotationWarning', {
-              keyId: key.keyId,
-              daysUntilRotation: this.rotationPolicy.rotationIntervalDays - daysSinceRotation
-            });
+            if (daysSinceRotation >= this.rotationPolicy.rotationIntervalDays) {
+              logger.info(`Auto-rotating key ${key.keyId}`);
+              await this.rotateKey(key.keyId);
+            } else if (
+              daysSinceRotation >= this.rotationPolicy.notificationThresholdDays
+            ) {
+              this.emit("rotationWarning", {
+                keyId: key.keyId,
+                daysUntilRotation:
+                  this.rotationPolicy.rotationIntervalDays - daysSinceRotation,
+              });
+            }
           }
+        } catch (error) {
+          logger.error("Auto-rotation check failed:", error);
         }
-      } catch (error) {
-        logger.error('Auto-rotation check failed:', error);
-      }
-    }, 24 * 60 * 60 * 1000); // Check daily
+      },
+      24 * 60 * 60 * 1000,
+    ); // Check daily
+  }
+
+  async shutdown(): Promise<void> {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+    if (this.rotationSchedulerInterval) {
+      clearInterval(this.rotationSchedulerInterval);
+      this.rotationSchedulerInterval = null;
+    }
+    for (const timer of this.rotationTimers) {
+      clearTimeout(timer);
+    }
+    this.rotationTimers.clear();
+    logger.info("HSM service shutdown completed");
   }
 
   getAuditLog(limit: number = 100, offset: number = 0): AuditLogEntry[] {
@@ -453,36 +627,45 @@ export class HSMService extends EventEmitter {
       connectionHealth: this.connectionHealth,
       killSwitchActive: this.killSwitchActive,
       lastHealthCheck: this.lastHealthCheck,
-      activeKeysCount: Array.from(this.keyCache.values()).filter(k => k.status === 'active').length,
-      rotationPolicy: this.rotationPolicy
+      activeKeysCount: Array.from(this.keyCache.values()).filter(
+        (k) => k.status === "active",
+      ).length,
+      rotationPolicy: this.rotationPolicy,
     };
   }
 
   updateRotationPolicy(updates: Partial<KeyRotationPolicy>): void {
     this.rotationPolicy = { ...this.rotationPolicy, ...updates };
-    logger.info('Rotation policy updated', this.rotationPolicy);
+    logger.info("Rotation policy updated", this.rotationPolicy);
   }
 
-  async exportAuditLog(format: 'json' | 'csv' = 'json'): Promise<string> {
+  async exportAuditLog(format: "json" | "csv" = "json"): Promise<string> {
     const logs = this.getAuditLog(10000); // Get all recent logs
 
-    if (format === 'csv') {
-      const headers = ['timestamp', 'action', 'keyId', 'userId', 'success', 'errorMessage'];
-      const csvRows = [headers.join(',')];
+    if (format === "csv") {
+      const headers = [
+        "timestamp",
+        "action",
+        "keyId",
+        "userId",
+        "success",
+        "errorMessage",
+      ];
+      const csvRows = [headers.join(",")];
 
       for (const log of logs) {
         const row = [
           log.timestamp.toISOString(),
           log.action,
-          log.keyId || '',
-          log.userId || '',
+          log.keyId || "",
+          log.userId || "",
           log.success.toString(),
-          (log.errorMessage || '').replace(/"/g, '""')
+          (log.errorMessage || "").replace(/"/g, '""'),
         ];
-        csvRows.push(row.map(field => `"${field}"`).join(','));
+        csvRows.push(row.map((field) => `"${field}"`).join(","));
       }
 
-      return csvRows.join('\n');
+      return csvRows.join("\n");
     }
 
     return JSON.stringify(logs, null, 2);

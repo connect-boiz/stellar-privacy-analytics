@@ -1,21 +1,21 @@
-import { EventEmitter } from 'events';
-import { logger } from '../../utils/logger';
-import { v4 as uuidv4 } from 'uuid';
-import { MPCNode } from './mpc-node';
-import { SecureTransport } from './secure-transport';
+import { EventEmitter } from "events";
+import { logger } from "../../utils/logger";
+import { v4 as uuidv4 } from "uuid";
+import { MPCNode } from "./mpc-node";
+import { SecureTransport } from "./secure-transport";
 
 export enum MPCProtocol {
-  SHAMIR_SECRET_SHARING = 'shamir',
-  GARBLED_CIRCUITS = 'garbled_circuits',
-  BMR = 'bmr',
-  SPDZ = 'spdz'
+  SHAMIR_SECRET_SHARING = "shamir",
+  GARBLED_CIRCUITS = "garbled_circuits",
+  BMR = "bmr",
+  SPDZ = "spdz",
 }
 
 export interface MPCSession {
   id: string;
   protocol: MPCProtocol;
   participants: string[];
-  status: 'pending' | 'active' | 'completed' | 'failed';
+  status: "pending" | "active" | "completed" | "failed";
   startTime: number;
   endTime?: number;
   config: any;
@@ -31,28 +31,36 @@ export class SMPCOrchestrator extends EventEmitter {
 
   constructor() {
     super();
-    this.transport = new SecureTransport();
-    logger.info('SMPC Orchestrator initialized');
+    this.transport = new SecureTransport("orchestrator");
+    logger.info("SMPC Orchestrator initialized");
   }
 
   /**
    * Create a new SMPC session
    */
-  async createSession(protocol: MPCProtocol, participants: string[], config: any = {}): Promise<string> {
+  async createSession(
+    protocol: MPCProtocol,
+    participants: string[],
+    config: any = {},
+  ): Promise<string> {
     const sessionId = uuidv4();
     const session: MPCSession = {
       id: sessionId,
       protocol,
       participants,
-      status: 'pending',
+      status: "pending",
       startTime: Date.now(),
-      config
+      config,
     };
 
     this.sessions.set(sessionId, session);
-    logger.info('SMPC Session created', { sessionId, protocol, participantCount: participants.length });
-    
-    this.emit('sessionCreated', session);
+    logger.info("SMPC Session created", {
+      sessionId,
+      protocol,
+      participantCount: participants.length,
+    });
+
+    this.emit("sessionCreated", session);
     return sessionId;
   }
 
@@ -61,34 +69,39 @@ export class SMPCOrchestrator extends EventEmitter {
    */
   async startComputation(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId);
-    if (!session) throw new Error('Session not found');
-    if (session.status !== 'pending') throw new Error('Session is not in pending state');
+    if (!session) throw new Error("Session not found");
+    if (session.status !== "pending")
+      throw new Error("Session is not in pending state");
 
     try {
-      session.status = 'active';
-      logger.info('SMPC Computation started', { sessionId });
+      session.status = "active";
+      logger.info("SMPC Computation started", { sessionId });
 
       // In a real implementation, this would involve coordinating with multiple nodes
       // and running the specific protocol logic.
-      
+
       // Simulate protocol selection and execution
       switch (session.protocol) {
         case MPCProtocol.SHAMIR_SECRET_SHARING:
           await this.executeShamirProtocol(session);
           break;
         default:
-          throw new Error(`Protocol ${session.protocol} not yet implemented in orchestrator`);
+          throw new Error(
+            `Protocol ${session.protocol} not yet implemented in orchestrator`,
+          );
       }
 
-      session.status = 'completed';
+      session.status = "completed";
       session.endTime = Date.now();
-      this.emit('sessionCompleted', session);
-      
+      this.emit("sessionCompleted", session);
     } catch (error: any) {
-      session.status = 'failed';
+      session.status = "failed";
       session.endTime = Date.now();
-      logger.error('SMPC Computation failed', { sessionId, error: error.message });
-      this.emit('sessionFailed', { sessionId, error: error.message });
+      logger.error("SMPC Computation failed", {
+        sessionId,
+        error: error.message,
+      });
+      this.emit("sessionFailed", { sessionId, error: error.message });
       throw error;
     }
   }
@@ -98,7 +111,7 @@ export class SMPCOrchestrator extends EventEmitter {
    */
   registerNode(nodeId: string, node: MPCNode): void {
     this.nodes.set(nodeId, node);
-    logger.info('MPC Node registered', { nodeId });
+    logger.info("MPC Node registered", { nodeId });
   }
 
   /**
@@ -109,12 +122,14 @@ export class SMPCOrchestrator extends EventEmitter {
     // 2. Perform local computations on shares
     // 3. Collect results
     // 4. Reconstruct secret
-    
-    logger.info('Executing Shamir Secret Sharing protocol', { sessionId: session.id });
-    
+
+    logger.info("Executing Shamir Secret Sharing protocol", {
+      sessionId: session.id,
+    });
+
     // Simulate async work
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Logic would integrate with shamir-secret-sharing.ts
   }
 
@@ -130,12 +145,15 @@ export class SMPCOrchestrator extends EventEmitter {
    */
   async aggregateResults(sessionId: string, results: any[]): Promise<any> {
     const session = this.sessions.get(sessionId);
-    if (!session) throw new Error('Session not found');
-    
-    logger.info('Aggregating SMPC results', { sessionId, resultCount: results.length });
-    
+    if (!session) throw new Error("Session not found");
+
+    logger.info("Aggregating SMPC results", {
+      sessionId,
+      resultCount: results.length,
+    });
+
     // Logic for result verification and integrity checks
-    return { aggregatedValue: 'SIMULATED_RESULT', integrityVerified: true };
+    return { aggregatedValue: "SIMULATED_RESULT", integrityVerified: true };
   }
 }
 

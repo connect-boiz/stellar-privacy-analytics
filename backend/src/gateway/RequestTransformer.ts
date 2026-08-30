@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 import { TransformationRule } from './PrivacyApiGateway';
+import { EncryptionKeyStore } from './EncryptionKeyStore';
 import { logger } from '../utils/logger';
 
 export interface TransformationContext {
@@ -46,13 +47,17 @@ export class RequestTransformer {
   private encryptionKeys: Map<string, Buffer>;
   private pseudonymizationSalts: Map<string, string>;
   private transformationCache: Map<string, any>;
+  private keyStore: EncryptionKeyStore;
+  private keysLoadedAtMtimeMs = 0;
 
-  constructor() {
+  constructor(keyStore?: EncryptionKeyStore) {
     this.encryptionKeys = new Map();
     this.pseudonymizationSalts = new Map();
     this.transformationCache = new Map();
-    
-    this.initializeDefaultKeys();
+    this.keyStore = keyStore ?? new EncryptionKeyStore();
+
+    this.initializeEncryptionKeys();
+    this.initializeDefaultSalts();
   }
 
   async applyRequestTransformations(
@@ -146,8 +151,8 @@ export class RequestTransformer {
       let responseData: any;
       if (res.locals && res.locals.responseData) {
         responseData = res.locals.responseData;
-      } else if (res.data) {
-        responseData = res.data;
+      } else if ((res as any).data) {
+        responseData = (res as any).data;
       }
 
       if (!responseData) {
@@ -165,7 +170,7 @@ export class RequestTransformer {
         if (res.locals) {
           res.locals.responseData = result.data;
         }
-        res.data = result.data;
+        (res as any).data = result.data;
       }
 
       logger.info('Response transformations applied', {
@@ -280,7 +285,7 @@ export class RequestTransformer {
   private async applyTransformation(
     rule: TransformationRule,
     data: any,
-    context: TransformationContext
+    _context: TransformationContext
   ): Promise<TransformationResult> {
     try {
       let transformedData = data;
@@ -361,21 +366,40 @@ export class RequestTransformer {
       return data;
     }
 
-    const str = String(data);
-    const key = this.encryptionKeys.get(config.keyId);
-    
-    if (!key) {
-      throw new Error(`Encryption key not found: ${config.keyId}`);
-    }
+    return this.encryptValue(String(data), config);
+  }
 
+  public encryptValue(data: string, config: EncryptionConfig): string {
+    const key = this.getEncryptionKey(config.keyId);
     const iv = randomBytes(config.ivLength || 16);
     const cipher = createCipheriv(config.algorithm, key, iv);
-    
-    let encrypted = cipher.update(str, 'utf8', 'hex');
+
+    let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
-    // Combine IV and encrypted data
-    return iv.toString('hex') + ':' + encrypted;
+
+    return `${iv.toString('hex')}:${encrypted}`;
+  }
+
+  public decryptValue(encrypted: string, config: EncryptionConfig): string {
+    if (encrypted === null || encrypted === undefined) {
+      return encrypted;
+    }
+
+    const key = this.getEncryptionKey(config.keyId);
+
+    const separatorIndex = encrypted.indexOf(':');
+    if (separatorIndex === -1) {
+      throw new Error('Invalid encrypted payload format');
+    }
+
+    const iv = Buffer.from(encrypted.slice(0, separatorIndex), 'hex');
+    const encryptedHex = encrypted.slice(separatorIndex + 1);
+    const decipher = createDecipheriv(config.algorithm, key, iv);
+
+    let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
   }
 
   private hashData(data: any, parameters?: any): string {
@@ -508,23 +532,123 @@ export class RequestTransformer {
     return false;
   }
 
-  private initializeDefaultKeys(): void {
-    // Initialize default encryption key for development
-    const defaultKey = randomBytes(32); // 256-bit key
+  private initializeEncryptionKeys(): void {
+    const loadResult = this.keyStore.load();
+    this.keysLoadedAtMtimeMs = this.keyStore.getLastModifiedMs();
+
+    if (loadResult.status === 'recovered') {
+      this.encryptionKeys = loadResult.keys;
+      logger.info('Recovered encryption keys from durable store on startup', {
+        keyCount: loadResult.keys.size,
+        keyIds: Array.from(loadResult.keys.keys()),
+        storePath: this.keyStore.getFilePath()
+      });
+      return;
+    }
+
+    if (loadResult.status === 'corrupted') {
+      logger.warn('Encryption key store is corrupted; regenerating fresh default key', {
+        storePath: this.keyStore.getFilePath()
+      });
+    } else if (loadResult.status === 'empty') {
+      logger.warn('Encryption key store exists but contains no valid keys; regenerating fresh default key', {
+        storePath: this.keyStore.getFilePath()
+      });
+    } else {
+      logger.warn('No encryption keys found in durable store; generating fresh default key', {
+        storePath: this.keyStore.getFilePath()
+      });
+    }
+
+    const defaultKey = randomBytes(32);
     this.encryptionKeys.set('default', defaultKey);
-    
-    // Initialize default pseudonymization salt
+    this.persistEncryptionKeys();
+
+    logger.info('Fresh default encryption key generated and persisted', {
+      keyId: 'default',
+      storePath: this.keyStore.getFilePath(),
+      reason: loadResult.status
+    });
+  }
+
+  private syncKeysFromStore(force = false): void {
+    if (!force && !this.keyStore.hasExternalChanges(this.keysLoadedAtMtimeMs)) {
+      return;
+    }
+
+    const loadResult = this.keyStore.load();
+    this.keysLoadedAtMtimeMs = this.keyStore.getLastModifiedMs();
+
+    if (loadResult.status === 'recovered') {
+      this.encryptionKeys = loadResult.keys;
+      logger.info('Synchronized encryption keys from durable store', {
+        keyCount: loadResult.keys.size,
+        keyIds: Array.from(loadResult.keys.keys()),
+        storePath: this.keyStore.getFilePath()
+      });
+    }
+  }
+
+  private getEncryptionKey(keyId: string): Buffer {
+    this.syncKeysFromStore();
+
+    let key = this.encryptionKeys.get(keyId);
+    if (!key) {
+      // Force a reload from the store in case the mtime-based
+      // sync check missed an external update (e.g. same-second writes).
+      this.syncKeysFromStore(true);
+      key = this.encryptionKeys.get(keyId);
+    }
+    if (!key) {
+      throw new Error(`Encryption key not found: ${keyId}`);
+    }
+
+    return key;
+  }
+
+  private initializeDefaultSalts(): void {
     this.pseudonymizationSalts.set('default', 'stellar_privacy_salt_2024');
   }
 
+  private persistEncryptionKeys(): void {
+    try {
+      this.keyStore.save(this.encryptionKeys);
+      this.keysLoadedAtMtimeMs = this.keyStore.getLastPersistedMtimeMs();
+    } catch (error) {
+      logger.error('Failed to persist encryption keys', {
+        storePath: this.keyStore.getFilePath(),
+        error: (error as Error).message
+      });
+      throw error;
+    }
+  }
+
   public addEncryptionKey(keyId: string, key: Buffer): void {
+    if (!keyId || key.length === 0) {
+      throw new Error('Encryption key id and material are required');
+    }
+
     this.encryptionKeys.set(keyId, key);
-    logger.info(`Encryption key added: ${keyId}`);
+    this.persistEncryptionKeys();
+    logger.info(`Encryption key added: ${keyId}`, {
+      storePath: this.keyStore.getFilePath()
+    });
   }
 
   public removeEncryptionKey(keyId: string): void {
+    if (!this.encryptionKeys.has(keyId)) {
+      throw new Error(`Encryption key not found: ${keyId}`);
+    }
+
+    if (this.encryptionKeys.size <= 1) {
+      throw new Error('Cannot remove the last remaining encryption key');
+    }
+
     this.encryptionKeys.delete(keyId);
-    logger.info(`Encryption key removed: ${keyId}`);
+    this.persistEncryptionKeys();
+    logger.info(`Encryption key removed: ${keyId}`, {
+      storePath: this.keyStore.getFilePath()
+    });
   }
 
   public addPseudonymizationSalt(saltId: string, salt: string): void {

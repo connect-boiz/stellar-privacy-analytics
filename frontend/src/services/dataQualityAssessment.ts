@@ -4,7 +4,7 @@
 
 import {
   DatasetMetadata,
-  QualityMetadata,
+  _QualityMetadata,
   QualityScore,
   QualityDimension,
   QualityMetric,
@@ -17,7 +17,7 @@ import {
   TrendAnomaly,
   QualityBenchmark,
   SchemaField,
-  FieldStatistics
+  _FieldStatistics,
 } from '../types/dataCatalog';
 
 export interface DataQualityConfig {
@@ -44,7 +44,14 @@ export interface CustomQualityMetric {
   id: string;
   name: string;
   description: string;
-  category: 'completeness' | 'accuracy' | 'consistency' | 'validity' | 'uniqueness' | 'timeliness' | 'custom';
+  category:
+    | 'completeness'
+    | 'accuracy'
+    | 'consistency'
+    | 'validity'
+    | 'uniqueness'
+    | 'timeliness'
+    | 'custom';
   formula: string;
   parameters: Record<string, any>;
   weight: number;
@@ -82,7 +89,18 @@ export interface QualityRule {
 
 export interface QualityRuleCondition {
   field?: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in' | 'regex' | 'custom';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'not_contains'
+    | 'greater_than'
+    | 'less_than'
+    | 'between'
+    | 'in'
+    | 'not_in'
+    | 'regex'
+    | 'custom';
   value: any;
   customFunction?: string;
 }
@@ -182,16 +200,16 @@ export class DataQualityAssessment {
               consistency: 75,
               validity: 90,
               uniqueness: 85,
-              timeliness: 70
+              timeliness: 70,
             },
             metricThresholds: {},
             anomalyThreshold: 0.1,
-            trendThreshold: 0.05
+            trendThreshold: 0.05,
           },
           benchmarkingEnabled: true,
           historicalAnalysis: true,
           predictiveQuality: true,
-          customMetrics: []
+          customMetrics: [],
         };
       }
       DataQualityAssessment.instance = new DataQualityAssessment(config);
@@ -212,9 +230,9 @@ export class DataQualityAssessment {
         schedule: {
           frequency: 'daily',
           timezone: 'UTC',
-          enabled: true
+          enabled: true,
         },
-        enabled: true
+        enabled: true,
       },
       {
         id: 'privacy_focused',
@@ -227,9 +245,9 @@ export class DataQualityAssessment {
         schedule: {
           frequency: 'daily',
           timezone: 'UTC',
-          enabled: true
+          enabled: true,
         },
-        enabled: true
+        enabled: true,
       },
       {
         id: 'operational',
@@ -242,13 +260,13 @@ export class DataQualityAssessment {
         schedule: {
           frequency: 'hourly',
           timezone: 'UTC',
-          enabled: true
+          enabled: true,
         },
-        enabled: true
-      }
+        enabled: true,
+      },
     ];
 
-    profiles.forEach(profile => {
+    profiles.forEach((profile) => {
       this.qualityProfiles.set(profile.id, profile);
     });
   }
@@ -265,7 +283,7 @@ export class DataQualityAssessment {
         parameters: { retention_period: 30 },
         weight: 0.15,
         target: 0.95,
-        threshold: 0.8
+        threshold: 0.8,
       },
       {
         id: 'completeness_ratio',
@@ -276,7 +294,7 @@ export class DataQualityAssessment {
         parameters: {},
         weight: 0.2,
         target: 0.95,
-        threshold: 0.85
+        threshold: 0.85,
       },
       {
         id: 'uniqueness_ratio',
@@ -287,7 +305,7 @@ export class DataQualityAssessment {
         parameters: {},
         weight: 0.15,
         target: 0.9,
-        threshold: 0.8
+        threshold: 0.8,
       },
       {
         id: 'format_validity',
@@ -298,7 +316,7 @@ export class DataQualityAssessment {
         parameters: { format_patterns: {} },
         weight: 0.1,
         target: 0.95,
-        threshold: 0.85
+        threshold: 0.85,
       },
       {
         id: 'reference_integrity',
@@ -309,7 +327,7 @@ export class DataQualityAssessment {
         parameters: {},
         weight: 0.1,
         target: 0.98,
-        threshold: 0.9
+        threshold: 0.9,
       },
       {
         id: 'accuracy_score',
@@ -320,7 +338,7 @@ export class DataQualityAssessment {
         parameters: { validation_rules: {} },
         weight: 0.2,
         target: 0.9,
-        threshold: 0.8
+        threshold: 0.8,
       },
       {
         id: 'consistency_score',
@@ -331,8 +349,8 @@ export class DataQualityAssessment {
         parameters: { consistency_rules: {} },
         weight: 0.1,
         target: 0.85,
-        threshold: 0.75
-      }
+        threshold: 0.75,
+      },
     ];
   }
 
@@ -340,9 +358,12 @@ export class DataQualityAssessment {
     if (!this.config.autoAssessment) return;
 
     // Schedule periodic assessments
-    setInterval(() => {
-      this.runScheduledAssessments();
-    }, this.config.assessmentInterval * 60 * 60 * 1000);
+    setInterval(
+      () => {
+        this.runScheduledAssessments();
+      },
+      this.config.assessmentInterval * 60 * 60 * 1000
+    );
   }
 
   // Main assessment methods
@@ -356,9 +377,9 @@ export class DataQualityAssessment {
       sampleSize?: number;
     }
   ): Promise<QualityAssessment> {
-    const profile = profileId ? 
-      this.qualityProfiles.get(profileId) : 
-      this.qualityProfiles.get('comprehensive');
+    const profile = profileId
+      ? this.qualityProfiles.get(profileId)
+      : this.qualityProfiles.get('comprehensive');
 
     if (!profile) {
       throw new Error(`Quality profile not found: ${profileId || 'comprehensive'}`);
@@ -396,9 +417,9 @@ export class DataQualityAssessment {
         assessor: 'system',
         methodology: profile.name,
         scores: this.convertMetricsToScores(metrics),
-        findings: issues.map(issue => issue.title),
+        findings: issues.map((issue) => issue.title),
         recommendations: this.generateRecommendations(issues, score),
-        nextReview: Date.now() + (this.config.assessmentInterval * 60 * 60 * 1000)
+        nextReview: Date.now() + this.config.assessmentInterval * 60 * 60 * 1000,
       };
 
       // Update quality history
@@ -408,7 +429,6 @@ export class DataQualityAssessment {
       await this.generateQualityAlerts(datasetId, assessment, profile);
 
       return assessment;
-
     } catch (error) {
       job.status = 'failed';
       job.error = error.toString();
@@ -417,9 +437,9 @@ export class DataQualityAssessment {
     }
   }
 
-  private createAssessmentJob(datasetId: string, type: string, profileId?: string): string {
+  private createAssessmentJob(datasetId: string, type: string, _profileId?: string): string {
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const job: QualityAssessmentJob = {
       id: jobId,
       datasetId,
@@ -432,8 +452,8 @@ export class DataQualityAssessment {
         grade: 'F',
         lastAssessed: Date.now(),
         trend: 'stable',
-        confidence: 0
-      }
+        confidence: 0,
+      },
     };
 
     this.assessmentJobs.set(jobId, job);
@@ -443,7 +463,7 @@ export class DataQualityAssessment {
   private async calculateQualityMetrics(
     metadata: DatasetMetadata,
     profile: QualityProfile,
-    options?: any
+    _options?: any
   ): Promise<QualityMetric[]> {
     const metrics: QualityMetric[] = [];
 
@@ -481,7 +501,7 @@ export class DataQualityAssessment {
   private async calculateCompletenessMetrics(metadata: DatasetMetadata): Promise<QualityMetric[]> {
     const metrics: QualityMetric[] = [];
 
-    metadata.schema.fields.forEach(field => {
+    metadata.schema.fields.forEach((field) => {
       if (field.statistics) {
         const totalRecords = this.getTotalRecordCount(metadata);
         const nullCount = field.statistics.nullCount;
@@ -498,14 +518,14 @@ export class DataQualityAssessment {
           status: completeness >= target ? 'pass' : completeness >= threshold ? 'warning' : 'fail',
           description: `Completeness of field ${field.name}`,
           formula: '(total_records - null_count) / total_records * 100',
-          lastCalculated: Date.now()
+          lastCalculated: Date.now(),
         });
       }
     });
 
     // Overall completeness
-    const overallCompleteness = metrics.length > 0 ? 
-      metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length : 0;
+    const overallCompleteness =
+      metrics.length > 0 ? metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length : 0;
 
     metrics.push({
       name: 'overall_completeness',
@@ -515,7 +535,7 @@ export class DataQualityAssessment {
       status: overallCompleteness >= 95 ? 'pass' : overallCompleteness >= 85 ? 'warning' : 'fail',
       description: 'Overall dataset completeness',
       formula: 'average(field_completeness)',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     return metrics;
@@ -525,9 +545,9 @@ export class DataQualityAssessment {
     const metrics: QualityMetric[] = [];
 
     // Field-level accuracy based on validation rules
-    metadata.schema.fields.forEach(field => {
+    metadata.schema.fields.forEach((field) => {
       const accuracy = this.calculateFieldAccuracy(field);
-      
+
       metrics.push({
         name: `accuracy_${field.name}`,
         value: accuracy,
@@ -536,13 +556,13 @@ export class DataQualityAssessment {
         status: accuracy >= 90 ? 'pass' : accuracy >= 80 ? 'warning' : 'fail',
         description: `Accuracy of field ${field.name}`,
         formula: 'valid_records / total_records * 100',
-        lastCalculated: Date.now()
+        lastCalculated: Date.now(),
       });
     });
 
     // Overall accuracy
-    const overallAccuracy = metrics.length > 0 ? 
-      metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length : 0;
+    const overallAccuracy =
+      metrics.length > 0 ? metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length : 0;
 
     metrics.push({
       name: 'overall_accuracy',
@@ -552,7 +572,7 @@ export class DataQualityAssessment {
       status: overallAccuracy >= 90 ? 'pass' : overallAccuracy >= 80 ? 'warning' : 'fail',
       description: 'Overall dataset accuracy',
       formula: 'average(field_accuracy)',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     return metrics;
@@ -569,7 +589,8 @@ export class DataQualityAssessment {
 
       // Check for outliers
       if (field.statistics.outliers && field.statistics.outliers.length > 0) {
-        const outlierRate = field.statistics.outliers.length / this.getTotalRecordCount({} as DatasetMetadata);
+        const outlierRate =
+          field.statistics.outliers.length / this.getTotalRecordCount({} as DatasetMetadata);
         accuracy -= outlierRate * 10;
       }
 
@@ -583,7 +604,7 @@ export class DataQualityAssessment {
     return Math.max(0, accuracy);
   }
 
-  private calculateFormatAccuracy(field: SchemaField): number {
+  private calculateFormatAccuracy(_field: SchemaField): number {
     // Simplified format validation
     // In production, would use actual format validation
     return 95; // Placeholder
@@ -602,7 +623,7 @@ export class DataQualityAssessment {
       status: referenceConsistency >= 98 ? 'pass' : referenceConsistency >= 90 ? 'warning' : 'fail',
       description: 'Foreign key reference consistency',
       formula: 'valid_references / total_references * 100',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     // Data type consistency
@@ -615,7 +636,7 @@ export class DataQualityAssessment {
       status: typeConsistency >= 95 ? 'pass' : typeConsistency >= 85 ? 'warning' : 'fail',
       description: 'Data type consistency',
       formula: 'type_consistent_records / total_records * 100',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     // Overall consistency
@@ -628,7 +649,7 @@ export class DataQualityAssessment {
       status: overallConsistency >= 95 ? 'pass' : overallConsistency >= 85 ? 'warning' : 'fail',
       description: 'Overall dataset consistency',
       formula: 'average(consistency_metrics)',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     return metrics;
@@ -639,7 +660,7 @@ export class DataQualityAssessment {
     let totalReferences = 0;
     let validReferences = 0;
 
-    metadata.schema.relationships.forEach(relationship => {
+    metadata.schema.relationships.forEach((relationship) => {
       if (relationship.type === 'foreign_key') {
         totalReferences++;
         // Simplified check - in production would validate actual references
@@ -655,7 +676,7 @@ export class DataQualityAssessment {
     let consistentFields = 0;
     const totalFields = metadata.schema.fields.length;
 
-    metadata.schema.fields.forEach(field => {
+    metadata.schema.fields.forEach((_field) => {
       // Simplified type consistency check
       // In production would analyze actual data
       consistentFields += Math.random() > 0.05 ? 1 : 0; // 95% consistent
@@ -667,9 +688,9 @@ export class DataQualityAssessment {
   private async calculateValidityMetrics(metadata: DatasetMetadata): Promise<QualityMetric[]> {
     const metrics: QualityMetric[] = [];
 
-    metadata.schema.fields.forEach(field => {
+    metadata.schema.fields.forEach((field) => {
       const validity = this.calculateFieldValidity(field);
-      
+
       metrics.push({
         name: `validity_${field.name}`,
         value: validity,
@@ -678,13 +699,13 @@ export class DataQualityAssessment {
         status: validity >= 95 ? 'pass' : validity >= 85 ? 'warning' : 'fail',
         description: `Validity of field ${field.name}`,
         formula: 'valid_values / total_values * 100',
-        lastCalculated: Date.now()
+        lastCalculated: Date.now(),
       });
     });
 
     // Overall validity
-    const overallValidity = metrics.length > 0 ? 
-      metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length : 0;
+    const overallValidity =
+      metrics.length > 0 ? metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length : 0;
 
     metrics.push({
       name: 'overall_validity',
@@ -694,7 +715,7 @@ export class DataQualityAssessment {
       status: overallValidity >= 95 ? 'pass' : overallValidity >= 85 ? 'warning' : 'fail',
       description: 'Overall dataset validity',
       formula: 'average(field_validity)',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     return metrics;
@@ -706,7 +727,7 @@ export class DataQualityAssessment {
 
     if (field.statistics) {
       // Check constraint violations
-      field.constraints.forEach(constraint => {
+      field.constraints.forEach((constraint) => {
         if (!constraint.enforced) {
           validity -= 5; // Penalty for unenforced constraints
         }
@@ -714,7 +735,8 @@ export class DataQualityAssessment {
 
       // Check distribution anomalies
       if (field.statistics.distribution.outliers.length > 0) {
-        const outlierRate = field.statistics.distribution.outliers.length / 
+        const outlierRate =
+          field.statistics.distribution.outliers.length /
           this.getTotalRecordCount({} as DatasetMetadata);
         validity -= outlierRate * 10;
       }
@@ -726,11 +748,11 @@ export class DataQualityAssessment {
   private async calculateUniquenessMetrics(metadata: DatasetMetadata): Promise<QualityMetric[]> {
     const metrics: QualityMetric[] = [];
 
-    metadata.schema.fields.forEach(field => {
+    metadata.schema.fields.forEach((field) => {
       if (field.statistics) {
         const totalRecords = this.getTotalRecordCount(metadata);
         const uniqueness = (field.statistics.distinctCount / totalRecords) * 100;
-        
+
         metrics.push({
           name: `uniqueness_${field.name}`,
           value: uniqueness,
@@ -739,21 +761,22 @@ export class DataQualityAssessment {
           status: uniqueness >= 90 ? 'pass' : uniqueness >= 80 ? 'warning' : 'fail',
           description: `Uniqueness of field ${field.name}`,
           formula: 'distinct_count / total_records * 100',
-          lastCalculated: Date.now()
+          lastCalculated: Date.now(),
         });
       }
     });
 
     // Overall uniqueness (for fields that should be unique)
-    const uniqueFields = metadata.schema.fields.filter(field => 
-      field.constraints.some(c => c.type === 'unique' || c.type === 'primary_key')
+    const uniqueFields = metadata.schema.fields.filter((field) =>
+      field.constraints.some((c) => c.type === 'unique' || c.type === 'primary_key')
     );
 
     if (uniqueFields.length > 0) {
-      const overallUniqueness = uniqueFields.reduce((sum, field) => {
-        const metric = metrics.find(m => m.name === `uniqueness_${field.name}`);
-        return sum + (metric ? metric.value : 0);
-      }, 0) / uniqueFields.length;
+      const overallUniqueness =
+        uniqueFields.reduce((sum, field) => {
+          const metric = metrics.find((m) => m.name === `uniqueness_${field.name}`);
+          return sum + (metric ? metric.value : 0);
+        }, 0) / uniqueFields.length;
 
       metrics.push({
         name: 'overall_uniqueness',
@@ -763,7 +786,7 @@ export class DataQualityAssessment {
         status: overallUniqueness >= 95 ? 'pass' : overallUniqueness >= 85 ? 'warning' : 'fail',
         description: 'Overall uniqueness for unique fields',
         formula: 'average(unique_field_uniqueness)',
-        lastCalculated: Date.now()
+        lastCalculated: Date.now(),
       });
     }
 
@@ -783,7 +806,7 @@ export class DataQualityAssessment {
       status: freshness >= 95 ? 'pass' : freshness >= 80 ? 'warning' : 'fail',
       description: 'Data freshness based on last update time',
       formula: '(current_time - max(last_updated)) / retention_period * 100',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     // Update frequency
@@ -796,7 +819,7 @@ export class DataQualityAssessment {
       status: updateFrequency >= 90 ? 'pass' : updateFrequency >= 70 ? 'warning' : 'fail',
       description: 'Update frequency consistency',
       formula: 'actual_frequency / expected_frequency * 100',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     // Overall timeliness
@@ -809,7 +832,7 @@ export class DataQualityAssessment {
       status: overallTimeliness >= 90 ? 'pass' : overallTimeliness >= 75 ? 'warning' : 'fail',
       description: 'Overall dataset timeliness',
       formula: 'average(timeliness_metrics)',
-      lastCalculated: Date.now()
+      lastCalculated: Date.now(),
     });
 
     return metrics;
@@ -826,7 +849,7 @@ export class DataQualityAssessment {
     return freshness;
   }
 
-  private calculateUpdateFrequency(metadata: DatasetMetadata): number {
+  private calculateUpdateFrequency(_metadata: DatasetMetadata): number {
     // Simplified frequency calculation
     // In production would analyze actual update patterns
     return 85; // Placeholder
@@ -842,7 +865,7 @@ export class DataQualityAssessment {
     for (const dimension of profile.dimensions) {
       for (const metric of dimension.metrics) {
         const value = await this.evaluateCustomMetric(metric, metadata);
-        
+
         metrics.push({
           name: metric.name,
           value,
@@ -851,7 +874,7 @@ export class DataQualityAssessment {
           status: value >= metric.target ? 'pass' : value >= metric.threshold ? 'warning' : 'fail',
           description: metric.description,
           formula: metric.formula,
-          lastCalculated: Date.now()
+          lastCalculated: Date.now(),
         });
       }
     }
@@ -859,7 +882,10 @@ export class DataQualityAssessment {
     return metrics;
   }
 
-  private async evaluateCustomMetric(metric: QualityMetric, metadata: DatasetMetadata): Promise<number> {
+  private async evaluateCustomMetric(
+    _metric: QualityMetric,
+    _metadata: DatasetMetadata
+  ): Promise<number> {
     // Simplified custom metric evaluation
     // In production would parse and execute the formula
     return Math.random() * 100; // Placeholder
@@ -873,10 +899,10 @@ export class DataQualityAssessment {
     const issues: QualityIssue[] = [];
 
     // Identify issues from metrics
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       if (metric.status === 'fail' || metric.status === 'warning') {
         const severity = metric.status === 'fail' ? 'high' : 'medium';
-        
+
         issues.push({
           id: `issue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           severity,
@@ -886,7 +912,7 @@ export class DataQualityAssessment {
           affectedFields: this.getAffectedFieldsFromMetric(metric.name, metadata),
           affectedRecords: this.estimateAffectedRecords(metric, metadata),
           detectedAt: Date.now(),
-          status: 'open'
+          status: 'open',
         });
       }
     });
@@ -913,27 +939,34 @@ export class DataQualityAssessment {
   }
 
   private getAffectedFieldsFromMetric(metricName: string, metadata: DatasetMetadata): string[] {
-    if (metricName.startsWith('completeness_') || metricName.startsWith('accuracy_') ||
-        metricName.startsWith('validity_') || metricName.startsWith('uniqueness_')) {
+    if (
+      metricName.startsWith('completeness_') ||
+      metricName.startsWith('accuracy_') ||
+      metricName.startsWith('validity_') ||
+      metricName.startsWith('uniqueness_')
+    ) {
       const fieldName = metricName.split('_')[1];
       return [fieldName];
     }
-    return metadata.schema.fields.map(field => field.name);
+    return metadata.schema.fields.map((field) => field.name);
   }
 
   private estimateAffectedRecords(metric: QualityMetric, metadata: DatasetMetadata): number {
     const totalRecords = this.getTotalRecordCount(metadata);
-    
+
     if (metric.status === 'fail') {
       return Math.floor(totalRecords * 0.3); // 30% affected
     } else if (metric.status === 'warning') {
       return Math.floor(totalRecords * 0.1); // 10% affected
     }
-    
+
     return 0;
   }
 
-  private async evaluateQualityRule(rule: QualityRule, metadata: DatasetMetadata): Promise<QualityIssue[]> {
+  private async evaluateQualityRule(
+    rule: QualityRule,
+    _metadata: DatasetMetadata
+  ): Promise<QualityIssue[]> {
     const issues: QualityIssue[] = [];
 
     // Simplified rule evaluation
@@ -950,7 +983,7 @@ export class DataQualityAssessment {
         affectedFields: rule.condition.field ? [rule.condition.field] : [],
         affectedRecords: Math.floor(Math.random() * 1000),
         detectedAt: Date.now(),
-        status: 'open'
+        status: 'open',
       });
     }
 
@@ -961,7 +994,7 @@ export class DataQualityAssessment {
     const dimensionScores = new Map<string, number[]>();
 
     // Group metrics by dimension
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       const dimension = this.getDimensionFromMetric(metric.name);
       if (!dimensionScores.has(dimension)) {
         dimensionScores.set(dimension, []);
@@ -976,13 +1009,13 @@ export class DataQualityAssessment {
     dimensionScores.forEach((scores, dimension) => {
       const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
       const weight = this.getDimensionWeight(dimension, profile);
-      
+
       totalScore += avgScore * weight;
       totalWeight += weight;
     });
 
     const overallScore = totalWeight > 0 ? totalScore / totalWeight : 0;
-    
+
     // Determine grade
     let grade: QualityScore['grade'] = 'F';
     if (overallScore >= 90) grade = 'A';
@@ -1001,7 +1034,7 @@ export class DataQualityAssessment {
       grade,
       lastAssessed: Date.now(),
       trend,
-      confidence
+      confidence,
     };
   }
 
@@ -1016,11 +1049,11 @@ export class DataQualityAssessment {
   }
 
   private getDimensionWeight(dimension: string, profile: QualityProfile): number {
-    const dim = profile.dimensions.find(d => d.name === dimension);
+    const dim = profile.dimensions.find((d) => d.name === dimension);
     return dim ? dim.weight : 0.1;
   }
 
-  private determineTrend(currentScore: number): 'improving' | 'stable' | 'declining' {
+  private determineTrend(_currentScore: number): 'improving' | 'stable' | 'declining' {
     // Simplified trend determination
     // In production would compare with historical data
     return 'stable';
@@ -1029,18 +1062,18 @@ export class DataQualityAssessment {
   private calculateConfidence(metrics: QualityMetric[]): number {
     // Calculate confidence based on number of metrics and their reliability
     const metricCount = metrics.length;
-    const validMetrics = metrics.filter(m => m.value >= 0 && m.value <= 100).length;
-    
+    const validMetrics = metrics.filter((m) => m.value >= 0 && m.value <= 100).length;
+
     return (validMetrics / metricCount) * 100;
   }
 
   private convertMetricsToScores(metrics: QualityMetric[]): Record<string, number> {
     const scores: Record<string, number> = {};
-    
-    metrics.forEach(metric => {
+
+    metrics.forEach((metric) => {
       scores[metric.name] = metric.value;
     });
-    
+
     return scores;
   }
 
@@ -1049,8 +1082,8 @@ export class DataQualityAssessment {
 
     // Generate recommendations based on issues
     const issuesByType = new Map<QualityIssue['type'], QualityIssue[]>();
-    
-    issues.forEach(issue => {
+
+    issues.forEach((issue) => {
       if (!issuesByType.has(issue.type)) {
         issuesByType.set(issue.type, []);
       }
@@ -1098,19 +1131,22 @@ export class DataQualityAssessment {
     return [...new Set(recommendations)]; // Remove duplicates
   }
 
-  private async updateQualityHistory(datasetId: string, assessment: QualityAssessment): Promise<void> {
+  private async updateQualityHistory(
+    datasetId: string,
+    assessment: QualityAssessment
+  ): Promise<void> {
     const history = this.qualityHistory.get(datasetId) || [];
-    
+
     // Create trend data point
     const trendDataPoint: TrendDataPoint = {
       timestamp: assessment.timestamp,
       value: assessment.scores.overall_score || 0,
       sampleSize: 1000, // Placeholder
-      confidence: 0.9
+      confidence: 0.9,
     };
 
     // Find or create trend for overall score
-    let overallTrend = history.find(t => t.metric === 'overall_score');
+    let overallTrend = history.find((t) => t.metric === 'overall_score');
     if (!overallTrend) {
       overallTrend = {
         metric: 'overall_score',
@@ -1120,19 +1156,21 @@ export class DataQualityAssessment {
           slope: 0,
           correlation: 0,
           seasonality: [],
-          changePoints: []
+          changePoints: [],
         },
         forecast: [],
-        anomalies: []
+        anomalies: [],
       };
       history.push(overallTrend);
     }
 
     overallTrend.timeSeries.push(trendDataPoint);
-    
+
     // Keep only last 30 days of data
-    const cutoffTime = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    overallTrend.timeSeries = overallTrend.timeSeries.filter(point => point.timestamp > cutoffTime);
+    const cutoffTime = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    overallTrend.timeSeries = overallTrend.timeSeries.filter(
+      (point) => point.timestamp > cutoffTime
+    );
 
     this.qualityHistory.set(datasetId, history);
   }
@@ -1143,37 +1181,39 @@ export class DataQualityAssessment {
     profile: QualityProfile
   ): Promise<void> {
     // Check overall score threshold
-    if (assessment.scores.overall_score && 
-        assessment.scores.overall_score < this.config.alertThresholds.overallScore) {
+    if (
+      assessment.scores.overall_score &&
+      assessment.scores.overall_score < this.config.alertThresholds.overallScore
+    ) {
       await this.sendQualityAlert({
         type: 'score_below_threshold',
         datasetId,
         message: `Quality score ${assessment.scores.overall_score.toFixed(1)}% below threshold ${this.config.alertThresholds.overallScore}%`,
         severity: 'high',
-        assessment
+        assessment,
       });
     }
 
     // Check dimension thresholds
-    profile.dimensions.forEach(dimension => {
+    profile.dimensions.forEach((dimension) => {
       const dimensionScore = assessment.scores[dimension.name];
       const threshold = this.config.alertThresholds.dimensionScores[dimension.name];
-      
+
       if (dimensionScore && threshold && dimensionScore < threshold) {
         await this.sendQualityAlert({
           type: 'dimension_below_threshold',
           datasetId,
           message: `${dimension.name} score ${dimensionScore.toFixed(1)}% below threshold ${threshold}%`,
           severity: 'medium',
-          assessment
+          assessment,
         });
       }
     });
   }
 
-  private async sendQualityAlert(alert: QualityAlert): Promise<void> {
+  private async sendQualityAlert(_alert: QualityAlert): Promise<void> {
     // Implementation would send alert to notification system
-    console.log('Quality Alert:', alert);
+    // Quality Alert: ${alert}
   }
 
   // Quality improvement methods
@@ -1185,13 +1225,13 @@ export class DataQualityAssessment {
     const improvements: QualityImprovement[] = [];
 
     // Analyze issues and generate improvement suggestions
-    const issues = assessment.findings.map(finding => ({
+    const issues = assessment.findings.map((finding) => ({
       title: finding,
       severity: 'medium' as const,
-      description: finding
+      description: finding,
     }));
 
-    issues.forEach(issue => {
+    issues.forEach((issue) => {
       const improvement = this.generateImprovementFromIssue(datasetId, issue);
       if (improvement) {
         improvements.push(improvement);
@@ -1212,11 +1252,11 @@ export class DataQualityAssessment {
       consistency: 'standardization',
       validity: 'validation',
       uniqueness: 'cleansing',
-      timeliness: 'enrichment'
+      timeliness: 'enrichment',
     };
 
     const type = improvementTypes[issue.type as keyof typeof improvementTypes] as any;
-    
+
     if (!type) return null;
 
     return {
@@ -1228,18 +1268,18 @@ export class DataQualityAssessment {
         scoreImprovement: 10,
         issueResolution: 1,
         riskReduction: 0.1,
-        businessValue: 'Improved data quality and reliability'
+        businessValue: 'Improved data quality and reliability',
       },
       effort: 'medium',
       priority: issue.severity,
       status: 'suggested',
       actions: this.generateImprovementActions(type, issue),
       estimatedCost: 1000,
-      estimatedTime: 40 // hours
+      estimatedTime: 40, // hours
     };
   }
 
-  private generateImprovementActions(type: string, issue: any): ImprovementAction[] {
+  private generateImprovementActions(type: string, _issue: any): ImprovementAction[] {
     const actions: ImprovementAction[] = [];
 
     switch (type) {
@@ -1252,7 +1292,7 @@ export class DataQualityAssessment {
           parameters: { depth: 'full' },
           dependencies: [],
           estimatedDuration: 8,
-          cost: 500
+          cost: 500,
         });
         break;
       case 'validation':
@@ -1264,7 +1304,7 @@ export class DataQualityAssessment {
           parameters: { ruleType: 'format' },
           dependencies: ['data_profiling'],
           estimatedDuration: 16,
-          cost: 1000
+          cost: 1000,
         });
         break;
       case 'standardization':
@@ -1276,7 +1316,7 @@ export class DataQualityAssessment {
           parameters: { scope: 'enterprise' },
           dependencies: [],
           estimatedDuration: 40,
-          cost: 5000
+          cost: 5000,
         });
         break;
       case 'enrichment':
@@ -1288,7 +1328,7 @@ export class DataQualityAssessment {
           parameters: { sources: ['external_db'] },
           dependencies: [],
           estimatedDuration: 24,
-          cost: 2000
+          cost: 2000,
         });
         break;
     }
@@ -1305,9 +1345,16 @@ export class DataQualityAssessment {
     const benchmarks: QualityBenchmark[] = [];
 
     // Generate benchmarks for different dimensions
-    const dimensions = ['completeness', 'accuracy', 'consistency', 'validity', 'uniqueness', 'timeliness'];
-    
-    dimensions.forEach(dimension => {
+    const dimensions = [
+      'completeness',
+      'accuracy',
+      'consistency',
+      'validity',
+      'uniqueness',
+      'timeliness',
+    ];
+
+    dimensions.forEach((dimension) => {
       const benchmark = this.generateBenchmarkForDimension(dimension, category, industry);
       benchmarks.push(benchmark);
     });
@@ -1321,15 +1368,15 @@ export class DataQualityAssessment {
 
   private generateBenchmarkForDimension(
     dimension: string,
-    category: string,
-    industry?: string
+    _category: string,
+    _industry?: string
   ): QualityBenchmark {
     // Generate benchmark data (simplified)
     const values = {
       excellent: 95 + Math.random() * 5,
       good: 85 + Math.random() * 10,
       fair: 70 + Math.random() * 15,
-      poor: 50 + Math.random() * 20
+      poor: 50 + Math.random() * 20,
     };
 
     const percentiles = {
@@ -1337,7 +1384,7 @@ export class DataQualityAssessment {
       p90: 88 + Math.random() * 8,
       p75: 80 + Math.random() * 10,
       p50: 70 + Math.random() * 15,
-      p25: 55 + Math.random() * 15
+      p25: 55 + Math.random() * 15,
     };
 
     return {
@@ -1345,7 +1392,7 @@ export class DataQualityAssessment {
       source: 'industry_analysis',
       values,
       percentiles,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
   }
 
@@ -1359,27 +1406,27 @@ export class DataQualityAssessment {
     const trends: QualityTrend[] = [];
 
     // Filter history by time range
-    const filteredHistory = history.filter(trend => 
-      trend.timeSeries.some(point => 
-        point.timestamp >= timeRange.start && point.timestamp <= timeRange.end
+    const filteredHistory = history.filter((trend) =>
+      trend.timeSeries.some(
+        (point) => point.timestamp >= timeRange.start && point.timestamp <= timeRange.end
       )
     );
 
     // Analyze trends for requested dimensions
     const dimensionsToAnalyze = dimensions || ['overall_score'];
-    
-    dimensionsToAnalyze.forEach(dimension => {
-      const trend = filteredHistory.find(t => t.metric === dimension);
+
+    dimensionsToAnalyze.forEach((dimension) => {
+      const trend = filteredHistory.find((t) => t.metric === dimension);
       if (trend) {
         // Calculate trend analysis
         trend.trend = this.calculateTrendAnalysis(trend.timeSeries);
-        
+
         // Generate forecast
         trend.forecast = this.generateTrendForecast(trend.timeSeries, trend.trend);
-        
+
         // Detect anomalies
         trend.anomalies = this.detectTrendAnomalies(trend.timeSeries, trend.trend);
-        
+
         trends.push(trend);
       }
     });
@@ -1394,19 +1441,19 @@ export class DataQualityAssessment {
         slope: 0,
         correlation: 0,
         seasonality: [],
-        changePoints: []
+        changePoints: [],
       };
     }
 
     // Simple linear regression
     const n = timeSeries.length;
     const x = timeSeries.map((_, i) => i);
-    const y = timeSeries.map(point => point.value);
+    const y = timeSeries.map((point) => point.value);
 
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = y.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + (val * y[i]), 0);
-    const sumXX = x.reduce((sum, val) => sum + (val * val), 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
     const correlation = this.calculateCorrelation(x, y);
@@ -1421,7 +1468,7 @@ export class DataQualityAssessment {
       slope,
       correlation,
       seasonality: [],
-      changePoints: []
+      changePoints: [],
     };
   }
 
@@ -1431,39 +1478,37 @@ export class DataQualityAssessment {
   ): TrendForecast[] {
     const forecasts: TrendForecast[] = [];
     const lastPoint = timeSeries[timeSeries.length - 1];
-    
+
     // Simple linear forecast
     for (let i = 1; i <= 5; i++) {
-      const futureValue = lastPoint.value + (trend.slope * i);
-      const confidence = Math.max(0.1, 1 - (i * 0.1)); // Decreasing confidence
-      
+      const futureValue = lastPoint.value + trend.slope * i;
+      const confidence = Math.max(0.1, 1 - i * 0.1); // Decreasing confidence
+
       forecasts.push({
-        timestamp: lastPoint.timestamp + (i * 24 * 60 * 60 * 1000), // Daily intervals
+        timestamp: lastPoint.timestamp + i * 24 * 60 * 60 * 1000, // Daily intervals
         value: futureValue,
         confidence,
-        upperBound: futureValue + (5 * (1 - confidence)),
-        lowerBound: futureValue - (5 * (1 - confidence))
+        upperBound: futureValue + 5 * (1 - confidence),
+        lowerBound: futureValue - 5 * (1 - confidence),
       });
     }
 
     return forecasts;
   }
 
-  private detectTrendAnomalies(
-    timeSeries: TrendDataPoint[],
-    trend: TrendAnalysis
-  ): TrendAnomaly[] {
+  private detectTrendAnomalies(timeSeries: TrendDataPoint[], _trend: TrendAnalysis): TrendAnomaly[] {
     const anomalies: TrendAnomaly[] = [];
-    
+
     if (timeSeries.length < 3) return anomalies;
 
     const mean = timeSeries.reduce((sum, point) => sum + point.value, 0) / timeSeries.length;
     const stdDev = Math.sqrt(
-      timeSeries.reduce((sum, point) => sum + Math.pow(point.value - mean, 2), 0) / timeSeries.length
+      timeSeries.reduce((sum, point) => sum + Math.pow(point.value - mean, 2), 0) /
+        timeSeries.length
     );
     const threshold = 2 * stdDev;
 
-    timeSeries.forEach(point => {
+    timeSeries.forEach((point) => {
       const deviation = Math.abs(point.value - mean);
       if (deviation > threshold) {
         let severity: TrendAnomaly['severity'] = 'low';
@@ -1477,7 +1522,7 @@ export class DataQualityAssessment {
           expectedValue: mean,
           deviation,
           severity,
-          description: `Quality anomaly detected at ${new Date(point.timestamp).toISOString()}`
+          description: `Quality anomaly detected at ${new Date(point.timestamp).toISOString()}`,
         });
       }
     });
@@ -1521,15 +1566,15 @@ export class DataQualityAssessment {
         condition: {
           field: 'required_fields',
           operator: 'not_equals',
-          value: null
+          value: null,
         },
         action: {
           type: 'flag',
-          parameters: {}
+          parameters: {},
         },
         enabled: true,
-        priority: 1
-      }
+        priority: 1,
+      },
     ];
   }
 
@@ -1542,7 +1587,7 @@ export class DataQualityAssessment {
         description: 'Measures the presence of required data',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'accuracy',
@@ -1551,7 +1596,7 @@ export class DataQualityAssessment {
         description: 'Measures the correctness of data values',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'consistency',
@@ -1560,7 +1605,7 @@ export class DataQualityAssessment {
         description: 'Measures data consistency across records',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'validity',
@@ -1569,7 +1614,7 @@ export class DataQualityAssessment {
         description: 'Measures adherence to data format rules',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'uniqueness',
@@ -1578,7 +1623,7 @@ export class DataQualityAssessment {
         description: 'Measures absence of duplicate records',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'timeliness',
@@ -1587,8 +1632,8 @@ export class DataQualityAssessment {
         description: 'Measures data freshness and update frequency',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
-      }
+        trend: 'stable',
+      },
     ];
   }
 
@@ -1601,9 +1646,9 @@ export class DataQualityAssessment {
         consistency: { excellent: 90, good: 80, fair: 70, poor: 60 },
         validity: { excellent: 95, good: 85, fair: 75, poor: 65 },
         uniqueness: { excellent: 90, good: 80, fair: 70, poor: 60 },
-        timeliness: { excellent: 85, good: 75, fair: 65, poor: 55 }
+        timeliness: { excellent: 85, good: 75, fair: 65, poor: 55 },
       },
-      metrics: {}
+      metrics: {},
     };
   }
 
@@ -1619,15 +1664,15 @@ export class DataQualityAssessment {
         condition: {
           field: 'sensitive_fields',
           operator: 'contains',
-          value: 'pii_pattern'
+          value: 'pii_pattern',
         },
         action: {
           type: 'alert',
-          parameters: { level: 'high' }
+          parameters: { level: 'high' },
         },
         enabled: true,
-        priority: 1
-      }
+        priority: 1,
+      },
     ];
   }
 
@@ -1640,7 +1685,7 @@ export class DataQualityAssessment {
         description: 'Measures compliance with privacy regulations',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'anonymization',
@@ -1649,8 +1694,8 @@ export class DataQualityAssessment {
         description: 'Measures effectiveness of data anonymization',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
-      }
+        trend: 'stable',
+      },
     ];
   }
 
@@ -1659,9 +1704,9 @@ export class DataQualityAssessment {
       overall: { excellent: 95, good: 85, fair: 75, poor: 65 },
       dimensions: {
         privacy_compliance: { excellent: 98, good: 90, fair: 80, poor: 70 },
-        anonymization: { excellent: 95, good: 85, fair: 75, poor: 65 }
+        anonymization: { excellent: 95, good: 85, fair: 75, poor: 65 },
       },
-      metrics: {}
+      metrics: {},
     };
   }
 
@@ -1677,15 +1722,15 @@ export class DataQualityAssessment {
         condition: {
           field: 'response_time',
           operator: 'less_than',
-          value: 5000
+          value: 5000,
         },
         action: {
           type: 'flag',
-          parameters: {}
+          parameters: {},
         },
         enabled: true,
-        priority: 1
-      }
+        priority: 1,
+      },
     ];
   }
 
@@ -1698,7 +1743,7 @@ export class DataQualityAssessment {
         description: 'Measures dataset performance characteristics',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
+        trend: 'stable',
       },
       {
         name: 'availability',
@@ -1707,8 +1752,8 @@ export class DataQualityAssessment {
         description: 'Measures dataset availability and uptime',
         metrics: [],
         lastAssessed: Date.now(),
-        trend: 'stable'
-      }
+        trend: 'stable',
+      },
     ];
   }
 
@@ -1717,13 +1762,13 @@ export class DataQualityAssessment {
       overall: { excellent: 90, good: 80, fair: 70, poor: 60 },
       dimensions: {
         performance: { excellent: 85, good: 75, fair: 65, poor: 55 },
-        availability: { excellent: 99, good: 95, fair: 90, poor: 85 }
+        availability: { excellent: 99, good: 95, fair: 90, poor: 85 },
       },
-      metrics: {}
+      metrics: {},
     };
   }
 
-  private getTotalRecordCount(metadata: DatasetMetadata): number {
+  private getTotalRecordCount(_metadata: DatasetMetadata): number {
     // Simplified record count calculation
     // In production would get from actual data
     return 10000; // Placeholder
@@ -1733,7 +1778,7 @@ export class DataQualityAssessment {
     if (!this.config.autoAssessment) return;
 
     // Run assessments for profiles with scheduled assessments
-    this.qualityProfiles.forEach(profile => {
+    this.qualityProfiles.forEach((profile) => {
       if (profile.enabled && profile.schedule.enabled) {
         // Check if assessment is due based on schedule
         if (this.isAssessmentDue(profile)) {
@@ -1744,15 +1789,15 @@ export class DataQualityAssessment {
     });
   }
 
-  private isAssessmentDue(profile: QualityProfile): boolean {
+  private isAssessmentDue(_profile: QualityProfile): boolean {
     // Simplified schedule checking
     // In production would use cron expression parsing
     return true; // Placeholder
   }
 
-  private async triggerScheduledAssessment(profile: QualityProfile): Promise<void> {
+  private async triggerScheduledAssessment(_profile: QualityProfile): Promise<void> {
     // Implementation would trigger assessment for relevant datasets
-    console.log(`Triggering scheduled assessment for profile: ${profile.name}`);
+    // Triggering scheduled assessment for profile: ${profile.name}
   }
 
   // Public API methods
@@ -1762,15 +1807,15 @@ export class DataQualityAssessment {
 
   public getAssessmentJobs(datasetId?: string, status?: string): QualityAssessmentJob[] {
     const jobs = Array.from(this.assessmentJobs.values());
-    
+
     let filtered = jobs;
     if (datasetId) {
-      filtered = filtered.filter(job => job.datasetId === datasetId);
+      filtered = filtered.filter((job) => job.datasetId === datasetId);
     }
     if (status) {
-      filtered = filtered.filter(job => job.status === status);
+      filtered = filtered.filter((job) => job.status === status);
     }
-    
+
     return filtered.sort((a, b) => b.startedAt! - a.startedAt!);
   }
 

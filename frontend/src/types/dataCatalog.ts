@@ -49,7 +49,15 @@ export interface PrivacyMetadata {
 }
 
 export interface DataType {
-  type: 'personal' | 'sensitive_personal' | 'financial' | 'health' | 'behavioral' | 'location' | 'demographic' | 'technical';
+  type:
+    | 'personal'
+    | 'sensitive_personal'
+    | 'financial'
+    | 'health'
+    | 'behavioral'
+    | 'location'
+    | 'demographic'
+    | 'technical';
   category: string;
   description: string;
   sensitivity: 'low' | 'medium' | 'high' | 'critical';
@@ -89,7 +97,13 @@ export interface PrivacyImpactAssessment {
 }
 
 export interface GDPRCompliance {
-  lawfulBasis: 'consent' | 'contract' | 'legal_obligation' | 'vital_interests' | 'public_task' | 'legitimate_interests';
+  lawfulBasis:
+    | 'consent'
+    | 'contract'
+    | 'legal_obligation'
+    | 'vital_interests'
+    | 'public_task'
+    | 'legitimate_interests';
   dataSubjectRights: DataSubjectRight[];
   crossBorderTransfer: boolean;
   dpiaRequired: boolean;
@@ -133,14 +147,28 @@ export interface SchemaField {
 export interface FieldPrivacy {
   isPersonal: boolean;
   isSensitive: boolean;
-  anonymizationMethod?: 'hashing' | 'masking' | 'tokenization' | 'encryption' | 'aggregation' | 'suppression';
+  anonymizationMethod?:
+    | 'hashing'
+    | 'masking'
+    | 'tokenization'
+    | 'encryption'
+    | 'aggregation'
+    | 'suppression';
   anonymizationLevel: number; // 0-1
   accessRestricted: boolean;
   consentRequired: boolean;
 }
 
 export interface FieldConstraint {
-  type: 'not_null' | 'unique' | 'primary_key' | 'foreign_key' | 'check' | 'regex' | 'range' | 'enum';
+  type:
+    | 'not_null'
+    | 'unique'
+    | 'primary_key'
+    | 'foreign_key'
+    | 'check'
+    | 'regex'
+    | 'range'
+    | 'enum';
   value?: any;
   description: string;
   enforced: boolean;
@@ -227,7 +255,14 @@ export interface SchemaEvolution {
 }
 
 export interface SchemaChange {
-  type: 'add_field' | 'remove_field' | 'modify_field' | 'rename_field' | 'change_type' | 'add_constraint' | 'remove_constraint';
+  type:
+    | 'add_field'
+    | 'remove_field'
+    | 'modify_field'
+    | 'rename_field'
+    | 'change_type'
+    | 'add_constraint'
+    | 'remove_constraint';
   field?: string;
   oldValue?: any;
   newValue?: any;
@@ -1210,7 +1245,17 @@ export interface SearchRequest {
 
 export interface SearchFilter {
   field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'starts_with' | 'ends_with' | 'in' | 'not_in' | 'greater_than' | 'less_than' | 'between';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'starts_with'
+    | 'ends_with'
+    | 'in'
+    | 'not_in'
+    | 'greater_than'
+    | 'less_than'
+    | 'between';
   value: any;
   boost?: number;
 }

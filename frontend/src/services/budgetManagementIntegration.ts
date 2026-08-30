@@ -5,15 +5,15 @@
 import {
   PrivacyBudget,
   BudgetAllocation,
-  SimulationScenario,
-  SimulationResult,
+  _SimulationScenario,
+  _SimulationResult,
   BudgetAlert,
   BudgetAnalytics,
   UtilizationAnalytics,
   PerformanceAnalytics,
   TrendAnalytics,
   ForecastAnalytics,
-  BenchmarkAnalytics
+  BenchmarkAnalytics,
 } from '../types/privacyBudget';
 
 export interface BudgetManagementConfig {
@@ -126,8 +126,8 @@ export class BudgetManagementIntegration {
             roiDecline: 0.15,
             riskIncrease: 0.2,
             complianceDrop: 0.1,
-            efficiencyDrop: 0.15
-          }
+            efficiencyDrop: 0.15,
+          },
         };
       }
       BudgetManagementIntegration.instance = new BudgetManagementIntegration(config);
@@ -157,9 +157,9 @@ export class BudgetManagementIntegration {
           requiredApprovals: ['manager', 'finance'],
           restrictedCategories: ['high_risk_research'],
           complianceFrameworks: ['GDPR', 'CCPA'],
-          geographicRestrictions: ['EU', 'US', 'CA']
+          geographicRestrictions: ['EU', 'US', 'CA'],
         },
-        allocations: []
+        allocations: [],
       },
       {
         id: 'budget-q1-2024',
@@ -181,13 +181,13 @@ export class BudgetManagementIntegration {
           requiredApprovals: ['manager'],
           restrictedCategories: [],
           complianceFrameworks: ['GDPR', 'CCPA'],
-          geographicRestrictions: ['EU', 'US', 'CA']
+          geographicRestrictions: ['EU', 'US', 'CA'],
         },
-        allocations: []
-      }
+        allocations: [],
+      },
     ];
 
-    defaultBudgets.forEach(budget => {
+    defaultBudgets.forEach((budget) => {
       this.budgets.set(budget.id, budget);
     });
   }
@@ -200,7 +200,7 @@ export class BudgetManagementIntegration {
       syncedAllocations: 0,
       errors: [],
       warnings: [],
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     try {
@@ -230,7 +230,6 @@ export class BudgetManagementIntegration {
           }
         }
       }
-
     } catch (error) {
       result.success = false;
       result.errors.push(`Synchronization failed: ${error}`);
@@ -239,16 +238,14 @@ export class BudgetManagementIntegration {
     return result;
   }
 
-  private async syncBudget(budget: PrivacyBudget): Promise<void> {
+  private async syncBudget(_budget: PrivacyBudget): Promise<void> {
     // This would make an API call to sync budget with external system
-    // For now, simulate the sync
-    console.log(`Syncing budget ${budget.id} with budget management system`);
+    // Syncing budget ${budget.id} with budget management system
   }
 
-  private async syncAllocation(allocation: BudgetAllocation): Promise<void> {
+  private async syncAllocation(_allocation: BudgetAllocation): Promise<void> {
     // This would make an API call to sync allocation with external system
-    // For now, simulate the sync
-    console.log(`Syncing allocation ${allocation.id} with budget management system`);
+    // Syncing allocation ${allocation.id} with budget management system
   }
 
   // Budget creation and modification
@@ -258,23 +255,23 @@ export class BudgetManagementIntegration {
   ): Promise<{ budget: PrivacyBudget; approval?: BudgetApproval }> {
     const budget: PrivacyBudget = {
       ...budgetData,
-      id: `budget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      id: `budget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
 
     // Check if approval is required
     if (requireApproval && budget.totalBudget > this.config.autoApprovalThreshold) {
       const approval = await this.createApproval(budget, 'creation');
       this.approvals.set(approval.id, approval);
-      
+
       return {
         budget,
-        approval
+        approval,
       };
     } else {
       // Auto-approve
       this.budgets.set(budget.id, budget);
       await this.syncBudget(budget);
-      
+
       return { budget };
     }
   }
@@ -294,20 +291,20 @@ export class BudgetManagementIntegration {
 
     // Check if approval is required
     const requiresApproval = this.checkIfApprovalRequired(oldBudget, updatedBudget);
-    
+
     if (requiresApproval) {
       const approval = await this.createApproval(updatedBudget, 'modification', justification);
       this.approvals.set(approval.id, approval);
-      
+
       return {
         success: false,
-        approval
+        approval,
       };
     } else {
       // Auto-approve
       this.budgets.set(budgetId, updatedBudget);
       await this.syncBudget(updatedBudget);
-      
+
       return { success: true };
     }
   }
@@ -326,8 +323,8 @@ export class BudgetManagementIntegration {
     }
 
     const oldAllocations = [...budget.allocations];
-    const newAllocations = budget.allocations.map(alloc => {
-      const reallocation = reallocations.find(r => r.allocationId === alloc.id);
+    const newAllocations = budget.allocations.map((alloc) => {
+      const reallocation = reallocations.find((r) => r.allocationId === alloc.id);
       if (reallocation) {
         return { ...alloc, amount: reallocation.newAmount };
       }
@@ -343,27 +340,34 @@ export class BudgetManagementIntegration {
     const updatedBudget = { ...budget, allocations: newAllocations };
 
     // Check if approval is required
-    const requiresApproval = this.checkIfReallocationRequiresApproval(oldAllocations, newAllocations);
-    
+    const requiresApproval = this.checkIfReallocationRequiresApproval(
+      oldAllocations,
+      newAllocations
+    );
+
     if (requiresApproval) {
       const approval = await this.createApproval(updatedBudget, 'reallocation');
       this.approvals.set(approval.id, approval);
-      
+
       return {
         success: false,
-        approval
+        approval,
       };
     } else {
       // Auto-approve
       this.budgets.set(budgetId, updatedBudget);
       await this.syncBudget(updatedBudget);
-      
+
       return { success: true };
     }
   }
 
   // Approval management
-  public async approveBudget(approvalId: string, approvedBy: string, comments?: string): Promise<boolean> {
+  public async approveBudget(
+    approvalId: string,
+    approvedBy: string,
+    _comments?: string
+  ): Promise<boolean> {
     const approval = this.approvals.get(approvalId);
     if (!approval) {
       throw new Error(`Approval not found: ${approvalId}`);
@@ -387,7 +391,11 @@ export class BudgetManagementIntegration {
     return true;
   }
 
-  public async rejectBudget(approvalId: string, rejectedBy: string, reason: string): Promise<boolean> {
+  public async rejectBudget(
+    approvalId: string,
+    _rejectedBy: string,
+    _reason: string
+  ): Promise<boolean> {
     const approval = this.approvals.get(approvalId);
     if (!approval) {
       throw new Error(`Approval not found: ${approvalId}`);
@@ -417,7 +425,7 @@ export class BudgetManagementIntegration {
       status: 'pending',
       changes: this.calculateChanges(budget, type),
       justification: justification || '',
-      riskAssessment: await this.assessRisk(budget, type)
+      riskAssessment: await this.assessRisk(budget, type),
     };
 
     return approval;
@@ -431,14 +439,17 @@ export class BudgetManagementIntegration {
         field: 'totalBudget',
         oldValue: 0,
         newValue: budget.totalBudget,
-        impact: budget.totalBudget > 500000 ? 'high' : 'medium'
+        impact: budget.totalBudget > 500000 ? 'high' : 'medium',
       });
     }
 
     return changes;
   }
 
-  private async assessRisk(budget: PrivacyBudget, type: BudgetApproval['type']): Promise<RiskAssessment> {
+  private async assessRisk(
+    budget: PrivacyBudget,
+    _type: BudgetApproval['type']
+  ): Promise<RiskAssessment> {
     const factors: RiskFactor[] = [];
     let overall: RiskAssessment['overall'] = 'low';
 
@@ -448,7 +459,7 @@ export class BudgetManagementIntegration {
         type: 'financial',
         description: 'Large budget allocation',
         impact: 'high',
-        probability: 'medium'
+        probability: 'medium',
       });
       overall = 'medium';
     }
@@ -459,7 +470,7 @@ export class BudgetManagementIntegration {
         type: 'compliance',
         description: 'Multiple compliance frameworks',
         impact: 'medium',
-        probability: 'low'
+        probability: 'low',
       });
     }
 
@@ -469,7 +480,7 @@ export class BudgetManagementIntegration {
         type: 'operational',
         description: 'Complex allocation structure',
         impact: 'medium',
-        probability: 'medium'
+        probability: 'medium',
       });
     }
 
@@ -479,8 +490,8 @@ export class BudgetManagementIntegration {
       mitigation: [
         'Implement regular monitoring',
         'Establish clear governance procedures',
-        'Conduct periodic risk assessments'
-      ]
+        'Conduct periodic risk assessments',
+      ],
     };
   }
 
@@ -504,12 +515,15 @@ export class BudgetManagementIntegration {
     return false;
   }
 
-  private checkIfReallocationRequiresApproval(oldAllocations: BudgetAllocation[], newAllocations: BudgetAllocation[]): boolean {
+  private checkIfReallocationRequiresApproval(
+    oldAllocations: BudgetAllocation[],
+    newAllocations: BudgetAllocation[]
+  ): boolean {
     // Check if any allocation changed by more than 20%
     for (let i = 0; i < oldAllocations.length; i++) {
       const oldAlloc = oldAllocations[i];
-      const newAlloc = newAllocations.find(a => a.id === oldAlloc.id);
-      
+      const newAlloc = newAllocations.find((a) => a.id === oldAlloc.id);
+
       if (newAlloc) {
         const changePercent = Math.abs(newAlloc.amount - oldAlloc.amount) / oldAlloc.amount;
         if (changePercent > 0.2) {
@@ -521,10 +535,9 @@ export class BudgetManagementIntegration {
     return false;
   }
 
-  private async applyApproval(approval: BudgetApproval): Promise<void> {
+  private async applyApproval(_approval: BudgetApproval): Promise<void> {
     // Apply the approved changes to the budget
-    // This would update the budget in the system
-    console.log(`Applying approval ${approval.id} for budget ${approval.budgetId}`);
+    // Applying approval ${approval.id} for budget ${approval.budgetId}
   }
 
   private async createWorkflowForApproval(approval: BudgetApproval): Promise<void> {
@@ -536,7 +549,7 @@ export class BudgetManagementIntegration {
       currentStep: 0,
       status: 'active',
       initiatedBy: approval.requestedBy,
-      initiatedAt: Date.now()
+      initiatedAt: Date.now(),
     };
 
     this.workflows.set(workflow.id, workflow);
@@ -550,17 +563,17 @@ export class BudgetManagementIntegration {
       id: 'notify-stakeholders',
       name: 'Notify Stakeholders',
       type: 'notification',
-      status: 'pending'
+      status: 'pending',
     });
 
     // Add review step if required
-    if (approval.changes.some(change => change.impact === 'high')) {
+    if (approval.changes.some((change) => change.impact === 'high')) {
       steps.push({
         id: 'management-review',
         name: 'Management Review',
         type: 'review',
         role: 'management',
-        status: 'pending'
+        status: 'pending',
       });
     }
 
@@ -569,7 +582,7 @@ export class BudgetManagementIntegration {
       id: 'implementation',
       name: 'Implementation',
       type: 'automation',
-      status: 'pending'
+      status: 'pending',
     });
 
     return steps;
@@ -593,15 +606,17 @@ export class BudgetManagementIntegration {
       performance,
       trends,
       forecasts,
-      benchmarks
+      benchmarks,
     };
   }
 
-  private async calculateUtilizationAnalytics(budget: PrivacyBudget): Promise<UtilizationAnalytics> {
+  private async calculateUtilizationAnalytics(
+    budget: PrivacyBudget
+  ): Promise<UtilizationAnalytics> {
     const overall = budget.allocatedBudget / budget.totalBudget;
-    
+
     const byCategory: Record<string, number> = {};
-    budget.allocations.forEach(alloc => {
+    budget.allocations.forEach((alloc) => {
       byCategory[alloc.category.id] = alloc.amount / budget.totalBudget;
     });
 
@@ -614,14 +629,18 @@ export class BudgetManagementIntegration {
       byCategory,
       byTime,
       efficiency,
-      waste
+      waste,
     };
   }
 
-  private async calculatePerformanceAnalytics(budget: PrivacyBudget): Promise<PerformanceAnalytics> {
+  private async calculatePerformanceAnalytics(
+    budget: PrivacyBudget
+  ): Promise<PerformanceAnalytics> {
     const allocations = budget.allocations;
-    
-    const roi = allocations.reduce((sum, alloc) => sum + (alloc.expectedROI * alloc.amount), 0) / budget.allocatedBudget;
+
+    const roi =
+      allocations.reduce((sum, alloc) => sum + alloc.expectedROI * alloc.amount, 0) /
+      budget.allocatedBudget;
     const costEffectiveness = roi > 0.15 ? 0.9 : 0.7;
     const quality = 0.8; // Would calculate based on actual outcomes
     const timeliness = 0.85; // Would calculate based on delivery schedules
@@ -632,40 +651,40 @@ export class BudgetManagementIntegration {
       costEffectiveness,
       quality,
       timeliness,
-      satisfaction
+      satisfaction,
     };
   }
 
-  private async calculateTrendAnalytics(budget: PrivacyBudget): Promise<TrendAnalytics> {
+  private async calculateTrendAnalytics(_budget: PrivacyBudget): Promise<TrendAnalytics> {
     // This would analyze historical trends for the budget
     return {
       direction: 'stable',
       magnitude: 0.05,
       seasonality: [],
       changePoints: [],
-      forecast: []
+      forecast: [],
     };
   }
 
-  private async calculateForecastAnalytics(budget: PrivacyBudget): Promise<ForecastAnalytics> {
+  private async calculateForecastAnalytics(_budget: PrivacyBudget): Promise<ForecastAnalytics> {
     // This would generate forecasts based on historical data
     return {
       shortTerm: [],
       mediumTerm: [],
       longTerm: [],
       confidence: 0.8,
-      accuracy: 0.85
+      accuracy: 0.85,
     };
   }
 
-  private async calculateBenchmarkAnalytics(budget: PrivacyBudget): Promise<BenchmarkAnalytics> {
+  private async calculateBenchmarkAnalytics(_budget: PrivacyBudget): Promise<BenchmarkAnalytics> {
     // This would compare against industry benchmarks
     return {
       industry: [],
       internal: [],
       peers: [],
       ranking: 5,
-      percentile: 65
+      percentile: 65,
     };
   }
 
@@ -693,7 +712,7 @@ export class BudgetManagementIntegration {
         budgetId,
         timestamp: Date.now(),
         acknowledged: false,
-        resolved: false
+        resolved: false,
       });
     }
 
@@ -713,13 +732,17 @@ export class BudgetManagementIntegration {
     return Array.from(this.workflows.values());
   }
 
-  public async advanceWorkflow(workflowId: string, stepId: string, comments?: string): Promise<boolean> {
+  public async advanceWorkflow(
+    workflowId: string,
+    stepId: string,
+    comments?: string
+  ): Promise<boolean> {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
       throw new Error(`Workflow not found: ${workflowId}`);
     }
 
-    const step = workflow.steps.find(s => s.id === stepId);
+    const step = workflow.steps.find((s) => s.id === stepId);
     if (!step) {
       throw new Error(`Workflow step not found: ${stepId}`);
     }
@@ -731,7 +754,7 @@ export class BudgetManagementIntegration {
     }
 
     // Move to next step
-    const currentStepIndex = workflow.steps.findIndex(s => s.id === stepId);
+    const currentStepIndex = workflow.steps.findIndex((s) => s.id === stepId);
     if (currentStepIndex < workflow.steps.length - 1) {
       workflow.currentStep = currentStepIndex + 1;
     } else {
@@ -806,8 +829,8 @@ export class BudgetManagementIntegration {
     const now = Date.now();
     const expiryTime = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-    for (const [id, approval] of this.approvals) {
-      if (approval.status === 'pending' && (now - approval.requestedAt) > expiryTime) {
+    for (const [_id, approval] of this.approvals) {
+      if (approval.status === 'pending' && now - approval.requestedAt > expiryTime) {
         approval.status = 'expired';
         cleaned++;
       }
@@ -822,7 +845,11 @@ export class BudgetManagementIntegration {
     const retentionTime = 30 * 24 * 60 * 60 * 1000; // 30 days
 
     for (const [id, alert] of this.alerts) {
-      if (alert.status === 'resolved' && alert.resolvedAt && (now - alert.resolvedAt) > retentionTime) {
+      if (
+        alert.status === 'resolved' &&
+        alert.resolvedAt &&
+        now - alert.resolvedAt > retentionTime
+      ) {
         this.alerts.delete(id);
         cleaned++;
       }

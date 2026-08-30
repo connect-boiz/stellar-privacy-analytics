@@ -1,4 +1,4 @@
-import { ParquetWriter, ParquetSchema } from 'parquetjs';
+import { ParquetWriter, ParquetSchema } from "parquetjs";
 
 export class ParquetExporter {
   private writer;
@@ -6,8 +6,8 @@ export class ParquetExporter {
 
   async init() {
     const schema = new ParquetSchema({
-      id: { type: 'INT64' },
-      data: { type: 'UTF8' },
+      id: { type: "INT64" },
+      data: { type: "UTF8" },
     });
 
     this.writer = await ParquetWriter.openFile(schema, this.path);

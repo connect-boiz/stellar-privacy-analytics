@@ -1,16 +1,16 @@
 export enum PrivacyLevel {
-  MINIMAL = 'minimal',
-  STANDARD = 'standard',
-  HIGH = 'high',
-  MAXIMUM = 'maximum'
+  MINIMAL = "minimal",
+  STANDARD = "standard",
+  HIGH = "high",
+  MAXIMUM = "maximum",
 }
 
 export enum DataType {
-  NUMERICAL = 'numerical',
-  CATEGORICAL = 'categorical',
-  TEXT = 'text',
-  TEMPORAL = 'temporal',
-  GEOGRAPHICAL = 'geographical'
+  NUMERICAL = "numerical",
+  CATEGORICAL = "categorical",
+  TEXT = "text",
+  TEMPORAL = "temporal",
+  GEOGRAPHICAL = "geographical",
 }
 
 export interface PrivacySettings {
@@ -24,11 +24,11 @@ export interface PrivacySettings {
 }
 
 export enum AnonymizationTechnique {
-  NONE = 'none',
-  K_ANONYMITY = 'k_anonymity',
-  L_DIVERSITY = 'l_diversity',
-  T_CLOSENESS = 't_closeness',
-  DIFFERENTIAL_PRIVACY = 'differential_privacy'
+  NONE = "none",
+  K_ANONYMITY = "k_anonymity",
+  L_DIVERSITY = "l_diversity",
+  T_CLOSENESS = "t_closeness",
+  DIFFERENTIAL_PRIVACY = "differential_privacy",
 }
 
 export interface DataSchema {
@@ -51,7 +51,7 @@ export interface DataField {
 }
 
 export interface ValidationRule {
-  type: 'range' | 'pattern' | 'enum' | 'length';
+  type: "range" | "pattern" | "enum" | "length";
   value: any;
   message: string;
 }
@@ -62,8 +62,18 @@ export interface EncryptedData {
     algorithm: string;
     keyId: string;
     iv: string;
+    /**
+     * HMAC-SHA256 over (iv || ciphertext) in hex. Required for any
+     * ciphertext produced by EncryptionService.encrypt(). Older records
+     * produced without this field are intentionally rejected by decrypt().
+     */
+    mac?: string;
     timestamp: Date;
   };
+  /**
+   * Legacy SHA-256 of plaintext. Retained for downstream consumers that
+   * dedup on checksum; integrity is enforced by `metadata.mac` instead.
+   */
   checksum: string;
 }
 

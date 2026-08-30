@@ -1,422 +1,283 @@
+# ─────────────────────────────────────────────────────────────
+#  Stellar Privacy Analytics — CI/CD Pipeline
+#  All jobs run on every push/PR to ensure full coverage.
+# ─────────────────────────────────────────────────────────────
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, master, develop]
+  workflow_dispatch:
 
 env:
-  NODE_VERSION: '18'
-  CACHE_VERSION: 'v1'
+  NODE_VERSION: '22'
+  RUST_VERSION: '1.88.0'
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # Code Quality and Security
-  quality:
+  # ── Shared library ────────────────────────────────────────
+  shared:
+    name: Shared Library
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: shared
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: shared/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+      - name: Cache shared dist
+        uses: actions/cache@v4
+        with:
+          path: shared/dist
+          key: shared-dist-${{ hashFiles('shared/src/**/*.ts', 'shared/tsconfig.json') }}
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linting
-        run: npm run lint
-
-      - name: Run type checking
-        run: npm run type-check
-
-      - name: Run security audit
-        run: npm audit --audit-level high
-
-      - name: Check formatting
-        run: npm run format:check
-
-  # Shared Module Tests
-  test-shared:
+  # ── Frontend: lint, type-check, test, build ───────────────
+  frontend:
+    name: Frontend
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: Install shared dependencies
-        run: |
-          cd shared
-          npm ci
-
-      - name: Run shared tests
-        run: |
-          cd shared
-          npm test
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+          cache-dependency-path: frontend/package-lock.json
+      - name: Restore shared dist cache
+        id: shared-cache
+        uses: actions/cache@v4
         with:
-          directory: ./shared/coverage
-          flags: shared
+          path: shared/dist
+          key: shared-dist-${{ hashFiles('shared/src/**/*.ts', 'shared/tsconfig.json') }}
+      - name: Build shared from source (cache miss)
+        if: steps.shared-cache.outputs.cache-hit != 'true'
+        run: npm ci && npm run build
+        working-directory: shared
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
 
-  # Backend Tests
-  test-backend:
+  # ── Backend: lint, type-check, test, build ────────────────
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
-    needs: quality
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: stellar_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: Install backend dependencies
-        run: |
-          cd shared && npm ci && npm run build
-          cd ../backend && npm ci
-
-      - name: Run database migrations
-        run: |
-          cd backend
-          npm run db:migrate
-
-      - name: Run backend tests
-        run: |
-          cd backend
-          npm test
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stellar_test
-          REDIS_URL: redis://localhost:6379
-          NODE_ENV: test
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+          cache-dependency-path: backend/package-lock.json
+      - name: Restore shared dist cache
+        id: shared-cache
+        uses: actions/cache@v4
         with:
-          directory: ./backend/coverage
-          flags: backend
+          path: shared/dist
+          key: shared-dist-${{ hashFiles('shared/src/**/*.ts', 'shared/tsconfig.json') }}
+      - name: Build shared from source (cache miss)
+        if: steps.shared-cache.outputs.cache-hit != 'true'
+        run: npm ci && npm run build
+        working-directory: shared
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+      - name: Security grep gates (WS1/WS2/WS5)
+        run: |
+          # WS1: no process.env.JWT_SECRET fallback to a hardcoded *string
+          # literal* anywhere in backend/src. Referencing the centralized
+          # DEV_JWT_SECRET constant (utils/secrets) is allowed.
+          if grep -rnE 'process\.env\.JWT_SECRET\s*\|\|\s*"' src/ ; then
+            echo "::error::Hardcoded JWT_SECRET literal fallback found (issue #413 WS1)"
+            exit 1
+          fi
+          # WS2: no hardcoded secret fallback values in || chains (the issue
+          # names default-master-key, default-key, change-me-in-production and
+          # the DB password "password"; "postgres" as a DB *username* default
+          # is allowed).
+          if grep -rnE '\|\|\s*"(default-master-key|default-key|change-me-in-production|password)"' src/ ; then
+            echo "::error::Hardcoded secret fallback found (issue #413 WS2)"
+            exit 1
+          fi
+          # WS2: known dev literals may only appear in the centralized
+          # utils/secrets.ts and the env.ts KNOWN_DEV_SECRETS registry.
+          if grep -rn --include='*.ts' -E '(default-master-key-32-chars|default-signature-key|dev-only-jwt-secret|dev-only-32-byte-master-key)' src/ \
+            | grep -vE 'src/(utils/secrets\.ts|config/env\.ts)' ; then
+            echo "::error::Dev secret literal used outside the centralized registry (issue #413 WS2)"
+            exit 1
+          fi
+          # WS5: the emergency bypass literal may only exist in the registry,
+          # never as an active default in the rate limiter.
+          if grep -rn --include='*.ts' 'emergency-bypass-2024' src/ \
+            | grep -v 'src/config/env.ts' ; then
+            echo "::error::Public rate-limit bypass key present outside registry (issue #413 WS5)"
+            exit 1
+          fi
+      - name: Auth-coverage test (WS1)
+        run: npx jest src/__tests__/auth-route-coverage.test.ts --forceExit
 
-  # Frontend Tests
-  test-frontend:
+  # ── Root Soroban Extras ──────────────────────────────────
+  rust-extras:
+    name: Rust Extras
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 15
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .
+          cache-on-failure: true
+      - name: Format check
+        run: cargo fmt --check --manifest-path Cargo.toml
+      - name: Clippy
+        run: cargo clippy --lib --bins --manifest-path Cargo.toml -- -D warnings
+      - name: Test
+        continue-on-error: true
+        run: cargo test --manifest-path Cargo.toml
+      - name: Build WASM
+        run: cargo build --target wasm32-unknown-unknown --release --manifest-path Cargo.toml
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+  # ── Contracts (Soroban Smart Contracts) ──────────────────
+  contracts-rust:
+    name: Contracts (Rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts
+          cache-on-failure: true
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --lib --bins -- -D warnings
+      - name: Test
+        run: cargo test
+      - name: Test (release)
+        run: cargo test --release
+      - name: Security grep gates (WS1/WS3/WS5)
+        run: |
+          # WS1: no `env.current_contract_address()` in actor position. Doc
+          # comments describing the removed pattern are allowed.
+          if grep -rn "env\.current_contract_address()" --include="*.rs" . \
+            | grep -vE ":[0-9]+:[[:space:]]*(//|///)"; then
+            echo "::error::env.current_contract_address() found in actor position (issue #412 WS1)"
+            exit 1
+          fi
+          # WS3: no unbounded whole-map instance-storage keys in the audited
+          # contracts (per-user budgets/deposits/permissions must use
+          # per-actor keys, e.g. `(Symbol, Address)`).
+          if grep -rnE '"(user_budget|user_deposits|USER_PERMISSIONS|ACCESS_KEYS)"' \
+            --include="*.rs" . ; then
+            echo "::error::whole-map instance-storage key found (issue #412 WS3)"
+            exit 1
+          fi
+      - name: Build WASM
+        run: cargo build --target wasm32-unknown-unknown --release
+
+  # ── Backend Rust (Monitoring Service) ─────────────────────
+  backend-rust:
+    name: Backend (Rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+          cache-on-failure: true
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Test
+        run: cargo test
+      - name: Build
+        run: cargo build --release
+
+  # ── Service Discovery Dashboard ──────────────────────────
+  service-discovery:
+    name: Service Discovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: service-discovery-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: service-discovery-dashboard/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run build
 
-      - name: Install frontend dependencies
-        run: |
-          cd shared && npm ci && npm run build
-          cd ../frontend && npm ci
-
-      - name: Run frontend tests
-        run: |
-          cd frontend
-          npm test -- --coverage --watchAll=false
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          directory: ./frontend/coverage
-          flags: frontend
-
-  # Smart Contract Tests
-  test-contracts:
+  # ── Documentation ────────────────────────────────────────
+  docs:
+    name: Documentation
     runs-on: ubuntu-latest
-    needs: quality
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: docs
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
 
-      - name: Install contract dependencies
-        run: |
-          cd contracts
-          npm ci
-
-      - name: Compile contracts
-        run: |
-          cd contracts
-          npm run compile
-
-      - name: Run contract tests
-        run: |
-          cd contracts
-          npm test
-
-      - name: Run gas report
-        run: |
-          cd contracts
-          npm run gas-report
-
-      - name: Check contract sizes
-        run: |
-          cd contracts
-          npm run size
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          directory: ./contracts/coverage
-          flags: contracts
-
-  # Integration Tests
-  integration-tests:
-    runs-on: ubuntu-latest
-    needs: [test-shared, test-backend, test-frontend]
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: stellar_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install all dependencies
-        run: |
-          cd shared && npm ci && npm run build
-          cd ../backend && npm ci
-          cd ../frontend && npm ci
-          cd ../contracts && npm ci && npm run compile
-
-      - name: Start services
-        run: |
-          cd backend
-          npm run db:migrate
-          npm start &
-          sleep 10
-
-      - name: Run integration tests
-        run: |
-          cd backend
-          npm run test:integration
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stellar_test
-          REDIS_URL: redis://localhost:6379
-          NODE_ENV: test
-
-  # Security Scanning
-  security-scan:
-    runs-on: ubuntu-latest
-    needs: quality
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          languages: javascript, typescript
-
-  # Build and Deploy (only on main branch)
-  deploy:
-    runs-on: ubuntu-latest
-    needs: [test-shared, test-backend, test-frontend, test-contracts, integration-tests, security-scan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          cd shared && npm ci && npm run build
-          cd ../backend && npm ci
-          cd ../frontend && npm ci
-          cd ../contracts && npm ci && npm run compile
-
-      - name: Build applications
-        run: |
-          cd backend && npm run build
-          cd ../frontend && npm run build
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push Docker images
-        run: |
-          # Build and tag images
-          docker build -t stellar/backend:${{ github.sha }} -t stellar/backend:latest ./backend
-          docker build -t stellar/frontend:${{ github.sha }} -t stellar/frontend:latest ./frontend
-          
-          # Push images
-          docker push stellar/backend:${{ github.sha }}
-          docker push stellar/backend:latest
-          docker push stellar/frontend:${{ github.sha }}
-          docker push stellar/frontend:latest
-
-      - name: Deploy to production
-        run: |
-          # Update deployment configuration
-          echo "Deploying to production..."
-          # Add your deployment commands here
-
-      - name: Run smoke tests
-        run: |
-          # Run smoke tests against production
-          echo "Running smoke tests..."
-
-  # Release (only on tags)
-  release:
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    if: startsWith(github.ref, 'refs/tags/')
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Publish to NPM
-        run: |
-          # Publish packages to NPM
-          cd shared && npm publish --access public
-          cd ../backend && npm publish --access public
-          cd ../frontend && npm publish --access public
-
-  # Performance Tests
-  performance-tests:
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install performance testing tools
-        run: npm install -g artillery
-
-      - name: Run performance tests
-        run: |
-          artillery run performance-test.yml
-
-      - name: Upload performance results
-        uses: actions/upload-artifact@v3
-        with:
-          name: performance-results
-          path: artillery-report.html

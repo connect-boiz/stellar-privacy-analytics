@@ -63,19 +63,19 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({ participants
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    
+
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes}m ago`;
-    
+
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}h ago`;
-    
+
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
   };
 
-  const readyCount = participants.filter(p => p.status === 'ready').length;
-  const onlineCount = participants.filter(p => p.status === 'online').length;
+  const readyCount = participants.filter((p) => p.status === 'ready').length;
+  const onlineCount = participants.filter((p) => p.status === 'online').length;
   const totalCount = participants.length;
 
   return (
@@ -142,13 +142,13 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({ participants
 
               {/* Status */}
               <div className="flex items-center space-x-2">
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full border ${getStatusColor(participant.status)}`}>
+                <div
+                  className={`flex items-center space-x-1 px-2 py-1 rounded-full border ${getStatusColor(participant.status)}`}
+                >
                   {getStatusIcon(participant.status)}
-                  <span className="text-xs font-medium">
-                    {getStatusText(participant.status)}
-                  </span>
+                  <span className="text-xs font-medium">{getStatusText(participant.status)}</span>
                 </div>
-                
+
                 {participant.status === 'ready' && (
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 )}

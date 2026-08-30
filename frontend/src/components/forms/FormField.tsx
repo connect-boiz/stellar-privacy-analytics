@@ -7,7 +7,16 @@ export interface FormFieldProps {
   /** Field label */
   label: string;
   /** Field type */
-  type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio';
+  type?:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'number'
+    | 'date'
+    | 'select'
+    | 'textarea'
+    | 'checkbox'
+    | 'radio';
   /** Placeholder text */
   placeholder?: string;
   /** Help text/description */
@@ -23,11 +32,17 @@ export interface FormFieldProps {
   /** Default value for uncontrolled */
   defaultValue?: string | number;
   /** Change handler */
-  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onChange?: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
   /** Blur handler */
-  onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onBlur?: (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
   /** Focus handler */
-  onFocus?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onFocus?: (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => void;
   /** Required field */
   required?: boolean;
   /** Disabled state */
@@ -37,7 +52,10 @@ export interface FormFieldProps {
   /** Auto-focus */
   autoFocus?: boolean;
   /** Additional input props */
-  inputProps?: React.InputHTMLAttributes<HTMLInputElement> | React.TextareaHTMLAttributes<HTMLTextAreaElement> | React.SelectHTMLAttributes<HTMLSelectElement>;
+  inputProps?:
+    | React.InputHTMLAttributes<HTMLInputElement>
+    | React.TextareaHTMLAttributes<HTMLTextAreaElement>
+    | React.SelectHTMLAttributes<HTMLSelectElement>;
   /** Custom className for wrapper */
   className?: string;
   /** Custom className for input */
@@ -65,53 +83,57 @@ export interface FormFieldProps {
 export const FormField = forwardRef<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   FormFieldProps
->(({
-  name,
-  label,
-  type = 'text',
-  placeholder,
-  description,
-  error,
-  success,
-  successMessage,
-  value,
-  defaultValue,
-  onChange,
-  onBlur,
-  onFocus,
-  required = false,
-  disabled = false,
-  readOnly = false,
-  autoFocus = false,
-  inputProps,
-  className = '',
-  inputClassName = '',
-  children,
-  size = 'md',
-  layout = 'vertical',
-  showCharCount = false,
-  maxLength,
-  prefix,
-  suffix
-}, ref) => {
-  const id = useId();
-  const descriptionId = `${id}-description`;
-  const errorId = `${id}-error`;
-  const successId = `${id}-success`;
-  
-  const hasError = !!error;
-  const hasSuccess = success && !hasError;
-  const hasDescription = !!description;
-  
-  // Size classes
-  const sizeClasses = {
-    sm: 'px-2 py-1 text-sm',
-    md: 'px-3 py-2 text-sm',
-    lg: 'px-4 py-3 text-base'
-  };
+>(
+  (
+    {
+      name,
+      label,
+      type = 'text',
+      placeholder,
+      description,
+      error,
+      success,
+      successMessage,
+      value,
+      defaultValue,
+      onChange,
+      onBlur,
+      onFocus,
+      required = false,
+      disabled = false,
+      readOnly = false,
+      autoFocus = false,
+      _inputProps,
+      className = '',
+      inputClassName = '',
+      children,
+      size = 'md',
+      layout = 'vertical',
+      showCharCount = false,
+      maxLength,
+      prefix,
+      suffix,
+    },
+    ref
+  ) => {
+    const id = useId();
+    const descriptionId = `${id}-description`;
+    const errorId = `${id}-error`;
+    const successId = `${id}-success`;
 
-  // Base input classes
-  const baseInputClasses = `
+    const hasError = !!error;
+    const hasSuccess = success && !hasError;
+    const hasDescription = !!description;
+
+    // Size classes
+    const sizeClasses = {
+      sm: 'px-2 py-1 text-sm',
+      md: 'px-3 py-2 text-sm',
+      lg: 'px-4 py-3 text-base',
+    };
+
+    // Base input classes
+    const baseInputClasses = `
     w-full rounded-lg border transition-colors
     focus:outline-none focus:ring-2 focus:ring-offset-1
     disabled:bg-gray-100 disabled:cursor-not-allowed
@@ -119,186 +141,177 @@ export const FormField = forwardRef<
     ${sizeClasses[size]}
   `;
 
-  // State-specific classes
-  const stateClasses = hasError
-    ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-    : hasSuccess
-      ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
-      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500';
+    // State-specific classes
+    const stateClasses = hasError
+      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+      : hasSuccess
+        ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
+        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500';
 
-  // Layout classes
-  const layoutClasses = layout === 'horizontal'
-    ? 'flex items-start gap-4'
-    : 'space-y-1';
+    // Layout classes
+    const layoutClasses = layout === 'horizontal' ? 'flex items-start gap-4' : 'space-y-1';
 
-  // ARIA attributes
-  const ariaDescribedBy = [
-    hasDescription && descriptionId,
-    hasError && errorId,
-    hasSuccess && successId
-  ].filter(Boolean).join(' ') || undefined;
+    // ARIA attributes
+    const ariaDescribedBy =
+      [hasDescription && descriptionId, hasError && errorId, hasSuccess && successId]
+        .filter(Boolean)
+        .join(' ') || undefined;
 
-  const ariaInvalid = hasError ? true : undefined;
-  const ariaRequired = required ? true : undefined;
+    const ariaInvalid = hasError ? true : undefined;
+    const ariaRequired = required ? true : undefined;
 
-  // Character count
-  const charCount = typeof value === 'string' ? value.length : 0;
+    // Character count
+    const charCount = typeof value === 'string' ? value.length : 0;
 
-  // Render input element based on type
-  const renderInput = () => {
-    const commonProps = {
-      id,
-      name,
-      value,
-      defaultValue,
-      onChange,
-      onBlur,
-      onFocus,
-      disabled,
-      readOnly,
-      autoFocus,
-      required,
-      placeholder,
-      maxLength,
-      'aria-describedby': ariaDescribedBy,
-      'aria-invalid': ariaInvalid,
-      'aria-required': ariaRequired,
-      className: `${baseInputClasses} ${stateClasses} ${inputClassName}`
-    };
+    // Render input element based on type
+    const renderInput = () => {
+      const commonProps = {
+        id,
+        name,
+        value,
+        defaultValue,
+        onChange,
+        onBlur,
+        onFocus,
+        disabled,
+        readOnly,
+        autoFocus,
+        required,
+        placeholder,
+        maxLength,
+        'aria-describedby': ariaDescribedBy,
+        'aria-invalid': ariaInvalid,
+        'aria-required': ariaRequired,
+        className: `${baseInputClasses} ${stateClasses} ${inputClassName}`,
+      };
 
-    if (type === 'textarea') {
+      if (type === 'textarea') {
+        return (
+          <textarea
+            {...(commonProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+            ref={ref as React.Ref<HTMLTextAreaElement>}
+            rows={4}
+          />
+        );
+      }
+
+      if (type === 'select') {
+        return (
+          <select
+            {...(commonProps as React.SelectHTMLAttributes<HTMLSelectElement>)}
+            ref={ref as React.Ref<HTMLSelectElement>}
+          >
+            {children}
+          </select>
+        );
+      }
+
+      // Checkbox and radio have different layout
+      if (type === 'checkbox' || type === 'radio') {
+        return (
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              {...(commonProps as React.InputHTMLAttributes<HTMLInputElement>)}
+              ref={ref as React.Ref<HTMLInputElement>}
+              type={type}
+              checked={value === true || value === 'true'}
+              className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${hasError ? 'border-red-500' : ''}`}
+            />
+            <span className="text-sm text-gray-700">{label}</span>
+          </label>
+        );
+      }
+
+      // Regular input with prefix/suffix
+      if (prefix || suffix) {
+        return (
+          <div className="flex items-center">
+            {prefix && (
+              <div className="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-500">
+                {prefix}
+              </div>
+            )}
+            <input
+              {...(commonProps as React.InputHTMLAttributes<HTMLInputElement>)}
+              ref={ref as React.Ref<HTMLInputElement>}
+              type={type}
+              className={`${baseInputClasses} ${stateClasses} ${prefix ? 'rounded-l-none' : ''} ${suffix ? 'rounded-r-none' : ''}`}
+            />
+            {suffix && (
+              <div className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-500">
+                {suffix}
+              </div>
+            )}
+          </div>
+        );
+      }
+
       return (
-        <textarea
-          {...commonProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>}
-          ref={ref as React.Ref<HTMLTextAreaElement>}
-          rows={4}
+        <input
+          {...(commonProps as React.InputHTMLAttributes<HTMLInputElement>)}
+          ref={ref as React.Ref<HTMLInputElement>}
+          type={type}
         />
       );
-    }
+    };
 
-    if (type === 'select') {
-      return (
-        <select
-          {...commonProps as React.SelectHTMLAttributes<HTMLSelectElement>}
-          ref={ref as React.Ref<HTMLSelectElement>}
-        >
-          {children}
-        </select>
-      );
-    }
-
-    // Checkbox and radio have different layout
-    if (type === 'checkbox' || type === 'radio') {
-      return (
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            {...commonProps as React.InputHTMLAttributes<HTMLInputElement>}
-            ref={ref as React.Ref<HTMLInputElement>}
-            type={type}
-            checked={value === true || value === 'true'}
-            className={`w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ${hasError ? 'border-red-500' : ''}`}
-          />
-          <span className="text-sm text-gray-700">{label}</span>
-        </label>
-      );
-    }
-
-    // Regular input with prefix/suffix
-    if (prefix || suffix) {
-      return (
-        <div className="flex items-center">
-          {prefix && (
-            <div className="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-500">
-              {prefix}
-            </div>
-          )}
-          <input
-            {...commonProps as React.InputHTMLAttributes<HTMLInputElement>}
-            ref={ref as React.Ref<HTMLInputElement>}
-            type={type}
-            className={`${baseInputClasses} ${stateClasses} ${prefix ? 'rounded-l-none' : ''} ${suffix ? 'rounded-r-none' : ''}`}
-          />
-          {suffix && (
-            <div className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-gray-500">
-              {suffix}
-            </div>
-          )}
-        </div>
-      );
-    }
+    // Don't show label for checkbox/radio (it's inline)
+    const showLabel = type !== 'checkbox' && type !== 'radio';
 
     return (
-      <input
-        {...commonProps as React.InputHTMLAttributes<HTMLInputElement>}
-        ref={ref as React.Ref<HTMLInputElement>}
-        type={type}
-      />
-    );
-  };
+      <div className={`form-field ${layoutClasses} ${className}`}>
+        {showLabel && (
+          <label
+            htmlFor={id}
+            className={`block text-sm font-medium ${hasError ? 'text-red-700' : 'text-gray-700'}`}
+          >
+            {label}
+            {required && (
+              <span className="text-red-500 ml-1" aria-hidden="true">
+                *
+              </span>
+            )}
+          </label>
+        )}
 
-  // Don't show label for checkbox/radio (it's inline)
-  const showLabel = type !== 'checkbox' && type !== 'radio';
+        <div className="relative">{renderInput()}</div>
 
-  return (
-    <div className={`form-field ${layoutClasses} ${className}`}>
-      {showLabel && (
-        <label 
-          htmlFor={id} 
-          className={`block text-sm font-medium ${hasError ? 'text-red-700' : 'text-gray-700'}`}
-        >
-          {label}
-          {required && (
-            <span className="text-red-500 ml-1" aria-hidden="true">*</span>
-          )}
-        </label>
-      )}
+        {/* Character count */}
+        {showCharCount && maxLength && (
+          <div className="flex justify-end mt-1">
+            <span className={`text-xs ${charCount > maxLength ? 'text-red-500' : 'text-gray-400'}`}>
+              {charCount}/{maxLength}
+            </span>
+          </div>
+        )}
 
-      <div className="relative">
-        {renderInput()}
+        {/* Description */}
+        {hasDescription && !hasError && !hasSuccess && (
+          <p id={descriptionId} className="text-sm text-gray-500 flex items-start gap-1">
+            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {description}
+          </p>
+        )}
+
+        {/* Error message */}
+        {hasError && (
+          <p id={errorId} role="alert" className="text-sm text-red-600 flex items-start gap-1">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+        )}
+
+        {/* Success message */}
+        {hasSuccess && successMessage && (
+          <p id={successId} className="text-sm text-green-600 flex items-start gap-1">
+            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {successMessage}
+          </p>
+        )}
       </div>
-
-      {/* Character count */}
-      {showCharCount && maxLength && (
-        <div className="flex justify-end mt-1">
-          <span className={`text-xs ${charCount > maxLength ? 'text-red-500' : 'text-gray-400'}`}>
-            {charCount}/{maxLength}
-          </span>
-        </div>
-      )}
-
-      {/* Description */}
-      {hasDescription && !hasError && !hasSuccess && (
-        <p id={descriptionId} className="text-sm text-gray-500 flex items-start gap-1">
-          <Info className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {description}
-        </p>
-      )}
-
-      {/* Error message */}
-      {hasError && (
-        <p 
-          id={errorId}
-          role="alert"
-          className="text-sm text-red-600 flex items-start gap-1"
-        >
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {error}
-        </p>
-      )}
-
-      {/* Success message */}
-      {hasSuccess && successMessage && (
-        <p 
-          id={successId}
-          className="text-sm text-green-600 flex items-start gap-1"
-        >
-          <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {successMessage}
-        </p>
-      )}
-    </div>
-  );
-});
+    );
+  }
+);
 
 FormField.displayName = 'FormField';
 
@@ -326,13 +339,13 @@ export interface FieldGroupProps {
 
 export function FieldGroup({
   label,
-  name,
+  _name,
   error,
   description,
   required = false,
   children,
   layout = 'vertical',
-  className = ''
+  className = '',
 }: FieldGroupProps) {
   const id = useId();
   const groupId = `${id}-group`;
@@ -343,7 +356,11 @@ export function FieldGroup({
     <fieldset className={`form-field-group ${className}`}>
       <legend className="text-sm font-medium text-gray-700">
         {label}
-        {required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+        {required && (
+          <span className="text-red-500 ml-1" aria-hidden="true">
+            *
+          </span>
+        )}
       </legend>
 
       {description && (
@@ -352,7 +369,7 @@ export function FieldGroup({
         </p>
       )}
 
-      <div 
+      <div
         className={`mt-2 ${layout === 'horizontal' ? 'flex flex-wrap gap-4' : 'space-y-2'}`}
         role="group"
         aria-labelledby={groupId}
@@ -363,11 +380,7 @@ export function FieldGroup({
       </div>
 
       {error && (
-        <p 
-          id={errorId}
-          role="alert"
-          className="text-sm text-red-600 mt-2 flex items-start gap-1"
-        >
+        <p id={errorId} role="alert" className="text-sm text-red-600 mt-2 flex items-start gap-1">
           <AlertCircle className="w-4 h-4 mt-0.5" aria-hidden="true" />
           {error}
         </p>
@@ -396,12 +409,12 @@ export function RadioOption({
   description,
   checked,
   onChange,
-  disabled
+  disabled,
 }: RadioOptionProps) {
   const id = useId();
 
   return (
-    <label 
+    <label
       htmlFor={id}
       className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
         checked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
@@ -419,9 +432,7 @@ export function RadioOption({
       />
       <div>
         <span className="text-sm font-medium text-gray-900">{label}</span>
-        {description && (
-          <p className="text-sm text-gray-500">{description}</p>
-        )}
+        {description && <p className="text-sm text-gray-500">{description}</p>}
       </div>
     </label>
   );

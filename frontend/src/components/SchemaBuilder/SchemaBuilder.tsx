@@ -2,20 +2,20 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  ChevronRight, 
-  ChevronDown, 
-  Plus, 
-  Trash2, 
-  Eye, 
-  EyeOff, 
+import {
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  Trash2,
+  Eye,
+  EyeOff,
   Download,
   Upload,
   Settings,
   CheckCircle,
-  AlertCircle,
+  _AlertCircle,
   AlertTriangle,
-  Copy
+  Copy,
 } from 'lucide-react';
 
 // Type definitions for schema fields
@@ -110,10 +110,10 @@ export interface SchemaBuilderProps {
 
 const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
   initialSchema,
-  onSchemaChange,
+  _onSchemaChange,
   onValidationResult,
   autoSave = true,
-  className = ''
+  className = '',
 }) => {
   const [schema, setSchema] = useState<SchemaConfig>({
     name: 'Untitled Schema',
@@ -124,15 +124,15 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
-      version: '1.0.0'
+      version: '1.0.0',
     },
-    ...initialSchema
+    ...initialSchema,
   });
 
   const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [_isDragging, setIsDragging] = useState(false);
   const [validationResult, setValidationResult] = useState<TestResult | null>(null);
-  const [isAutoSaving, setIsAutoSaving] = useState(autoSave);
+  const [_isAutoSaving, _setIsAutoSaving] = useState(autoSave);
 
   // Auto-save functionality
   useEffect(() => {
@@ -140,7 +140,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
       const timeout = setTimeout(() => {
         saveSchemaToLocalStorage(schema);
       }, 2000); // Wait 2 seconds after last change
-      
+
       return () => clearTimeout(timeout);
     }
   }, [schema, autoSave, schema.name]);
@@ -153,91 +153,95 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     }
   }, []);
 
-  const handleDragStart = useCallback((item: DragItem) => {
+  const _handleDragStart = useCallback((item: DragItem) => {
     setDraggedItem(item);
     setIsDragging(true);
   }, []);
 
-  const handleDragEnd = useCallback(() => {
+  const _handleDragEnd = useCallback(() => {
     setDraggedItem(null);
     setIsDragging(false);
   }, []);
 
-  const addField = useCallback((type: SchemaField['type']) => {
-    const newField: SchemaField = {
-      id: uuidv4(),
-      name: `field_${schema.fields.length + 1}`,
-      type,
-      description: '',
-      constraints: {},
-      position: {
-        x: 50 + (schema.fields.length % 3) * 320,
-        y: 50 + Math.floor(schema.fields.length / 3) * 150
-      },
-      required: false,
-      visible: true
-    };
+  const addField = useCallback(
+    (type: SchemaField['type']) => {
+      const newField: SchemaField = {
+        id: uuidv4(),
+        name: `field_${schema.fields.length + 1}`,
+        type,
+        description: '',
+        constraints: {},
+        position: {
+          x: 50 + (schema.fields.length % 3) * 320,
+          y: 50 + Math.floor(schema.fields.length / 3) * 150,
+        },
+        required: false,
+        visible: true,
+      };
 
-    setSchema(prev => ({
-      ...prev,
-      fields: [...prev.fields, newField],
-      metadata: {
-        ...prev.metadata,
-        updatedAt: new Date()
-      }
-    }));
-  }, [schema.fields.length]);
+      setSchema((prev) => ({
+        ...prev,
+        fields: [...prev.fields, newField],
+        metadata: {
+          ...prev.metadata,
+          updatedAt: new Date(),
+        },
+      }));
+    },
+    [schema.fields.length]
+  );
 
   const removeField = useCallback((fieldId: string) => {
-    setSchema(prev => ({
+    setSchema((prev) => ({
       ...prev,
-      fields: prev.fields.filter(field => field.id !== fieldId),
-      connections: prev.connections.filter(conn => 
-        conn.sourceFieldId !== fieldId && conn.targetFieldId !== fieldId
+      fields: prev.fields.filter((field) => field.id !== fieldId),
+      connections: prev.connections.filter(
+        (conn) => conn.sourceFieldId !== fieldId && conn.targetFieldId !== fieldId
       ),
       metadata: {
         ...prev.metadata,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     }));
   }, []);
 
   const updateField = useCallback((fieldId: string, updates: Partial<SchemaField>) => {
-    setSchema(prev => ({
+    setSchema((prev) => ({
       ...prev,
-      fields: prev.fields.map(field => 
-        field.id === fieldId ? { ...field, ...updates } : field
-      ),
+      fields: prev.fields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field)),
       metadata: {
         ...prev.metadata,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     }));
   }, []);
 
-  const duplicateField = useCallback((fieldId: string) => {
-    const field = schema.fields.find(f => f.id === fieldId);
-    if (!field) return;
+  const duplicateField = useCallback(
+    (fieldId: string) => {
+      const field = schema.fields.find((f) => f.id === fieldId);
+      if (!field) return;
 
-    const newField: SchemaField = {
-      ...field,
-      id: uuidv4(),
-      name: `${field.name}_copy`,
-      position: {
-        x: field.position.x + 320,
-        y: field.position.y
-      }
-    };
+      const newField: SchemaField = {
+        ...field,
+        id: uuidv4(),
+        name: `${field.name}_copy`,
+        position: {
+          x: field.position.x + 320,
+          y: field.position.y,
+        },
+      };
 
-    setSchema(prev => ({
-      ...prev,
-      fields: [...prev.fields, newField],
-      metadata: {
-        ...prev.metadata,
-        updatedAt: new Date()
-      }
-    }));
-  }, [schema.fields]);
+      setSchema((prev) => ({
+        ...prev,
+        fields: [...prev.fields, newField],
+        metadata: {
+          ...prev.metadata,
+          updatedAt: new Date(),
+        },
+      }));
+    },
+    [schema.fields]
+  );
 
   const testSchema = useCallback(async () => {
     if (!schema.fields.length) {
@@ -246,7 +250,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
         timestamp: Date.now(),
         errors: ['No fields defined in schema'],
         warnings: [],
-        testData: {}
+        testData: {},
       };
       setValidationResult(result);
       onValidationResult?.(result);
@@ -254,34 +258,34 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     }
 
     const testData = generateTestData(schema);
-    const startTime = Date.now();
-    
+    const _startTime = Date.now();
+
     try {
       // This would integrate with your Rust backend verifier
       const result = await validateSchemaWithRust(schema, testData);
       const endTime = Date.now();
-      
+
       const testResult: TestResult = {
         success: result.success,
         timestamp: endTime,
         errors: result.errors || [],
         warnings: result.warnings || [],
-        testData
+        testData,
       };
-      
+
       setValidationResult(testResult);
       onValidationResult?.(testResult);
-      
+
       // Update schema metadata
-      setSchema(prev => ({
+      setSchema((prev) => ({
         ...prev,
         metadata: {
           ...prev.metadata,
           lastTested: new Date(),
-          testResults: [...(prev.metadata.testResults || []), testResult]
-        }
+          testResults: [...(prev.metadata.testResults || []), testResult],
+        },
       }));
-      
+
       return testResult;
     } catch (error) {
       const testResult: TestResult = {
@@ -289,18 +293,19 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
         timestamp: Date.now(),
         errors: [error.message],
         warnings: [],
-        testData
+        testData,
       };
-      
+
       setValidationResult(testResult);
       onValidationResult?.(testResult);
       return testResult;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schema]);
 
   const generateTestData = (schema: SchemaConfig): Record<string, any> => {
     const testData: Record<string, any> = {};
-    
+
     for (const field of schema.fields) {
       switch (field.type) {
         case 'string':
@@ -325,7 +330,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
           break;
       }
     }
-    
+
     return testData;
   };
 
@@ -335,18 +340,18 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
       type: 'object',
       properties: {},
       required: ['name'],
-      additionalProperties: false
+      additionalProperties: false,
     };
 
     // Add schema properties
     jsonSchema.properties.name = {
       type: 'string',
-      description: 'Schema name'
+      description: 'Schema name',
     };
-    
+
     jsonSchema.properties.description = {
       type: 'string',
-      description: 'Schema description'
+      description: 'Schema description',
     };
 
     // Add field properties
@@ -356,7 +361,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     for (const field of schema.fields) {
       const fieldSchema: any = {
         type: field.type,
-        description: field.description || `Field: ${field.name}`
+        description: field.description || `Field: ${field.name}`,
       };
 
       // Add constraints based on type
@@ -388,7 +393,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
       type: 'object',
       properties: fieldProperties,
       required: requiredFields,
-      additionalProperties: false
+      additionalProperties: false,
     };
 
     // Add connections
@@ -401,10 +406,10 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
             id: { type: 'string' },
             sourceFieldId: { type: 'string' },
             targetFieldId: { type: 'string' },
-            type: { type: 'string', enum: ['one-to-one', 'one-to-many'] }
+            type: { type: 'string', enum: ['one-to-one', 'one-to-many'] },
           },
-          required: ['id', 'sourceFieldId', 'targetFieldId', 'type']
-        }
+          required: ['id', 'sourceFieldId', 'targetFieldId', 'type'],
+        },
       };
     }
 
@@ -417,10 +422,10 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
           properties: {
             type: { type: 'string', enum: ['bounds', 'uniqueness', 'differential_privacy'] },
             fieldId: { type: 'string' },
-            parameters: { type: 'object' }
+            parameters: { type: 'object' },
           },
-          required: ['type', 'fieldId', 'parameters']
-        }
+          required: ['type', 'fieldId', 'parameters'],
+        },
       };
     }
 
@@ -432,8 +437,8 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
         updatedAt: { type: 'string', format: 'date-time' },
         version: { type: 'string' },
         lastTested: { type: 'string', format: 'date-time' },
-        testResults: { type: 'array' }
-      }
+        testResults: { type: 'array' },
+      },
     };
 
     return JSON.stringify(jsonSchema, null, 2);
@@ -442,7 +447,6 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
   const saveSchemaToLocalStorage = (schema: SchemaConfig): void => {
     try {
       localStorage.setItem('schema-builder-schema', JSON.stringify(schema));
-      console.log('Schema saved to local storage', { schemaName: schema.name });
     } catch (error) {
       console.error('Failed to save schema to local storage:', error);
     }
@@ -458,15 +462,15 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     }
   };
 
-  const generateFieldId = (): string => {
+  const _generateFieldId = (): string => {
     return `field_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
   };
 
   // Mock validation function - would integrate with Rust backend
-  const validateSchemaWithRust = async (schema: SchemaConfig, testData: Record<string, any>) => {
+  const validateSchemaWithRust = async (schema: SchemaConfig, _testData: Record<string, any>) => {
     // Simulate API call to Rust backend
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Simple validation logic
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -484,7 +488,10 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
         }
       }
 
-      if (field.type === 'enum' && (!field.constraints.enumValues || field.constraints.enumValues.length === 0)) {
+      if (
+        field.type === 'enum' &&
+        (!field.constraints.enumValues || field.constraints.enumValues.length === 0)
+      ) {
         warnings.push(`Field ${field.name}: enum type has no values defined`);
       }
     }
@@ -492,7 +499,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     return {
       success: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   };
 
@@ -500,16 +507,10 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
     <DndProvider backend={HTML5Backend}>
       <div className={`schema-builder ${className}`}>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Zero-Knowledge Schema Builder
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Zero-Knowledge Schema Builder</h1>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">
-              {schema.fields.length} fields
-            </span>
-            <span className="text-sm text-gray-500">
-              v{schema.metadata.version}
-            </span>
+            <span className="text-sm text-gray-500">{schema.fields.length} fields</span>
+            <span className="text-sm text-gray-500">v{schema.metadata.version}</span>
           </div>
         </div>
 
@@ -523,7 +524,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <Plus className="w-4 h-4" />
               String Field
             </button>
-            
+
             <button
               onClick={() => addField('integer')}
               className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
@@ -531,7 +532,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <Plus className="w-4 h-4" />
               Integer Field
             </button>
-            
+
             <button
               onClick={() => addField('boolean')}
               className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
@@ -539,7 +540,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <Plus className="w-4 h-4" />
               Boolean Field
             </button>
-            
+
             <button
               onClick={() => addField('enum')}
               className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600"
@@ -558,7 +559,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <CheckCircle className="w-4 h-4" />
               Test Schema
             </button>
-            
+
             <button
               onClick={() => {
                 const jsonSchema = generateJSONSchema();
@@ -570,7 +571,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <Download className="w-4 h-4" />
               Export JSON
             </button>
-            
+
             <button
               onClick={() => saveSchemaToLocalStorage(schema)}
               className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
@@ -578,7 +579,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <Upload className="w-4 h-4" />
               Save
             </button>
-            
+
             <button
               onClick={() => {
                 if (confirm('Clear all fields and start over?')) {
@@ -590,8 +591,8 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                     metadata: {
                       createdAt: new Date(),
                       updatedAt: new Date(),
-                      version: '1.0.0'
-                    }
+                      version: '1.0.0',
+                    },
                   });
                 }
               }}
@@ -611,7 +612,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <input
                 type="text"
                 value={schema.name}
-                onChange={(e) => setSchema(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setSchema((prev) => ({ ...prev, name: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Schema name"
               />
@@ -621,7 +622,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
               <input
                 type="text"
                 value={schema.description || ''}
-                onChange={(e) => setSchema(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => setSchema((prev) => ({ ...prev, description: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Schema description"
               />
@@ -631,9 +632,11 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
 
         {/* Validation Result */}
         {validationResult && (
-          <div className={`mb-4 p-4 rounded-lg ${
-            validationResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-          }`}>
+          <div
+            className={`mb-4 p-4 rounded-lg ${
+              validationResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+            }`}
+          >
             <div className="flex items-center mb-2">
               {validationResult.success ? (
                 <CheckCircle className="w-5 h-5 text-green-600" />
@@ -644,7 +647,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                 {validationResult.success ? 'Validation Passed' : 'Validation Failed'}
               </span>
             </div>
-            
+
             {!validationResult.success && validationResult.errors.length > 0 && (
               <div className="text-red-700">
                 <div className="font-medium text-sm mb-1">Errors:</div>
@@ -655,7 +658,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                 </ul>
               </div>
             )}
-            
+
             {validationResult.warnings.length > 0 && (
               <div className="text-yellow-700">
                 <div className="font-medium text-sm mb-1">Warnings:</div>
@@ -684,20 +687,23 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                   left: field.position.x,
                   top: field.position.y,
                   width: 300,
-                  zIndex: 10
+                  zIndex: 10,
                 }}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <div className={`w-6 h-6 text-white rounded flex items-center justify-center ${
-                      field.type === 'string' ? 'bg-blue-500' :
-                      field.type === 'integer' ? 'bg-green-500' :
-                      field.type === 'boolean' ? 'bg-purple-500' :
-                      'bg-orange-500'
-                    }`}>
-                      <span className="text-xs font-medium">
-                        {field.type[0].toUpperCase()}
-                      </span>
+                    <div
+                      className={`w-6 h-6 text-white rounded flex items-center justify-center ${
+                        field.type === 'string'
+                          ? 'bg-blue-500'
+                          : field.type === 'integer'
+                            ? 'bg-green-500'
+                            : field.type === 'boolean'
+                              ? 'bg-purple-500'
+                              : 'bg-orange-500'
+                      }`}
+                    >
+                      <span className="text-xs font-medium">{field.type[0].toUpperCase()}</span>
                     </div>
                     <input
                       type="text"
@@ -707,7 +713,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                       placeholder="Field name"
                     />
                   </div>
-                  
+
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={() => duplicateField(field.id)}
@@ -741,7 +747,7 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                       <option value="enum">Enum</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-xs font-medium text-gray-700">Description</label>
                     <input
@@ -765,7 +771,9 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
 
                   {/* Constraints */}
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">Constraints</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Constraints
+                    </label>
                     <div className="space-y-2">
                       {field.type === 'integer' && (
                         <>
@@ -774,12 +782,14 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                             <input
                               type="number"
                               value={field.constraints.min || ''}
-                              onChange={(e) => updateField(field.id, { 
-                                constraints: { 
-                                  ...field.constraints, 
-                                  min: e.target.value ? parseInt(e.target.value) : undefined 
-                                }
-                              })}
+                              onChange={(e) =>
+                                updateField(field.id, {
+                                  constraints: {
+                                    ...field.constraints,
+                                    min: e.target.value ? parseInt(e.target.value) : undefined,
+                                  },
+                                })
+                              }
                               className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                               placeholder="Minimum value"
                             />
@@ -789,37 +799,41 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                             <input
                               type="number"
                               value={field.constraints.max || ''}
-                              onChange={(e) => updateField(field.id, { 
-                                constraints: { 
-                                  ...field.constraints, 
-                                  max: e.target.value ? parseInt(e.target.value) : undefined 
-                                }
-                              })}
+                              onChange={(e) =>
+                                updateField(field.id, {
+                                  constraints: {
+                                    ...field.constraints,
+                                    max: e.target.value ? parseInt(e.target.value) : undefined,
+                                  },
+                                })
+                              }
                               className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                               placeholder="Maximum value"
                             />
                           </div>
                         </>
                       )}
-                      
+
                       {field.type === 'string' && (
                         <div>
                           <label className="block text-xs text-gray-600">Pattern</label>
                           <input
                             type="text"
                             value={field.constraints.pattern || ''}
-                            onChange={(e) => updateField(field.id, { 
-                              constraints: { 
-                                ...field.constraints, 
-                                pattern: e.target.value 
-                              }
-                            })}
+                            onChange={(e) =>
+                              updateField(field.id, {
+                                constraints: {
+                                  ...field.constraints,
+                                  pattern: e.target.value,
+                                },
+                              })
+                            }
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                             placeholder="Regular expression"
                           />
                         </div>
                       )}
-                      
+
                       {field.type === 'enum' && (
                         <div>
                           <label className="block text-xs text-gray-600">Enum Values</label>
@@ -832,23 +846,25 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                                   onChange={(e) => {
                                     const updatedValues = [...(field.constraints.enumValues || [])];
                                     updatedValues[index] = e.target.value;
-                                    updateField(field.id, { 
-                                      constraints: { 
+                                    updateField(field.id, {
+                                      constraints: {
                                         ...field.constraints,
-                                        enumValues: updatedValues
-                                      }
+                                        enumValues: updatedValues,
+                                      },
                                     });
                                   }}
                                   className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                                 />
                                 <button
                                   onClick={() => {
-                                    const updatedValues = field.constraints.enumValues?.filter((_, i) => i !== index) || [];
-                                    updateField(field.id, { 
-                                      constraints: { 
+                                    const updatedValues =
+                                      field.constraints.enumValues?.filter((_, i) => i !== index) ||
+                                      [];
+                                    updateField(field.id, {
+                                      constraints: {
                                         ...field.constraints,
-                                        enumValues: updatedValues
-                                      }
+                                        enumValues: updatedValues,
+                                      },
                                     });
                                   }}
                                   className="p-1 text-red-500 hover:text-red-700"
@@ -860,11 +876,11 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
                             <button
                               onClick={() => {
                                 const updatedValues = [...(field.constraints.enumValues || []), ''];
-                                updateField(field.id, { 
-                                  constraints: { 
+                                updateField(field.id, {
+                                  constraints: {
                                     ...field.constraints,
-                                    enumValues: updatedValues
-                                  }
+                                    enumValues: updatedValues,
+                                  },
                                 });
                               }}
                               className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -886,16 +902,14 @@ const SchemaBuilder: React.FC<SchemaBuilderProps> = ({
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t border-gray-200">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                {validationResult 
+                {validationResult
                   ? `✅ ${validationResult.success ? 'Validated' : 'Failed'} (${validationResult.errors.length} errors)`
-                  : 'Not tested'
-                }
+                  : 'Not tested'}
               </div>
               <div className="text-sm text-gray-500">
-                {validationResult?.timestamp ? 
-                  `Last tested: ${new Date(validationResult.timestamp).toLocaleTimeString()}`
-                  : ''
-                }
+                {validationResult?.timestamp
+                  ? `Last tested: ${new Date(validationResult.timestamp).toLocaleTimeString()}`
+                  : ''}
               </div>
             </div>
           </div>

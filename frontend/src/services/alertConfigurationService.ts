@@ -2,12 +2,12 @@
  * Alert Configuration Service
  */
 
-import { 
-  AlertConfiguration, 
-  AlertChannel, 
-  AlertCondition, 
+import {
+  AlertConfiguration,
+  AlertChannel,
+  AlertCondition,
   EscalationRule,
-  PrivacyAlert 
+  PrivacyAlert,
 } from '../types/privacyMetrics';
 
 export interface AlertTemplate {
@@ -70,8 +70,8 @@ export class AlertConfigurationService {
             metric: 'access_volume',
             operator: 'gt',
             value: 1000,
-            duration: 5 // minutes
-          }
+            duration: 5, // minutes
+          },
         ],
         defaultSeverity: 'high',
         defaultChannels: [
@@ -79,12 +79,12 @@ export class AlertConfigurationService {
             type: 'email',
             config: {
               recipients: ['privacy-team@company.com'],
-              subject: 'High Access Volume Alert'
+              subject: 'High Access Volume Alert',
             },
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
-        tags: ['access', 'volume', 'security']
+        tags: ['access', 'volume', 'security'],
       },
       {
         id: 'compliance-score-drop',
@@ -96,8 +96,8 @@ export class AlertConfigurationService {
             metric: 'compliance_score',
             operator: 'lt',
             value: 85,
-            duration: 1 // minute
-          }
+            duration: 1, // minute
+          },
         ],
         defaultSeverity: 'medium',
         defaultChannels: [
@@ -105,20 +105,20 @@ export class AlertConfigurationService {
             type: 'email',
             config: {
               recipients: ['compliance-team@company.com'],
-              subject: 'Compliance Score Alert'
+              subject: 'Compliance Score Alert',
             },
-            enabled: true
+            enabled: true,
           },
           {
             type: 'slack',
             config: {
               webhook: 'https://hooks.slack.com/services/...',
-              channel: '#privacy-alerts'
+              channel: '#privacy-alerts',
             },
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
-        tags: ['compliance', 'score', 'regulatory']
+        tags: ['compliance', 'score', 'regulatory'],
       },
       {
         id: 'anomaly-detection',
@@ -130,8 +130,8 @@ export class AlertConfigurationService {
             metric: 'anomaly_confidence',
             operator: 'gte',
             value: 0.8,
-            duration: 0 // immediate
-          }
+            duration: 0, // immediate
+          },
         ],
         defaultSeverity: 'critical',
         defaultChannels: [
@@ -139,19 +139,19 @@ export class AlertConfigurationService {
             type: 'email',
             config: {
               recipients: ['security-team@company.com'],
-              subject: 'Critical Anomaly Detected'
+              subject: 'Critical Anomaly Detected',
             },
-            enabled: true
+            enabled: true,
           },
           {
             type: 'sms',
             config: {
-              numbers: ['+1234567890']
+              numbers: ['+1234567890'],
             },
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
-        tags: ['anomaly', 'security', 'critical']
+        tags: ['anomaly', 'security', 'critical'],
       },
       {
         id: 'data-retention',
@@ -163,8 +163,8 @@ export class AlertConfigurationService {
             metric: 'data_age_days',
             operator: 'gt',
             value: 2555, // 7 years
-            duration: 60 // minutes
-          }
+            duration: 60, // minutes
+          },
         ],
         defaultSeverity: 'medium',
         defaultChannels: [
@@ -172,12 +172,12 @@ export class AlertConfigurationService {
             type: 'email',
             config: {
               recipients: ['data-governance@company.com'],
-              subject: 'Data Retention Policy Violation'
+              subject: 'Data Retention Policy Violation',
             },
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
-        tags: ['retention', 'policy', 'compliance']
+        tags: ['retention', 'policy', 'compliance'],
       },
       {
         id: 'unusual-access-pattern',
@@ -189,8 +189,8 @@ export class AlertConfigurationService {
             metric: 'pattern_deviation',
             operator: 'gt',
             value: 2.5,
-            duration: 10 // minutes
-          }
+            duration: 10, // minutes
+          },
         ],
         defaultSeverity: 'low',
         defaultChannels: [
@@ -198,16 +198,16 @@ export class AlertConfigurationService {
             type: 'slack',
             config: {
               webhook: 'https://hooks.slack.com/services/...',
-              channel: '#privacy-monitoring'
+              channel: '#privacy-monitoring',
             },
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
-        tags: ['pattern', 'behavior', 'monitoring']
-      }
+        tags: ['pattern', 'behavior', 'monitoring'],
+      },
     ];
 
-    templates.forEach(template => {
+    templates.forEach((template) => {
       this.templates.set(template.id, template);
     });
   }
@@ -225,7 +225,7 @@ export class AlertConfigurationService {
         severity: template.defaultSeverity,
         channels: template.defaultChannels,
         cooldownPeriod: 15, // minutes
-        escalationRules: []
+        escalationRules: [],
       };
 
       this.configurations.set(config.id, config);
@@ -233,7 +233,7 @@ export class AlertConfigurationService {
         id: `rule-${config.id}`,
         configId: config.id,
         isActive: true,
-        triggerCount: 0
+        triggerCount: 0,
       });
     }
   }
@@ -242,19 +242,22 @@ export class AlertConfigurationService {
   public createConfiguration(config: Omit<AlertConfiguration, 'id'>): AlertConfiguration {
     const id = `config-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newConfig: AlertConfiguration = { ...config, id };
-    
+
     this.configurations.set(id, newConfig);
     this.rules.set(id, {
       id: `rule-${id}`,
       configId: id,
       isActive: true,
-      triggerCount: 0
+      triggerCount: 0,
     });
 
     return newConfig;
   }
 
-  public updateConfiguration(id: string, updates: Partial<AlertConfiguration>): AlertConfiguration | null {
+  public updateConfiguration(
+    id: string,
+    updates: Partial<AlertConfiguration>
+  ): AlertConfiguration | null {
     const existing = this.configurations.get(id);
     if (!existing) return null;
 
@@ -281,7 +284,7 @@ export class AlertConfigurationService {
 
   public getConfigurationsByCategory(category: string): AlertConfiguration[] {
     return Array.from(this.configurations.values()).filter(
-      config => config.metricType === category
+      (config) => config.metricType === category
     );
   }
 
@@ -294,7 +297,10 @@ export class AlertConfigurationService {
     return Array.from(this.templates.values());
   }
 
-  public createConfigurationFromTemplate(templateId: string, overrides?: Partial<AlertConfiguration>): AlertConfiguration | null {
+  public createConfigurationFromTemplate(
+    templateId: string,
+    overrides?: Partial<AlertConfiguration>
+  ): AlertConfiguration | null {
     const template = this.templates.get(templateId);
     if (!template) return null;
 
@@ -309,7 +315,7 @@ export class AlertConfigurationService {
       channels: template.defaultChannels,
       cooldownPeriod: 15,
       escalationRules: [],
-      ...overrides
+      ...overrides,
     };
 
     this.configurations.set(config.id, config);
@@ -317,7 +323,7 @@ export class AlertConfigurationService {
       id: `rule-${config.id}`,
       configId: config.id,
       isActive: true,
-      triggerCount: 0
+      triggerCount: 0,
     });
 
     return config;
@@ -340,7 +346,7 @@ export class AlertConfigurationService {
 
       // Evaluate conditions
       const shouldTrigger = this.evaluateConditions(config.conditions, metrics);
-      
+
       if (shouldTrigger) {
         const alert = this.createAlert(config, metrics);
         triggeredAlerts.push(alert);
@@ -348,7 +354,7 @@ export class AlertConfigurationService {
         // Update rule
         rule.lastTriggered = Date.now();
         rule.triggerCount++;
-        rule.suppressionUntil = Date.now() + (config.cooldownPeriod * 60 * 1000);
+        rule.suppressionUntil = Date.now() + config.cooldownPeriod * 60 * 1000;
 
         // Store in history
         this.alertHistory.push(alert);
@@ -358,21 +364,31 @@ export class AlertConfigurationService {
     return triggeredAlerts;
   }
 
-  private evaluateConditions(conditions: AlertCondition[], metrics: Record<string, number>): boolean {
+  private evaluateConditions(
+    conditions: AlertCondition[],
+    metrics: Record<string, number>
+  ): boolean {
     if (conditions.length === 0) return false;
 
-    return conditions.every(condition => {
+    return conditions.every((condition) => {
       const value = metrics[condition.metric];
       if (value === undefined) return false;
 
       switch (condition.operator) {
-        case 'gt': return value > condition.value;
-        case 'gte': return value >= condition.value;
-        case 'lt': return value < condition.value;
-        case 'lte': return value <= condition.value;
-        case 'eq': return value === condition.value;
-        case 'ne': return value !== condition.value;
-        default: return false;
+        case 'gt':
+          return value > condition.value;
+        case 'gte':
+          return value >= condition.value;
+        case 'lt':
+          return value < condition.value;
+        case 'lte':
+          return value <= condition.value;
+        case 'eq':
+          return value === condition.value;
+        case 'ne':
+          return value !== condition.value;
+        default:
+          return false;
       }
     });
   }
@@ -394,15 +410,18 @@ export class AlertConfigurationService {
       metadata: {
         conditions: config.conditions,
         channels: config.channels,
-        metrics
-      }
+        metrics,
+      },
     };
   }
 
-  private generateAlertMessage(config: AlertConfiguration, metrics: Record<string, number>): string {
+  private generateAlertMessage(
+    config: AlertConfiguration,
+    metrics: Record<string, number>
+  ): string {
     const primaryCondition = config.conditions[0];
     const value = metrics[primaryCondition.metric] || 0;
-    
+
     return `${config.description}: Current value ${value} ${this.getOperatorText(primaryCondition.operator)} threshold ${primaryCondition.value}`;
   }
 
@@ -413,14 +432,14 @@ export class AlertConfigurationService {
       lt: '<',
       lte: '<=',
       eq: '=',
-      ne: '!='
+      ne: '!=',
     };
     return operators[operator] || operator;
   }
 
   // Alert management
   public acknowledgeAlert(alertId: string, acknowledgedBy: string): boolean {
-    const alert = this.alertHistory.find(a => a.id === alertId);
+    const alert = this.alertHistory.find((a) => a.id === alertId);
     if (!alert || alert.status !== 'active') return false;
 
     alert.status = 'acknowledged';
@@ -431,7 +450,7 @@ export class AlertConfigurationService {
   }
 
   public resolveAlert(alertId: string, resolutionNotes?: string): boolean {
-    const alert = this.alertHistory.find(a => a.id === alertId);
+    const alert = this.alertHistory.find((a) => a.id === alertId);
     if (!alert || (alert.status !== 'active' && alert.status !== 'acknowledged')) return false;
 
     alert.status = 'resolved';
@@ -444,7 +463,7 @@ export class AlertConfigurationService {
   }
 
   public getActiveAlerts(): PrivacyAlert[] {
-    return this.alertHistory.filter(alert => alert.status === 'active');
+    return this.alertHistory.filter((alert) => alert.status === 'active');
   }
 
   public getAlertHistory(limit?: number): PrivacyAlert[] {
@@ -455,38 +474,45 @@ export class AlertConfigurationService {
   // Statistics and analytics
   public getAlertStatistics(timeRange?: { start: number; end: number }): AlertStatistics {
     let alerts = this.alertHistory;
-    
+
     if (timeRange) {
-      alerts = alerts.filter(alert => 
-        alert.timestamp >= timeRange.start && alert.timestamp <= timeRange.end
+      alerts = alerts.filter(
+        (alert) => alert.timestamp >= timeRange.start && alert.timestamp <= timeRange.end
       );
     }
 
-    const activeAlerts = alerts.filter(a => a.status === 'active');
-    const alertsBySeverity = alerts.reduce((acc, alert) => {
-      acc[alert.severity] = (acc[alert.severity] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const activeAlerts = alerts.filter((a) => a.status === 'active');
+    const alertsBySeverity = alerts.reduce(
+      (acc, alert) => {
+        acc[alert.severity] = (acc[alert.severity] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const alertsByType = alerts.reduce((acc, alert) => {
-      const config = this.configurations.get(alert.configId);
-      if (config) {
-        acc[config.metricType] = (acc[config.metricType] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    const alertsByType = alerts.reduce(
+      (acc, alert) => {
+        const config = this.configurations.get(alert.configId);
+        if (config) {
+          acc[config.metricType] = (acc[config.metricType] || 0) + 1;
+        }
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Calculate average resolution time
-    const resolvedAlerts = alerts.filter(a => a.status === 'resolved' && a.resolvedAt);
-    const averageResolutionTime = resolvedAlerts.length > 0
-      ? resolvedAlerts.reduce((sum, alert) => {
-          const resolutionTime = alert.resolvedAt! - alert.timestamp;
-          return sum + resolutionTime;
-        }, 0) / resolvedAlerts.length
-      : 0;
+    const resolvedAlerts = alerts.filter((a) => a.status === 'resolved' && a.resolvedAt);
+    const averageResolutionTime =
+      resolvedAlerts.length > 0
+        ? resolvedAlerts.reduce((sum, alert) => {
+            const resolutionTime = alert.resolvedAt! - alert.timestamp;
+            return sum + resolutionTime;
+          }, 0) / resolvedAlerts.length
+        : 0;
 
     // Calculate escalation rate
-    const escalatedAlerts = alerts.filter(alert => {
+    const escalatedAlerts = alerts.filter((alert) => {
       const config = this.configurations.get(alert.configId);
       return config && config.escalationRules.length > 0;
     });
@@ -498,7 +524,7 @@ export class AlertConfigurationService {
       alertsBySeverity,
       alertsByType,
       averageResolutionTime,
-      escalationRate
+      escalationRate,
     };
   }
 
@@ -519,7 +545,11 @@ export class AlertConfigurationService {
     return true;
   }
 
-  public updateChannel(configId: string, channelIndex: number, updates: Partial<AlertChannel>): boolean {
+  public updateChannel(
+    configId: string,
+    channelIndex: number,
+    updates: Partial<AlertChannel>
+  ): boolean {
     const config = this.configurations.get(configId);
     if (!config || channelIndex < 0 || channelIndex >= config.channels.length) return false;
 
@@ -605,7 +635,7 @@ export class AlertConfigurationService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -614,7 +644,7 @@ export class AlertConfigurationService {
     const data = {
       configurations: Array.from(this.configurations.values()),
       templates: Array.from(this.templates.values()),
-      exportedAt: Date.now()
+      exportedAt: Date.now(),
     };
     return JSON.stringify(data, null, 2);
   }
@@ -628,7 +658,7 @@ export class AlertConfigurationService {
 
     try {
       const parsed = JSON.parse(data);
-      
+
       if (parsed.configurations && Array.isArray(parsed.configurations)) {
         parsed.configurations.forEach((config: AlertConfiguration) => {
           const validation = this.validateConfiguration(config);
@@ -638,7 +668,7 @@ export class AlertConfigurationService {
               id: `rule-${config.id}`,
               configId: config.id,
               isActive: true,
-              triggerCount: 0
+              triggerCount: 0,
             });
             imported++;
           } else {

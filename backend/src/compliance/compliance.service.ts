@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 
-import { ComplianceScan } from './entities/compliance-scan.entity';
-import { Violation } from './entities/violation.entity';
-import { ComplianceRule } from './entities/compliance-rule.entity';
+import { ComplianceScan } from "./entities/compliance-scan.entity";
+import { Violation } from "./entities/violation.entity";
+import { ComplianceRule } from "./entities/compliance-rule.entity";
 
 @Injectable()
 export class ComplianceService {
   constructor(
-    @InjectQueue('compliance-queue') private queue: Queue,
+    @InjectQueue("compliance-queue") private queue: Queue,
 
     @InjectRepository(ComplianceScan)
     private scanRepo: Repository<ComplianceScan>,
@@ -24,7 +24,7 @@ export class ComplianceService {
   ) {}
 
   async runScan(regulation: string) {
-    return this.queue.add('run-scan', { regulation });
+    return this.queue.add("run-scan", { regulation });
   }
 
   async getDashboard() {

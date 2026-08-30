@@ -1,6 +1,6 @@
-import { redisClient, ensureRedisConnection } from './redis';
-import { v4 as uuidv4 } from 'uuid';
-import { logger } from './logger';
+import { getRedisClient } from "../config/redis";
+import { v4 as uuidv4 } from "uuid";
+import { logger } from "./logger";
 
 export interface LockOptions {
   ttl?: number; // Time to live in milliseconds
@@ -30,8 +30,8 @@ export class DistributedLock {
    * Acquire the lock
    */
   async acquire(): Promise<boolean> {
-    await ensureRedisConnection();
-    
+    const redisClient = getRedisClient();
+
     let retries = 0;
     while (retries < this.options.maxRetries) {
       try {
@@ -42,7 +42,7 @@ export class DistributedLock {
           PX: this.options.ttl,
         });
 
-        if (result === 'OK') {
+        if (result === "OK") {
           logger.debug(`Lock acquired: ${this.key}`, { lockId: this.lockId });
           return true;
         }
@@ -51,7 +51,9 @@ export class DistributedLock {
       }
 
       retries++;
-      await new Promise((resolve) => setTimeout(resolve, this.options.retryDelay));
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.options.retryDelay),
+      );
     }
 
     logger.warn(`Failed to acquire lock after ${retries} retries: ${this.key}`);
@@ -62,7 +64,7 @@ export class DistributedLock {
    * Release the lock
    */
   async release(): Promise<void> {
-    await ensureRedisConnection();
+    const redisClient = getRedisClient();
 
     try {
       // Use Lua script to ensure atomicity (only release if we own the lock)
@@ -73,7 +75,7 @@ export class DistributedLock {
           return 0
         end
       `;
-      
+
       const result = await redisClient.eval(script, {
         keys: [this.key],
         arguments: [this.lockId],
@@ -82,7 +84,10 @@ export class DistributedLock {
       if (result === 1) {
         logger.debug(`Lock released: ${this.key}`, { lockId: this.lockId });
       } else {
-        logger.warn(`Failed to release lock (not owner or expired): ${this.key}`, { lockId: this.lockId });
+        logger.warn(
+          `Failed to release lock (not owner or expired): ${this.key}`,
+          { lockId: this.lockId },
+        );
       }
     } catch (error) {
       logger.error(`Error releasing lock: ${this.key}`, error);

@@ -1,38 +1,108 @@
-import { register, Counter, Histogram, Gauge } from 'prom-client';
+import * as promClient from "prom-client";
+import { Counter, Histogram, Gauge } from "prom-client";
 
-// Create a Registry which registers the metrics
-const promClient = {
-  register,
-  Counter,
-  Histogram,
-  Gauge
-};
+export { promClient };
+
+// Create a registry for our metrics
+export const prometheusRegister = new promClient.Registry();
+
+// Add default metrics
+promClient.collectDefaultMetrics({ register: prometheusRegister });
+
+// Custom metrics for service discovery
+export const httpRequestDurationMicroseconds = new promClient.Histogram({
+  name: "http_request_duration_ms",
+  help: "Duration of HTTP requests in ms",
+  labelNames: ["method", "route", "status_code"],
+  registers: [prometheusRegister],
+});
+
+export const httpRequestTotal = new promClient.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code"],
+  registers: [prometheusRegister],
+});
+
+export const activeConnections = new promClient.Gauge({
+  name: "active_connections",
+  help: "Number of active connections",
+  registers: [prometheusRegister],
+});
+
+export const databaseConnections = new promClient.Gauge({
+  name: "database_connections",
+  help: "Number of database connections",
+  registers: [prometheusRegister],
+});
+
+export const cacheHitRate = new promClient.Gauge({
+  name: "cache_hit_rate",
+  help: "Cache hit rate",
+  registers: [prometheusRegister],
+});
 
 // Create metrics for rate limiting
 export const rateLimitMetrics = {
   requestsTotal: new Counter({
-    name: 'http_requests_total',
-    help: 'Total number of HTTP requests',
-    labelNames: ['method', 'route', 'status_code']
+    name: "rate_limit_requests_total",
+    help: "Total number of rate-limited HTTP requests",
+    labelNames: ["method", "route", "status_code"],
+    registers: [prometheusRegister],
   }),
-  
+
   requestDuration: new Histogram({
-    name: 'http_request_duration_seconds',
-    help: 'Duration of HTTP requests in seconds',
-    labelNames: ['method', 'route'],
-    buckets: [0.1, 0.5, 1, 2, 5, 10]
+    name: "http_request_duration_seconds",
+    help: "Duration of HTTP requests in seconds",
+    labelNames: ["method", "route"],
+    buckets: [0.1, 0.5, 1, 2, 5, 10],
+    registers: [prometheusRegister],
   }),
-  
+
   activeConnections: new Gauge({
-    name: 'active_connections',
-    help: 'Number of active connections'
-  })
+    name: "rate_limit_active_connections",
+    help: "Number of active connections tracked by rate limiter",
+    registers: [prometheusRegister],
+  }),
 };
 
-// Register all metrics
-register.registerMetric(rateLimitMetrics.requestsTotal);
-register.registerMetric(rateLimitMetrics.requestDuration);
-register.registerMetric(rateLimitMetrics.activeConnections);
+// Service discovery specific metrics
+export const serviceDiscoveryMetrics = {
+  serviceUp: new Gauge({
+    name: "stellar_service_up",
+    help: "Service availability status",
+    labelNames: ["service_name", "instance_id"],
+    registers: [prometheusRegister],
+  }),
 
-export { promClient };
+  serviceResponseTime: new Histogram({
+    name: "stellar_service_response_time_seconds",
+    help: "Service response time in seconds",
+    labelNames: ["service_name", "instance_id"],
+    buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5],
+    registers: [prometheusRegister],
+  }),
+
+  serviceErrorRate: new Gauge({
+    name: "stellar_service_error_rate",
+    help: "Service error rate",
+    labelNames: ["service_name", "instance_id"],
+    registers: [prometheusRegister],
+  }),
+
+  circuitBreakerState: new Gauge({
+    name: "stellar_circuit_breaker_state",
+    help: "Circuit breaker state (0=CLOSED, 1=OPEN, 2=HALF_OPEN)",
+    labelNames: ["service_name"],
+    registers: [prometheusRegister],
+  }),
+};
+
+// Kill switch specific metrics
+export const killSwitchRecoveryAttempts = new Gauge({
+  name: "kill_switch_recovery_attempts",
+  help: "Number of recovery attempts since last kill switch activation",
+  registers: [prometheusRegister],
+});
+
 export default promClient;

@@ -28,13 +28,9 @@ export class ZKProofService {
     try {
       // In a real implementation, this would load the actual WASM module
       // For now, we'll simulate the initialization
-      console.log('Initializing ZK-proof WASM module...');
-      
-      // Simulate WASM module loading
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       this.isInitialized = true;
-      console.log('ZK-proof WASM module initialized successfully');
     } catch (error) {
       console.error('Failed to initialize ZK-proof WASM module:', error);
       throw new Error('ZK-proof initialization failed');
@@ -55,23 +51,23 @@ export class ZKProofService {
       // Simulate ZK-proof generation for file integrity
       const fileBuffer = await file.arrayBuffer();
       const fileHash = await this.hashFile(fileBuffer);
-      
+
       // Create witness data (in real implementation, this would be processed by WASM)
       const witnessData = {
         fileHash,
         checksum,
         encryptedKey: await this.hashString(encryptionKey),
         fileSize: file.size,
-        fileName: file.name
+        fileName: file.name,
       };
 
       // Simulate proof generation (would call WASM function)
       const proof = await this.simulateProofGeneration(witnessData);
-      
+
       return {
         proof: new Uint8Array(proof),
         publicInputs: new Uint8Array(await this.serializePublicSignals(witnessData)),
-        verificationKey: await this.getVerificationKey('file-integrity')
+        verificationKey: await this.getVerificationKey('file-integrity'),
       };
     } catch (error) {
       console.error('Failed to generate file integrity proof:', error);
@@ -94,15 +90,15 @@ export class ZKProofService {
         dataHash: await this.hashBuffer(encryptedData),
         userPublicKey,
         timestamp,
-        nonce: crypto.getRandomValues(new Uint8Array(16))
+        nonce: crypto.getRandomValues(new Uint8Array(16)),
       };
 
       const proof = await this.simulateProofGeneration(witnessData);
-      
+
       return {
         proof: new Uint8Array(proof),
         publicInputs: new Uint8Array(await this.serializePublicSignals(witnessData)),
-        verificationKey: await this.getVerificationKey('data-ownership')
+        verificationKey: await this.getVerificationKey('data-ownership'),
       };
     } catch (error) {
       console.error('Failed to generate data ownership proof:', error);
@@ -126,15 +122,15 @@ export class ZKProofService {
         encryptionStandard: 'AES-256-GCM',
         dataSchemaHash: await this.hashString(JSON.stringify(dataSchema)),
         encryptedDataHash: await this.hashBuffer(encryptedData),
-        complianceChecks: await this.performComplianceChecks(privacySettings)
+        complianceChecks: await this.performComplianceChecks(privacySettings),
       };
 
       const proof = await this.simulateProofGeneration(witnessData);
-      
+
       return {
         proof: new Uint8Array(proof),
         publicInputs: new Uint8Array(await this.serializePublicSignals(witnessData)),
-        verificationKey: await this.getVerificationKey('privacy-compliance')
+        verificationKey: await this.getVerificationKey('privacy-compliance'),
       };
     } catch (error) {
       console.error('Failed to generate privacy compliance proof:', error);
@@ -145,16 +141,14 @@ export class ZKProofService {
   /**
    * Verify ZK-proof
    */
-  static async verifyProof(proof: ZKProof): Promise<boolean> {
+  static async verifyProof(_proof: ZKProof): Promise<boolean> {
     await this.initialize();
 
     try {
       // In a real implementation, this would call the WASM verifier
       // For now, we'll simulate verification
-      console.log('Verifying ZK-proof...');
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Simulate successful verification
       return true;
     } catch (error) {
@@ -167,12 +161,10 @@ export class ZKProofService {
    * Serialize ZK-proof for storage/transmission
    */
   static async serializeProof(proof: ZKProof): Promise<string> {
-    const combined = new Uint8Array(
-      proof.proof.length + proof.publicInputs.length
-    );
+    const combined = new Uint8Array(proof.proof.length + proof.publicInputs.length);
     combined.set(proof.proof);
     combined.set(proof.publicInputs, proof.proof.length);
-    
+
     return btoa(String.fromCharCode.apply(null, Array.from(combined)));
   }
 
@@ -182,32 +174,32 @@ export class ZKProofService {
   static async deserializeProof(serialized: string): Promise<ZKProof> {
     const binaryString = atob(serialized);
     const bytes = new Uint8Array(binaryString.length);
-    
+
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
     // Split proof and public inputs (assuming equal split for simplicity)
     const midPoint = Math.floor(bytes.length / 2);
-    
+
     return {
       proof: bytes.slice(0, midPoint),
       publicInputs: bytes.slice(midPoint),
-      verificationKey: '' // Would need to be stored separately
+      verificationKey: '', // Would need to be stored separately
     };
   }
 
   // Helper methods (in real implementation, these would interact with WASM)
 
-  private static async simulateProofGeneration(witnessData: any): Promise<number[]> {
+  private static async simulateProofGeneration(_witnessData: any): Promise<number[]> {
     // Simulate proof generation delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Generate mock proof data
     const proofSize = 1024; // Typical proof size
     const proof = new Array(proofSize);
     crypto.getRandomValues(new Uint8Array(proof));
-    
+
     return proof;
   }
 
@@ -225,7 +217,7 @@ export class ZKProofService {
   private static async hashFile(fileBuffer: ArrayBuffer): Promise<string> {
     const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   private static async hashString(data: string): Promise<string> {
@@ -233,23 +225,23 @@ export class ZKProofService {
     const dataBuffer = encoder.encode(data);
     const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   private static async hashBuffer(buffer: ArrayBuffer): Promise<string> {
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 
-  private static async performComplianceChecks(privacySettings: any): Promise<any> {
+  private static async performComplianceChecks(_privacySettings: any): Promise<any> {
     // Simulate compliance checks
     return {
       hasConsent: true,
       dataMinimized: true,
       encryptionStandard: true,
       retentionPolicy: true,
-      auditTrail: true
+      auditTrail: true,
     };
   }
 }

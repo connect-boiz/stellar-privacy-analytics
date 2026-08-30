@@ -5,17 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  Shield, 
-  AlertTriangle, 
-  TrendingUp, 
-  CheckCircle, 
-  Clock, 
+import {
+  Shield,
+  AlertTriangle,
+  TrendingUp,
+  CheckCircle,
+  Clock,
   BarChart3,
   Activity,
   FileText,
-  Settings
+  Settings,
 } from 'lucide-react';
+import { RiskAssessmentSkeleton } from '@/components/skeletons';
 
 interface RiskAssessment {
   id: string;
@@ -48,17 +49,18 @@ const RiskAssessmentDashboard: React.FC = () => {
   const [assessments, setAssessments] = useState<RiskAssessment[]>([]);
   const [heatMapData, setHeatMapData] = useState<HeatMapData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
+  const [selectedTimeframe, _setSelectedTimeframe] = useState('30d');
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchDashboardData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeframe]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch heat map data
       const heatMapResponse = await fetch(`/api/v1/risk-assessment/heatmap`);
       const heatMapResult = await heatMapResponse.json();
@@ -67,7 +69,9 @@ const RiskAssessmentDashboard: React.FC = () => {
       }
 
       // Fetch dashboard data
-      const dashboardResponse = await fetch(`/api/v1/risk-assessment/dashboard?timeframe=${selectedTimeframe}`);
+      const dashboardResponse = await fetch(
+        `/api/v1/risk-assessment/dashboard?timeframe=${selectedTimeframe}`
+      );
       const dashboardResult = await dashboardResponse.json();
       if (dashboardResult.success) {
         setAssessments(dashboardResult.data.recentAssessments || []);
@@ -81,38 +85,44 @@ const RiskAssessmentDashboard: React.FC = () => {
 
   const getRiskColor = (category: string) => {
     switch (category) {
-      case 'low': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'high': return 'bg-orange-500';
-      case 'critical': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'low':
+        return 'bg-green-500';
+      case 'medium':
+        return 'bg-yellow-500';
+      case 'high':
+        return 'bg-orange-500';
+      case 'critical':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
   const getRiskBadgeVariant = (category: string) => {
     switch (category) {
-      case 'low': return 'default';
-      case 'medium': return 'secondary';
-      case 'high': return 'destructive';
-      case 'critical': return 'destructive';
-      default: return 'outline';
+      case 'low':
+        return 'default';
+      case 'medium':
+        return 'secondary';
+      case 'high':
+        return 'destructive';
+      case 'critical':
+        return 'destructive';
+      default:
+        return 'outline';
     }
   };
 
-  const totalWorkflows = heatMapData ? 
-    Object.values(heatMapData).reduce((sum, category) => sum + category.count, 0) : 0;
+  const totalWorkflows = heatMapData
+    ? Object.values(heatMapData).reduce((sum, category) => sum + category.count, 0)
+    : 0;
 
-  const highRiskWorkflows = heatMapData ? 
-    heatMapData.high.count + heatMapData.critical.count : 0;
+  const highRiskWorkflows = heatMapData ? heatMapData.high.count + heatMapData.critical.count : 0;
 
   const riskPercentage = totalWorkflows > 0 ? (highRiskWorkflows / totalWorkflows) * 100 : 0;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <RiskAssessmentSkeleton />;
   }
 
   return (
@@ -145,9 +155,7 @@ const RiskAssessmentDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalWorkflows}</div>
-            <p className="text-xs text-muted-foreground">
-              Active data workflows
-            </p>
+            <p className="text-xs text-muted-foreground">Active data workflows</p>
           </CardContent>
         </Card>
 
@@ -158,9 +166,7 @@ const RiskAssessmentDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{highRiskWorkflows}</div>
-            <p className="text-xs text-muted-foreground">
-              Require immediate attention
-            </p>
+            <p className="text-xs text-muted-foreground">Require immediate attention</p>
           </CardContent>
         </Card>
 
@@ -184,9 +190,7 @@ const RiskAssessmentDashboard: React.FC = () => {
             <div className="text-2xl font-bold">
               {assessments.reduce((sum, a) => sum + a.mitigationStrategies.length, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Actions to be completed
-            </p>
+            <p className="text-xs text-muted-foreground">Actions to be completed</p>
           </CardContent>
         </Card>
       </div>
@@ -230,20 +234,18 @@ const RiskAssessmentDashboard: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Recommendations</CardTitle>
-                <CardDescription>
-                  Latest privacy improvement recommendations
-                </CardDescription>
+                <CardDescription>Latest privacy improvement recommendations</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {assessments.slice(0, 3).map((assessment) => (
+                  {assessments.slice(0, 3).map((assessment) =>
                     assessment.recommendations.slice(0, 2).map((rec, index) => (
                       <div key={`${assessment.id}-${index}`} className="flex items-start space-x-2">
                         <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                         <p className="text-sm">{rec}</p>
                       </div>
                     ))
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -262,7 +264,10 @@ const RiskAssessmentDashboard: React.FC = () => {
               {heatMapData && (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {Object.entries(heatMapData).map(([category, data]) => (
-                    <Card key={category} className={`border-l-4 ${getRiskColor(category).replace('bg-', 'border-l-')}`}>
+                    <Card
+                      key={category}
+                      className={`border-l-4 ${getRiskColor(category).replace('bg-', 'border-l-')}`}
+                    >
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg capitalize">{category}</CardTitle>
                         <CardDescription>{data.count} workflows</CardDescription>
@@ -296,9 +301,7 @@ const RiskAssessmentDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>Recent Risk Assessments</CardTitle>
-              <CardDescription>
-                Latest privacy risk assessments completed
-              </CardDescription>
+              <CardDescription>Latest privacy risk assessments completed</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -306,9 +309,7 @@ const RiskAssessmentDashboard: React.FC = () => {
                   <Card key={assessment.id}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">
-                          Workflow {assessment.workflowId}
-                        </CardTitle>
+                        <CardTitle className="text-lg">Workflow {assessment.workflowId}</CardTitle>
                         <Badge variant={getRiskBadgeVariant(assessment.category)}>
                           {assessment.category.toUpperCase()}
                         </Badge>
@@ -322,17 +323,24 @@ const RiskAssessmentDashboard: React.FC = () => {
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium">Overall Risk Score</span>
-                            <span className="text-sm">{(assessment.overallScore * 100).toFixed(1)}%</span>
+                            <span className="text-sm">
+                              {(assessment.overallScore * 100).toFixed(1)}%
+                            </span>
                           </div>
                           <Progress value={assessment.overallScore * 100} />
                         </div>
-                        
+
                         <div>
                           <h4 className="text-sm font-medium mb-2">Risk Factors</h4>
                           <div className="space-y-1">
                             {assessment.riskFactors.map((factor, index) => (
-                              <div key={index} className="flex items-center justify-between text-sm">
-                                <span className="capitalize">{factor.category.replace('_', ' ')}</span>
+                              <div
+                                key={index}
+                                className="flex items-center justify-between text-sm"
+                              >
+                                <span className="capitalize">
+                                  {factor.category.replace('_', ' ')}
+                                </span>
                                 <span>{(factor.score * 100).toFixed(1)}%</span>
                               </div>
                             ))}
@@ -346,7 +354,9 @@ const RiskAssessmentDashboard: React.FC = () => {
                             <AlertDescription>
                               <ul className="list-disc list-inside space-y-1">
                                 {assessment.recommendations.slice(0, 2).map((rec, index) => (
-                                  <li key={index} className="text-sm">{rec}</li>
+                                  <li key={index} className="text-sm">
+                                    {rec}
+                                  </li>
                                 ))}
                               </ul>
                             </AlertDescription>
@@ -365,9 +375,7 @@ const RiskAssessmentDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>Mitigation Strategies</CardTitle>
-              <CardDescription>
-                Recommended actions to reduce privacy risks
-              </CardDescription>
+              <CardDescription>Recommended actions to reduce privacy risks</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -378,7 +386,9 @@ const RiskAssessmentDashboard: React.FC = () => {
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-medium">{strategy.strategy}</h4>
                           <div className="flex gap-2">
-                            <Badge variant={strategy.priority === 'urgent' ? 'destructive' : 'secondary'}>
+                            <Badge
+                              variant={strategy.priority === 'urgent' ? 'destructive' : 'secondary'}
+                            >
                               {strategy.priority}
                             </Badge>
                             <Badge variant="outline">{strategy.effort} effort</Badge>

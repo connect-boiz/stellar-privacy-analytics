@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,6 +19,7 @@ export const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    ErrorBoundary.clearStoredErrors();
     setIsAuthenticated(false);
   };
 

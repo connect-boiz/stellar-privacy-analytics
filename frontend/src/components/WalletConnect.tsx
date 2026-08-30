@@ -46,22 +46,22 @@ export const WalletConnect: React.FC<{
 
     try {
       const freight = (window as any).freight;
-      
+
       // Request connection
       const result = await freight.connect({
         app_name: 'Stellar Privacy Analytics',
-        network: 'testnet' // Default to testnet for development
+        network: 'testnet', // Default to testnet for development
       });
 
       if (result.public_key) {
         // Get account info
         const accountInfo = await freight.getAccountInfo();
-        
+
         setWalletInfo({
           publicKey: result.public_key,
           network: result.network || 'testnet',
           balance: accountInfo.balances?.[0]?.balance || '0',
-          connected: true
+          connected: true,
         });
 
         setWalletType('freight');
@@ -85,10 +85,10 @@ export const WalletConnect: React.FC<{
 
     try {
       const albedo = (window as any).albedo;
-      
+
       // Request connection
       const result = await albedo.publicKey({
-        token: 'stellar-privacy-analytics'
+        token: 'stellar-privacy-analytics',
       });
 
       if (result.pubkey) {
@@ -98,7 +98,7 @@ export const WalletConnect: React.FC<{
           publicKey: result.pubkey,
           network: 'testnet', // Albedo defaults to testnet in development
           balance: '10.0000', // Mock balance for demo
-          connected: true
+          connected: true,
         });
 
         setWalletType('albedo');
@@ -120,17 +120,17 @@ export const WalletConnect: React.FC<{
 
     try {
       const freight = (window as any).freight;
-      
+
       const result = await freight.sign({
         xdr: transactionXdr,
         network: walletInfo.network,
-        public_key: walletInfo.publicKey
+        public_key: walletInfo.publicKey,
       });
 
       const transactionResult: TransactionResult = {
         hash: result.hash || 'mock-hash-' + Date.now(),
         status: 'success',
-        message: 'Transaction signed successfully'
+        message: 'Transaction signed successfully',
       };
 
       onTransactionSigned?.(transactionResult);
@@ -139,9 +139,9 @@ export const WalletConnect: React.FC<{
       const errorResult: TransactionResult = {
         hash: '',
         status: 'failed',
-        message: error.message || 'Failed to sign transaction'
+        message: error.message || 'Failed to sign transaction',
       };
-      
+
       onTransactionSigned?.(errorResult);
       throw error;
     } finally {
@@ -159,17 +159,17 @@ export const WalletConnect: React.FC<{
 
     try {
       const albedo = (window as any).albedo;
-      
+
       const result = await albedo.tx({
         xdr: transactionXdr,
         network: walletInfo.network,
-        message: 'Sign privacy analytics query'
+        message: 'Sign privacy analytics query',
       });
 
       const transactionResult: TransactionResult = {
         hash: result.hash || 'mock-hash-' + Date.now(),
         status: 'success',
-        message: 'Transaction signed successfully'
+        message: 'Transaction signed successfully',
       };
 
       onTransactionSigned?.(transactionResult);
@@ -178,9 +178,9 @@ export const WalletConnect: React.FC<{
       const errorResult: TransactionResult = {
         hash: '',
         status: 'failed',
-        message: error.message || 'Failed to sign transaction'
+        message: error.message || 'Failed to sign transaction',
       };
-      
+
       onTransactionSigned?.(errorResult);
       throw error;
     } finally {
@@ -189,7 +189,7 @@ export const WalletConnect: React.FC<{
   };
 
   // Generic sign transaction method
-  const signTransaction = async (transactionXdr: string) => {
+  const _signTransaction = async (transactionXdr: string) => {
     if (!walletInfo) {
       throw new Error('No wallet connected');
     }
@@ -220,7 +220,7 @@ export const WalletConnect: React.FC<{
   useEffect(() => {
     // Auto-detect if wallets are available
     if (isFreightAvailable() || isAlbedoAvailable()) {
-      console.log('Wallet(s) detected');
+      // Wallet(s) detected
     }
   }, []);
 
@@ -233,10 +233,7 @@ export const WalletConnect: React.FC<{
             <h3 className="text-lg font-semibold">Wallet Connected</h3>
             <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
           </div>
-          <button
-            onClick={disconnect}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
+          <button onClick={disconnect} className="text-sm text-gray-500 hover:text-gray-700">
             Disconnect
           </button>
         </div>
@@ -246,7 +243,7 @@ export const WalletConnect: React.FC<{
             <span className="text-sm text-gray-600">Wallet Type:</span>
             <span className="font-medium capitalize">{walletType}</span>
           </div>
-          
+
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <span className="text-sm text-gray-600">Public Key:</span>
             <span className="font-mono text-sm">
@@ -261,14 +258,14 @@ export const WalletConnect: React.FC<{
 
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <span className="text-sm text-gray-600">Balance:</span>
-            <span className={`font-medium ${
-              hasSufficientBalance() ? 'text-green-600' : 'text-red-600'
-            }`}>
+            <span
+              className={`font-medium ${
+                hasSufficientBalance() ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
               {walletInfo.balance} XLM
               {!hasSufficientBalance() && (
-                <span className="text-xs text-red-500 ml-2">
-                  (Insufficient for this operation)
-                </span>
+                <span className="text-xs text-red-500 ml-2">(Insufficient for this operation)</span>
               )}
             </span>
           </div>
@@ -298,8 +295,8 @@ export const WalletConnect: React.FC<{
       </div>
 
       <p className="text-sm text-gray-600 mb-6">
-        Connect your Stellar wallet to sign privacy-preserving queries. 
-        Each query execution requires a small transaction fee.
+        Connect your Stellar wallet to sign privacy-preserving queries. Each query execution
+        requires a small transaction fee.
       </p>
 
       {connectionError && (

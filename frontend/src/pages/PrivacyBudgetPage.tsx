@@ -11,7 +11,7 @@ const PrivacyBudgetPage: React.FC = () => {
   const datasets = [
     { id: 'dataset-1', name: 'Customer Analytics Dataset' },
     { id: 'dataset-2', name: 'Financial Transactions Dataset' },
-    { id: 'dataset-3', name: 'Healthcare Records Dataset' }
+    { id: 'dataset-3', name: 'Healthcare Records Dataset' },
   ];
 
   return (
@@ -34,7 +34,7 @@ const PrivacyBudgetPage: React.FC = () => {
                 <h1 className="text-xl font-bold text-gray-900">Privacy Budget Monitor</h1>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {/* Dataset Selector */}
               <select
@@ -42,19 +42,19 @@ const PrivacyBudgetPage: React.FC = () => {
                 onChange={(e) => setSelectedDataset(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
               >
-                {datasets.map(dataset => (
+                {datasets.map((dataset) => (
                   <option key={dataset.id} value={dataset.id}>
                     {dataset.name}
                   </option>
                 ))}
               </select>
-              
+
               {/* Action Buttons */}
               <button className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>
               </button>
-              
+
               <button className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                 <Download className="w-4 h-4" />
                 <span>Export</span>
@@ -83,12 +83,11 @@ const PrivacyBudgetPage: React.FC = () => {
 
         {/* Page Title */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Privacy Budget Visualization
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Privacy Budget Visualization</h2>
           <p className="text-gray-600">
-            Monitor and manage your differential privacy budget in real-time. Track epsilon consumption, 
-            view historical trends, and receive alerts when budget limits are approached.
+            Monitor and manage your differential privacy budget in real-time. Track epsilon
+            consumption, view historical trends, and receive alerts when budget limits are
+            approached.
           </p>
         </div>
 

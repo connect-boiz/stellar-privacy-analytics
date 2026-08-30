@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { X, Plus, FileText, Shield } from 'lucide-react';
+import { X, Plus, Shield } from 'lucide-react';
 import { CertificationRequest } from '../../services/certificationService';
 
 interface CertificationGenerationFormProps {
@@ -11,7 +11,7 @@ interface CertificationGenerationFormProps {
 
 const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = ({
   onSubmit,
-  onClose
+  onClose,
 }) => {
   const [formData, setFormData] = useState<CertificationRequest>({
     analysisId: '',
@@ -19,14 +19,14 @@ const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = 
     organizationName: '',
     contactEmail: '',
     privacyLevel: 'medium',
-    customRequirements: ''
+    customRequirements: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.analysisId || !formData.organizationName || !formData.contactEmail) {
       toast.error('Please fill in all required fields');
       return;
@@ -43,10 +43,14 @@ const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = 
   const certificationTypes = [
     { value: 'GDPR', label: 'GDPR', description: 'General Data Protection Regulation' },
     { value: 'CCPA', label: 'CCPA', description: 'California Consumer Privacy Act' },
-    { value: 'HIPAA', label: 'HIPAA', description: 'Health Insurance Portability and Accountability Act' },
+    {
+      value: 'HIPAA',
+      label: 'HIPAA',
+      description: 'Health Insurance Portability and Accountability Act',
+    },
     { value: 'ISO27001', label: 'ISO 27001', description: 'Information Security Management' },
     { value: 'SOC2', label: 'SOC 2', description: 'Service Organization Control 2' },
-    { value: 'CUSTOM', label: 'Custom', description: 'Custom privacy certification' }
+    { value: 'CUSTOM', label: 'Custom', description: 'Custom privacy certification' },
   ];
 
   return (
@@ -66,19 +70,14 @@ const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = 
               Create a new privacy certification for your analysis
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Analysis ID *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Analysis ID *</label>
             <input
               type="text"
               value={formData.analysisId}
@@ -95,7 +94,9 @@ const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = 
             </label>
             <select
               value={formData.certificationType}
-              onChange={(e) => setFormData({ ...formData, certificationType: e.target.value as any })}
+              onChange={(e) =>
+                setFormData({ ...formData, certificationType: e.target.value as any })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {certificationTypes.map((type) => (
@@ -121,9 +122,7 @@ const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Contact Email *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email *</label>
             <input
               type="email"
               value={formData.contactEmail}
@@ -135,28 +134,32 @@ const CertificationGenerationForm: React.FC<CertificationGenerationFormProps> = 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Privacy Level *
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Privacy Level *</label>
             <div className="flex gap-4">
               {[
                 { value: 'low', label: 'Low', color: 'green' },
                 { value: 'medium', label: 'Medium', color: 'yellow' },
-                { value: 'high', label: 'High', color: 'red' }
+                { value: 'high', label: 'High', color: 'red' },
               ].map((level) => (
                 <label key={level.value} className="flex items-center">
                   <input
                     type="radio"
                     value={level.value}
                     checked={formData.privacyLevel === level.value}
-                    onChange={(e) => setFormData({ ...formData, privacyLevel: e.target.value as any })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, privacyLevel: e.target.value as any })
+                    }
                     className="mr-2"
                   />
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    level.color === 'green' ? 'bg-green-100 text-green-800' :
-                    level.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      level.color === 'green'
+                        ? 'bg-green-100 text-green-800'
+                        : level.color === 'yellow'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                    }`}
+                  >
                     {level.label}
                   </span>
                 </label>

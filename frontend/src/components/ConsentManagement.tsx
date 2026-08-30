@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Shield, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  AlertTriangle, 
-  Download, 
+import {
+  Shield,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Download,
   Upload,
   Settings,
   FileText,
@@ -18,10 +18,10 @@ import {
   ChevronDown,
   Info,
   Trash2,
-  Edit
+  Edit,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { format, subDays, addDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 export interface ConsentCategory {
   id: string;
@@ -73,7 +73,7 @@ const defaultCategories: ConsentCategory[] = [
     retentionPeriod: 365,
     thirdPartySharing: false,
     gdprRelated: true,
-    ccpaRelated: true
+    ccpaRelated: true,
   },
   {
     id: 'cat-2',
@@ -87,7 +87,7 @@ const defaultCategories: ConsentCategory[] = [
     retentionPeriod: 180,
     thirdPartySharing: false,
     gdprRelated: false,
-    ccpaRelated: false
+    ccpaRelated: false,
   },
   {
     id: 'cat-3',
@@ -101,7 +101,7 @@ const defaultCategories: ConsentCategory[] = [
     retentionPeriod: 730,
     thirdPartySharing: true,
     gdprRelated: true,
-    ccpaRelated: true
+    ccpaRelated: true,
   },
   {
     id: 'cat-4',
@@ -115,7 +115,7 @@ const defaultCategories: ConsentCategory[] = [
     retentionPeriod: 365,
     thirdPartySharing: true,
     gdprRelated: true,
-    ccpaRelated: false
+    ccpaRelated: false,
   },
   {
     id: 'cat-5',
@@ -129,7 +129,7 @@ const defaultCategories: ConsentCategory[] = [
     retentionPeriod: 30,
     thirdPartySharing: false,
     gdprRelated: false,
-    ccpaRelated: false
+    ccpaRelated: false,
   },
   {
     id: 'cat-6',
@@ -143,8 +143,8 @@ const defaultCategories: ConsentCategory[] = [
     retentionPeriod: 1095,
     thirdPartySharing: false,
     gdprRelated: true,
-    ccpaRelated: false
-  }
+    ccpaRelated: false,
+  },
 ];
 
 const sampleConsentHistory: ConsentHistoryEntry[] = [
@@ -154,7 +154,7 @@ const sampleConsentHistory: ConsentHistoryEntry[] = [
     action: 'granted',
     categoryName: 'Personal Data Processing',
     userId: 'user-123',
-    details: 'User granted consent for personal data processing'
+    details: 'User granted consent for personal data processing',
   },
   {
     id: 'hist-2',
@@ -162,7 +162,7 @@ const sampleConsentHistory: ConsentHistoryEntry[] = [
     action: 'granted',
     categoryName: 'Analytics & Performance',
     userId: 'user-123',
-    details: 'User enabled analytics cookies'
+    details: 'User enabled analytics cookies',
   },
   {
     id: 'hist-3',
@@ -170,7 +170,7 @@ const sampleConsentHistory: ConsentHistoryEntry[] = [
     action: 'revoked',
     categoryName: 'Marketing Communications',
     userId: 'user-456',
-    details: 'User opted out of marketing emails'
+    details: 'User opted out of marketing emails',
   },
   {
     id: 'hist-4',
@@ -178,8 +178,8 @@ const sampleConsentHistory: ConsentHistoryEntry[] = [
     action: 'expired',
     categoryName: 'Location Services',
     userId: 'user-789',
-    details: 'Consent automatically expired per retention policy'
-  }
+    details: 'Consent automatically expired per retention policy',
+  },
 ];
 
 interface ConsentManagementProps {
@@ -191,51 +191,56 @@ interface ConsentManagementProps {
 const ConsentManagement: React.FC<ConsentManagementProps> = ({
   userId = 'current-user',
   onConsentChange,
-  onBulkAction
+  onBulkAction,
 }) => {
   const [categories, setCategories] = useState<ConsentCategory[]>(defaultCategories);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'individual' | 'bulk' | 'history' | 'compliance'>('individual');
+  const [activeTab, setActiveTab] = useState<'individual' | 'bulk' | 'history' | 'compliance'>(
+    'individual'
+  );
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [history, setHistory] = useState<ConsentHistoryEntry[]>(sampleConsentHistory);
+  const [history, _setHistory] = useState<ConsentHistoryEntry[]>(sampleConsentHistory);
   const [isLoading, setIsLoading] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
+  const [_showExportModal, _setShowExportModal] = useState(false);
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'gdpr' | 'ccpa'>('all');
 
-  const toggleCategory = useCallback((categoryId: string) => {
-    setCategories(prev => prev.map(cat => {
-      if (cat.id === categoryId) {
-        const newEnabled = !cat.enabled;
-        
-        if (onConsentChange) {
-          onConsentChange(categoryId, newEnabled);
-        }
-        
-        return { ...cat, enabled: newEnabled };
-      }
-      return cat;
-    }));
-  }, [onConsentChange]);
+  const toggleCategory = useCallback(
+    (categoryId: string) => {
+      setCategories((prev) =>
+        prev.map((cat) => {
+          if (cat.id === categoryId) {
+            const newEnabled = !cat.enabled;
+
+            if (onConsentChange) {
+              onConsentChange(categoryId, newEnabled);
+            }
+
+            return { ...cat, enabled: newEnabled };
+          }
+          return cat;
+        })
+      );
+    },
+    [onConsentChange]
+  );
 
   const handleBulkGrant = useCallback(() => {
     if (selectedCategories.length === 0) {
       toast.error('Please select at least one category');
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     setTimeout(() => {
-      setCategories(prev => prev.map(cat => 
-        selectedCategories.includes(cat.id) 
-          ? { ...cat, enabled: true }
-          : cat
-      ));
-      
+      setCategories((prev) =>
+        prev.map((cat) => (selectedCategories.includes(cat.id) ? { ...cat, enabled: true } : cat))
+      );
+
       if (onBulkAction) {
         onBulkAction(selectedCategories, 'grant');
       }
-      
+
       toast.success(`Consent granted for ${selectedCategories.length} categories`);
       setIsLoading(false);
       setSelectedCategories([]);
@@ -247,20 +252,18 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
       toast.error('Please select at least one category');
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     setTimeout(() => {
-      setCategories(prev => prev.map(cat => 
-        selectedCategories.includes(cat.id) 
-          ? { ...cat, enabled: false }
-          : cat
-      ));
-      
+      setCategories((prev) =>
+        prev.map((cat) => (selectedCategories.includes(cat.id) ? { ...cat, enabled: false } : cat))
+      );
+
       if (onBulkAction) {
         onBulkAction(selectedCategories, 'revoke');
       }
-      
+
       toast.success(`Consent revoked for ${selectedCategories.length} categories`);
       setIsLoading(false);
       setSelectedCategories([]);
@@ -268,16 +271,14 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
   }, [selectedCategories, onBulkAction]);
 
   const toggleSelectCategory = (categoryId: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]
     );
   };
 
   const handleSelectAll = (enabled: boolean) => {
     if (enabled) {
-      setSelectedCategories(categories.map(c => c.id));
+      setSelectedCategories(categories.map((c) => c.id));
     } else {
       setSelectedCategories([]);
     }
@@ -287,13 +288,13 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
     const report = {
       exportedAt: new Date().toISOString(),
       userId,
-      consentSummary: categories.map(cat => ({
+      consentSummary: categories.map((cat) => ({
         category: cat.name,
         enabled: cat.enabled,
-        grantedAt: cat.enabled ? new Date().toISOString() : null
-      }))
+        grantedAt: cat.enabled ? new Date().toISOString() : null,
+      })),
     };
-    
+
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -304,29 +305,26 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
     toast.success('Consent report exported');
   };
 
-  const handleDataDeletion = (categoryId: string) => {
-    toast.promise(
-      new Promise(resolve => setTimeout(resolve, 1000)),
-      {
-        loading: 'Deleting data...',
-        success: 'Data deleted successfully',
-        error: 'Failed to delete data'
-      }
-    );
+  const handleDataDeletion = (_categoryId: string) => {
+    toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+      loading: 'Deleting data...',
+      success: 'Data deleted successfully',
+      error: 'Failed to delete data',
+    });
   };
 
-  const filteredCategories = categories.filter(cat => {
+  const filteredCategories = categories.filter((cat) => {
     if (complianceFilter === 'gdpr') return cat.gdprRelated;
     if (complianceFilter === 'ccpa') return cat.ccpaRelated;
     return true;
   });
 
   const stats = {
-    granted: categories.filter(c => c.enabled).length,
+    granted: categories.filter((c) => c.enabled).length,
     total: categories.length,
-    required: categories.filter(c => c.required && !c.enabled).length,
-    gdpr: categories.filter(c => c.gdprRelated && c.enabled).length,
-    ccpa: categories.filter(c => c.ccpaRelated && c.enabled).length
+    required: categories.filter((c) => c.required && !c.enabled).length,
+    gdpr: categories.filter((c) => c.gdprRelated && c.enabled).length,
+    ccpa: categories.filter((c) => c.ccpaRelated && c.enabled).length,
   };
 
   return (
@@ -382,8 +380,8 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
               { id: 'individual', label: 'Granular Consent', icon: Settings },
               { id: 'bulk', label: 'Bulk Management', icon: Users },
               { id: 'history', label: 'History', icon: Clock },
-              { id: 'compliance', label: 'Compliance', icon: FileText }
-            ].map(tab => (
+              { id: 'compliance', label: 'Compliance', icon: FileText },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
@@ -402,15 +400,13 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
 
         {activeTab === 'individual' && (
           <div className="space-y-3">
-            {filteredCategories.map(category => (
+            {filteredCategories.map((category) => (
               <motion.div
                 key={category.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`border rounded-lg transition-all ${
-                  category.enabled 
-                    ? 'border-green-200 bg-green-50' 
-                    : 'border-gray-200'
+                  category.enabled ? 'border-green-200 bg-green-50' : 'border-gray-200'
                 }`}
               >
                 <div className="p-4">
@@ -419,14 +415,10 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                       <button
                         onClick={() => toggleCategory(category.id)}
                         className={`mt-1 flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center ${
-                          category.enabled
-                            ? 'bg-green-500 border-green-500'
-                            : 'border-gray-300'
+                          category.enabled ? 'bg-green-500 border-green-500' : 'border-gray-300'
                         }`}
                       >
-                        {category.enabled && (
-                          <CheckCircle className="h-4 w-4 text-white" />
-                        )}
+                        {category.enabled && <CheckCircle className="h-4 w-4 text-white" />}
                       </button>
                       <div>
                         <div className="flex items-center space-x-2">
@@ -458,9 +450,9 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                       </div>
                     </div>
                     <button
-                      onClick={() => setExpandedCategory(
-                        expandedCategory === category.id ? null : category.id
-                      )}
+                      onClick={() =>
+                        setExpandedCategory(expandedCategory === category.id ? null : category.id)
+                      }
                       className="text-gray-400 hover:text-gray-600"
                     >
                       {expandedCategory === category.id ? (
@@ -488,7 +480,7 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                         <div>
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Data Types</h4>
                           <div className="flex flex-wrap gap-2">
-                            {category.dataTypes.map(type => (
+                            {category.dataTypes.map((type) => (
                               <span key={type} className="px-2 py-1 bg-gray-100 rounded text-xs">
                                 {type}
                               </span>
@@ -528,9 +520,7 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                 <span className="text-sm font-medium">Select All</span>
               </label>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {selectedCategories.length} selected
-                </span>
+                <span className="text-sm text-gray-500">{selectedCategories.length} selected</span>
                 <button
                   onClick={handleBulkGrant}
                   disabled={isLoading || selectedCategories.length === 0}
@@ -551,7 +541,7 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
             </div>
 
             <div className="space-y-3">
-              {categories.map(category => (
+              {categories.map((category) => (
                 <div
                   key={category.id}
                   className={`flex items-center justify-between p-4 border rounded-lg ${
@@ -572,11 +562,11 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                       <div className="text-sm text-gray-500">{category.description}</div>
                     </div>
                   </label>
-                  <div className={`px-2 py-1 text-xs rounded ${
-                    category.enabled
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <div
+                    className={`px-2 py-1 text-xs rounded ${
+                      category.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
                     {category.enabled ? 'Granted' : 'Pending'}
                   </div>
                 </div>
@@ -587,16 +577,20 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
 
         {activeTab === 'history' && (
           <div className="space-y-3">
-            {history.map(entry => (
+            {history.map((entry) => (
               <div
                 key={entry.id}
                 className="flex items-start space-x-3 p-4 border border-gray-200 rounded-lg"
               >
-                <div className={`mt-0.5 p-1 rounded ${
-                  entry.action === 'granted' ? 'bg-green-100' :
-                  entry.action === 'revoked' ? 'bg-red-100' :
-                  'bg-yellow-100'
-                }`}>
+                <div
+                  className={`mt-0.5 p-1 rounded ${
+                    entry.action === 'granted'
+                      ? 'bg-green-100'
+                      : entry.action === 'revoked'
+                        ? 'bg-red-100'
+                        : 'bg-yellow-100'
+                  }`}
+                >
                   {entry.action === 'granted' ? (
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   ) : entry.action === 'revoked' ? (
@@ -613,9 +607,7 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">{entry.details}</p>
-                  <div className="text-xs text-gray-500 mt-1">
-                    User: {entry.userId}
-                  </div>
+                  <div className="text-xs text-gray-500 mt-1">User: {entry.userId}</div>
                 </div>
               </div>
             ))}
@@ -682,26 +674,24 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredCategories.map(category => (
+                  {filteredCategories.map((category) => (
                     <tr key={category.id}>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
                         {category.name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {category.purpose}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {category.legalBasis}
-                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{category.purpose}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{category.legalBasis}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {category.retentionPeriod} days
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 text-xs rounded ${
-                          category.enabled
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs rounded ${
+                            category.enabled
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
                           {category.enabled ? 'Active' : 'Inactive'}
                         </span>
                       </td>
@@ -734,9 +724,9 @@ const ConsentManagement: React.FC<ConsentManagementProps> = ({
           <div>
             <h4 className="text-sm font-medium text-blue-900">Data Privacy Information</h4>
             <p className="text-sm text-blue-800 mt-1">
-              Under GDPR and CCPA regulations, you have the right to access, rectify, 
-              and delete your personal data. You can withdraw consent at any time. Contact our 
-              privacy team for assistance.
+              Under GDPR and CCPA regulations, you have the right to access, rectify, and delete
+              your personal data. You can withdraw consent at any time. Contact our privacy team for
+              assistance.
             </p>
           </div>
         </div>

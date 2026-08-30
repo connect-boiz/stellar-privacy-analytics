@@ -24,22 +24,22 @@ export const useNetworkStatus = (): UseNetworkStatusReturn => {
     lastChecked: new Date(),
     queuedRequests: 0,
     cacheSize: 0,
-    connectionType: (navigator as any).connection?.effectiveType
+    connectionType: (navigator as any).connection?.effectiveType,
   });
   const [isTesting, setIsTesting] = useState(false);
 
   const updateStatus = useCallback(() => {
     const diagnostics = api.getErrorDiagnostics();
     const connection = (navigator as any).connection;
-    
-    setStatus(prev => ({
+
+    setStatus((prev) => ({
       ...prev,
       isOnline: diagnostics.isOnline,
       queuedRequests: diagnostics.queuedRequests,
       cacheSize: diagnostics.cacheSize,
       lastChecked: new Date(),
       connectionType: connection?.effectiveType,
-      isSlow: connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g'
+      isSlow: connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g',
     }));
   }, []);
 
@@ -106,11 +106,11 @@ export const useNetworkStatus = (): UseNetworkStatusReturn => {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      
+
       if (connection) {
         connection.removeEventListener('change', handleConnectionChange);
       }
-      
+
       clearInterval(interval);
     };
   }, [updateStatus]);
@@ -120,6 +120,6 @@ export const useNetworkStatus = (): UseNetworkStatusReturn => {
     testConnection,
     clearCache,
     retryQueuedRequests,
-    isTesting
+    isTesting,
   };
 };

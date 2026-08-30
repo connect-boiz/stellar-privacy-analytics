@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, User, Key, Mail } from 'lucide-react';
+import { User, Key, Mail } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from '../ui/Modal';
 
 const stellarPublicKeySchema = z.string().regex(/^G[A-Z0-9]{55}$/, {
-  message: 'Invalid Stellar public key. Must start with "G" and be 56 characters long.'
+  message: 'Invalid Stellar public key. Must start with "G" and be 56 characters long.',
 });
 
 const inviteSchema = z.object({
   stellarPublicKey: stellarPublicKeySchema,
-  nickname: z.string().min(2, 'Nickname must be at least 2 characters').max(50, 'Nickname too long'),
-  message: z.string().optional()
+  nickname: z
+    .string()
+    .min(2, 'Nickname must be at least 2 characters')
+    .max(50, 'Nickname too long'),
+  message: z.string().optional(),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
@@ -23,20 +26,17 @@ interface InvitePartnerFormProps {
   onCancel: () => void;
 }
 
-export const InvitePartnerForm: React.FC<InvitePartnerFormProps> = ({
-  onSubmit,
-  onCancel
-}) => {
+export const InvitePartnerForm: React.FC<InvitePartnerFormProps> = ({ onSubmit, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
-    reset
+    reset,
   } = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
-    mode: 'onChange'
+    mode: 'onChange',
   });
 
   const handleFormSubmit = async (data: InviteFormData) => {
@@ -76,7 +76,7 @@ export const InvitePartnerForm: React.FC<InvitePartnerFormProps> = ({
             {...register('stellarPublicKey', {
               onChange: (e) => {
                 e.target.value = formatPublicKey(e.target.value);
-              }
+              },
             })}
             type="text"
             placeholder="G..."

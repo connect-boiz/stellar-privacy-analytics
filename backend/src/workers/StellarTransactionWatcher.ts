@@ -1,7 +1,8 @@
-import { Server, xdr, rpc } from '@stellar/stellar-sdk';
-import { logger } from '../utils/logger';
-import { getRedisClient, connectRedis } from '../utils/redis';
-import axios from 'axios';
+import { rpc } from "@stellar/stellar-sdk";
+import { logger } from "../utils/logger";
+import { getRedisClient, initializeRedis } from "../config/redis";
+import { sandboxConfig } from "../config/sandboxConfig";
+import axios from "axios";
 
 // Types
 interface PermissionEvent {
@@ -13,57 +14,81 @@ interface PermissionEvent {
 }
 
 export class StellarTransactionWatcher {
-  private rpcServer: Server; 
+  private rpcServer: rpc.Server;
   private redisClient: any;
-  private cursorKey = 'stellar:watcher:cursor';
-  private permissionCacheKey = 'permissions:dataset:';
+  private rpcUrl: string;
+  private redisUrl: string;
+  private contractId: string;
+  private webhookUrls: string[];
+  private cursorKey = "stellar:watcher:cursor";
+  private permissionCacheKey = "permissions:dataset:";
   private isRunning = false;
   private reconnectTimeout = 1000;
   private maxReconnectTimeout = 30000;
 
   constructor(
-    private rpcUrl: string,
-    private redisUrl: string,
-    private contractId: string,
-    private webhookUrls: string[] = []
+    rpcUrl?: string,
+    redisUrl?: string,
+    contractId?: string,
+    webhookUrls: string[] = [],
   ) {
-    this.rpcServer = new Server(rpcUrl);
+    // Use sandbox configuration if available, otherwise fall back to parameters
+    const stellarConfig = sandboxConfig.getStellarConfig();
+    this.rpcServer = new rpc.Server(rpcUrl || stellarConfig.rpcUrl);
+
     // Use the central Redis client
     this.redisClient = getRedisClient();
+
+    // Store configuration
+    this.rpcUrl = rpcUrl || stellarConfig.rpcUrl;
+    this.redisUrl =
+      redisUrl || process.env.REDIS_URL || "redis://localhost:6379";
+    this.contractId =
+      contractId || process.env.SOROBAN_CONTRACT_ID || "DEFAULT_CONTRACT_ID";
+    this.webhookUrls = webhookUrls;
+
+    logger.info("StellarTransactionWatcher initialized", {
+      rpcUrl: this.rpcUrl,
+      contractId: this.contractId,
+      environment: sandboxConfig.getConfig().environment,
+      sandboxMode: sandboxConfig.isSandboxMode(),
+    });
   }
 
   async start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    
+
     try {
       // Connect specifically for this watcher if not already connected
-      await connectRedis();
-      logger.info('Stellar Transaction Watcher started', { contractId: this.contractId });
+      await initializeRedis();
+      logger.info("Stellar Transaction Watcher started", {
+        contractId: this.contractId,
+      });
       this.watchEvents();
     } catch (error) {
-      logger.error('Failed to start Stellar Watcher', error);
+      logger.error("Failed to start Stellar Watcher", error);
       this.scheduleReconnect();
     }
   }
 
   stop() {
     this.isRunning = false;
-    logger.info('Stellar Transaction Watcher stopped');
+    logger.info("Stellar Transaction Watcher stopped");
   }
 
   private async watchEvents() {
     while (this.isRunning) {
       try {
         const lastLedger = await this.getCursor();
-        
+
         // Fetch events since lastLedger
         // In real app we'd use getEvents with startLedger
         const response = await (this.rpcServer as any).getEvents({
           startLedger: lastLedger + 1,
           filters: [
             {
-              type: 'contract',
+              type: "contract",
               contractIds: [this.contractId],
             },
           ],
@@ -77,10 +102,10 @@ export class StellarTransactionWatcher {
           this.reconnectTimeout = 1000; // Reset backoff
         } else {
           // No new events, wait a bit
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         }
       } catch (error) {
-        logger.error('Error polling Stellar events', error);
+        logger.error("Error polling Stellar events", error);
         this.scheduleReconnect();
         break; // Exit loop, start scheduled reconnect
       }
@@ -95,22 +120,26 @@ export class StellarTransactionWatcher {
       if (!payload) return;
 
       const { userPublicKey, datasetId, granted } = payload;
-      
+
       // 1. Update Redis Cache
       const cacheKey = `${this.permissionCacheKey}${datasetId}:${userPublicKey}`;
       if (granted) {
-        await this.redisClient.set(cacheKey, '1', { EX: 86400 * 7 }); // Cache for 7 days
+        await this.redisClient.set(cacheKey, "1", { EX: 86400 * 7 }); // Cache for 7 days
       } else {
         await this.redisClient.del(cacheKey);
       }
 
-      logger.info('Permission updated from ledger', { datasetId, userPublicKey, granted, ledger: event.ledger });
+      logger.info("Permission updated from ledger", {
+        datasetId,
+        userPublicKey,
+        granted,
+        ledger: event.ledger,
+      });
 
       // 2. Emit Webhooks
       await this.emitWebhooks(payload);
-
     } catch (error) {
-      logger.error('Failed to process Stellar event', { event, error });
+      logger.error("Failed to process Stellar event", { event, error });
     }
   }
 
@@ -120,14 +149,14 @@ export class StellarTransactionWatcher {
       // Logic for parsing the specific event from the contract
       // Example: event.topic = ['PERMISSION_CHANGE', userKey, datasetID]
       // event.value = [granted: boolean]
-      
+
       // Simulate decoding
       return {
         contractId: event.contractId,
-        userPublicKey: 'GD...SIMULATED_KEY', // Extract from event.topic[1]
-        datasetId: 'DATASET_123', // Extract from event.topic[2]
+        userPublicKey: "GD...SIMULATED_KEY", // Extract from event.topic[1]
+        datasetId: "DATASET_123", // Extract from event.topic[2]
         granted: true, // Extract from event.value
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } catch (error) {
       return null;
@@ -139,7 +168,7 @@ export class StellarTransactionWatcher {
       try {
         await axios.post(url, payload, { timeout: 5000 });
       } catch (error: any) {
-        logger.warn('Failed to emit webhook', { url, error: error.message });
+        logger.warn("Failed to emit webhook", { url, error: error.message });
       }
     }
   }
@@ -155,11 +184,14 @@ export class StellarTransactionWatcher {
 
   private scheduleReconnect() {
     if (!this.isRunning) return;
-    
+
     logger.info(`Scheduling reconnect in ${this.reconnectTimeout}ms`);
     setTimeout(() => this.start(), this.reconnectTimeout);
-    
+
     // Exponential backoff
-    this.reconnectTimeout = Math.min(this.reconnectTimeout * 2, this.maxReconnectTimeout);
+    this.reconnectTimeout = Math.min(
+      this.reconnectTimeout * 2,
+      this.maxReconnectTimeout,
+    );
   }
 }

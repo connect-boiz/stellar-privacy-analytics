@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { X, Download, Share2, Eye, Settings, Award } from 'lucide-react';
+import { X, Download, Share2, Award } from 'lucide-react';
 import { Certification } from '../../services/certificationService';
 
 interface BadgeDisplayProps {
@@ -9,10 +9,7 @@ interface BadgeDisplayProps {
   onClose: () => void;
 }
 
-const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
-  certification,
-  onClose
-}) => {
+const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ certification, onClose }) => {
   const [selectedFormat, setSelectedFormat] = useState<'svg' | 'png' | 'pdf'>('png');
   const [badgeStyle, setBadgeStyle] = useState<'shield' | 'round' | 'square'>('shield');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -21,7 +18,7 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
     setIsDownloading(true);
     try {
       // Mock download
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       toast.success(`Badge downloaded as ${selectedFormat.toUpperCase()}`);
     } catch (error) {
       toast.error('Failed to download badge');
@@ -42,11 +39,11 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
   };
 
   const badgePreview = (
-    <div className={`w-32 h-32 flex items-center justify-center ${
-      badgeStyle === 'shield' ? 'rounded-lg' :
-      badgeStyle === 'round' ? 'rounded-full' :
-      'rounded'
-    } bg-gradient-to-br from-blue-500 to-blue-600 text-white`}>
+    <div
+      className={`w-32 h-32 flex items-center justify-center ${
+        badgeStyle === 'shield' ? 'rounded-lg' : badgeStyle === 'round' ? 'rounded-full' : 'rounded'
+      } bg-gradient-to-br from-blue-500 to-blue-600 text-white`}
+    >
       <div className="text-center">
         <Award className="w-8 h-8 mx-auto mb-1" />
         <div className="text-xs font-bold">{certification.certificationType}</div>
@@ -65,14 +62,9 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Badge Display & Sharing</h2>
-            <p className="text-gray-600 mt-1">
-              Customize and share your certification badge
-            </p>
+            <p className="text-gray-600 mt-1">Customize and share your certification badge</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -95,17 +87,15 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
           {/* Customization Options */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Customization</h3>
-            
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Badge Style
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Badge Style</label>
                 <div className="flex gap-2">
                   {[
                     { value: 'shield', label: 'Shield' },
                     { value: 'round', label: 'Round' },
-                    { value: 'square', label: 'Square' }
+                    { value: 'square', label: 'Square' },
                   ].map((style) => (
                     <button
                       key={style.value}
@@ -130,7 +120,7 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
                   {[
                     { value: 'svg', label: 'SVG' },
                     { value: 'png', label: 'PNG' },
-                    { value: 'pdf', label: 'PDF' }
+                    { value: 'pdf', label: 'PDF' },
                   ].map((format) => (
                     <button
                       key={format.value}
@@ -152,14 +142,8 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
                   Include Verification Link
                 </label>
                 <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    defaultChecked={true}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-600">
-                    Add verification link to badge
-                  </span>
+                  <input type="checkbox" defaultChecked={true} className="mr-2" />
+                  <span className="text-sm text-gray-600">Add verification link to badge</span>
                 </label>
               </div>
             </div>

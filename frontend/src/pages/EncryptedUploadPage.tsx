@@ -27,7 +27,7 @@ const EncryptedUploadPage: React.FC = () => {
                 <h1 className="text-xl font-bold text-gray-900">Encrypted Data Upload</h1>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowDemo(!showDemo)}
@@ -59,12 +59,10 @@ const EncryptedUploadPage: React.FC = () => {
 
         {/* Page Title */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Secure Data Upload Wizard
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Secure Data Upload Wizard</h2>
           <p className="text-gray-600">
-            Upload your datasets with client-side encryption, local hashing, and blockchain verification. 
-            Your data never leaves your device unencrypted.
+            Upload your datasets with client-side encryption, local hashing, and blockchain
+            verification. Your data never leaves your device unencrypted.
           </p>
         </div>
 
@@ -79,7 +77,8 @@ const EncryptedUploadPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Drag & Drop Upload</h3>
               </div>
               <p className="text-sm text-gray-600">
-                Simply drag and drop your CSV or JSON files. Supports files up to 100MB with real-time validation.
+                Simply drag and drop your CSV or JSON files. Supports files up to 100MB with
+                real-time validation.
               </p>
             </div>
 
@@ -91,7 +90,8 @@ const EncryptedUploadPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Client-Side Encryption</h3>
               </div>
               <p className="text-sm text-gray-600">
-                Your files are encrypted locally using Web Workers, ensuring data never leaves your device unencrypted.
+                Your files are encrypted locally using Web Workers, ensuring data never leaves your
+                device unencrypted.
               </p>
             </div>
 
@@ -103,7 +103,8 @@ const EncryptedUploadPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Privacy Standards</h3>
               </div>
               <p className="text-sm text-gray-600">
-                Automatic schema validation against platform privacy standards with PII detection and warnings.
+                Automatic schema validation against platform privacy standards with PII detection
+                and warnings.
               </p>
             </div>
 
@@ -115,7 +116,8 @@ const EncryptedUploadPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Metadata Tagging</h3>
               </div>
               <p className="text-sm text-gray-600">
-                Add department, sensitivity level, date ranges, and purpose tags for better data organization.
+                Add department, sensitivity level, date ranges, and purpose tags for better data
+                organization.
               </p>
             </div>
 
@@ -127,7 +129,8 @@ const EncryptedUploadPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Blockchain Verification</h3>
               </div>
               <p className="text-sm text-gray-600">
-                Every upload creates a Stellar transaction with file hash and metadata for immutable verification.
+                Every upload creates a Stellar transaction with file hash and metadata for immutable
+                verification.
               </p>
             </div>
 
@@ -139,7 +142,8 @@ const EncryptedUploadPage: React.FC = () => {
                 <h3 className="font-semibold text-gray-900">Undo Functionality</h3>
               </div>
               <p className="text-sm text-gray-600">
-                Cancel uploads before final commit. Remove files from IPFS and cancel Stellar transactions if needed.
+                Cancel uploads before final commit. Remove files from IPFS and cancel Stellar
+                transactions if needed.
               </p>
             </div>
           </div>

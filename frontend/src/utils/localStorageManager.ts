@@ -37,7 +37,7 @@ export class LocalStorageManager {
     SCHEMA: 'schema-builder-current-schema',
     SCHEMA_LIST: 'schema-builder-schema-list',
     USER_PREFERENCES: 'schema-builder-user-preferences',
-    AUTO_SAVE: 'schema-builder-auto-save'
+    AUTO_SAVE: 'schema-builder-auto-save',
   };
 
   private static readonly DEFAULT_PREFERENCES: UserPreferences = {
@@ -47,7 +47,7 @@ export class LocalStorageManager {
     defaultFieldType: 'string',
     showFieldIds: false,
     showGrid: true,
-    theme: 'auto'
+    theme: 'auto',
   };
 
   /**
@@ -61,7 +61,7 @@ export class LocalStorageManager {
         description: schema.description,
         schema,
         createdAt: schema.metadata.createdAt,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Save current schema
@@ -99,20 +99,22 @@ export class LocalStorageManager {
   private static updateSchemaList(storedSchema: StoredSchema): void {
     try {
       const schemaList = this.getSchemaList();
-      
+
       // Remove existing entry with same ID
-      const filteredList = schemaList.filter(s => s.id !== storedSchema.id);
-      
+      const filteredList = schemaList.filter((s) => s.id !== storedSchema.id);
+
       // Add or update the schema
       filteredList.push(storedSchema);
-      
+
       // Sort by updated date (newest first)
-      filteredList.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      
+      filteredList.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+
       // Keep only the maximum number of schemas
       const preferences = this.getUserPreferences();
       const limitedList = filteredList.slice(0, preferences.maxStoredSchemas);
-      
+
       localStorage.setItem(this.STORAGE_KEYS.SCHEMA_LIST, JSON.stringify(limitedList));
     } catch (error) {
       console.error('Failed to update schema list:', error);
@@ -139,7 +141,7 @@ export class LocalStorageManager {
     try {
       // Remove from schema list
       const schemaList = this.getSchemaList();
-      const filteredList = schemaList.filter(s => s.id !== schemaId);
+      const filteredList = schemaList.filter((s) => s.id !== schemaId);
       localStorage.setItem(this.STORAGE_KEYS.SCHEMA_LIST, JSON.stringify(filteredList));
 
       // Remove current schema if it's the one being deleted
@@ -176,7 +178,7 @@ export class LocalStorageManager {
    */
   static triggerAutoSave(schema: SchemaConfig): void {
     const preferences = this.getUserPreferences();
-    
+
     if (!preferences.autoSave) {
       return;
     }
@@ -199,11 +201,10 @@ export class LocalStorageManager {
       const autoSaveData: AutoSaveData = {
         schema,
         timestamp: Date.now(),
-        version: schema.metadata.version
+        version: schema.metadata.version,
       };
 
       localStorage.setItem(this.STORAGE_KEYS.AUTO_SAVE, JSON.stringify(autoSaveData));
-      console.log('Schema auto-saved', { schemaName: schema.name, timestamp: autoSaveData.timestamp });
     } catch (error) {
       console.error('Failed to auto-save schema:', error);
     }
@@ -252,7 +253,7 @@ export class LocalStorageManager {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEYS.USER_PREFERENCES);
       const preferences = stored ? JSON.parse(stored) : {};
-      
+
       // Merge with defaults
       return { ...this.DEFAULT_PREFERENCES, ...preferences };
     } catch (error) {
@@ -265,7 +266,7 @@ export class LocalStorageManager {
     try {
       const currentPreferences = this.getUserPreferences();
       const updatedPreferences = { ...currentPreferences, ...preferences };
-      
+
       localStorage.setItem(this.STORAGE_KEYS.USER_PREFERENCES, JSON.stringify(updatedPreferences));
       return true;
     } catch (error) {
@@ -276,7 +277,10 @@ export class LocalStorageManager {
 
   static resetUserPreferences(): boolean {
     try {
-      localStorage.setItem(this.STORAGE_KEYS.USER_PREFERENCES, JSON.stringify(this.DEFAULT_PREFERENCES));
+      localStorage.setItem(
+        this.STORAGE_KEYS.USER_PREFERENCES,
+        JSON.stringify(this.DEFAULT_PREFERENCES)
+      );
       return true;
     } catch (error) {
       console.error('Failed to reset user preferences:', error);
@@ -297,7 +301,7 @@ export class LocalStorageManager {
     let totalUsed = 0;
 
     // Calculate usage for each key
-    Object.values(this.STORAGE_KEYS).forEach(key => {
+    Object.values(this.STORAGE_KEYS).forEach((key) => {
       try {
         const value = localStorage.getItem(key);
         if (value) {
@@ -318,7 +322,7 @@ export class LocalStorageManager {
       used: totalUsed,
       available: estimatedLimit - totalUsed,
       percentage,
-      details
+      details,
     };
   }
 
@@ -330,11 +334,9 @@ export class LocalStorageManager {
       const schemaList = this.getSchemaList();
       const now = Date.now();
       const cutoffDate = new Date(now - maxAge);
-      
+
       // Filter out old schemas
-      const recentSchemas = schemaList.filter(schema => 
-        new Date(schema.updatedAt) > cutoffDate
-      );
+      const recentSchemas = schemaList.filter((schema) => new Date(schema.updatedAt) > cutoffDate);
 
       // Keep only the most recent schemas up to the limit
       const preferences = this.getUserPreferences();
@@ -343,10 +345,6 @@ export class LocalStorageManager {
       localStorage.setItem(this.STORAGE_KEYS.SCHEMA_LIST, JSON.stringify(limitedSchemas));
 
       const removedCount = schemaList.length - limitedSchemas.length;
-      
-      if (removedCount > 0) {
-        console.log(`Cleaned up ${removedCount} old schemas`);
-      }
 
       return removedCount;
     } catch (error) {
@@ -364,7 +362,7 @@ export class LocalStorageManager {
         version: '1.0.0',
         exportedAt: new Date().toISOString(),
         schemas: this.getSchemaList(),
-        preferences: this.getUserPreferences()
+        preferences: this.getUserPreferences(),
       };
 
       return JSON.stringify(exportData, null, 2);
@@ -407,7 +405,7 @@ export class LocalStorageManager {
             ...schemaData,
             id: this.generateSchemaId(),
             createdAt: new Date(schemaData.createdAt),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           };
 
           this.updateSchemaList(storedSchema);
@@ -428,7 +426,7 @@ export class LocalStorageManager {
       return {
         success: false,
         imported: 0,
-        errors: ['Invalid JSON format']
+        errors: ['Invalid JSON format'],
       };
     }
   }
@@ -472,20 +470,23 @@ export class LocalStorageManager {
   }> {
     return new Promise((resolve, reject) => {
       if ('storage' in navigator && 'estimate' in navigator.storage) {
-        navigator.storage.estimate().then((estimate) => {
-          resolve({
-            quota: estimate.quota || 0,
-            usage: estimate.usage || 0,
-            available: (estimate.quota || 0) - (estimate.usage || 0)
-          });
-        }).catch(reject);
+        navigator.storage
+          .estimate()
+          .then((estimate) => {
+            resolve({
+              quota: estimate.quota || 0,
+              usage: estimate.usage || 0,
+              available: (estimate.quota || 0) - (estimate.usage || 0),
+            });
+          })
+          .catch(reject);
       } else {
         // Fallback to localStorage estimation
         const usage = this.getStorageUsage();
         resolve({
           quota: 5 * 1024 * 1024, // 5MB estimate
           usage: usage.used,
-          available: usage.available
+          available: usage.available,
         });
       }
     });

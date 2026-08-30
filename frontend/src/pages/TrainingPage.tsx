@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  GraduationCap, 
-  BookOpen, 
-  Award, 
-  Clock, 
-  CheckCircle, 
+import {
+  GraduationCap,
+  BookOpen,
+  Award,
+  Clock,
+  CheckCircle,
   PlayCircle,
   TrendingUp,
   Target,
   ChevronRight,
   Filter,
-  Search
+  Search,
 } from 'lucide-react';
 import axios from 'axios';
+import { TrainingPageSkeleton } from '@/components/skeletons';
 
 interface TrainingModule {
   id: string;
@@ -64,6 +65,7 @@ export function TrainingPage() {
 
   useEffect(() => {
     fetchTrainingData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchTrainingData = async () => {
@@ -74,7 +76,7 @@ export function TrainingPage() {
       const [modulesRes, progressRes, certsRes] = await Promise.all([
         axios.get(`${API_BASE}/training/modules`, { headers }),
         axios.get(`${API_BASE}/training/progress`, { headers }),
-        axios.get(`${API_BASE}/training/certificates`, { headers })
+        axios.get(`${API_BASE}/training/certificates`, { headers }),
       ]);
 
       setModules(modulesRes.data.data || []);
@@ -99,26 +101,42 @@ export function TrainingPage() {
       category: 'Foundations',
       difficulty: 'beginner',
       estimatedDuration: 45,
-      targetRoles: ['admin', 'analyst', 'developer', 'data_steward', 'compliance_officer', 'end_user'],
+      targetRoles: [
+        'admin',
+        'analyst',
+        'developer',
+        'data_steward',
+        'compliance_officer',
+        'end_user',
+      ],
       prerequisites: [],
-      objectives: ['Understand key privacy concepts', 'Learn GDPR principles', 'Apply privacy-by-design'],
+      objectives: [
+        'Understand key privacy concepts',
+        'Learn GDPR principles',
+        'Apply privacy-by-design',
+      ],
       passingScore: 70,
       version: '1.0.0',
-      isActive: true
+      isActive: true,
     },
     {
       id: 'differential-privacy-deep-dive',
       title: 'Differential Privacy Deep Dive',
-      description: 'Advanced techniques for implementing differential privacy in analytics workflows',
+      description:
+        'Advanced techniques for implementing differential privacy in analytics workflows',
       category: 'Advanced Techniques',
       difficulty: 'advanced',
       estimatedDuration: 90,
       targetRoles: ['developer', 'analyst', 'data_steward'],
       prerequisites: ['privacy-fundamentals'],
-      objectives: ['Master DP mathematics', 'Implement epsilon parameters', 'Balance privacy-utility'],
+      objectives: [
+        'Master DP mathematics',
+        'Implement epsilon parameters',
+        'Balance privacy-utility',
+      ],
       passingScore: 75,
       version: '1.0.0',
-      isActive: true
+      isActive: true,
     },
     {
       id: 'data-handling-procedures',
@@ -132,7 +150,7 @@ export function TrainingPage() {
       objectives: ['Classify data properly', 'Handle DSARs', 'Maintain compliance'],
       passingScore: 70,
       version: '1.0.0',
-      isActive: true
+      isActive: true,
     },
     {
       id: 'incident-response',
@@ -146,7 +164,7 @@ export function TrainingPage() {
       objectives: ['Identify incidents', 'Execute response plans', 'Report breaches'],
       passingScore: 75,
       version: '1.0.0',
-      isActive: true
+      isActive: true,
     },
     {
       id: 'consent-management',
@@ -160,8 +178,8 @@ export function TrainingPage() {
       objectives: ['Design consent mechanisms', 'Handle withdrawal', 'Maintain records'],
       passingScore: 70,
       version: '1.0.0',
-      isActive: true
-    }
+      isActive: true,
+    },
   ];
 
   const getDemoProgress = (): UserProgress[] => [
@@ -172,7 +190,7 @@ export function TrainingPage() {
       progress: 100,
       bestScore: 85,
       timeSpent: 42,
-      completedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      completedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       id: 'demo-progress-2',
@@ -180,69 +198,73 @@ export function TrainingPage() {
       status: 'in_progress',
       progress: 45,
       bestScore: 0,
-      timeSpent: 25
-    }
+      timeSpent: 25,
+    },
   ];
 
   const getProgressForModule = (moduleId: string): UserProgress | undefined => {
-    return progress.find(p => p.moduleId === moduleId);
+    return progress.find((p) => p.moduleId === moduleId);
   };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'beginner': return 'bg-green-100 text-green-800';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'advanced': return 'bg-orange-100 text-orange-800';
-      case 'expert': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'beginner':
+        return 'bg-green-100 text-green-800';
+      case 'intermediate':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'advanced':
+        return 'bg-orange-100 text-orange-800';
+      case 'expert':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="w-3 h-3 mr-1" /> Completed
-        </span>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" /> Completed
+          </span>
+        );
       case 'in_progress':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <PlayCircle className="w-3 h-3 mr-1" /> In Progress
-        </span>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <PlayCircle className="w-3 h-3 mr-1" /> In Progress
+          </span>
+        );
       default:
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          Not Started
-        </span>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            Not Started
+          </span>
+        );
     }
   };
 
-  const filteredModules = modules.filter(m => {
+  const filteredModules = modules.filter((m) => {
     const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory;
     const matchesDifficulty = selectedDifficulty === 'all' || m.difficulty === selectedDifficulty;
-    const matchesSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesDifficulty && matchesSearch;
   });
 
-  const categories = [...new Set(modules.map(m => m.category))];
+  const categories = [...new Set(modules.map((m) => m.category))];
 
   const stats = {
     totalCourses: modules.length,
-    completed: progress.filter(p => p.status === 'completed').length,
-    inProgress: progress.filter(p => p.status === 'in_progress').length,
+    completed: progress.filter((p) => p.status === 'completed').length,
+    inProgress: progress.filter((p) => p.status === 'in_progress').length,
     totalTimeSpent: progress.reduce((sum, p) => sum + p.timeSpent, 0),
-    certificatesEarned: certificates.length
+    certificatesEarned: certificates.length,
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <TrainingPageSkeleton />;
   }
 
   return (
@@ -379,8 +401,10 @@ export function TrainingPage() {
                   className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
                 <select
@@ -412,15 +436,17 @@ export function TrainingPage() {
                 >
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}
+                      >
                         {module.difficulty}
                       </span>
                       {moduleProgress && getStatusBadge(moduleProgress.status)}
                     </div>
-                    
+
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{module.title}</h3>
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">{module.description}</p>
-                    
+
                     <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -448,11 +474,14 @@ export function TrainingPage() {
                     )}
 
                     <button
-                      onClick={() => window.location.href = `/training/module/${module.id}`}
+                      onClick={() => (window.location.href = `/training/module/${module.id}`)}
                       className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      {moduleProgress?.status === 'completed' ? 'Review Course' : 
-                       moduleProgress?.status === 'in_progress' ? 'Continue Course' : 'Start Course'}
+                      {moduleProgress?.status === 'completed'
+                        ? 'Review Course'
+                        : moduleProgress?.status === 'in_progress'
+                          ? 'Continue Course'
+                          : 'Start Course'}
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -469,7 +498,7 @@ export function TrainingPage() {
             <h2 className="text-lg font-semibold mb-4">Your Learning Journey</h2>
             <div className="space-y-4">
               {progress.map((p) => {
-                const module = modules.find(m => m.id === p.moduleId);
+                const module = modules.find((m) => m.id === p.moduleId);
                 if (!module) return null;
                 return (
                   <div key={p.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">

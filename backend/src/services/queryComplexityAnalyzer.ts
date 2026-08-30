@@ -1,5 +1,5 @@
-import { logger } from '../utils/logger';
-import { PQLParseNode } from './pqlValidator';
+import { logger } from "../utils/logger";
+import { PQLParseNode } from "./pqlValidator";
 
 export interface ComplexityMetrics {
   score: number; // 1-100 complexity score
@@ -42,11 +42,13 @@ export class QueryComplexityAnalyzer {
   private tableSizes: Map<string, number>; // Estimated row counts
   private columnCardinality: Map<string, number>; // Estimated distinct values
 
-  constructor(config: {
-    thresholds?: Partial<ComplexityThresholds>;
-    tableSizes?: Map<string, number>;
-    columnCardinality?: Map<string, number>;
-  } = {}) {
+  constructor(
+    config: {
+      thresholds?: Partial<ComplexityThresholds>;
+      tableSizes?: Map<string, number>;
+      columnCardinality?: Map<string, number>;
+    } = {},
+  ) {
     this.thresholds = {
       maxScore: 75,
       maxEstimatedTime: 30000, // 30 seconds
@@ -54,7 +56,7 @@ export class QueryComplexityAnalyzer {
       maxMemoryUsage: 512, // 512 MB
       maxJoins: 5,
       maxSubqueries: 3,
-      ...config.thresholds
+      ...config.thresholds,
     };
 
     this.tableSizes = config.tableSizes || new Map();
@@ -64,7 +66,10 @@ export class QueryComplexityAnalyzer {
   /**
    * Analyze query complexity
    */
-  async analyze(parseTree: PQLParseNode, privacyBudget?: { epsilon: number; delta: number }): Promise<ComplexityAnalysis> {
+  async analyze(
+    parseTree: PQLParseNode,
+    privacyBudget?: { epsilon: number; delta: number },
+  ): Promise<ComplexityAnalysis> {
     try {
       const metrics = this.calculateMetrics(parseTree, privacyBudget);
       const canExecute = this.canExecuteQuery(metrics);
@@ -77,19 +82,19 @@ export class QueryComplexityAnalyzer {
         canExecute,
         reason,
         recommendations,
-        warnings
+        warnings,
       };
     } catch (error) {
-      logger.error('Query complexity analysis failed', {
-        error: error.message
+      logger.error("Query complexity analysis failed", {
+        error: error.message,
       });
 
       return {
         metrics: this.getDefaultMetrics(),
         canExecute: false,
-        reason: 'Complexity analysis failed',
-        recommendations: ['Simplify the query and try again'],
-        warnings: ['Unable to accurately assess query complexity']
+        reason: "Complexity analysis failed",
+        recommendations: ["Simplify the query and try again"],
+        warnings: ["Unable to accurately assess query complexity"],
       };
     }
   }
@@ -97,12 +102,20 @@ export class QueryComplexityAnalyzer {
   /**
    * Calculate complexity metrics
    */
-  private calculateMetrics(parseTree: PQLParseNode, privacyBudget?: { epsilon: number; delta: number }): ComplexityMetrics {
+  private calculateMetrics(
+    parseTree: PQLParseNode,
+    privacyBudget?: { epsilon: number; delta: number },
+  ): ComplexityMetrics {
     const operations = this.countOperations(parseTree);
     const estimatedTime = this.estimateExecutionTime(parseTree, operations);
     const estimatedCost = this.estimateComputationalCost(parseTree, operations);
     const memoryUsage = this.estimateMemoryUsage(parseTree, operations);
-    const score = this.calculateComplexityScore(operations, estimatedTime, estimatedCost, memoryUsage);
+    const score = this.calculateComplexityScore(
+      operations,
+      estimatedTime,
+      estimatedCost,
+      memoryUsage,
+    );
     const privacyCost = this.calculatePrivacyCost(operations, privacyBudget);
 
     return {
@@ -111,41 +124,43 @@ export class QueryComplexityAnalyzer {
       estimatedCost,
       operations,
       memoryUsage,
-      privacyCost
+      privacyCost,
     };
   }
 
   /**
    * Count different types of operations
    */
-  private countOperations(parseTree: PQLParseNode): ComplexityMetrics['operations'] {
+  private countOperations(
+    parseTree: PQLParseNode,
+  ): ComplexityMetrics["operations"] {
     const operations = {
       scans: 0,
       joins: 0,
       aggregations: 0,
       filters: 0,
       sorts: 0,
-      subqueries: 0
+      subqueries: 0,
     };
 
     this.traverseParseTree(parseTree, (node) => {
       switch (node.type) {
-        case 'FROM':
+        case "FROM":
           operations.scans += node.children?.length || 0;
           break;
-        case 'JOIN':
+        case "JOIN":
           operations.joins++;
           break;
-        case 'WHERE':
+        case "WHERE":
           operations.filters += this.countFilterConditions(node);
           break;
-        case 'GROUP_BY':
+        case "GROUP_BY":
           operations.aggregations += this.countAggregations(node);
           break;
-        case 'ORDER_BY':
+        case "ORDER_BY":
           operations.sorts++;
           break;
-        case 'SUBQUERY':
+        case "SUBQUERY":
           operations.subqueries++;
           break;
       }
@@ -157,7 +172,10 @@ export class QueryComplexityAnalyzer {
   /**
    * Estimate execution time based on operations
    */
-  private estimateExecutionTime(parseTree: PQLParseNode, operations: ComplexityMetrics['operations']): number {
+  private estimateExecutionTime(
+    parseTree: PQLParseNode,
+    operations: ComplexityMetrics["operations"],
+  ): number {
     let baseTime = 100; // Base 100ms
 
     // Table scan time (based on estimated table sizes)
@@ -188,7 +206,10 @@ export class QueryComplexityAnalyzer {
   /**
    * Estimate computational cost
    */
-  private estimateComputationalCost(parseTree: PQLParseNode, operations: ComplexityMetrics['operations']): number {
+  private estimateComputationalCost(
+    parseTree: PQLParseNode,
+    operations: ComplexityMetrics["operations"],
+  ): number {
     let cost = 0;
 
     // Base cost per operation type
@@ -212,7 +233,10 @@ export class QueryComplexityAnalyzer {
   /**
    * Estimate memory usage
    */
-  private estimateMemoryUsage(parseTree: PQLParseNode, operations: ComplexityMetrics['operations']): number {
+  private estimateMemoryUsage(
+    parseTree: PQLParseNode,
+    operations: ComplexityMetrics["operations"],
+  ): number {
     let memory = 50; // Base 50MB
 
     // Memory for joins
@@ -241,10 +265,10 @@ export class QueryComplexityAnalyzer {
    * Calculate overall complexity score (1-100)
    */
   private calculateComplexityScore(
-    operations: ComplexityMetrics['operations'],
+    operations: ComplexityMetrics["operations"],
     estimatedTime: number,
     estimatedCost: number,
-    memoryUsage: number
+    memoryUsage: number,
   ): number {
     let score = 0;
 
@@ -278,15 +302,15 @@ export class QueryComplexityAnalyzer {
    * Calculate privacy cost
    */
   private calculatePrivacyCost(
-    operations: ComplexityMetrics['operations'],
-    privacyBudget?: { epsilon: number; delta: number }
-  ): ComplexityMetrics['privacyCost'] {
+    operations: ComplexityMetrics["operations"],
+    privacyBudget?: { epsilon: number; delta: number },
+  ): ComplexityMetrics["privacyCost"] {
     const baseEpsilon = privacyBudget?.epsilon || 0.1;
     const baseDelta = privacyBudget?.delta || 1e-6;
 
     // Adjust privacy cost based on operations
     let epsilonMultiplier = 1;
-    let deltaMultiplier = 1;
+    const deltaMultiplier = 1;
 
     // More aggregations require more privacy budget
     epsilonMultiplier += operations.aggregations * 0.1;
@@ -297,7 +321,7 @@ export class QueryComplexityAnalyzer {
 
     return {
       epsilon: baseEpsilon * epsilonMultiplier,
-      delta: baseDelta * deltaMultiplier
+      delta: baseDelta * deltaMultiplier,
     };
   }
 
@@ -322,25 +346,37 @@ export class QueryComplexityAnalyzer {
     const reasons: string[] = [];
 
     if (metrics.score > this.thresholds.maxScore) {
-      reasons.push(`Complexity score ${metrics.score} exceeds threshold ${this.thresholds.maxScore}`);
+      reasons.push(
+        `Complexity score ${metrics.score} exceeds threshold ${this.thresholds.maxScore}`,
+      );
     }
     if (metrics.estimatedTime > this.thresholds.maxEstimatedTime) {
-      reasons.push(`Estimated time ${metrics.estimatedTime}ms exceeds threshold ${this.thresholds.maxEstimatedTime}ms`);
+      reasons.push(
+        `Estimated time ${metrics.estimatedTime}ms exceeds threshold ${this.thresholds.maxEstimatedTime}ms`,
+      );
     }
     if (metrics.estimatedCost > this.thresholds.maxEstimatedCost) {
-      reasons.push(`Estimated cost ${metrics.estimatedCost} exceeds threshold ${this.thresholds.maxEstimatedCost}`);
+      reasons.push(
+        `Estimated cost ${metrics.estimatedCost} exceeds threshold ${this.thresholds.maxEstimatedCost}`,
+      );
     }
     if (metrics.memoryUsage > this.thresholds.maxMemoryUsage) {
-      reasons.push(`Memory usage ${metrics.memoryUsage}MB exceeds threshold ${this.thresholds.maxMemoryUsage}MB`);
+      reasons.push(
+        `Memory usage ${metrics.memoryUsage}MB exceeds threshold ${this.thresholds.maxMemoryUsage}MB`,
+      );
     }
     if (metrics.operations.joins > this.thresholds.maxJoins) {
-      reasons.push(`Number of joins ${metrics.operations.joins} exceeds threshold ${this.thresholds.maxJoins}`);
+      reasons.push(
+        `Number of joins ${metrics.operations.joins} exceeds threshold ${this.thresholds.maxJoins}`,
+      );
     }
     if (metrics.operations.subqueries > this.thresholds.maxSubqueries) {
-      reasons.push(`Number of subqueries ${metrics.operations.subqueries} exceeds threshold ${this.thresholds.maxSubqueries}`);
+      reasons.push(
+        `Number of subqueries ${metrics.operations.subqueries} exceeds threshold ${this.thresholds.maxSubqueries}`,
+      );
     }
 
-    return reasons.join('; ');
+    return reasons.join("; ");
   }
 
   /**
@@ -350,31 +386,45 @@ export class QueryComplexityAnalyzer {
     const recommendations: string[] = [];
 
     if (metrics.operations.joins > 2) {
-      recommendations.push('Consider reducing the number of joins or using subqueries');
+      recommendations.push(
+        "Consider reducing the number of joins or using subqueries",
+      );
     }
 
     if (metrics.operations.aggregations > 3) {
-      recommendations.push('Consider breaking complex aggregations into multiple queries');
+      recommendations.push(
+        "Consider breaking complex aggregations into multiple queries",
+      );
     }
 
     if (metrics.operations.filters > 5) {
-      recommendations.push('Consider combining filter conditions or adding indexes');
+      recommendations.push(
+        "Consider combining filter conditions or adding indexes",
+      );
     }
 
     if (metrics.memoryUsage > 256) {
-      recommendations.push('Consider reducing result set size with LIMIT clause');
+      recommendations.push(
+        "Consider reducing result set size with LIMIT clause",
+      );
     }
 
     if (metrics.estimatedTime > 10000) {
-      recommendations.push('Consider adding more specific WHERE conditions to reduce processing time');
+      recommendations.push(
+        "Consider adding more specific WHERE conditions to reduce processing time",
+      );
     }
 
     if (metrics.operations.sorts > 1) {
-      recommendations.push('Consider minimizing sorting operations or using indexed columns');
+      recommendations.push(
+        "Consider minimizing sorting operations or using indexed columns",
+      );
     }
 
     if (metrics.operations.subqueries > 1) {
-      recommendations.push('Consider replacing subqueries with JOINs where possible');
+      recommendations.push(
+        "Consider replacing subqueries with JOINs where possible",
+      );
     }
 
     return recommendations;
@@ -387,32 +437,37 @@ export class QueryComplexityAnalyzer {
     const warnings: string[] = [];
 
     if (metrics.score > 50) {
-      warnings.push('Query has high complexity and may impact system performance');
+      warnings.push(
+        "Query has high complexity and may impact system performance",
+      );
     }
 
     if (metrics.estimatedTime > 5000) {
-      warnings.push('Query may take longer than 5 seconds to execute');
+      warnings.push("Query may take longer than 5 seconds to execute");
     }
 
     if (metrics.memoryUsage > 128) {
-      warnings.push('Query may use significant memory resources');
+      warnings.push("Query may use significant memory resources");
     }
 
     if (metrics.operations.joins > 3) {
-      warnings.push('Multiple joins may reduce query performance');
+      warnings.push("Multiple joins may reduce query performance");
     }
 
     if (metrics.privacyCost.epsilon > 0.5) {
-      warnings.push('Query requires significant privacy budget');
+      warnings.push("Query requires significant privacy budget");
     }
 
     return warnings;
   }
 
   // Helper methods
-  private traverseParseTree(node: PQLParseNode, callback: (node: PQLParseNode) => void): void {
+  private traverseParseTree(
+    node: PQLParseNode,
+    callback: (node: PQLParseNode) => void,
+  ): void {
     callback(node);
-    
+
     if (node.children) {
       for (const child of node.children) {
         this.traverseParseTree(child, callback);
@@ -422,45 +477,45 @@ export class QueryComplexityAnalyzer {
 
   private countFilterConditions(whereNode: PQLParseNode): number {
     let count = 0;
-    
+
     if (whereNode.children) {
       for (const child of whereNode.children) {
-        if (child.type === 'IDENTIFIER' && child.value) {
+        if (child.type === "IDENTIFIER" && child.value) {
           const value = child.value.toUpperCase();
-          if (['AND', 'OR'].includes(value)) {
+          if (["AND", "OR"].includes(value)) {
             count++;
           }
         }
       }
     }
-    
+
     return Math.max(1, count); // At least one condition
   }
 
   private countAggregations(node: PQLParseNode): number {
     let count = 0;
-    
+
     if (node.children) {
       for (const child of node.children) {
-        if (child.value?.includes('(')) {
+        if (child.value?.includes("(")) {
           count++;
         }
         count += this.countAggregations(child);
       }
     }
-    
+
     return count;
   }
 
   private extractTables(parseTree: PQLParseNode): string[] {
     const tables: string[] = [];
-    
+
     this.traverseParseTree(parseTree, (node) => {
-      if (node.type === 'FROM' || node.type === 'JOIN') {
+      if (node.type === "FROM" || node.type === "JOIN") {
         if (node.children) {
           for (const child of node.children) {
-            if (child.type === 'IDENTIFIER' && child.value) {
-              const table = child.value.split('.')[0];
+            if (child.type === "IDENTIFIER" && child.value) {
+              const table = child.value.split(".")[0];
               if (!tables.includes(table)) {
                 tables.push(table);
               }
@@ -469,7 +524,7 @@ export class QueryComplexityAnalyzer {
         }
       }
     });
-    
+
     return tables;
   }
 
@@ -484,13 +539,13 @@ export class QueryComplexityAnalyzer {
         aggregations: 0,
         filters: 0,
         sorts: 0,
-        subqueries: 0
+        subqueries: 0,
       },
       memoryUsage: 1024,
       privacyCost: {
         epsilon: 1.0,
-        delta: 1e-3
-      }
+        delta: 1e-3,
+      },
     };
   }
 
@@ -520,7 +575,7 @@ export class QueryComplexityAnalyzer {
    */
   updateThresholds(newThresholds: Partial<ComplexityThresholds>): void {
     this.thresholds = { ...this.thresholds, ...newThresholds };
-    logger.info('Complexity thresholds updated', this.thresholds);
+    logger.info("Complexity thresholds updated", this.thresholds);
   }
 
   /**

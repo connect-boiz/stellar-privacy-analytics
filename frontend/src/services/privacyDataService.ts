@@ -2,15 +2,15 @@
  * Real-time Privacy Metrics Data Collection Service
  */
 
-import { 
-  PrivacyMetric, 
-  DataAccessEvent, 
-  AnomalyDetection, 
-  ComplianceStatus, 
+import {
+  PrivacyMetric,
+  DataAccessEvent,
+  AnomalyDetection,
+  ComplianceStatus,
   AccessPattern,
   PrivacyAlert,
   HistoricalTrend,
-  DashboardState 
+  DashboardState,
 } from '../types/privacyMetrics';
 
 export interface PrivacyDataServiceConfig {
@@ -64,7 +64,7 @@ export class PrivacyDataService {
         this.websocket = new WebSocket(this.config.wsEndpoint);
 
         this.websocket.onopen = () => {
-          console.log('Privacy metrics WebSocket connected');
+          // Privacy metrics WebSocket connected
           this.isConnecting = false;
           this.reconnectAttempts = 0;
           resolve();
@@ -74,8 +74,8 @@ export class PrivacyDataService {
           this.handleWebSocketMessage(event.data);
         };
 
-        this.websocket.onclose = (event) => {
-          console.log('Privacy metrics WebSocket disconnected', event);
+        this.websocket.onclose = (_event) => {
+          // Privacy metrics WebSocket disconnected
           this.isConnecting = false;
           this.handleReconnect();
         };
@@ -85,7 +85,6 @@ export class PrivacyDataService {
           this.isConnecting = false;
           reject(error);
         };
-
       } catch (error) {
         this.isConnecting = false;
         reject(error);
@@ -97,11 +96,9 @@ export class PrivacyDataService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-      
-      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
-      
+
       setTimeout(() => {
-        this.connectWebSocket().catch(error => {
+        this.connectWebSocket().catch((error) => {
           console.error('Reconnection failed:', error);
         });
       }, delay);
@@ -113,7 +110,7 @@ export class PrivacyDataService {
   private handleWebSocketMessage(data: string): void {
     try {
       const message = JSON.parse(data);
-      
+
       switch (message.type) {
         case 'metric_update':
           this.notifySubscribers('metrics', message.data);
@@ -143,9 +140,9 @@ export class PrivacyDataService {
     if (!this.subscribers.has(eventType)) {
       this.subscribers.set(eventType, new Set());
     }
-    
+
     this.subscribers.get(eventType)!.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       const subscribers = this.subscribers.get(eventType);
@@ -161,7 +158,7 @@ export class PrivacyDataService {
   private notifySubscribers(eventType: string, data: any): void {
     const subscribers = this.subscribers.get(eventType);
     if (subscribers) {
-      subscribers.forEach(callback => {
+      subscribers.forEach((callback) => {
         try {
           callback(data);
         } catch (error) {
@@ -176,7 +173,10 @@ export class PrivacyDataService {
     return this.fetchWithRetry(`/api/metrics?start=${timeRange.start}&end=${timeRange.end}`);
   }
 
-  public async fetchAnomalies(timeRange: { start: number; end: number }): Promise<AnomalyDetection[]> {
+  public async fetchAnomalies(timeRange: {
+    start: number;
+    end: number;
+  }): Promise<AnomalyDetection[]> {
     return this.fetchWithRetry(`/api/anomalies?start=${timeRange.start}&end=${timeRange.end}`);
   }
 
@@ -195,7 +195,7 @@ export class PrivacyDataService {
   }
 
   public async fetchHistoricalTrends(
-    metric: string, 
+    metric: string,
     timeRange: { start: number; end: number },
     granularity: string
   ): Promise<HistoricalTrend> {
@@ -213,7 +213,7 @@ export class PrivacyDataService {
   }
 
   public async updateComplianceStatus(
-    complianceId: string, 
+    complianceId: string,
     status: ComplianceStatus['status']
   ): Promise<void> {
     await this.fetchWithRetry(`/api/compliance/${complianceId}`, 'PUT', { status });
@@ -230,13 +230,13 @@ export class PrivacyDataService {
   ): Promise<DataAccessEvent[]> {
     const params = new URLSearchParams({
       start: timeRange.start.toString(),
-      end: timeRange.end.toString()
+      end: timeRange.end.toString(),
     });
-    
+
     if (userId) {
       params.append('userId', userId);
     }
-    
+
     return this.fetchWithRetry(`/api/access-events?${params.toString()}`);
   }
 
@@ -249,12 +249,12 @@ export class PrivacyDataService {
 
   // Generic fetch with retry
   private async fetchWithRetry<T>(
-    endpoint: string, 
+    endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: any
   ): Promise<T> {
     const url = `${this.config.apiEndpoint}${endpoint}`;
-    
+
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
         const response = await fetch(url, {
@@ -263,7 +263,7 @@ export class PrivacyDataService {
             'Content-Type': 'application/json',
           },
           body: body ? JSON.stringify(body) : undefined,
-          signal: AbortSignal.timeout(this.config.timeout)
+          signal: AbortSignal.timeout(this.config.timeout),
         });
 
         if (!response.ok) {
@@ -273,17 +273,17 @@ export class PrivacyDataService {
         return await response.json();
       } catch (error) {
         console.warn(`Fetch attempt ${attempt} failed for ${endpoint}:`, error);
-        
+
         if (attempt === this.config.retryAttempts) {
           throw error;
         }
-        
+
         // Exponential backoff
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
-    
+
     throw new Error('Max retry attempts reached');
   }
 
@@ -297,11 +297,11 @@ export class PrivacyDataService {
   } {
     const now = Date.now();
     const oneHourAgo = now - 60 * 60 * 1000;
-    
+
     // Generate mock metrics
     const metrics: PrivacyMetric[] = [];
     for (let i = 0; i < 100; i++) {
-      const timestamp = oneHourAgo + (i * 36 * 1000); // Every 36 seconds
+      const timestamp = oneHourAgo + i * 36 * 1000; // Every 36 seconds
       metrics.push({
         id: `metric-${i}`,
         timestamp,
@@ -310,7 +310,7 @@ export class PrivacyDataService {
         threshold: 80,
         status: Math.random() > 0.8 ? 'warning' : 'normal',
         metadata: { source: 'system' },
-        source: 'privacy-engine'
+        source: 'privacy-engine',
       });
     }
 
@@ -328,9 +328,9 @@ export class PrivacyDataService {
         metrics: {
           baselineValue: 10,
           actualValue: 45,
-          deviation: 3.5
+          deviation: 3.5,
         },
-        status: 'active'
+        status: 'active',
       },
       {
         id: 'anomaly-2',
@@ -344,10 +344,10 @@ export class PrivacyDataService {
         metrics: {
           baselineValue: 100,
           actualValue: 1500,
-          deviation: 15
+          deviation: 15,
         },
-        status: 'investigating'
-      }
+        status: 'investigating',
+      },
     ];
 
     // Generate mock alerts
@@ -361,7 +361,7 @@ export class PrivacyDataService {
         message: 'Access volume exceeded threshold by 200%',
         metricValue: 300,
         threshold: 100,
-        status: 'active'
+        status: 'active',
       },
       {
         id: 'alert-2',
@@ -374,8 +374,8 @@ export class PrivacyDataService {
         threshold: 90,
         status: 'acknowledged',
         acknowledgedBy: 'admin',
-        acknowledgedAt: now - 10 * 60 * 1000
-      }
+        acknowledgedAt: now - 10 * 60 * 1000,
+      },
     ];
 
     // Generate mock compliance status
@@ -391,7 +391,7 @@ export class PrivacyDataService {
         nextAssessed: now + 23 * 24 * 60 * 60 * 1000,
         evidence: ['security-audit-2024', 'penetration-test'],
         violations: [],
-        owner: 'security-team'
+        owner: 'security-team',
       },
       {
         id: 'ccpa-1',
@@ -413,17 +413,17 @@ export class PrivacyDataService {
             remediation: 'Implement automated deletion workflow',
             status: 'in_progress',
             assignedTo: 'engineering-team',
-            dueDate: now + 7 * 24 * 60 * 60 * 1000
-          }
+            dueDate: now + 7 * 24 * 60 * 60 * 1000,
+          },
         ],
-        owner: 'privacy-team'
-      }
+        owner: 'privacy-team',
+      },
     ];
 
     // Generate mock access events
     const accessEvents: DataAccessEvent[] = [];
     for (let i = 0; i < 50; i++) {
-      const timestamp = oneHourAgo + (i * 72 * 1000); // Every 72 seconds
+      const timestamp = oneHourAgo + i * 72 * 1000; // Every 72 seconds
       accessEvents.push({
         id: `event-${i}`,
         timestamp,
@@ -436,7 +436,7 @@ export class PrivacyDataService {
         responseTime: Math.floor(Math.random() * 500) + 50,
         dataVolume: Math.floor(Math.random() * 10000) + 100,
         complianceFlags: Math.random() > 0.8 ? ['PII_ACCESS'] : [],
-        riskScore: Math.random() * 100
+        riskScore: Math.random() * 100,
       });
     }
 
@@ -445,7 +445,7 @@ export class PrivacyDataService {
       anomalies,
       alerts,
       compliance,
-      accessEvents
+      accessEvents,
     };
   }
 

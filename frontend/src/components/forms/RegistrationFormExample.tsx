@@ -1,13 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  User, 
-  Building, 
-  FileText, 
-  CheckCircle,
-  ArrowRight
-} from 'lucide-react';
-import { MultiStepForm, ProgressIndicator, StepSummary } from './MultiStepForm';
+import { User, Building, FileText, CheckCircle } from 'lucide-react';
+import { MultiStepForm } from './MultiStepForm';
 import { FormField, FieldGroup, RadioOption } from './FormField';
 import { useFormPersistence, prefillFromProfile } from '../../hooks/useFormPersistence';
 import { validateFormData, rules, patterns } from '../../lib/formValidation';
@@ -21,20 +14,20 @@ interface RegistrationFormData {
   email: string;
   phone: string;
   role: string;
-  
+
   // Step 2: Organization
   organizationName: string;
   organizationType: string;
   jobTitle: string;
   department: string;
   teamSize: string;
-  
+
   // Step 3: Preferences
   useCase: string;
   dataVolume: string;
   preferredFeatures: string[];
   referralSource: string;
-  
+
   // Step 4: Agreement
   termsAccepted: boolean;
   privacyPolicyAccepted: boolean;
@@ -47,21 +40,21 @@ const defaultValues: RegistrationFormData = {
   email: '',
   phone: '',
   role: '',
-  
+
   organizationName: '',
   organizationType: '',
   jobTitle: '',
   department: '',
   teamSize: '',
-  
+
   useCase: '',
   dataVolume: '',
   preferredFeatures: [],
   referralSource: '',
-  
+
   termsAccepted: false,
   privacyPolicyAccepted: false,
-  marketingConsent: false
+  marketingConsent: false,
 };
 
 // Validation schema per step
@@ -70,7 +63,7 @@ const step1Schema = {
   lastName: rules.required('Last name is required'),
   email: rules.email(),
   phone: { pattern: { value: patterns.phone, message: 'Invalid phone number' } },
-  role: rules.required('Please select your role')
+  role: rules.required('Please select your role'),
 };
 
 const step2Schema = {
@@ -78,26 +71,26 @@ const step2Schema = {
   organizationType: rules.required('Please select organization type'),
   jobTitle: rules.required('Job title is required'),
   department: { required: false },
-  teamSize: { required: false }
+  teamSize: { required: false },
 };
 
 const step3Schema = {
   useCase: rules.required('Please select a primary use case'),
   dataVolume: rules.required('Please estimate your data volume'),
   preferredFeatures: { required: false },
-  referralSource: { required: false }
+  referralSource: { required: false },
 };
 
 const step4Schema = {
-  termsAccepted: { 
+  termsAccepted: {
     required: 'You must accept the terms of service',
-    validate: (value: boolean) => value === true || 'You must accept the terms of service'
+    validate: (value: boolean) => value === true || 'You must accept the terms of service',
   },
   privacyPolicyAccepted: {
     required: 'You must accept the privacy policy',
-    validate: (value: boolean) => value === true || 'You must accept the privacy policy'
+    validate: (value: boolean) => value === true || 'You must accept the privacy policy',
   },
-  marketingConsent: { required: false }
+  marketingConsent: { required: false },
 };
 
 // Step configurations
@@ -107,29 +100,29 @@ const formSteps = [
     title: 'Personal Information',
     description: 'Tell us about yourself',
     icon: User,
-    validate: (values: RegistrationFormData) => validateFormData(values, step1Schema)
+    validate: (values: RegistrationFormData) => validateFormData(values, step1Schema),
   },
   {
     id: 'organization',
     title: 'Organization Details',
     description: 'Your workplace information',
     icon: Building,
-    validate: (values: RegistrationFormData) => validateFormData(values, step2Schema)
+    validate: (values: RegistrationFormData) => validateFormData(values, step2Schema),
   },
   {
     id: 'preferences',
     title: 'Usage Preferences',
     description: 'How you plan to use the platform',
     icon: FileText,
-    validate: (values: RegistrationFormData) => validateFormData(values, step3Schema)
+    validate: (values: RegistrationFormData) => validateFormData(values, step3Schema),
   },
   {
     id: 'agreement',
     title: 'Review & Submit',
     description: 'Finalize your registration',
     icon: CheckCircle,
-    validate: (values: RegistrationFormData) => validateFormData(values, step4Schema)
-  }
+    validate: (values: RegistrationFormData) => validateFormData(values, step4Schema),
+  },
 ];
 
 // Role options
@@ -139,7 +132,7 @@ const roleOptions = [
   { value: 'engineer', label: 'Software Engineer' },
   { value: 'manager', label: 'Engineering Manager' },
   { value: 'researcher', label: 'Researcher' },
-  { value: 'other', label: 'Other' }
+  { value: 'other', label: 'Other' },
 ];
 
 const orgTypeOptions = [
@@ -148,21 +141,37 @@ const orgTypeOptions = [
   { value: 'enterprise', label: 'Enterprise (> 500)' },
   { value: 'academic', label: 'Academic Institution' },
   { value: 'government', label: 'Government Agency' },
-  { value: 'nonprofit', label: 'Non-Profit Organization' }
+  { value: 'nonprofit', label: 'Non-Profit Organization' },
 ];
 
 const useCaseOptions = [
-  { value: 'privacy_analytics', label: 'Privacy-Preserving Analytics', description: 'Analyze data without exposing raw values' },
-  { value: 'secure_sharing', label: 'Secure Data Sharing', description: 'Share data with partners securely' },
-  { value: 'compliance', label: 'Regulatory Compliance', description: 'Meet GDPR, CCPA, and other requirements' },
-  { value: 'research', label: 'Academic Research', description: 'Conduct privacy-preserving research' }
+  {
+    value: 'privacy_analytics',
+    label: 'Privacy-Preserving Analytics',
+    description: 'Analyze data without exposing raw values',
+  },
+  {
+    value: 'secure_sharing',
+    label: 'Secure Data Sharing',
+    description: 'Share data with partners securely',
+  },
+  {
+    value: 'compliance',
+    label: 'Regulatory Compliance',
+    description: 'Meet GDPR, CCPA, and other requirements',
+  },
+  {
+    value: 'research',
+    label: 'Academic Research',
+    description: 'Conduct privacy-preserving research',
+  },
 ];
 
 const dataVolumeOptions = [
   { value: 'small', label: 'Small (< 10K records)' },
   { value: 'medium', label: 'Medium (10K - 1M records)' },
   { value: 'large', label: 'Large (1M - 100M records)' },
-  { value: 'enterprise', label: 'Enterprise (> 100M records)' }
+  { value: 'enterprise', label: 'Enterprise (> 100M records)' },
 ];
 
 export function RegistrationFormExample() {
@@ -170,51 +179,58 @@ export function RegistrationFormExample() {
   const userProfile = {
     firstName: 'John',
     lastName: 'Doe',
-    email: 'john.doe@example.com'
+    email: 'john.doe@example.com',
   };
 
   // Initialize form with persistence
   const [formState, formActions] = useFormPersistence({
     storageKey: 'registration-form',
     storageType: 'localStorage',
-    defaultValues: prefillFromProfile(defaultValues, userProfile, ['firstName', 'lastName', 'email']),
+    defaultValues: prefillFromProfile(defaultValues, userProfile, [
+      'firstName',
+      'lastName',
+      'email',
+    ]),
     validate: (data) => {
       // Overall validation
       const allSchemas = { ...step1Schema, ...step2Schema, ...step3Schema, ...step4Schema };
       return validateFormData(data, allSchemas);
     },
-    onRecover: (data) => {
-      console.log('Form recovered:', data);
+    onRecover: (_data) => {
+      // Form recovered
     },
-    onAutoSave: (data) => {
-      console.log('Auto-saved:', data);
+    onAutoSave: (_data) => {
+      // Auto-saved
     },
-    expiryMs: 24 * 60 * 60 * 1000 // 24 hours
+    expiryMs: 24 * 60 * 60 * 1000, // 24 hours
   });
 
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStepChange = useCallback((step: number) => {
     setCurrentStep(step);
     setErrors({});
   }, []);
 
-  const handleSubmit = useCallback(async (values: RegistrationFormData) => {
-    setIsSubmitting(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Form submitted:', values);
-      formActions.markSubmitted();
-      alert('Registration submitted successfully!');
-    } catch (error) {
-      console.error('Submission error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [formActions]);
+  const handleSubmit = useCallback(
+    async (_values: RegistrationFormData) => {
+      setIsSubmitting(true);
+      try {
+        // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        // Form submitted
+        formActions.markSubmitted();
+        alert('Registration submitted successfully!');
+      } catch (error) {
+        console.error('Submission error:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formActions]
+  );
 
   const handleCancel = useCallback(() => {
     if (confirm('Are you sure you want to cancel? Your progress will be lost.')) {
@@ -224,7 +240,12 @@ export function RegistrationFormExample() {
   }, [formActions]);
 
   // Render step content
-  const renderStepContent = ({ step, values, onChange, errors }: {
+  const renderStepContent = ({
+    step,
+    values,
+    onChange,
+    errors,
+  }: {
     step: number;
     values: RegistrationFormData;
     onChange: (values: RegistrationFormData) => void;
@@ -282,14 +303,9 @@ export function RegistrationFormExample() {
               placeholder="+1 (555) 000-0000"
             />
 
-            <FieldGroup
-              label="Your Role"
-              name="role"
-              error={errors.role}
-              required
-            >
+            <FieldGroup label="Your Role" name="role" error={errors.role} required>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {roleOptions.map(option => (
+                {roleOptions.map((option) => (
                   <RadioOption
                     key={option.value}
                     name="role"
@@ -324,7 +340,7 @@ export function RegistrationFormExample() {
               required
             >
               <div className="space-y-2">
-                {orgTypeOptions.map(option => (
+                {orgTypeOptions.map((option) => (
                   <RadioOption
                     key={option.value}
                     name="organizationType"
@@ -375,14 +391,9 @@ export function RegistrationFormExample() {
       case 2: // Preferences
         return (
           <div className="space-y-4">
-            <FieldGroup
-              label="Primary Use Case"
-              name="useCase"
-              error={errors.useCase}
-              required
-            >
+            <FieldGroup label="Primary Use Case" name="useCase" error={errors.useCase} required>
               <div className="space-y-2">
-                {useCaseOptions.map(option => (
+                {useCaseOptions.map((option) => (
                   <RadioOption
                     key={option.value}
                     name="useCase"
@@ -403,7 +414,7 @@ export function RegistrationFormExample() {
               required
               layout="horizontal"
             >
-              {dataVolumeOptions.map(option => (
+              {dataVolumeOptions.map((option) => (
                 <RadioOption
                   key={option.value}
                   name="dataVolume"
@@ -443,7 +454,9 @@ export function RegistrationFormExample() {
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Name:</dt>
-                  <dd className="text-gray-900">{values.firstName} {values.lastName}</dd>
+                  <dd className="text-gray-900">
+                    {values.firstName} {values.lastName}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Email:</dt>
@@ -455,7 +468,9 @@ export function RegistrationFormExample() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Role:</dt>
-                  <dd className="text-gray-900">{roleOptions.find(r => r.value === values.role)?.label}</dd>
+                  <dd className="text-gray-900">
+                    {roleOptions.find((r) => r.value === values.role)?.label}
+                  </dd>
                 </div>
               </dl>
             </div>

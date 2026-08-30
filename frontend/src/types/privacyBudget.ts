@@ -46,7 +46,13 @@ export interface BudgetAllocation {
 export interface AllocationCategory {
   id: string;
   name: string;
-  type: 'data_collection' | 'data_analysis' | 'data_sharing' | 'compliance' | 'monitoring' | 'research';
+  type:
+    | 'data_collection'
+    | 'data_analysis'
+    | 'data_sharing'
+    | 'compliance'
+    | 'monitoring'
+    | 'research';
   description: string;
   minAllocation: number;
   maxAllocation: number;

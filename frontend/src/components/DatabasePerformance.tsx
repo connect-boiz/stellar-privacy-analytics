@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Database, 
-  Activity, 
-  TrendingUp, 
-  TrendingDown,
+import {
+  Database,
+  Activity,
+  TrendingUp,
+  _TrendingDown,
   Zap,
-  Clock,
+  _Clock,
   BarChart3,
   Settings,
-  Play,
-  Pause,
+  _Play,
+  _Pause,
   AlertTriangle,
   CheckCircle,
   RefreshCw,
   Download,
   Filter,
-  Eye
+  Eye,
 } from 'lucide-react';
 
 interface PerformanceMetrics {
@@ -61,7 +61,9 @@ interface LoadTestResult {
 }
 
 export const DatabasePerformance: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'queries' | 'indexes' | 'optimization'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'queries' | 'indexes' | 'optimization'>(
+    'overview'
+  );
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [slowQueries, setSlowQueries] = useState<QueryPlan[]>([]);
   const [indexRecommendations, setIndexRecommendations] = useState<IndexRecommendation[]>([]);
@@ -69,22 +71,25 @@ export const DatabasePerformance: React.FC = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [queryToAnalyze, setQueryToAnalyze] = useState<string>('');
-  const [testQueries, setTestQueries] = useState<string[]>([
-    'SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL \'7 days\'',
-    'SELECT * FROM analytics_events WHERE event_type = \'page_view\' ORDER BY timestamp DESC LIMIT 100',
+  const [testQueries, _setTestQueries] = useState<string[]>([
+    "SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL '7 days'",
+    "SELECT * FROM analytics_events WHERE event_type = 'page_view' ORDER BY timestamp DESC LIMIT 100",
     'SELECT u.id, u.email, COUNT(o.id) as order_count FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id',
-    'SELECT * FROM large_table WHERE status = \'active\' AND category IN (\'A\', \'B\', \'C\')'
+    "SELECT * FROM large_table WHERE status = 'active' AND category IN ('A', 'B', 'C')",
   ]);
 
   useEffect(() => {
     fetchPerformanceMetrics();
     fetchSlowQueries();
     fetchIndexRecommendations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPerformanceMetrics = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/metrics`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/metrics`
+      );
       const data = await response.json();
       setMetrics(data.metrics);
     } catch (error) {
@@ -94,7 +99,9 @@ export const DatabasePerformance: React.FC = () => {
 
   const fetchSlowQueries = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/slow-queries`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/slow-queries`
+      );
       const data = await response.json();
       setSlowQueries(data.queries);
     } catch (error) {
@@ -104,7 +111,9 @@ export const DatabasePerformance: React.FC = () => {
 
   const fetchIndexRecommendations = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/indexes/${selectedTable || 'users'}`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/indexes/${selectedTable || 'users'}`
+      );
       const data = await response.json();
       setIndexRecommendations(data.recommendations || []);
     } catch (error) {
@@ -116,14 +125,19 @@ export const DatabasePerformance: React.FC = () => {
     if (!queryToAnalyze.trim()) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/analyze-query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: queryToAnalyze })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/analyze-query`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: queryToAnalyze }),
+        }
+      );
 
       const data = await response.json();
-      alert(`Query Analysis:\nExecution Time: ${data.analysis.executionTime}ms\nCost: ${data.analysis.cost}\nRecommendations: ${data.analysis.recommendations.join(', ')}`);
+      alert(
+        `Query Analysis:\nExecution Time: ${data.analysis.executionTime}ms\nCost: ${data.analysis.cost}\nRecommendations: ${data.analysis.recommendations.join(', ')}`
+      );
     } catch (error) {
       console.error('Failed to analyze query:', error);
       alert('Failed to analyze query');
@@ -132,15 +146,18 @@ export const DatabasePerformance: React.FC = () => {
 
   const runLoadTest = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/load-test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          queries: testQueries,
-          concurrency: 10,
-          duration: 60000 
-        })
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/load-test`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            queries: testQueries,
+            concurrency: 10,
+            duration: 60000,
+          }),
+        }
+      );
 
       const data = await response.json();
       setLoadTestResults(data.results);
@@ -153,9 +170,12 @@ export const DatabasePerformance: React.FC = () => {
   const optimizeDatabase = async () => {
     setIsOptimizing(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/optimize`, {
-        method: 'POST'
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/optimize`,
+        {
+          method: 'POST',
+        }
+      );
 
       if (response.ok) {
         alert('Database optimization completed successfully!');
@@ -171,11 +191,14 @@ export const DatabasePerformance: React.FC = () => {
 
   const createIndex = async (recommendation: IndexRecommendation) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/indexes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(recommendation)
-      });
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/indexes`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recommendation),
+        }
+      );
 
       if (response.ok) {
         alert('Index created successfully!');
@@ -189,9 +212,11 @@ export const DatabasePerformance: React.FC = () => {
 
   const generateReport = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/report`);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/v1/performance/report`
+      );
       const data = await response.json();
-      
+
       // Download report as JSON
       const blob = new Blob([JSON.stringify(data.report, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -242,7 +267,7 @@ export const DatabasePerformance: React.FC = () => {
               { id: 'overview', name: 'Overview', icon: BarChart3 },
               { id: 'queries', name: 'Query Analysis', icon: Activity },
               { id: 'indexes', name: 'Index Management', icon: Database },
-              { id: 'optimization', name: 'Optimization', icon: Settings }
+              { id: 'optimization', name: 'Optimization', icon: Settings },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -281,7 +306,9 @@ export const DatabasePerformance: React.FC = () => {
                           <Activity className="h-8 w-8 text-blue-600" />
                           <div>
                             <h3 className="font-medium text-blue-900">Avg Query Time</h3>
-                            <p className={`text-2xl font-bold ${getPerformanceColor(metrics.averageExecutionTime, 500)}`}>
+                            <p
+                              className={`text-2xl font-bold ${getPerformanceColor(metrics.averageExecutionTime, 500)}`}
+                            >
                               {formatExecutionTime(metrics.averageExecutionTime)}
                             </p>
                           </div>
@@ -293,7 +320,9 @@ export const DatabasePerformance: React.FC = () => {
                           <TrendingUp className="h-8 w-8 text-green-600" />
                           <div>
                             <h3 className="font-medium text-green-900">Cache Hit Rate</h3>
-                            <p className={`text-2xl font-bold ${getPerformanceColor(metrics.cacheHitRate * 100, 80)}`}>
+                            <p
+                              className={`text-2xl font-bold ${getPerformanceColor(metrics.cacheHitRate * 100, 80)}`}
+                            >
                               {(metrics.cacheHitRate * 100).toFixed(1)}%
                             </p>
                           </div>
@@ -449,7 +478,9 @@ export const DatabasePerformance: React.FC = () => {
                 {/* Index Recommendations */}
                 {indexRecommendations.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Index Recommendations</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Index Recommendations
+                    </h3>
                     <div className="space-y-3">
                       {indexRecommendations.map((rec, index) => (
                         <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -462,7 +493,8 @@ export const DatabasePerformance: React.FC = () => {
                                 Type: {rec.indexType} | Priority: {rec.priority}
                               </p>
                               <p className="text-sm text-green-600">
-                                Estimated improvement: {(rec.estimatedImprovement * 100).toFixed(1)}%
+                                Estimated improvement: {(rec.estimatedImprovement * 100).toFixed(1)}
+                                %
                               </p>
                             </div>
                             <button
@@ -473,9 +505,7 @@ export const DatabasePerformance: React.FC = () => {
                               Create
                             </button>
                           </div>
-                          <p className="text-sm text-gray-600 mt-2">
-                            {rec.reason}
-                          </p>
+                          <p className="text-sm text-gray-600 mt-2">{rec.reason}</p>
                         </div>
                       ))}
                     </div>
@@ -543,19 +573,27 @@ export const DatabasePerformance: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Total Queries:</span>
-                        <span className="font-medium">{loadTestResults.totalQueries.toLocaleString()}</span>
+                        <span className="font-medium">
+                          {loadTestResults.totalQueries.toLocaleString()}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-600">Avg Time:</span>
-                        <span className="font-medium">{formatExecutionTime(loadTestResults.averageExecutionTime)}</span>
+                        <span className="font-medium">
+                          {formatExecutionTime(loadTestResults.averageExecutionTime)}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-600">QPS:</span>
-                        <span className="font-medium">{loadTestResults.queriesPerSecond.toFixed(1)}</span>
+                        <span className="font-medium">
+                          {loadTestResults.queriesPerSecond.toFixed(1)}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-600">P95:</span>
-                        <span className="font-medium">{formatExecutionTime(loadTestResults.p95ExecutionTime)}</span>
+                        <span className="font-medium">
+                          {formatExecutionTime(loadTestResults.p95ExecutionTime)}
+                        </span>
                       </div>
                       <div>
                         <span className="text-gray-600">Errors:</span>
@@ -563,7 +601,9 @@ export const DatabasePerformance: React.FC = () => {
                       </div>
                       <div>
                         <span className="text-gray-600">Duration:</span>
-                        <span className="font-medium">{(loadTestResults.duration / 1000).toFixed(1)}s</span>
+                        <span className="font-medium">
+                          {(loadTestResults.duration / 1000).toFixed(1)}s
+                        </span>
                       </div>
                     </div>
                   </div>

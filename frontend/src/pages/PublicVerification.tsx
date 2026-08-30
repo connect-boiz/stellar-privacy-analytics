@@ -30,8 +30,8 @@ const PublicVerification: React.FC = () => {
 
     try {
       // Mock API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Mock verification result
       if (verificationCode === 'abc123def456') {
         setResult({
@@ -77,12 +77,12 @@ const PublicVerification: React.FC = () => {
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      'GDPR': 'bg-blue-100 text-blue-800',
-      'CCPA': 'bg-orange-100 text-orange-800',
-      'HIPAA': 'bg-purple-100 text-purple-800',
-      'ISO27001': 'bg-green-100 text-green-800',
-      'SOC2': 'bg-indigo-100 text-indigo-800',
-      'CUSTOM': 'bg-gray-100 text-gray-800',
+      GDPR: 'bg-blue-100 text-blue-800',
+      CCPA: 'bg-orange-100 text-orange-800',
+      HIPAA: 'bg-purple-100 text-purple-800',
+      ISO27001: 'bg-green-100 text-green-800',
+      SOC2: 'bg-indigo-100 text-indigo-800',
+      CUSTOM: 'bg-gray-100 text-gray-800',
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
@@ -113,7 +113,8 @@ const PublicVerification: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-gray-600 max-w-2xl mx-auto"
           >
-            Verify the authenticity of privacy certifications and compliance badges issued through the Stellar Privacy Analytics platform.
+            Verify the authenticity of privacy certifications and compliance badges issued through
+            the Stellar Privacy Analytics platform.
           </motion.p>
         </div>
 
@@ -125,13 +126,14 @@ const PublicVerification: React.FC = () => {
           className="max-w-2xl mx-auto mb-8"
         >
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-              Verify Certification
-            </h2>
-            
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Verify Certification</h2>
+
             <div className="space-y-4">
               <div>
-                <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="verificationCode"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Verification Code
                 </label>
                 <div className="relative">
@@ -159,7 +161,7 @@ const PublicVerification: React.FC = () => {
                   <>
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                     />
                     Verifying...
@@ -179,8 +181,12 @@ const PublicVerification: React.FC = () => {
                 <strong>Sample verification codes for testing:</strong>
               </p>
               <div className="space-y-1">
-                <p className="text-sm font-mono text-gray-700">abc123def456 - Valid GDPR Certificate</p>
-                <p className="text-sm font-mono text-gray-700">xyz789uvw456 - Pending CCPA Certificate</p>
+                <p className="text-sm font-mono text-gray-700">
+                  abc123def456 - Valid GDPR Certificate
+                </p>
+                <p className="text-sm font-mono text-gray-700">
+                  xyz789uvw456 - Pending CCPA Certificate
+                </p>
               </div>
             </div>
           </div>
@@ -211,22 +217,30 @@ const PublicVerification: React.FC = () => {
           >
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               {/* Result Header */}
-              <div className={`p-6 border-b ${result.isValid && result.status === 'validated' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div
+                className={`p-6 border-b ${result.isValid && result.status === 'validated' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {getStatusIcon(result.isValid, result.status)}
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">
-                        {result.isValid && result.status === 'validated' ? 'Valid Certification' : 'Invalid Certification'}
+                        {result.isValid && result.status === 'validated'
+                          ? 'Valid Certification'
+                          : 'Invalid Certification'}
                       </h3>
-                      <p className={`text-sm ${result.isValid && result.status === 'validated' ? 'text-green-600' : 'text-red-600'}`}>
-                        {result.isValid && result.status === 'validated' 
-                          ? 'This certification is valid and active' 
+                      <p
+                        className={`text-sm ${result.isValid && result.status === 'validated' ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {result.isValid && result.status === 'validated'
+                          ? 'This certification is valid and active'
                           : 'This certification is not valid or active'}
                       </p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(result.isValid, result.status)}`}>
+                  <span
+                    className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(result.isValid, result.status)}`}
+                  >
                     {result.status}
                   </span>
                 </div>
@@ -235,27 +249,29 @@ const PublicVerification: React.FC = () => {
               {/* Certification Details */}
               <div className="p-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Certification Details</h4>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Organization</p>
                     <p className="font-medium text-gray-900">{result.organizationName}</p>
                   </div>
-                  
+
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Certification Type</p>
-                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(result.certificationType)}`}>
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(result.certificationType)}`}
+                    >
                       {result.certificationType}
                     </span>
                   </div>
-                  
+
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Issue Date</p>
                     <p className="font-medium text-gray-900">
                       {new Date(result.issuedDate).toLocaleDateString()}
                     </p>
                   </div>
-                  
+
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Expiry Date</p>
                     <p className="font-medium text-gray-900">
@@ -282,7 +298,7 @@ const PublicVerification: React.FC = () => {
                     <ExternalLink className="w-4 h-4" />
                     Share Verification
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       window.print();
@@ -307,15 +323,21 @@ const PublicVerification: React.FC = () => {
           className="max-w-4xl mx-auto mt-12"
         >
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">About Privacy Certifications</h2>
-            
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+              About Privacy Certifications
+            </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">What is a Privacy Certification?</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">
+                  What is a Privacy Certification?
+                </h3>
                 <p className="text-gray-600 mb-4">
-                  Privacy certifications are formal validations that an organization's data processing practices comply with specific privacy regulations and standards. They demonstrate commitment to data protection and privacy.
+                  Privacy certifications are formal validations that an organization's data
+                  processing practices comply with specific privacy regulations and standards. They
+                  demonstrate commitment to data protection and privacy.
                 </p>
-                
+
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Supported Standards</h3>
                 <ul className="space-y-2 text-gray-600">
                   <li className="flex items-center gap-2">
@@ -340,30 +362,40 @@ const PublicVerification: React.FC = () => {
                   </li>
                 </ul>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Verification Process</h3>
                 <p className="text-gray-600 mb-4">
-                  Each certification issued through our platform includes a unique verification code. This code can be used to verify the authenticity and current status of the certification.
+                  Each certification issued through our platform includes a unique verification
+                  code. This code can be used to verify the authenticity and current status of the
+                  certification.
                 </p>
-                
+
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Certificate Status</h3>
                 <ul className="space-y-2 text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span><strong>Validated:</strong> Certificate is active and valid</span>
+                    <span>
+                      <strong>Validated:</strong> Certificate is active and valid
+                    </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span><strong>Pending:</strong> Certificate is under review</span>
+                    <span>
+                      <strong>Pending:</strong> Certificate is under review
+                    </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span><strong>Expired:</strong> Certificate has expired</span>
+                    <span>
+                      <strong>Expired:</strong> Certificate has expired
+                    </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-                    <span><strong>Revoked:</strong> Certificate has been revoked</span>
+                    <span>
+                      <strong>Revoked:</strong> Certificate has been revoked
+                    </span>
                   </li>
                 </ul>
               </div>

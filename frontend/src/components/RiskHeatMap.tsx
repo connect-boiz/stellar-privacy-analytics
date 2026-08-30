@@ -2,20 +2,25 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Shield, 
-  AlertTriangle, 
-  TrendingUp, 
-  Activity,
-  BarChart3,
-  Eye
-} from 'lucide-react';
+import { Shield, AlertTriangle, TrendingUp, Activity, BarChart3, Eye } from 'lucide-react';
 
 interface HeatMapData {
-  low: { count: number; workflows: Array<{ id: string; name: string; score: number; assessedAt: string }> };
-  medium: { count: number; workflows: Array<{ id: string; name: string; score: number; assessedAt: string }> };
-  high: { count: number; workflows: Array<{ id: string; name: string; score: number; assessedAt: string }> };
-  critical: { count: number; workflows: Array<{ id: string; name: string; score: number; assessedAt: string }> };
+  low: {
+    count: number;
+    workflows: Array<{ id: string; name: string; score: number; assessedAt: string }>;
+  };
+  medium: {
+    count: number;
+    workflows: Array<{ id: string; name: string; score: number; assessedAt: string }>;
+  };
+  high: {
+    count: number;
+    workflows: Array<{ id: string; name: string; score: number; assessedAt: string }>;
+  };
+  critical: {
+    count: number;
+    workflows: Array<{ id: string; name: string; score: number; assessedAt: string }>;
+  };
 }
 
 interface RiskHeatMapProps {
@@ -24,62 +29,85 @@ interface RiskHeatMapProps {
   className?: string;
 }
 
-const RiskHeatMap: React.FC<RiskHeatMapProps> = ({ 
-  data, 
-  onWorkflowClick, 
-  className = '' 
-}) => {
+const RiskHeatMap: React.FC<RiskHeatMapProps> = ({ data, onWorkflowClick, className = '' }) => {
   const totalWorkflows = Object.values(data).reduce((sum, category) => sum + category.count, 0);
   const highRiskWorkflows = data.high.count + data.critical.count;
   const riskPercentage = totalWorkflows > 0 ? (highRiskWorkflows / totalWorkflows) * 100 : 0;
 
   const getRiskColor = (category: string) => {
     switch (category) {
-      case 'low': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'high': return 'bg-orange-500';
-      case 'critical': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'low':
+        return 'bg-green-500';
+      case 'medium':
+        return 'bg-yellow-500';
+      case 'high':
+        return 'bg-orange-500';
+      case 'critical':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
   const getRiskBgColor = (category: string) => {
     switch (category) {
-      case 'low': return 'bg-green-50 border-green-200';
-      case 'medium': return 'bg-yellow-50 border-yellow-200';
-      case 'high': return 'bg-orange-50 border-orange-200';
-      case 'critical': return 'bg-red-50 border-red-200';
-      default: return 'bg-gray-50 border-gray-200';
+      case 'low':
+        return 'bg-green-50 border-green-200';
+      case 'medium':
+        return 'bg-yellow-50 border-yellow-200';
+      case 'high':
+        return 'bg-orange-50 border-orange-200';
+      case 'critical':
+        return 'bg-red-50 border-red-200';
+      default:
+        return 'bg-gray-50 border-gray-200';
     }
   };
 
   const getRiskTextColor = (category: string) => {
     switch (category) {
-      case 'low': return 'text-green-700';
-      case 'medium': return 'text-yellow-700';
-      case 'high': return 'text-orange-700';
-      case 'critical': return 'text-red-700';
-      default: return 'text-gray-700';
+      case 'low':
+        return 'text-green-700';
+      case 'medium':
+        return 'text-yellow-700';
+      case 'high':
+        return 'text-orange-700';
+      case 'critical':
+        return 'text-red-700';
+      default:
+        return 'text-gray-700';
     }
   };
 
   const getRiskIcon = (category: string) => {
     switch (category) {
-      case 'low': return <Shield className="h-5 w-5 text-green-500" />;
-      case 'medium': return <Activity className="h-5 w-5 text-yellow-500" />;
-      case 'high': return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-      case 'critical': return <AlertTriangle className="h-5 w-5 text-red-500" />;
-      default: return <BarChart3 className="h-5 w-5 text-gray-500" />;
+      case 'low':
+        return <Shield className="h-5 w-5 text-green-500" />;
+      case 'medium':
+        return <Activity className="h-5 w-5 text-yellow-500" />;
+      case 'high':
+        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+      case 'critical':
+        return <AlertTriangle className="h-5 w-5 text-red-500" />;
+      default:
+        return <BarChart3 className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  const getRiskBadgeVariant = (category: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getRiskBadgeVariant = (
+    category: string
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (category) {
-      case 'low': return 'default';
-      case 'medium': return 'secondary';
-      case 'high': return 'destructive';
-      case 'critical': return 'destructive';
-      default: return 'outline';
+      case 'low':
+        return 'default';
+      case 'medium':
+        return 'secondary';
+      case 'high':
+        return 'destructive';
+      case 'critical':
+        return 'destructive';
+      default:
+        return 'outline';
     }
   };
 
@@ -143,9 +171,7 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
             <BarChart3 className="h-5 w-5" />
             <span>Risk Overview</span>
           </CardTitle>
-          <CardDescription>
-            Overall risk distribution and compliance status
-          </CardDescription>
+          <CardDescription>Overall risk distribution and compliance status</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -157,15 +183,12 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
                     {highRiskWorkflows} of {totalWorkflows}
                   </span>
                 </div>
-                <Progress 
-                  value={riskPercentage} 
-                  className="h-2"
-                />
+                <Progress value={riskPercentage} className="h-2" />
                 <p className="text-xs text-muted-foreground mt-1">
                   {riskPercentage.toFixed(1)}% require attention
                 </p>
               </div>
-              
+
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Risk Distribution</h4>
                 {Object.entries(data).map(([category, categoryData]) => (
@@ -174,9 +197,7 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
                       <div className={`w-3 h-3 rounded-full ${getRiskColor(category)}`}></div>
                       <span className="text-sm capitalize">{category}</span>
                     </div>
-                    <Badge variant={getRiskBadgeVariant(category)}>
-                      {categoryData.count}
-                    </Badge>
+                    <Badge variant={getRiskBadgeVariant(category)}>{categoryData.count}</Badge>
                   </div>
                 ))}
               </div>
@@ -188,8 +209,8 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
       {/* Detailed Heat Map */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Object.entries(data).map(([category, categoryData]) => (
-          <Card 
-            key={category} 
+          <Card
+            key={category}
             className={`border-l-4 ${getRiskBgColor(category)} hover:shadow-md transition-shadow`}
           >
             <CardHeader className="pb-3">
@@ -198,9 +219,7 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
                   {getRiskIcon(category)}
                   <span>{category}</span>
                 </CardTitle>
-                <Badge variant={getRiskBadgeVariant(category)}>
-                  {categoryData.count}
-                </Badge>
+                <Badge variant={getRiskBadgeVariant(category)}>{categoryData.count}</Badge>
               </div>
               <CardDescription className={getRiskTextColor(category)}>
                 {category === 'critical' && 'Immediate action required'}
@@ -212,8 +231,8 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
             <CardContent>
               <div className="space-y-3">
                 {categoryData.workflows.slice(0, 3).map((workflow) => (
-                  <div 
-                    key={workflow.id} 
+                  <div
+                    key={workflow.id}
                     className={`p-2 rounded border ${getRiskBgColor(category)} cursor-pointer hover:opacity-80 transition-opacity`}
                     onClick={() => onWorkflowClick?.(workflow.id)}
                   >
@@ -228,7 +247,7 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
                     </div>
                   </div>
                 ))}
-                
+
                 {categoryData.workflows.length > 3 && (
                   <div className={`text-sm text-center py-2 ${getRiskTextColor(category)}`}>
                     +{categoryData.workflows.length - 3} more workflows
@@ -273,7 +292,7 @@ const RiskHeatMap: React.FC<RiskHeatMapProps> = ({
                 )}
               </ul>
             </div>
-            
+
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-red-700">Areas of Concern</h4>
               <ul className="text-sm space-y-1">

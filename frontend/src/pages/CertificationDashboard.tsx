@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { 
-  Shield, 
-  Award, 
-  CheckCircle, 
-  Clock, 
-  AlertTriangle, 
+import {
+  Shield,
+  Award,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
   Download,
   Share2,
   Eye,
@@ -14,36 +14,38 @@ import {
   Plus,
   Filter,
   Search,
-  ExternalLink,
-  FileText,
+  _ExternalLink,
+  _FileText,
   Calendar,
-  Settings,
+  _Settings,
   BarChart3,
   Globe,
-  Lock,
-  Users,
-  TrendingUp,
-  Activity,
-  Zap,
-  Target,
-  BookOpen,
-  Certificate,
-  Link2,
-  Mail,
-  Copy,
+  _Lock,
+  _Users,
+  _TrendingUp,
+  _Activity,
+  _Zap,
+  _Target,
+  _BookOpen,
+  _Certificate,
+  _Link2,
+  _Mail,
+  _Copy,
   CheckSquare,
   AlertCircle,
-  ChevronRight,
-  Star,
-  AwardIcon
+  _ChevronRight,
+  _Star,
+  _AwardIcon,
 } from 'lucide-react';
-import { certificationService, Certification, ComplianceCheck, IndustryStandard, CertificationRequest, BadgeConfig } from '../services/certificationService';
-import { CertificationGenerationForm } from '../components/certification/CertificationGenerationForm';
-import { ValidationWorkflow } from '../components/certification/ValidationWorkflow';
-import { BadgeDisplay } from '../components/certification/BadgeDisplay';
-import { ComplianceChecker } from '../components/certification/ComplianceChecker';
-import { PublicVerificationPortal } from '../components/certification/PublicVerificationPortal';
-import { CertificationHistory } from '../components/certification/CertificationHistory';
+import {
+  certificationService,
+  Certification,
+  _ComplianceCheck,
+  IndustryStandard,
+  CertificationRequest,
+  _BadgeConfig,
+} from '../services/certificationService';
+import { CertificationDashboardSkeleton } from '@/components/skeletons';
 
 const CertificationDashboard: React.FC = () => {
   const [certifications, setCertifications] = useState<Certification[]>([]);
@@ -52,21 +54,23 @@ const CertificationDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [showValidationModal, setShowValidationModal] = useState(false);
-  const [showComplianceModal, setShowComplianceModal] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [_showValidationModal, setShowValidationModal] = useState(false);
+  const [_showComplianceModal, setShowComplianceModal] = useState(false);
+  const [_showVerificationModal, setShowVerificationModal] = useState(false);
+  const [_showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedCertification, setSelectedCertification] = useState<Certification | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'validation' | 'compliance' | 'badges' | 'verification'>('overview');
-  const [industryStandards, setIndustryStandards] = useState<IndustryStandard[]>([]);
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'validation' | 'compliance' | 'badges' | 'verification'
+  >('overview');
+  const [_industryStandards, setIndustryStandards] = useState<IndustryStandard[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     validated: 0,
     pending: 0,
     expired: 0,
     revoked: 0,
-    expiringSoon: 0
+    expiringSoon: 0,
   });
 
   useEffect(() => {
@@ -76,6 +80,7 @@ const CertificationDashboard: React.FC = () => {
 
   useEffect(() => {
     calculateStats();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [certifications]);
 
   const fetchCertifications = async () => {
@@ -102,28 +107,29 @@ const CertificationDashboard: React.FC = () => {
   const calculateStats = () => {
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    
+
     const newStats = {
       total: certifications.length,
-      validated: certifications.filter(c => c.status === 'validated').length,
-      pending: certifications.filter(c => c.status === 'pending').length,
-      expired: certifications.filter(c => c.status === 'expired').length,
-      revoked: certifications.filter(c => c.status === 'revoked').length,
-      expiringSoon: certifications.filter(c => {
+      validated: certifications.filter((c) => c.status === 'validated').length,
+      pending: certifications.filter((c) => c.status === 'pending').length,
+      expired: certifications.filter((c) => c.status === 'expired').length,
+      revoked: certifications.filter((c) => c.status === 'revoked').length,
+      expiringSoon: certifications.filter((c) => {
         const expiryDate = new Date(c.expiryDate);
         return c.status === 'validated' && expiryDate <= thirtyDaysFromNow && expiryDate > now;
-      }).length
+      }).length,
     };
-    
+
     setStats(newStats);
   };
 
-  const filteredCertifications = certifications.filter(cert => {
-    const matchesSearch = cert.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         cert.certificationType.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCertifications = certifications.filter((cert) => {
+    const matchesSearch =
+      cert.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cert.certificationType.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || cert.status === filterStatus;
     const matchesType = filterType === 'all' || cert.certificationType === filterType;
-    
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -159,24 +165,25 @@ const CertificationDashboard: React.FC = () => {
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      'GDPR': 'bg-blue-100 text-blue-800',
-      'CCPA': 'bg-orange-100 text-orange-800',
-      'HIPAA': 'bg-purple-100 text-purple-800',
-      'ISO27001': 'bg-green-100 text-green-800',
-      'SOC2': 'bg-indigo-100 text-indigo-800',
-      'CUSTOM': 'bg-gray-100 text-gray-800',
+      GDPR: 'bg-blue-100 text-blue-800',
+      CCPA: 'bg-orange-100 text-orange-800',
+      HIPAA: 'bg-purple-100 text-purple-800',
+      ISO27001: 'bg-green-100 text-green-800',
+      SOC2: 'bg-indigo-100 text-indigo-800',
+      CUSTOM: 'bg-gray-100 text-gray-800',
     };
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleGenerateCertification = (request: CertificationRequest) => {
-    certificationService.createCertification(request)
+  const _handleGenerateCertification = (request: CertificationRequest) => {
+    certificationService
+      .createCertification(request)
       .then((newCertification) => {
-        setCertifications(prev => [...prev, newCertification]);
+        setCertifications((prev) => [...prev, newCertification]);
         setShowGenerateModal(false);
         toast.success('Certification created successfully');
       })
-      .catch((error) => {
+      .catch((_error) => {
         toast.error('Failed to create certification');
       });
   };
@@ -186,34 +193,37 @@ const CertificationDashboard: React.FC = () => {
     setShowDetailsModal(true);
   };
 
-  const handleValidation = (certification: Certification) => {
+  const _handleValidation = (certification: Certification) => {
     setSelectedCertification(certification);
     setShowValidationModal(true);
   };
 
-  const handleComplianceCheck = (certification: Certification) => {
+  const _handleComplianceCheck = (certification: Certification) => {
     setSelectedCertification(certification);
     setShowComplianceModal(true);
   };
 
-  const handleViewHistory = (certification: Certification) => {
+  const _handleViewHistory = (certification: Certification) => {
     setSelectedCertification(certification);
     setShowHistoryModal(true);
   };
 
-  const handleRenewCertification = async (certificationId: string) => {
+  const _handleRenewCertification = async (certificationId: string) => {
     try {
       const renewedCert = await certificationService.renewCertification(certificationId);
-      setCertifications(prev => prev.map(cert => 
-        cert.id === certificationId ? renewedCert : cert
-      ));
+      setCertifications((prev) =>
+        prev.map((cert) => (cert.id === certificationId ? renewedCert : cert))
+      );
       toast.success('Certification renewed successfully');
     } catch (error) {
       toast.error('Failed to renew certification');
     }
   };
 
-  const handleDownloadBadge = async (certificationId: string, format: 'svg' | 'png' | 'pdf' = 'png') => {
+  const handleDownloadBadge = async (
+    certificationId: string,
+    format: 'svg' | 'png' | 'pdf' = 'png'
+  ) => {
     try {
       const blob = await certificationService.downloadBadge(certificationId, format);
       const url = window.URL.createObjectURL(blob);
@@ -245,19 +255,24 @@ const CertificationDashboard: React.FC = () => {
 
   const handleRunComplianceCheck = async (certificationId: string) => {
     try {
-      const certification = certifications.find(c => c.id === certificationId);
+      const certification = certifications.find((c) => c.id === certificationId);
       if (!certification) return;
-      
+
       const standards = [certification.certificationType];
-      const complianceResult = await certificationService.runComplianceCheck(certificationId, standards);
-      
+      const complianceResult = await certificationService.runComplianceCheck(
+        certificationId,
+        standards
+      );
+
       // Update certification with new compliance check
-      setCertifications(prev => prev.map(cert => 
-        cert.id === certificationId 
-          ? { ...cert, complianceHistory: [...cert.complianceHistory, complianceResult] }
-          : cert
-      ));
-      
+      setCertifications((prev) =>
+        prev.map((cert) =>
+          cert.id === certificationId
+            ? { ...cert, complianceHistory: [...cert.complianceHistory, complianceResult] }
+            : cert
+        )
+      );
+
       toast.success('Compliance check completed');
     } catch (error) {
       toast.error('Failed to run compliance check');
@@ -265,15 +280,7 @@ const CertificationDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <CertificationDashboardSkeleton />;
   }
 
   return (
@@ -319,7 +326,7 @@ const CertificationDashboard: React.FC = () => {
             { id: 'validation', label: 'Validation', icon: CheckSquare },
             { id: 'compliance', label: 'Compliance', icon: Shield },
             { id: 'badges', label: 'Badges', icon: Award },
-            { id: 'verification', label: 'Verification', icon: Globe }
+            { id: 'verification', label: 'Verification', icon: Globe },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -445,7 +452,7 @@ const CertificationDashboard: React.FC = () => {
               />
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <select
               value={filterStatus}
@@ -519,30 +526,36 @@ const CertificationDashboard: React.FC = () => {
                       <div className="text-sm font-medium text-gray-900">
                         {certification.organizationName}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {certification.contactEmail}
-                      </div>
+                      <div className="text-sm text-gray-500">{certification.contactEmail}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(certification.certificationType)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(certification.certificationType)}`}
+                    >
                       {certification.certificationType}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(certification.status)}
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(certification.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(certification.status)}`}
+                      >
                         {certification.status}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      certification.privacyLevel === 'high' ? 'bg-red-100 text-red-800' :
-                      certification.privacyLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        certification.privacyLevel === 'high'
+                          ? 'bg-red-100 text-red-800'
+                          : certification.privacyLevel === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800'
+                      }`}
+                    >
                       {certification.privacyLevel}
                     </span>
                   </td>
@@ -665,17 +678,23 @@ const CertificationDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Issued Date</p>
-                  <p className="font-medium">{new Date(selectedCertification.issuedDate).toLocaleDateString()}</p>
+                  <p className="font-medium">
+                    {new Date(selectedCertification.issuedDate).toLocaleDateString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Expiry Date</p>
-                  <p className="font-medium">{new Date(selectedCertification.expiryDate).toLocaleDateString()}</p>
+                  <p className="font-medium">
+                    {new Date(selectedCertification.expiryDate).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
 
               <div>
                 <p className="text-sm text-gray-600">Verification Code</p>
-                <p className="font-mono text-sm bg-gray-100 p-2 rounded">{selectedCertification.verificationCode}</p>
+                <p className="font-mono text-sm bg-gray-100 p-2 rounded">
+                  {selectedCertification.verificationCode}
+                </p>
               </div>
 
               <div>

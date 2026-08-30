@@ -9,27 +9,28 @@ interface ComplianceCheckerProps {
   onClose: () => void;
 }
 
-const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
-  certification,
-  onClose
-}) => {
-  const [selectedStandards, setSelectedStandards] = useState<string[]>([certification.certificationType]);
+const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({ certification, onClose }) => {
+  const [selectedStandards, setSelectedStandards] = useState<string[]>([
+    certification.certificationType,
+  ]);
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<ComplianceCheck | null>(null);
 
   const availableStandards = [
     { id: 'GDPR', name: 'GDPR', description: 'General Data Protection Regulation' },
     { id: 'CCPA', name: 'CCPA', description: 'California Consumer Privacy Act' },
-    { id: 'HIPAA', name: 'HIPAA', description: 'Health Insurance Portability and Accountability Act' },
+    {
+      id: 'HIPAA',
+      name: 'HIPAA',
+      description: 'Health Insurance Portability and Accountability Act',
+    },
     { id: 'ISO27001', name: 'ISO 27001', description: 'Information Security Management' },
-    { id: 'SOC2', name: 'SOC 2', description: 'Service Organization Control 2' }
+    { id: 'SOC2', name: 'SOC 2', description: 'Service Organization Control 2' },
   ];
 
   const handleStandardToggle = (standard: string) => {
-    setSelectedStandards(prev => 
-      prev.includes(standard)
-        ? prev.filter(s => s !== standard)
-        : [...prev, standard]
+    setSelectedStandards((prev) =>
+      prev.includes(standard) ? prev.filter((s) => s !== standard) : [...prev, standard]
     );
   };
 
@@ -42,27 +43,27 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
     setIsRunning(true);
     try {
       // Mock compliance check
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       const mockResults: ComplianceCheck = {
         id: `check-${Date.now()}`,
         checkType: 'automated',
         standards: selectedStandards,
         status: 'compliant',
-        results: selectedStandards.map(standard => ({
+        results: selectedStandards.map((standard) => ({
           standard,
           passed: Math.random() > 0.2,
           score: Math.floor(Math.random() * 30) + 70,
           maxScore: 100,
-          details: `Compliance check for ${standard} completed successfully`
+          details: `Compliance check for ${standard} completed successfully`,
         })),
         checkedAt: new Date().toISOString(),
         checkedBy: 'system',
         recommendations: [
           'Continue monitoring data access patterns',
           'Regular security audits recommended',
-          'Update privacy policy as needed'
-        ]
+          'Update privacy policy as needed',
+        ],
       };
 
       setResults(mockResults);
@@ -84,14 +85,9 @@ const ComplianceChecker: React.FC<ComplianceCheckerProps> = ({
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Automated Compliance Checking</h2>
-            <p className="text-gray-600 mt-1">
-              Run compliance checks against industry standards
-            </p>
+            <p className="text-gray-600 mt-1">Run compliance checks against industry standards</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>

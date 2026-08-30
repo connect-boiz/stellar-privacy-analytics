@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, 
-  Share2, 
-  Link, 
-  Mail, 
-  Copy, 
+import {
+  Users,
+  Share2,
+  _Link,
+  Mail,
+  Copy,
   CheckCircle,
   Clock,
   MessageSquare,
   Eye,
   Lock,
   Globe,
-  UserPlus
+  UserPlus,
 } from 'lucide-react';
 
 interface CollaborationUser {
@@ -35,7 +35,7 @@ interface Comment {
 
 export const CollaborationPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'users' | 'share' | 'comments'>('share');
-  const [shareLink, setShareLink] = useState('https://stellar.app/workflow/abc123');
+  const [shareLink, _setShareLink] = useState('https://stellar.app/workflow/abc123');
   const [linkCopied, setLinkCopied] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [selectedRole, setSelectedRole] = useState<'editor' | 'viewer'>('viewer');
@@ -47,22 +47,22 @@ export const CollaborationPanel: React.FC = () => {
       name: 'Alex Chen',
       email: 'alex@company.com',
       role: 'owner',
-      lastActive: '2 min ago'
+      lastActive: '2 min ago',
     },
     {
-      id: '2', 
+      id: '2',
       name: 'Sarah Johnson',
       email: 'sarah@company.com',
       role: 'editor',
-      lastActive: '1 hour ago'
+      lastActive: '1 hour ago',
     },
     {
       id: '3',
       name: 'Mike Davis',
-      email: 'mike@company.com', 
+      email: 'mike@company.com',
       role: 'viewer',
-      lastActive: '3 hours ago'
-    }
+      lastActive: '3 hours ago',
+    },
   ];
 
   const comments: Comment[] = [
@@ -70,9 +70,10 @@ export const CollaborationPanel: React.FC = () => {
       id: '1',
       userId: '2',
       userName: 'Sarah Johnson',
-      content: 'Great workflow! I think we should add a data validation step after the privacy filter.',
+      content:
+        'Great workflow! I think we should add a data validation step after the privacy filter.',
       timestamp: '2 hours ago',
-      nodeId: 'privacy-filter-1'
+      nodeId: 'privacy-filter-1',
     },
     {
       id: '2',
@@ -80,8 +81,8 @@ export const CollaborationPanel: React.FC = () => {
       userName: 'Mike Davis',
       content: 'The differential privacy epsilon value seems a bit high for this use case.',
       timestamp: '4 hours ago',
-      nodeId: 'differential-privacy-1'
-    }
+      nodeId: 'differential-privacy-1',
+    },
   ];
 
   const copyShareLink = () => {
@@ -93,14 +94,12 @@ export const CollaborationPanel: React.FC = () => {
   const sendInvite = () => {
     if (!inviteEmail) return;
     // In real implementation, this would send an invite
-    console.log('Inviting:', inviteEmail, 'as', selectedRole);
     setInviteEmail('');
   };
 
   const addComment = () => {
     if (!newComment.trim()) return;
     // In real implementation, this would add the comment
-    console.log('Adding comment:', newComment);
     setNewComment('');
   };
 
@@ -188,9 +187,7 @@ export const CollaborationPanel: React.FC = () => {
         {activeTab === 'share' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Share Link
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Share Link</label>
               <div className="flex space-x-2">
                 <input
                   type="text"
@@ -202,11 +199,7 @@ export const CollaborationPanel: React.FC = () => {
                   onClick={copyShareLink}
                   className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {linkCopied ? (
-                    <CheckCircle className="h-5 w-5" />
-                  ) : (
-                    <Copy className="h-5 w-5" />
-                  )}
+                  {linkCopied ? <CheckCircle className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
                 </button>
               </div>
             </div>
@@ -248,9 +241,15 @@ export const CollaborationPanel: React.FC = () => {
                 <div className="ml-3">
                   <h4 className="text-sm font-medium text-blue-900">Sharing Permissions</h4>
                   <ul className="mt-2 text-sm text-blue-700 space-y-1">
-                    <li>• <strong>Viewers:</strong> Can view and comment</li>
-                    <li>• <strong>Editors:</strong> Can edit and share</li>
-                    <li>• <strong>Owner:</strong> Full control and permissions</li>
+                    <li>
+                      • <strong>Viewers:</strong> Can view and comment
+                    </li>
+                    <li>
+                      • <strong>Editors:</strong> Can edit and share
+                    </li>
+                    <li>
+                      • <strong>Owner:</strong> Full control and permissions
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -280,7 +279,9 @@ export const CollaborationPanel: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getRoleBadgeColor(user.role)}`}>
+                  <span
+                    className={`inline-block px-2 py-1 text-xs font-medium rounded ${getRoleBadgeColor(user.role)}`}
+                  >
                     {user.role}
                   </span>
                   <div className="text-xs text-gray-500 mt-1 flex items-center">
@@ -318,9 +319,7 @@ export const CollaborationPanel: React.FC = () => {
                         <span className="text-xs text-gray-500">{comment.timestamp}</span>
                       </div>
                       {comment.nodeId && (
-                        <div className="text-xs text-blue-600 mt-1">
-                          On node: {comment.nodeId}
-                        </div>
+                        <div className="text-xs text-blue-600 mt-1">On node: {comment.nodeId}</div>
                       )}
                       <p className="text-sm text-gray-700 mt-2">{comment.content}</p>
                     </div>

@@ -2,11 +2,7 @@
  * Data Access Pattern Analyzer
  */
 
-import { 
-  DataAccessEvent, 
-  AccessPattern, 
-  PrivacyMetric 
-} from '../types/privacyMetrics';
+import { DataAccessEvent, AccessPattern } from '../types/privacyMetrics';
 
 export interface PatternAnalysisConfig {
   timeWindow: number; // minutes
@@ -48,9 +44,9 @@ export class AccessPatternAnalyzer {
             frequency: 2.5,
             volume: 3.0,
             time: 0.8,
-            location: 0.7
+            location: 0.7,
           },
-          enableML: false
+          enableML: false,
         };
       }
       AccessPatternAnalyzer.instance = new AccessPatternAnalyzer(config);
@@ -92,24 +88,27 @@ export class AccessPatternAnalyzer {
     });
   }
 
-  private async analyzeUserPattern(userId: string, events: DataAccessEvent[]): Promise<AccessPattern> {
+  private async analyzeUserPattern(
+    userId: string,
+    events: DataAccessEvent[]
+  ): Promise<AccessPattern> {
     const timeWindow = this.getTimeWindow(events);
-    
+
     // Analyze different aspects of the pattern
     const frequencyAnalysis = this.analyzeFrequency(events);
     const resourceAnalysis = this.analyzeResourceTypes(events);
     const timeAnalysis = this.analyzeTimePatterns(events);
     const geoAnalysis = this.analyzeGeoPatterns(events);
     const deviceAnalysis = this.analyzeDevicePatterns(events);
-    
+
     // Calculate trend
     const trend = this.calculateTrend(events);
-    
+
     // Identify risk indicators
     const riskIndicators = this.identifyRiskIndicators(events, {
       frequency: frequencyAnalysis,
       time: timeAnalysis,
-      location: geoAnalysis
+      location: geoAnalysis,
     });
 
     return {
@@ -119,13 +118,13 @@ export class AccessPatternAnalyzer {
       resourceTypes: resourceAnalysis.distribution,
       timePatterns: {
         hourly: timeAnalysis.hourly,
-        daily: timeAnalysis.daily
+        daily: timeAnalysis.daily,
       },
       geoPatterns: geoAnalysis.distribution,
       devicePatterns: deviceAnalysis.distribution,
       riskIndicators,
       trendDirection: trend.direction,
-      trendMagnitude: trend.magnitude
+      trendMagnitude: trend.magnitude,
     };
   }
 
@@ -139,7 +138,7 @@ export class AccessPatternAnalyzer {
     const windowHours = timeWindow.end - timeWindow.start;
     const hourlyBuckets = new Array(Math.ceil(windowHours / (60 * 60 * 1000))).fill(0);
 
-    events.forEach(event => {
+    events.forEach((event) => {
       const hourIndex = Math.floor((event.timestamp - timeWindow.start) / (60 * 60 * 1000));
       if (hourIndex >= 0 && hourIndex < hourlyBuckets.length) {
         hourlyBuckets[hourIndex]++;
@@ -154,7 +153,7 @@ export class AccessPatternAnalyzer {
       average,
       peak,
       variance,
-      distribution: hourlyBuckets
+      distribution: hourlyBuckets,
     };
   }
 
@@ -165,7 +164,7 @@ export class AccessPatternAnalyzer {
   } {
     const resourceCount = new Map<string, number>();
 
-    events.forEach(event => {
+    events.forEach((event) => {
       resourceCount.set(event.resource, (resourceCount.get(event.resource) || 0) + 1);
     });
 
@@ -178,18 +177,18 @@ export class AccessPatternAnalyzer {
     });
 
     // Normalize to percentages
-    Object.keys(distribution).forEach(resource => {
+    Object.keys(distribution).forEach((resource) => {
       distribution[resource] = (distribution[resource] / total) * 100;
     });
 
     const diversity = Object.keys(distribution).length;
-    const primaryResource = Object.entries(distribution)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || '';
+    const primaryResource =
+      Object.entries(distribution).sort(([, a], [, b]) => b - a)[0]?.[0] || '';
 
     return {
       distribution,
       diversity,
-      primaryResource
+      primaryResource,
     };
   }
 
@@ -204,7 +203,7 @@ export class AccessPatternAnalyzer {
     let businessHourCount = 0;
     let weekendCount = 0;
 
-    events.forEach(event => {
+    events.forEach((event) => {
       const date = new Date(event.timestamp);
       const hour = date.getUTCHours();
       const day = date.getUTCDay();
@@ -230,7 +229,7 @@ export class AccessPatternAnalyzer {
       hourly,
       daily,
       businessHourRatio,
-      weekendRatio
+      weekendRatio,
     };
   }
 
@@ -242,7 +241,7 @@ export class AccessPatternAnalyzer {
   } {
     const locationCount = new Map<string, number>();
 
-    events.forEach(event => {
+    events.forEach((event) => {
       locationCount.set(event.ipAddress, (locationCount.get(event.ipAddress) || 0) + 1);
     });
 
@@ -255,17 +254,17 @@ export class AccessPatternAnalyzer {
     });
 
     // Normalize to percentages
-    Object.keys(distribution).forEach(location => {
+    Object.keys(distribution).forEach((location) => {
       distribution[location] = (distribution[location] / total) * 100;
     });
 
     const uniqueLocations = locationCount.size;
-    const primaryLocation = Object.entries(distribution)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || '';
+    const primaryLocation =
+      Object.entries(distribution).sort(([, a], [, b]) => b - a)[0]?.[0] || '';
 
     // Calculate entropy (measure of location diversity)
     let entropy = 0;
-    locationCount.forEach(count => {
+    locationCount.forEach((count) => {
       const probability = count / total;
       if (probability > 0) {
         entropy -= probability * Math.log2(probability);
@@ -276,7 +275,7 @@ export class AccessPatternAnalyzer {
       distribution,
       uniqueLocations,
       primaryLocation,
-      locationEntropy: entropy
+      locationEntropy: entropy,
     };
   }
 
@@ -287,7 +286,7 @@ export class AccessPatternAnalyzer {
   } {
     const deviceCount = new Map<string, number>();
 
-    events.forEach(event => {
+    events.forEach((event) => {
       // Extract device type from user agent (simplified)
       const device = this.extractDeviceType(event.userAgent);
       deviceCount.set(device, (deviceCount.get(device) || 0) + 1);
@@ -302,24 +301,23 @@ export class AccessPatternAnalyzer {
     });
 
     // Normalize to percentages
-    Object.keys(distribution).forEach(device => {
+    Object.keys(distribution).forEach((device) => {
       distribution[device] = (distribution[device] / total) * 100;
     });
 
     const uniqueDevices = deviceCount.size;
-    const primaryDevice = Object.entries(distribution)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || '';
+    const primaryDevice = Object.entries(distribution).sort(([, a], [, b]) => b - a)[0]?.[0] || '';
 
     return {
       distribution,
       uniqueDevices,
-      primaryDevice
+      primaryDevice,
     };
   }
 
   private extractDeviceType(userAgent: string): string {
     const ua = userAgent.toLowerCase();
-    
+
     if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
       return 'mobile';
     } else if (ua.includes('tablet') || ua.includes('ipad')) {
@@ -337,7 +335,7 @@ export class AccessPatternAnalyzer {
   } {
     // Sort events by timestamp
     const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
-    
+
     // Split into two halves
     const midPoint = Math.floor(sortedEvents.length / 2);
     const firstHalf = sortedEvents.slice(0, midPoint);
@@ -368,19 +366,22 @@ export class AccessPatternAnalyzer {
     return (events.length / timeSpan) * (60 * 60 * 1000); // accesses per hour
   }
 
-  private identifyRiskIndicators(events: DataAccessEvent[], analyses: {
-    frequency: any;
-    time: any;
-    location: any;
-  }): AccessPattern['riskIndicators'] {
+  private identifyRiskIndicators(
+    events: DataAccessEvent[],
+    analyses: {
+      frequency: any;
+      time: any;
+      location: any;
+    }
+  ): AccessPattern['riskIndicators'] {
     const { frequency, time, location } = analyses;
     const thresholds = this.config.riskThresholds;
 
     return {
       unusualFrequency: frequency.variance > thresholds.frequency,
-      unusualTime: time.businessHourRatio < (1 - thresholds.time),
+      unusualTime: time.businessHourRatio < 1 - thresholds.time,
       unusualLocation: location.locationEntropy > thresholds.location,
-      volumeAnomaly: frequency.peak > (frequency.average * thresholds.volume)
+      volumeAnomaly: frequency.peak > frequency.average * thresholds.volume,
     };
   }
 
@@ -397,8 +398,8 @@ export class AccessPatternAnalyzer {
         recommendation: 'Review user activity and consider additional monitoring',
         metrics: {
           frequency: pattern.accessFrequency,
-          variance: this.calculateVariance(Object.values(pattern.timePatterns.hourly))
-        }
+          variance: this.calculateVariance(Object.values(pattern.timePatterns.hourly)),
+        },
       });
     }
 
@@ -412,8 +413,8 @@ export class AccessPatternAnalyzer {
         recommendation: 'Verify user identity and review access authorization',
         metrics: {
           businessHourRatio: pattern.timePatterns.businessHourRatio,
-          weekendRatio: pattern.timePatterns.daily[0] + pattern.timePatterns.daily[6]
-        }
+          weekendRatio: pattern.timePatterns.daily[0] + pattern.timePatterns.daily[6],
+        },
       });
     }
 
@@ -427,8 +428,8 @@ export class AccessPatternAnalyzer {
         recommendation: 'Verify if multi-location access is authorized for this user',
         metrics: {
           uniqueLocations: pattern.geoPatterns.uniqueLocations,
-          locationEntropy: pattern.geoPatterns.locationEntropy
-        }
+          locationEntropy: pattern.geoPatterns.locationEntropy,
+        },
       });
     }
 
@@ -442,8 +443,8 @@ export class AccessPatternAnalyzer {
         recommendation: 'Review data access patterns and potential data exfiltration risks',
         metrics: {
           currentVolume: pattern.accessFrequency,
-          trendMagnitude: pattern.trendMagnitude
-        }
+          trendMagnitude: pattern.trendMagnitude,
+        },
       });
     }
 
@@ -458,8 +459,8 @@ export class AccessPatternAnalyzer {
         recommendation: 'Monitor for potential privilege escalation or unauthorized access',
         metrics: {
           resourceDiversity,
-          primaryResourcePercentage: Math.max(...Object.values(pattern.resourceTypes))
-        }
+          primaryResourcePercentage: Math.max(...Object.values(pattern.resourceTypes)),
+        },
       });
     }
 
@@ -469,8 +470,8 @@ export class AccessPatternAnalyzer {
   // Helper methods
   private groupEventsByUser(events: DataAccessEvent[]): Map<string, DataAccessEvent[]> {
     const grouped = new Map<string, DataAccessEvent[]>();
-    
-    events.forEach(event => {
+
+    events.forEach((event) => {
       if (!grouped.has(event.userId)) {
         grouped.set(event.userId, []);
       }
@@ -481,19 +482,19 @@ export class AccessPatternAnalyzer {
   }
 
   private getTimeWindow(events: DataAccessEvent[]): { start: number; end: number } {
-    const timestamps = events.map(e => e.timestamp);
+    const timestamps = events.map((e) => e.timestamp);
     return {
       start: Math.min(...timestamps),
-      end: Math.max(...timestamps)
+      end: Math.max(...timestamps),
     };
   }
 
   private calculateVariance(values: number[]): number {
     if (values.length === 0) return 0;
-    
+
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
-    
+
     return variance;
   }
 
@@ -512,18 +513,21 @@ export class AccessPatternAnalyzer {
   }
 
   // Pattern comparison methods
-  public compareWithHistorical(userId: string, currentPattern: AccessPattern): {
+  public compareWithHistorical(
+    userId: string,
+    currentPattern: AccessPattern
+  ): {
     similarity: number;
     changes: string[];
     riskLevel: 'low' | 'medium' | 'high';
   } {
     const historical = this.historicalPatterns.get(userId) || [];
-    
+
     if (historical.length === 0) {
       return {
         similarity: 0,
         changes: ['No historical data available'],
-        riskLevel: 'medium'
+        riskLevel: 'medium',
       };
     }
 
@@ -533,7 +537,9 @@ export class AccessPatternAnalyzer {
     let totalChecks = 0;
 
     // Compare frequency
-    const freqChange = Math.abs(currentPattern.accessFrequency - lastPattern.accessFrequency) / lastPattern.accessFrequency;
+    const freqChange =
+      Math.abs(currentPattern.accessFrequency - lastPattern.accessFrequency) /
+      lastPattern.accessFrequency;
     if (freqChange > 0.5) {
       changes.push(`Access frequency changed by ${(freqChange * 100).toFixed(1)}%`);
     }
@@ -552,7 +558,9 @@ export class AccessPatternAnalyzer {
 
     // Compare trend
     if (currentPattern.trendDirection !== lastPattern.trendDirection) {
-      changes.push(`Access trend changed from ${lastPattern.trendDirection} to ${currentPattern.trendDirection}`);
+      changes.push(
+        `Access trend changed from ${lastPattern.trendDirection} to ${currentPattern.trendDirection}`
+      );
     }
     similarityScore += currentPattern.trendDirection === lastPattern.trendDirection ? 1 : 0.5;
     totalChecks++;

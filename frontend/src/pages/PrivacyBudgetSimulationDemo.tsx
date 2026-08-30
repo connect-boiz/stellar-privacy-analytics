@@ -8,16 +8,18 @@ import HistoricalScenarioComparison from '../services/historicalScenarioComparis
 import BudgetManagementIntegration from '../services/budgetManagementIntegration';
 import BudgetVisualizationChart from '../components/simulation/BudgetVisualizationChart';
 
-import { 
-  PrivacyBudget, 
-  BudgetAllocation, 
-  SimulationScenario, 
+import {
+  PrivacyBudget,
+  BudgetAllocation,
+  SimulationScenario,
   SimulationResult,
-  AllocationCategory 
+  _AllocationCategory,
 } from '../types/privacyBudget';
 
 const PrivacyBudgetSimulationDemo: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'simulation' | 'scenarios' | 'optimization' | 'comparison' | 'export'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'simulation' | 'scenarios' | 'optimization' | 'comparison' | 'export'
+  >('overview');
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentScenario, setCurrentScenario] = useState<SimulationScenario | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
@@ -30,36 +32,36 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
     const initializeServices = async () => {
       try {
         // Initialize simulation engine
-        const simulationEngine = PrivacyBudgetSimulation.getInstance({
+        const _simulationEngine = PrivacyBudgetSimulation.getInstance({
           maxIterations: 1000,
           convergenceThreshold: 0.001,
           monteCarloRuns: 1000,
           confidenceLevel: 0.95,
           timeStep: 1,
-          optimizationAlgorithm: 'genetic'
+          optimizationAlgorithm: 'genetic',
         });
 
         // Initialize what-if modeling
-        const whatIfModeling = WhatIfScenarioModeling.getInstance({
+        const _whatIfModeling = WhatIfScenarioModeling.getInstance({
           maxScenarios: 50,
           defaultTimeHorizon: 365,
           confidenceLevels: [0.8, 0.9, 0.95],
           sensitivityFactors: [0.8, 0.9, 1.0, 1.1, 1.2],
-          optimizationTargets: ['roi', 'risk', 'privacy', 'utility']
+          optimizationTargets: ['roi', 'risk', 'privacy', 'utility'],
         });
 
         // Initialize optimization engine
-        const optimizationEngine = OptimizationRecommendationEngine.getInstance({
+        const _optimizationEngine = OptimizationRecommendationEngine.getInstance({
           maxRecommendations: 10,
           minImpactThreshold: 0.05,
           confidenceThreshold: 0.7,
           riskTolerance: 0.3,
           timeHorizon: 365,
-          optimizationTargets: ['roi', 'risk', 'privacy', 'utility']
+          optimizationTargets: ['roi', 'risk', 'privacy', 'utility'],
         });
 
         // Initialize export sharing
-        const exportSharing = SimulationExportSharing.getInstance(
+        const _exportSharing = SimulationExportSharing.getInstance(
           {
             defaultFormat: 'json',
             includeMetadata: true,
@@ -68,7 +70,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             includeSensitivity: false,
             compressionEnabled: false,
             encryptionEnabled: false,
-            watermarkEnabled: false
+            watermarkEnabled: false,
           },
           {
             defaultExpiration: 30,
@@ -76,18 +78,25 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             requireAuthentication: true,
             allowDownload: true,
             allowComments: false,
-            trackAccess: true
+            trackAccess: true,
           }
         );
 
         // Initialize historical comparison
-        const historicalComparison = HistoricalScenarioComparison.getInstance({
+        const _historicalComparison = HistoricalScenarioComparison.getInstance({
           maxHistoricalScenarios: 100,
           timeRange: 365,
-          comparisonMetrics: ['totalROI', 'riskScore', 'privacyScore', 'utilityScore', 'efficiency', 'complianceScore'],
+          comparisonMetrics: [
+            'totalROI',
+            'riskScore',
+            'privacyScore',
+            'utilityScore',
+            'efficiency',
+            'complianceScore',
+          ],
           trendAnalysisEnabled: true,
           patternRecognitionEnabled: true,
-          benchmarkingEnabled: true
+          benchmarkingEnabled: true,
         });
 
         // Initialize budget management integration
@@ -102,34 +111,37 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             roiDecline: 0.15,
             riskIncrease: 0.2,
             complianceDrop: 0.1,
-            efficiencyDrop: 0.15
-          }
+            efficiencyDrop: 0.15,
+          },
         });
 
         // Create sample budget
-        const sampleBudget = await budgetManagement.createBudget({
-          name: 'Demo Privacy Budget',
-          description: 'Sample budget for demonstration',
-          totalBudget: 1000000,
-          allocatedBudget: 0,
-          remainingBudget: 1000000,
-          currency: 'USD',
-          period: 'yearly',
-          startDate: Date.now(),
-          endDate: Date.now() + (365 * 24 * 60 * 60 * 1000),
-          status: 'active',
-          owner: 'demo-user',
-          department: 'Privacy & Compliance',
-          constraints: {
-            maxPerAnalysis: 100000,
-            minPrivacyLevel: 0.8,
-            requiredApprovals: ['manager'],
-            restrictedCategories: [],
-            complianceFrameworks: ['GDPR', 'CCPA'],
-            geographicRestrictions: ['US', 'EU', 'CA']
+        const sampleBudget = await budgetManagement.createBudget(
+          {
+            name: 'Demo Privacy Budget',
+            description: 'Sample budget for demonstration',
+            totalBudget: 1000000,
+            allocatedBudget: 0,
+            remainingBudget: 1000000,
+            currency: 'USD',
+            period: 'yearly',
+            startDate: Date.now(),
+            endDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
+            status: 'active',
+            owner: 'demo-user',
+            department: 'Privacy & Compliance',
+            constraints: {
+              maxPerAnalysis: 100000,
+              minPrivacyLevel: 0.8,
+              requiredApprovals: ['manager'],
+              restrictedCategories: [],
+              complianceFrameworks: ['GDPR', 'CCPA'],
+              geographicRestrictions: ['US', 'EU', 'CA'],
+            },
+            allocations: [],
           },
-          allocations: []
-        }, false);
+          false
+        );
 
         setBudgets([sampleBudget.budget]);
 
@@ -144,7 +156,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               description: 'Budget for data collection activities',
               minAllocation: 0.1,
               maxAllocation: 0.4,
-              impactFactors: []
+              impactFactors: [],
             },
             amount: 200000,
             percentage: 20,
@@ -156,7 +168,11 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             constraints: {
               timeConstraints: { minDuration: 30, maxDuration: 365 },
               resourceConstraints: { maxDataVolume: 1000, maxUsers: 50, maxQueries: 10000 },
-              privacyConstraints: { minAnonymizationLevel: 0.8, maxDataRetention: 2555, requiredConsent: true }
+              privacyConstraints: {
+                minAnonymizationLevel: 0.8,
+                maxDataRetention: 2555,
+                requiredConsent: true,
+              },
             },
             performance: {
               actualROI: 0.12,
@@ -164,8 +180,8 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               efficiency: 0.8,
               complianceScore: 0.9,
               userSatisfaction: 0.85,
-              lastUpdated: Date.now()
-            }
+              lastUpdated: Date.now(),
+            },
           },
           {
             id: 'alloc-2',
@@ -176,7 +192,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               description: 'Budget for data analysis and processing',
               minAllocation: 0.2,
               maxAllocation: 0.5,
-              impactFactors: []
+              impactFactors: [],
             },
             amount: 300000,
             percentage: 30,
@@ -188,7 +204,11 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             constraints: {
               timeConstraints: { minDuration: 60, maxDuration: 180 },
               resourceConstraints: { maxDataVolume: 500, maxUsers: 25, maxQueries: 5000 },
-              privacyConstraints: { minAnonymizationLevel: 0.9, maxDataRetention: 730, requiredConsent: true }
+              privacyConstraints: {
+                minAnonymizationLevel: 0.9,
+                maxDataRetention: 730,
+                requiredConsent: true,
+              },
             },
             performance: {
               actualROI: 0.18,
@@ -196,8 +216,8 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               efficiency: 0.88,
               complianceScore: 0.95,
               userSatisfaction: 0.9,
-              lastUpdated: Date.now()
-            }
+              lastUpdated: Date.now(),
+            },
           },
           {
             id: 'alloc-3',
@@ -208,7 +228,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               description: 'Budget for compliance and governance',
               minAllocation: 0.1,
               maxAllocation: 0.3,
-              impactFactors: []
+              impactFactors: [],
             },
             amount: 250000,
             percentage: 25,
@@ -220,7 +240,11 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             constraints: {
               timeConstraints: { minDuration: 90, maxDuration: 365 },
               resourceConstraints: { maxDataVolume: 100, maxUsers: 10, maxQueries: 1000 },
-              privacyConstraints: { minAnonymizationLevel: 0.95, maxDataRetention: 1825, requiredConsent: true }
+              privacyConstraints: {
+                minAnonymizationLevel: 0.95,
+                maxDataRetention: 1825,
+                requiredConsent: true,
+              },
             },
             performance: {
               actualROI: 0.08,
@@ -228,8 +252,8 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               efficiency: 0.92,
               complianceScore: 0.98,
               userSatisfaction: 0.88,
-              lastUpdated: Date.now()
-            }
+              lastUpdated: Date.now(),
+            },
           },
           {
             id: 'alloc-4',
@@ -240,7 +264,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               description: 'Budget for privacy monitoring and alerting',
               minAllocation: 0.05,
               maxAllocation: 0.15,
-              impactFactors: []
+              impactFactors: [],
             },
             amount: 150000,
             percentage: 15,
@@ -252,7 +276,11 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
             constraints: {
               timeConstraints: { minDuration: 30, maxDuration: 365 },
               resourceConstraints: { maxDataVolume: 200, maxUsers: 15, maxQueries: 2000 },
-              privacyConstraints: { minAnonymizationLevel: 0.8, maxDataRetention: 90, requiredConsent: false }
+              privacyConstraints: {
+                minAnonymizationLevel: 0.8,
+                maxDataRetention: 90,
+                requiredConsent: false,
+              },
             },
             performance: {
               actualROI: 0.15,
@@ -260,8 +288,8 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               efficiency: 0.85,
               complianceScore: 0.92,
               userSatisfaction: 0.82,
-              lastUpdated: Date.now()
-            }
+              lastUpdated: Date.now(),
+            },
           },
           {
             id: 'alloc-5',
@@ -272,29 +300,33 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               description: 'Budget for privacy research and innovation',
               minAllocation: 0.02,
               maxAllocation: 0.1,
-              impactFactors: []
+              impactFactors: [],
             },
             amount: 100000,
             percentage: 10,
             description: 'Budget allocated to privacy research',
             priority: 'low',
-            expectedROI: 0.10,
+            expectedROI: 0.1,
             riskLevel: 'medium',
             dependencies: [],
             constraints: {
               timeConstraints: { minDuration: 120, maxDuration: 365 },
               resourceConstraints: { maxDataVolume: 50, maxUsers: 5, maxQueries: 500 },
-              privacyConstraints: { minAnonymizationLevel: 0.9, maxDataRetention: 365, requiredConsent: true }
+              privacyConstraints: {
+                minAnonymizationLevel: 0.9,
+                maxDataRetention: 365,
+                requiredConsent: true,
+              },
             },
             performance: {
-              actualROI: 0.10,
+              actualROI: 0.1,
               utilizationRate: 0.75,
               efficiency: 0.7,
               complianceScore: 0.85,
               userSatisfaction: 0.78,
-              lastUpdated: Date.now()
-            }
-          }
+              lastUpdated: Date.now(),
+            },
+          },
         ];
 
         // Update budget with allocations
@@ -302,7 +334,9 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
           ...sampleBudget.budget,
           allocations: sampleAllocations,
           allocatedBudget: sampleAllocations.reduce((sum, alloc) => sum + alloc.amount, 0),
-          remainingBudget: sampleBudget.budget.totalBudget - sampleAllocations.reduce((sum, alloc) => sum + alloc.amount, 0)
+          remainingBudget:
+            sampleBudget.budget.totalBudget -
+            sampleAllocations.reduce((sum, alloc) => sum + alloc.amount, 0),
         };
 
         setBudgets([updatedBudget]);
@@ -325,11 +359,11 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
                 roi: 0.4,
                 risk: 0.2,
                 privacy: 0.2,
-                utility: 0.2
-              }
+                utility: 0.2,
+              },
             },
             sensitivity: 'medium',
-            monteCarloRuns: 1000
+            monteCarloRuns: 1000,
           },
           assumptions: [
             {
@@ -340,20 +374,20 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               value: 0.05,
               confidence: 0.8,
               impact: 'medium',
-              source: 'market_analysis'
-            }
+              source: 'market_analysis',
+            },
           ],
           constraints: {
             totalBudgetLimit: updatedBudget.totalBudget,
             categoryLimits: {},
             minimumPrivacyLevel: 0.8,
             complianceRequirements: ['GDPR', 'CCPA'],
-            businessObjectives: []
+            businessObjectives: [],
           },
           createdAt: Date.now(),
           createdBy: 'demo-user',
           tags: ['demo', 'baseline'],
-          status: 'active'
+          status: 'active',
         };
 
         setCurrentScenario(sampleScenario);
@@ -361,7 +395,6 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
 
         setIsInitialized(true);
         toast.success('Privacy Budget Simulation System initialized successfully');
-
       } catch (error) {
         console.error('Failed to initialize services:', error);
         toast.error('Failed to initialize privacy budget simulation system');
@@ -379,7 +412,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
     try {
       const simulationEngine = PrivacyBudgetSimulation.getInstance();
       const result = await simulationEngine.runSimulation(currentScenario);
-      
+
       setSimulationResult(result);
       toast.success('Simulation completed successfully');
     } catch (error) {
@@ -396,10 +429,10 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
     try {
       const whatIfModeling = WhatIfScenarioModeling.getInstance();
       const whatIfScenario = whatIfModeling.createWhatIfScenario(currentScenario, templateId);
-      
+
       setScenarios([...scenarios, whatIfScenario]);
       setCurrentScenario(whatIfScenario);
-      
+
       toast.success('What-if scenario created successfully');
     } catch (error) {
       console.error('Failed to create what-if scenario:', error);
@@ -411,7 +444,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
     try {
       const whatIfModeling = WhatIfScenarioModeling.getInstance();
       const comparison = await whatIfModeling.compareScenarios(scenarioIds);
-      
+
       toast.success('Scenario comparison completed');
       return comparison;
     } catch (error) {
@@ -426,10 +459,10 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
 
     try {
       const exportSharing = SimulationExportSharing.getInstance();
-      const exportData = await exportSharing.exportSimulationResult(simulationResult, format);
-      
+      const _exportData = await exportSharing.exportSimulationResult(simulationResult, format);
+
       // In a real implementation, this would trigger a download
-      console.log('Export data:', exportData);
+      // Export data ready
       toast.success(`Results exported as ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Export failed:', error);
@@ -448,12 +481,12 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
         baselineMetrics: simulationResult.metrics,
         constraints: currentScenario.constraints,
         objectives: currentScenario.parameters.optimizationGoal,
-        historicalData: []
+        historicalData: [],
       };
-      
+
       const recommendations = optimizationEngine.generateRecommendations(context);
-      
-      console.log('Generated recommendations:', recommendations);
+
+      // Generated recommendations
       toast.success(`Generated ${recommendations.length} recommendations`);
       return recommendations;
     } catch (error) {
@@ -468,9 +501,12 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
 
     try {
       const historicalComparison = HistoricalScenarioComparison.getInstance();
-      const analysis = await historicalComparison.compareWithHistorical(currentScenario, simulationResult);
-      
-      console.log('Historical analysis:', analysis);
+      const analysis = await historicalComparison.compareWithHistorical(
+        currentScenario,
+        simulationResult
+      );
+
+      // Historical analysis completed
       toast.success('Historical analysis completed');
       return analysis;
     } catch (error) {
@@ -486,35 +522,40 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
       case 'overview':
         return <OverviewTab budgets={budgets} scenarios={scenarios} />;
       case 'simulation':
-        return <SimulationTab 
-          scenario={currentScenario}
-          result={simulationResult}
-          isSimulating={isSimulating}
-          onRunSimulation={runSimulation}
-        />;
+        return (
+          <SimulationTab
+            scenario={currentScenario}
+            result={simulationResult}
+            isSimulating={isSimulating}
+            onRunSimulation={runSimulation}
+          />
+        );
       case 'scenarios':
-        return <ScenariosTab 
-          scenarios={scenarios}
-          currentScenario={currentScenario}
-          onSelectScenario={setCurrentScenario}
-          onCreateWhatIf={createWhatIfScenario}
-          onCompareScenarios={compareScenarios}
-        />;
+        return (
+          <ScenariosTab
+            scenarios={scenarios}
+            currentScenario={currentScenario}
+            onSelectScenario={setCurrentScenario}
+            onCreateWhatIf={createWhatIfScenario}
+            onCompareScenarios={compareScenarios}
+          />
+        );
       case 'optimization':
-        return <OptimizationTab 
-          result={simulationResult}
-          onGenerateRecommendations={generateRecommendations}
-        />;
+        return (
+          <OptimizationTab
+            result={simulationResult}
+            onGenerateRecommendations={generateRecommendations}
+          />
+        );
       case 'comparison':
-        return <ComparisonTab 
-          scenarios={scenarios}
-          onAnalyzeHistoricalTrends={analyzeHistoricalTrends}
-        />;
+        return (
+          <ComparisonTab
+            scenarios={scenarios}
+            onAnalyzeHistoricalTrends={analyzeHistoricalTrends}
+          />
+        );
       case 'export':
-        return <ExportTab 
-          result={simulationResult}
-          onExport={exportResults}
-        />;
+        return <ExportTab result={simulationResult} onExport={exportResults} />;
       default:
         return null;
     }
@@ -543,7 +584,7 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
                 Interactive Demo
               </span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <button
                 onClick={runSimulation}
@@ -567,8 +608,8 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
               { id: 'scenarios', label: 'What-If Scenarios', icon: '🎯' },
               { id: 'optimization', label: 'Optimization', icon: '⚡' },
               { id: 'comparison', label: 'Comparison', icon: '📈' },
-              { id: 'export', label: 'Export', icon: '📤' }
-            ].map(tab => (
+              { id: 'export', label: 'Export', icon: '📤' },
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
@@ -587,15 +628,16 @@ const PrivacyBudgetSimulationDemo: React.FC = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="py-6">
-        {renderTabContent()}
-      </div>
+      <div className="py-6">{renderTabContent()}</div>
     </div>
   );
 };
 
 // Tab Components
-const OverviewTab: React.FC<{ budgets: PrivacyBudget[]; scenarios: SimulationScenario[] }> = ({ budgets, scenarios }) => (
+const OverviewTab: React.FC<{ budgets: PrivacyBudget[]; scenarios: SimulationScenario[] }> = ({
+  budgets,
+  scenarios,
+}) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">System Overview</h2>
@@ -649,7 +691,7 @@ const SimulationTab: React.FC<{
   result: SimulationResult | null;
   isSimulating: boolean;
   onRunSimulation: () => void;
-}> = ({ scenario, result, isSimulating, onRunSimulation }) => (
+}> = ({ scenario, result, _isSimulating, _onRunSimulation }) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">Simulation</h2>
@@ -732,7 +774,7 @@ const ScenariosTab: React.FC<{
   onSelectScenario: (scenario: SimulationScenario) => void;
   onCreateWhatIf: (templateId: string) => void;
   onCompareScenarios: (scenarioIds: string[]) => Promise<any>;
-}> = ({ scenarios, currentScenario, onSelectScenario, onCreateWhatIf, onCompareScenarios }) => (
+}> = ({ scenarios, currentScenario, onSelectScenario, onCreateWhatIf, _onCompareScenarios }) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">What-If Scenarios</h2>
@@ -745,12 +787,32 @@ const ScenariosTab: React.FC<{
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Scenario Templates</h3>
           <div className="space-y-3">
             {[
-              { id: 'budget_increase_10', name: '10% Budget Increase', description: 'Increase budget by 10%' },
-              { id: 'budget_decrease_20', name: '20% Budget Decrease', description: 'Decrease budget by 20%' },
-              { id: 'reallocate_to_compliance', name: 'Reallocate to Compliance', description: 'Shift budget to compliance' },
-              { id: 'risk_mitigation_focus', name: 'Risk Mitigation Focus', description: 'Prioritize risk mitigation' },
-              { id: 'roi_optimization', name: 'ROI Optimization', description: 'Maximize return on investment' }
-            ].map(template => (
+              {
+                id: 'budget_increase_10',
+                name: '10% Budget Increase',
+                description: 'Increase budget by 10%',
+              },
+              {
+                id: 'budget_decrease_20',
+                name: '20% Budget Decrease',
+                description: 'Decrease budget by 20%',
+              },
+              {
+                id: 'reallocate_to_compliance',
+                name: 'Reallocate to Compliance',
+                description: 'Shift budget to compliance',
+              },
+              {
+                id: 'risk_mitigation_focus',
+                name: 'Risk Mitigation Focus',
+                description: 'Prioritize risk mitigation',
+              },
+              {
+                id: 'roi_optimization',
+                name: 'ROI Optimization',
+                description: 'Maximize return on investment',
+              },
+            ].map((template) => (
               <div key={template.id} className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900">{template.name}</h4>
                 <p className="text-sm text-gray-600 mt-1">{template.description}</p>
@@ -769,11 +831,13 @@ const ScenariosTab: React.FC<{
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Existing Scenarios</h3>
         <div className="space-y-2">
-          {scenarios.map(scenario => (
+          {scenarios.map((scenario) => (
             <div
               key={scenario.id}
               className={`p-3 border rounded-lg cursor-pointer ${
-                currentScenario?.id === scenario.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                currentScenario?.id === scenario.id
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200'
               }`}
               onClick={() => onSelectScenario(scenario)}
             >
@@ -808,7 +872,7 @@ const OptimizationTab: React.FC<{
             Generate Recommendations
           </button>
         </div>
-        
+
         <div className="space-y-4">
           {result.recommendations.slice(0, 3).map((rec, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -816,12 +880,17 @@ const OptimizationTab: React.FC<{
                 <div>
                   <h4 className="font-medium text-gray-900">{rec.title}</h4>
                   <p className="text-sm text-gray-600 mt-1">{rec.description}</p>
-                  <span className={`inline-block px-2 py-1 text-xs rounded mt-2 ${
-                    rec.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                    rec.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                    rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`inline-block px-2 py-1 text-xs rounded mt-2 ${
+                      rec.priority === 'critical'
+                        ? 'bg-red-100 text-red-800'
+                        : rec.priority === 'high'
+                          ? 'bg-orange-100 text-orange-800'
+                          : rec.priority === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {rec.priority}
                   </span>
                 </div>
@@ -837,7 +906,7 @@ const OptimizationTab: React.FC<{
 const ComparisonTab: React.FC<{
   scenarios: SimulationScenario[];
   onAnalyzeHistoricalTrends: () => Promise<any>;
-}> = ({ scenarios, onAnalyzeHistoricalTrends }) => (
+}> = ({ _scenarios, onAnalyzeHistoricalTrends }) => (
   <div className="px-4 sm:px-6 lg:px-8">
     <div className="mb-6">
       <h2 className="text-2xl font-bold text-gray-900">Comparison & Analysis</h2>
@@ -854,7 +923,7 @@ const ComparisonTab: React.FC<{
           Analyze Trends
         </button>
       </div>
-      
+
       <div className="text-center py-8">
         <p className="text-gray-600">Select scenarios to compare and analyze historical trends</p>
       </div>
@@ -880,8 +949,8 @@ const ExportTab: React.FC<{
             { format: 'json', label: 'JSON', description: 'Raw data format' },
             { format: 'csv', label: 'CSV', description: 'Spreadsheet format' },
             { format: 'excel', label: 'Excel', description: 'Microsoft Excel' },
-            { format: 'pdf', label: 'PDF', description: 'Report format' }
-          ].map(option => (
+            { format: 'pdf', label: 'PDF', description: 'Report format' },
+          ].map((option) => (
             <button
               key={option.format}
               onClick={() => onExport(option.format as any)}

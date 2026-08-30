@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, X } from 'lucide-react';
+import { Users, Plus } from 'lucide-react';
 import { InvitePartnerForm } from '../components/mpc/InvitePartnerForm';
 import { ParticipantsList } from '../components/mpc/ParticipantsList';
 import { LogTerminal } from '../components/mpc/LogTerminal';
@@ -9,7 +9,6 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useMPCSession } from '../hooks/useMPCSession';
 import { toast } from 'react-hot-toast';
 
-
 export const MPCWorkspace: React.FC = () => {
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'query' | 'results' | 'metadata'>('query');
@@ -17,15 +16,15 @@ export const MPCWorkspace: React.FC = () => {
   const ws = useWebSocket('ws://localhost:3001/mpc');
   const {
     session,
-    isLoading,
-    error,
+    _isLoading,
+    _error,
     createSession,
     addParticipant,
     updateParticipantStatus,
     addLog,
     startComputation,
     getSessionStats,
-    clearSession
+    _clearSession,
   } = useMPCSession();
 
   const sessionStats = getSessionStats();
@@ -35,6 +34,7 @@ export const MPCWorkspace: React.FC = () => {
       const message = JSON.parse(ws.lastMessage.data);
       handleWebSocketMessage(message);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ws.lastMessage]);
 
   const handleWebSocketMessage = (message: any) => {
@@ -70,10 +70,9 @@ export const MPCWorkspace: React.FC = () => {
         break;
 
       default:
-        console.log('Unknown message type:', message.type);
+      // Unknown message type
     }
   };
-
 
   const handleCreateSession = async (sessionName: string) => {
     try {
@@ -105,7 +104,6 @@ export const MPCWorkspace: React.FC = () => {
     }
   };
 
-
   if (!session) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -133,18 +131,24 @@ export const MPCWorkspace: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-gray-900">{session.name}</h1>
-            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full border ${session.isComputing
-                ? 'text-blue-600 bg-blue-50 border-blue-200'
-                : session.hasStarted
-                  ? 'text-green-600 bg-green-50 border-green-200'
-                  : 'text-yellow-600 bg-yellow-50 border-yellow-200'
-              }`}>
-              <div className={`w-2 h-2 rounded-full ${session.isComputing
-                  ? 'bg-blue-500 animate-pulse'
+            <div
+              className={`flex items-center space-x-2 px-3 py-1 rounded-full border ${
+                session.isComputing
+                  ? 'text-blue-600 bg-blue-50 border-blue-200'
                   : session.hasStarted
-                    ? 'bg-green-500'
-                    : 'bg-yellow-500'
-                }`} />
+                    ? 'text-green-600 bg-green-50 border-green-200'
+                    : 'text-yellow-600 bg-yellow-50 border-yellow-200'
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  session.isComputing
+                    ? 'bg-blue-500 animate-pulse'
+                    : session.hasStarted
+                      ? 'bg-green-500'
+                      : 'bg-yellow-500'
+                }`}
+              />
               <span className="text-sm font-medium">
                 {session.isComputing ? 'Computing' : session.hasStarted ? 'Completed' : 'Ready'}
               </span>
@@ -194,10 +198,11 @@ export const MPCWorkspace: React.FC = () => {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-3 px-1 border-b-2 font-medium text-sm capitalize ${activeTab === tab
+                  className={`py-3 px-1 border-b-2 font-medium text-sm capitalize ${
+                    activeTab === tab
                       ? 'border-indigo-500 text-indigo-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                  }`}
                 >
                   {tab}
                 </button>

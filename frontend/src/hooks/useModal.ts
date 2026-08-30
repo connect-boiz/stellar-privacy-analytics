@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 interface UseModalOptions {
   onClose?: () => void;
@@ -31,7 +31,7 @@ export function useModal(options: UseModalOptions = {}): UseModalReturn {
     closeOnEscape = true,
     closeOnOverlayClick = true,
     initialFocusRef,
-    finalFocusRef
+    finalFocusRef,
   } = options;
 
   const [isOpen, setIsOpen] = useState(false);
@@ -68,8 +68,8 @@ export function useModal(options: UseModalOptions = {}): UseModalReturn {
       closeOnEscape,
       closeOnOverlayClick,
       initialFocusRef,
-      finalFocusRef
-    }
+      finalFocusRef,
+    },
   };
 }
 
@@ -92,11 +92,11 @@ export function useModalStack(): UseModalStackReturn {
   const [stack, setStack] = useState<ModalStackItem[]>([]);
 
   const push = useCallback((id: string, props: Record<string, unknown> = {}) => {
-    setStack(prev => [...prev, { id, props }]);
+    setStack((prev) => [...prev, { id, props }]);
   }, []);
 
   const pop = useCallback(() => {
-    setStack(prev => prev.slice(0, -1));
+    setStack((prev) => prev.slice(0, -1));
   }, []);
 
   const clear = useCallback(() => {
@@ -109,7 +109,7 @@ export function useModalStack(): UseModalStackReturn {
     pop,
     clear,
     top: stack[stack.length - 1] || null,
-    count: stack.length
+    count: stack.length,
   };
 }
 
@@ -133,7 +133,7 @@ export function useAnnouncer() {
       border: 0;
     `;
     document.body.appendChild(element);
-    
+
     // Set the message after a small delay to ensure the screen reader picks it up
     setTimeout(() => {
       element.textContent = message;

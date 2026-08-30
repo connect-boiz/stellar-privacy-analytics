@@ -1,5 +1,5 @@
-import React from 'react';
-import { useTheme } from '../theme.hook';
+import React from "react";
+import { useTheme } from "../theme.hook";
 
 export const ThemePreview = () => {
   const { previewTheme } = useTheme();
@@ -7,14 +7,14 @@ export const ThemePreview = () => {
   return (
     <div>
       <button
-        onMouseEnter={() => previewTheme('light')}
+        onMouseEnter={() => previewTheme("light")}
         onMouseLeave={() => previewTheme(null)}
       >
         Preview Light
       </button>
 
       <button
-        onMouseEnter={() => previewTheme('dark')}
+        onMouseEnter={() => previewTheme("dark")}
         onMouseLeave={() => previewTheme(null)}
       >
         Preview Dark

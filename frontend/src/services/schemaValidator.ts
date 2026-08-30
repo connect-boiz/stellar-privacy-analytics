@@ -1,4 +1,4 @@
-import { SchemaConfig, SchemaField, TestResult } from '../components/SchemaBuilder/SchemaBuilder';
+import { SchemaConfig, SchemaField } from '../components/SchemaBuilder/SchemaBuilder';
 
 export interface ValidationResult {
   success: boolean;
@@ -40,11 +40,11 @@ export class SchemaValidator {
    */
   async validateSchema(schema: SchemaConfig): Promise<ValidationResult> {
     const startTime = Date.now();
-    
+
     try {
       // Generate test data
       const testData = this.generateTestData(schema);
-      
+
       // Validate the test data against the schema
       const validationErrors: ValidationError[] = [];
       const validationWarnings: ValidationWarning[] = [];
@@ -52,14 +52,14 @@ export class SchemaValidator {
       // Validate each field
       for (const field of schema.fields) {
         const fieldValue = testData[field.name];
-        
+
         if (fieldValue === undefined) {
           if (field.required) {
             validationErrors.push({
               field: field.name,
               code: 'REQUIRED_FIELD_MISSING',
               message: `Required field '${field.name}' is missing`,
-              severity: 'error'
+              severity: 'error',
             });
           }
           continue;
@@ -67,7 +67,7 @@ export class SchemaValidator {
 
         // Apply validation rules for this field type
         const fieldRules = this.rules.get(field.type) || [];
-        
+
         for (const rule of fieldRules) {
           const error = rule.validate(field, fieldValue);
           if (error) {
@@ -78,7 +78,7 @@ export class SchemaValidator {
                 field: error.field,
                 code: error.code,
                 message: error.message,
-                severity: 'warning'
+                severity: 'warning',
               });
             }
           }
@@ -89,13 +89,13 @@ export class SchemaValidator {
       }
 
       // Check for unknown fields
-      const knownFieldNames = new Set(schema.fields.map(f => f.name));
+      const knownFieldNames = new Set(schema.fields.map((f) => f.name));
       for (const dataFieldName of Object.keys(testData)) {
         if (!knownFieldNames.has(dataFieldName)) {
           validationWarnings.push({
             code: 'UNKNOWN_FIELD',
             message: `Unknown field '${dataFieldName}' found in test data`,
-            severity: 'warning'
+            severity: 'warning',
           });
         }
       }
@@ -110,22 +110,23 @@ export class SchemaValidator {
         errors: validationErrors,
         warnings: validationWarnings,
         testData,
-        executionTime
+        executionTime,
       };
-
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      
+
       return {
         success: false,
-        errors: [{
-          code: 'VALIDATION_ERROR',
-          message: error.message,
-          severity: 'error'
-        }],
+        errors: [
+          {
+            code: 'VALIDATION_ERROR',
+            message: error.message,
+            severity: 'error',
+          },
+        ],
         warnings: [],
         testData: {},
-        executionTime
+        executionTime,
       };
     }
   }
@@ -134,9 +135,9 @@ export class SchemaValidator {
    * Validate field constraints
    */
   private validateFieldConstraints(
-    field: SchemaField, 
-    value: any, 
-    errors: ValidationError[], 
+    field: SchemaField,
+    value: any,
+    errors: ValidationError[],
     warnings: ValidationWarning[]
   ): void {
     switch (field.type) {
@@ -146,7 +147,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'TYPE_MISMATCH',
             message: `Field '${field.name}' must be a string, got ${typeof value}`,
-            severity: 'error'
+            severity: 'error',
           });
           return;
         }
@@ -160,7 +161,7 @@ export class SchemaValidator {
                 field: field.name,
                 code: 'PATTERN_MISMATCH',
                 message: `Field '${field.name}' does not match pattern: ${field.constraints.pattern}`,
-                severity: 'error'
+                severity: 'error',
               });
             }
           } catch (regexError) {
@@ -168,7 +169,7 @@ export class SchemaValidator {
               field: field.name,
               code: 'INVALID_PATTERN',
               message: `Invalid pattern for field '${field.name}': ${field.constraints.pattern}`,
-              severity: 'error'
+              severity: 'error',
             });
           }
         }
@@ -179,7 +180,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'EMPTY_STRING',
             message: `Field '${field.name}' cannot be empty`,
-            severity: 'error'
+            severity: 'error',
           });
         }
 
@@ -188,7 +189,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'LONG_STRING',
             message: `Field '${field.name}' is very long (${value.length} characters)`,
-            severity: 'warning'
+            severity: 'warning',
           });
         }
         break;
@@ -199,7 +200,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'TYPE_MISMATCH',
             message: `Field '${field.name}' must be an integer, got ${typeof value}`,
-            severity: 'error'
+            severity: 'error',
           });
           return;
         }
@@ -212,7 +213,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'MIN_VALUE_VIOLATION',
             message: `Field '${field.name}' value ${intValue} is below minimum ${field.constraints.min}`,
-            severity: 'error'
+            severity: 'error',
           });
         }
 
@@ -222,7 +223,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'MAX_VALUE_VIOLATION',
             message: `Field '${field.name}' value ${intValue} is above maximum ${field.constraints.max}`,
-            severity: 'error'
+            severity: 'error',
           });
         }
 
@@ -232,7 +233,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'LARGE_INTEGER',
             message: `Field '${field.name}' value ${intValue} is very large`,
-            severity: 'warning'
+            severity: 'warning',
           });
         }
         break;
@@ -243,7 +244,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'TYPE_MISMATCH',
             message: `Field '${field.name}' must be a boolean, got ${typeof value}`,
-            severity: 'error'
+            severity: 'error',
           });
         }
         break;
@@ -254,7 +255,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'TYPE_MISMATCH',
             message: `Field '${field.name}' must be a string for enum type, got ${typeof value}`,
-            severity: 'error'
+            severity: 'error',
           });
           return;
         }
@@ -265,7 +266,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'INVALID_ENUM_VALUE',
             message: `Field '${field.name}' value '${value}' is not in enum: [${enumValues.join(', ')}]`,
-            severity: 'error'
+            severity: 'error',
           });
         }
 
@@ -275,7 +276,7 @@ export class SchemaValidator {
             field: field.name,
             code: 'EMPTY_ENUM',
             message: `Field '${field.name}' has no enum values defined`,
-            severity: 'warning'
+            severity: 'warning',
           });
         }
         break;
@@ -286,9 +287,9 @@ export class SchemaValidator {
    * Validate schema-level constraints
    */
   private validateSchemaConstraints(
-    schema: SchemaConfig, 
-    testData: Record<string, any>, 
-    errors: ValidationError[], 
+    schema: SchemaConfig,
+    testData: Record<string, any>,
+    errors: ValidationError[],
     warnings: ValidationWarning[]
   ): void {
     // Check for schema name
@@ -296,7 +297,7 @@ export class SchemaValidator {
       errors.push({
         code: 'SCHEMA_NAME_MISSING',
         message: 'Schema name is required',
-        severity: 'error'
+        severity: 'error',
       });
     }
 
@@ -305,29 +306,29 @@ export class SchemaValidator {
       errors.push({
         code: 'EMPTY_SCHEMA',
         message: 'Schema must have at least one field',
-        severity: 'error'
+        severity: 'error',
       });
     }
 
     // Check for duplicate field names
-    const fieldNames = schema.fields.map(f => f.name);
+    const fieldNames = schema.fields.map((f) => f.name);
     const duplicateNames = fieldNames.filter((name, index) => fieldNames.indexOf(name) !== index);
-    
+
     if (duplicateNames.length > 0) {
       errors.push({
         code: 'DUPLICATE_FIELD_NAMES',
         message: `Duplicate field names found: [${[...new Set(duplicateNames)].join(', ')}]`,
-        severity: 'error'
+        severity: 'error',
       });
     }
 
     // Check for invalid field names
-    const invalidFieldNames = fieldNames.filter(name => !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name));
+    const invalidFieldNames = fieldNames.filter((name) => !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name));
     if (invalidFieldNames.length > 0) {
       warnings.push({
         code: 'INVALID_FIELD_NAMES',
         message: `Field names should follow naming conventions: [${invalidFieldNames.join(', ')}]`,
-        severity: 'warning'
+        severity: 'warning',
       });
     }
 
@@ -336,7 +337,7 @@ export class SchemaValidator {
       warnings.push({
         code: 'MANY_FIELDS',
         message: `Schema has ${schema.fields.length} fields, consider breaking it down`,
-        severity: 'warning'
+        severity: 'warning',
       });
     }
   }
@@ -346,7 +347,7 @@ export class SchemaValidator {
    */
   private generateTestData(schema: SchemaConfig): Record<string, any> {
     const testData: Record<string, any> = {};
-    
+
     for (const field of schema.fields) {
       switch (field.type) {
         case 'string':
@@ -366,7 +367,7 @@ export class SchemaValidator {
           break;
       }
     }
-    
+
     return testData;
   }
 
@@ -378,11 +379,11 @@ export class SchemaValidator {
       // For patterns, generate a simple test string
       return 'test_string';
     }
-    
+
     if (field.description) {
       return field.description;
     }
-    
+
     return field.name;
   }
 
@@ -392,7 +393,7 @@ export class SchemaValidator {
   private generateIntegerTestValue(field: SchemaField): number {
     const min = field.constraints.min || 0;
     const max = field.constraints.max || min + 100;
-    
+
     // Generate a value within the valid range
     return min + Math.floor(Math.random() * (max - min + 1));
   }
@@ -402,11 +403,11 @@ export class SchemaValidator {
    */
   private generateEnumTestValue(field: SchemaField): string {
     const enumValues = field.constraints.enumValues || [];
-    
+
     if (enumValues.length === 0) {
       return 'test_enum_value';
     }
-    
+
     return enumValues[0];
   }
 
@@ -425,11 +426,11 @@ export class SchemaValidator {
               field: field.name,
               code: 'TYPE_MISMATCH',
               message: `Expected string, got ${typeof value}`,
-              severity: 'error'
+              severity: 'error',
             };
           }
           return null;
-        }
+        },
       },
       {
         name: 'String Length Check',
@@ -440,12 +441,12 @@ export class SchemaValidator {
               field: field.name,
               code: 'LONG_STRING',
               message: `String is very long (${value.length} characters)`,
-              severity: 'warning'
+              severity: 'warning',
             };
           }
           return null;
-        }
-      }
+        },
+      },
     ]);
 
     // Integer validation rules
@@ -459,11 +460,11 @@ export class SchemaValidator {
               field: field.name,
               code: 'TYPE_MISMATCH',
               message: `Expected integer, got ${typeof value}`,
-              severity: 'error'
+              severity: 'error',
             };
           }
           return null;
-        }
+        },
       },
       {
         name: 'Integer Range Check',
@@ -474,12 +475,12 @@ export class SchemaValidator {
               field: field.name,
               code: 'LARGE_INTEGER',
               message: `Integer is very large (${value})`,
-              severity: 'warning'
+              severity: 'warning',
             };
           }
           return null;
-        }
-      }
+        },
+      },
     ]);
 
     // Boolean validation rules
@@ -493,12 +494,12 @@ export class SchemaValidator {
               field: field.name,
               code: 'TYPE_MISMATCH',
               message: `Expected boolean, got ${typeof value}`,
-              severity: 'error'
+              severity: 'error',
             };
           }
           return null;
-        }
-      }
+        },
+      },
     ]);
 
     // Enum validation rules
@@ -512,28 +513,28 @@ export class SchemaValidator {
               field: field.name,
               code: 'TYPE_MISMATCH',
               message: `Expected string for enum, got ${typeof value}`,
-              severity: 'error'
+              severity: 'error',
             };
           }
           return null;
-        }
+        },
       },
       {
         name: 'Enum Values Check',
         description: 'Check enum has valid values',
-        validate: (field, value) => {
+        validate: (field, _value) => {
           const enumValues = field.constraints.enumValues || [];
           if (enumValues.length === 0) {
             return {
               field: field.name,
               code: 'EMPTY_ENUM',
               message: 'Enum has no values defined',
-              severity: 'warning'
+              severity: 'warning',
             };
           }
           return null;
-        }
-      }
+        },
+      },
     ]);
   }
 
@@ -553,7 +554,7 @@ export class SchemaValidator {
   removeRule(fieldType: string, ruleName: string): void {
     const rules = this.rules.get(fieldType);
     if (rules) {
-      const index = rules.findIndex(rule => rule.name === ruleName);
+      const index = rules.findIndex((rule) => rule.name === ruleName);
       if (index >= 0) {
         rules.splice(index, 1);
       }
@@ -570,7 +571,10 @@ export class SchemaValidator {
   /**
    * Validate single field value
    */
-  validateFieldValue(field: SchemaField, value: any): {
+  validateFieldValue(
+    field: SchemaField,
+    value: any
+  ): {
     errors: ValidationError[];
     warnings: ValidationWarning[];
   } {
@@ -591,7 +595,7 @@ export class SchemaValidator {
   } {
     const stats = {
       totalRules: 0,
-      rulesByType: {} as Record<string, number>
+      rulesByType: {} as Record<string, number>,
     };
 
     for (const [fieldType, rules] of this.rules) {

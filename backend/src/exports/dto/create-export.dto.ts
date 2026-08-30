@@ -1,4 +1,4 @@
 export class CreateExportDto {
   userId: string;
-  format: 'csv' | 'json' | 'parquet';
+  format: "csv" | "json" | "parquet";
 }

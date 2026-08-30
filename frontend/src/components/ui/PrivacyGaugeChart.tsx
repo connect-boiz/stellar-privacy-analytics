@@ -7,10 +7,10 @@ interface PrivacyGaugeChartProps {
   showLabels?: boolean;
 }
 
-const PrivacyGaugeChart: React.FC<PrivacyGaugeChartProps> = ({ 
-  percentage, 
+const PrivacyGaugeChart: React.FC<PrivacyGaugeChartProps> = ({
+  percentage,
   size = 200,
-  showLabels = true 
+  showLabels = true,
 }) => {
   // Color based on percentage
   const getColor = (pct: number) => {
@@ -20,10 +20,10 @@ const PrivacyGaugeChart: React.FC<PrivacyGaugeChartProps> = ({
   };
 
   const remaining = 100 - percentage;
-  
+
   const data = [
     { name: 'Used', value: percentage, color: getColor(percentage) },
-    { name: 'Remaining', value: remaining, color: '#e5e7eb' }
+    { name: 'Remaining', value: remaining, color: '#e5e7eb' },
   ];
 
   // Calculate the angles for the gauge
@@ -53,31 +53,28 @@ const PrivacyGaugeChart: React.FC<PrivacyGaugeChartProps> = ({
           </Pie>
         </PieChart>
       </ResponsiveContainer>
-      
+
       {/* Center text */}
-      <div 
+      <div
         className="absolute inset-0 flex flex-col items-center justify-center"
         style={{ top: '40%' }}
       >
-        <div 
+        <div
           className="text-2xl font-bold"
-          style={{ 
+          style={{
             color: getColor(percentage),
-            fontSize: size * 0.12
+            fontSize: size * 0.12,
           }}
         >
           {remaining.toFixed(1)}%
         </div>
         {showLabels && (
-          <div 
-            className="text-xs text-gray-600 mt-1"
-            style={{ fontSize: size * 0.04 }}
-          >
+          <div className="text-xs text-gray-600 mt-1" style={{ fontSize: size * 0.04 }}>
             Remaining
           </div>
         )}
       </div>
-      
+
       {/* Scale markers */}
       <div className="absolute inset-0">
         <svg width={size} height={size * 0.6} className="overflow-visible">
@@ -89,27 +86,19 @@ const PrivacyGaugeChart: React.FC<PrivacyGaugeChartProps> = ({
             const y1 = size * 0.7 + Math.sin(angleRad) * (outerRadius + 5);
             const x2 = size * 0.5 + Math.cos(angleRad) * (outerRadius + 10);
             const y2 = size * 0.7 + Math.sin(angleRad) * (outerRadius + 10);
-            
+
             return (
-              <line
-                key={value}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke="#9ca3af"
-                strokeWidth="1"
-              />
+              <line key={value} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#9ca3af" strokeWidth="1" />
             );
           })}
-          
+
           {/* Scale labels */}
           {[0, 25, 50, 75, 100].map((value) => {
             const angle = startAngle + (endAngle - startAngle) * (value / 100);
             const angleRad = (angle * Math.PI) / 180;
             const x = size * 0.5 + Math.cos(angleRad) * (outerRadius + 20);
             const y = size * 0.7 + Math.sin(angleRad) * (outerRadius + 20);
-            
+
             return (
               <text
                 key={value}

@@ -1,8 +1,18 @@
-export type CertificationStatus = 'pending' | 'validated' | 'expired' | 'revoked';
-export type CertificationType = 'GDPR' | 'CCPA' | 'HIPAA' | 'ISO27001' | 'SOC2' | 'CUSTOM';
-export type CheckType = 'automated' | 'manual' | 'third-party';
-export type ValidationStatus = 'pending' | 'approved' | 'rejected';
-export type ComplianceStatus = 'compliant' | 'non_compliant' | 'pending_review';
+export type CertificationStatus =
+  | "pending"
+  | "validated"
+  | "expired"
+  | "revoked";
+export type CertificationType =
+  | "GDPR"
+  | "CCPA"
+  | "HIPAA"
+  | "ISO27001"
+  | "SOC2"
+  | "CUSTOM";
+export type CheckType = "automated" | "manual" | "third-party";
+export type ValidationStatus = "pending" | "approved" | "rejected";
+export type ComplianceStatus = "compliant" | "non_compliant" | "pending_review";
 
 export interface ValidationRecord {
   id: string;
@@ -51,7 +61,7 @@ export interface Certification {
   certificationType: CertificationType;
   organizationName: string;
   contactEmail: string;
-  privacyLevel: 'low' | 'medium' | 'high';
+  privacyLevel: "low" | "medium" | "high";
   complianceChecks: string[];
   status: CertificationStatus;
   verificationCode: string;
@@ -69,7 +79,7 @@ export interface CertificationGenerationRequest {
   certificationType: CertificationType;
   organizationName: string;
   contactEmail: string;
-  privacyLevel: 'low' | 'medium' | 'high';
+  privacyLevel: "low" | "medium" | "high";
   complianceChecks: string[];
 }
 
@@ -87,8 +97,8 @@ export interface ComplianceCheckRequest {
 
 export interface BadgeGenerationRequest {
   certificationId: string;
-  format: 'svg' | 'png' | 'json';
-  size: 'small' | 'medium' | 'large';
+  format: "svg" | "png" | "json";
+  size: "small" | "medium" | "large";
 }
 
 export interface CertificationRevocationRequest {
@@ -118,14 +128,14 @@ export interface CertificationFilter {
   certificationType?: CertificationType;
   dateFrom?: Date;
   dateTo?: Date;
-  privacyLevel?: 'low' | 'medium' | 'high';
+  privacyLevel?: "low" | "medium" | "high";
 }
 
 export interface CertificationStats {
   total: number;
   byStatus: Record<CertificationStatus, number>;
   byType: Record<CertificationType, number>;
-  byPrivacyLevel: Record<'low' | 'medium' | 'high', number>;
+  byPrivacyLevel: Record<"low" | "medium" | "high", number>;
   expiringIn30Days: number;
   averageValidationScore: number;
 }
@@ -147,7 +157,7 @@ export interface IndustryStandard {
 export interface ThirdPartyValidator {
   id: string;
   name: string;
-  type: 'automated' | 'human' | 'hybrid';
+  type: "automated" | "human" | "hybrid";
   accreditation?: string;
   apiUrl?: string;
   isActive: boolean;

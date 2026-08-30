@@ -1,8 +1,8 @@
-import { create } from 'ipfs-http-client';
-import axios from 'axios';
-import FormData from 'form-data';
-import crypto from 'crypto';
-import logger from '../utils/logger';
+import { create } from "ipfs-http-client";
+import axios from "axios";
+import FormData from "form-data";
+import crypto from "crypto";
+import logger from "../utils/logger";
 
 export interface IPFSDataset {
   cid: string;
@@ -48,16 +48,18 @@ class IPFSService {
   constructor() {
     // Initialize IPFS client (local or remote)
     this.ipfsClient = create({
-      url: process.env.IPFS_GATEWAY_URL || 'http://localhost:5001',
+      url: process.env.IPFS_GATEWAY_URL || "http://localhost:5001",
     });
 
     // Pinata configuration
-    this.pinataApiKey = process.env.PINATA_API_KEY || '';
-    this.pinataSecretKey = process.env.PINATA_SECRET_KEY || '';
-    this.pinataBaseUrl = 'https://api.pinata.cloud';
+    this.pinataApiKey = process.env.PINATA_API_KEY || "";
+    this.pinataSecretKey = process.env.PINATA_SECRET_KEY || "";
+    this.pinataBaseUrl = "https://api.pinata.cloud";
 
     if (!this.pinataApiKey || !this.pinataSecretKey) {
-      logger.warn('Pinata credentials not configured. IPFS pinning will not work.');
+      logger.warn(
+        "Pinata credentials not configured. IPFS pinning will not work.",
+      );
     }
   }
 
@@ -67,12 +69,12 @@ class IPFSService {
   async uploadAndPinFile(
     file: Buffer,
     fileName: string,
-    options: {
+    _options: {
       encrypted?: boolean;
       version?: number;
       uploader?: string;
       decryptionKeyHash?: string;
-    } = {}
+    } = {},
   ): Promise<{ cid: string; size: number }> {
     try {
       // Upload to local IPFS node
@@ -89,7 +91,7 @@ class IPFSService {
       logger.info(`File uploaded to IPFS: ${cid} (${size} bytes)`);
       return { cid, size };
     } catch (error) {
-      logger.error('Error uploading file to IPFS:', error);
+      logger.error("Error uploading file to IPFS:", error);
       throw new Error(`IPFS upload failed: ${error.message}`);
     }
   }
@@ -99,10 +101,10 @@ class IPFSService {
    */
   async pinToPinata(cid: string, fileName?: string): Promise<PinataResponse> {
     try {
-      const url = `${this.pinataBaseUrl}/pinning/pinFileToIPFS`;
-      
-      const formData = new FormData();
-      
+      const _url = `${this.pinataBaseUrl}/pinning/pinFileToIPFS`;
+
+      const _formData = new FormData();
+
       // If we have the file content, upload it directly
       if (fileName) {
         // For direct file upload, we would need the file buffer
@@ -119,23 +121,23 @@ class IPFSService {
             name: fileName || `dataset-${cid}`,
             keyvalues: {
               timestamp: Date.now().toString(),
-              source: 'stellar-privacy-analytics'
-            }
-          }
+              source: "stellar-privacy-analytics",
+            },
+          },
         },
         {
           headers: {
-            'pinata_api_key': this.pinataApiKey,
-            'pinata_secret_api_key': this.pinataSecretKey,
-            'Content-Type': 'application/json'
-          }
-        }
+            pinata_api_key: this.pinataApiKey,
+            pinata_secret_api_key: this.pinataSecretKey,
+            "Content-Type": "application/json",
+          },
+        },
       );
 
       logger.info(`CID pinned to Pinata: ${cid}`);
       return pinByHashResponse.data;
     } catch (error) {
-      logger.error('Error pinning to Pinata:', error);
+      logger.error("Error pinning to Pinata:", error);
       throw new Error(`Pinata pinning failed: ${error.message}`);
     }
   }
@@ -162,14 +164,14 @@ class IPFSService {
       const url = `${this.pinataBaseUrl}/pinning/pinList?hashContains=${cid}`;
       const response = await axios.get(url, {
         headers: {
-          'pinata_api_key': this.pinataApiKey,
-          'pinata_secret_api_key': this.pinataSecretKey
-        }
+          pinata_api_key: this.pinataApiKey,
+          pinata_secret_api_key: this.pinataSecretKey,
+        },
       });
 
       return response.data.rows?.[0] || null;
     } catch (error) {
-      logger.error('Error getting pin info:', error);
+      logger.error("Error getting pin info:", error);
       return null;
     }
   }
@@ -182,14 +184,14 @@ class IPFSService {
       const url = `${this.pinataBaseUrl}/data/filecoinDeals?cid=${cid}`;
       const response = await axios.get(url, {
         headers: {
-          'pinata_api_key': this.pinataApiKey,
-          'pinata_secret_api_key': this.pinataSecretKey
-        }
+          pinata_api_key: this.pinataApiKey,
+          pinata_secret_api_key: this.pinataSecretKey,
+        },
       });
 
       return response.data.deals || [];
     } catch (error) {
-      logger.error('Error getting Filecoin deals:', error);
+      logger.error("Error getting Filecoin deals:", error);
       return [];
     }
   }
@@ -202,14 +204,14 @@ class IPFSService {
       const url = `${this.pinataBaseUrl}/pinning/unpin/${cid}`;
       await axios.delete(url, {
         headers: {
-          'pinata_api_key': this.pinataApiKey,
-          'pinata_secret_api_key': this.pinataSecretKey
-        }
+          pinata_api_key: this.pinataApiKey,
+          pinata_secret_api_key: this.pinataSecretKey,
+        },
       });
 
       logger.info(`CID unpinned from Pinata: ${cid}`);
     } catch (error) {
-      logger.error('Error unpinning from Pinata:', error);
+      logger.error("Error unpinning from Pinata:", error);
       throw new Error(`Pinata unpinning failed: ${error.message}`);
     }
   }
@@ -225,7 +227,7 @@ class IPFSService {
       }
       return Buffer.concat(chunks);
     } catch (error) {
-      logger.error('Error retrieving file from IPFS:', error);
+      logger.error("Error retrieving file from IPFS:", error);
       throw new Error(`IPFS retrieval failed: ${error.message}`);
     }
   }
@@ -234,7 +236,7 @@ class IPFSService {
    * Generate decryption key hash for secure key storage
    */
   generateDecryptionKeyHash(decryptionKey: string): string {
-    return crypto.createHash('sha256').update(decryptionKey).digest('hex');
+    return crypto.createHash("sha256").update(decryptionKey).digest("hex");
   }
 
   /**
@@ -250,7 +252,7 @@ class IPFSService {
    */
   async createDataAvailabilityRecord(
     cid: string,
-    filecoinDealId?: number
+    filecoinDealId?: number,
   ): Promise<DataAvailability> {
     const isAvailable = await this.checkAvailability(cid);
     const pinInfo = await this.getPinInfo(cid);
@@ -261,7 +263,7 @@ class IPFSService {
       available: isAvailable,
       lastChecked: Date.now(),
       pinCount: pinInfo ? 1 : 0,
-      filecoinDealId: filecoinDealId || deals[0]?.dealId
+      filecoinDealId: filecoinDealId || deals[0]?.dealId,
     };
   }
 
@@ -270,21 +272,22 @@ class IPFSService {
    */
   async batchPin(cids: string[]): Promise<PinataResponse[]> {
     const results = await Promise.allSettled(
-      cids.map(cid => this.pinToPinata(cid))
+      cids.map((cid) => this.pinToPinata(cid)),
     );
 
     return results
-      .filter((result): result is PromiseFulfilledResult<PinataResponse> => 
-        result.status === 'fulfilled'
+      .filter(
+        (result): result is PromiseFulfilledResult<PinataResponse> =>
+          result.status === "fulfilled",
       )
-      .map(result => result.value);
+      .map((result) => result.value);
   }
 
   /**
    * Get IPFS gateway URL for a CID
    */
   getGatewayUrl(cid: string): string {
-    return `${process.env.IPFS_PUBLIC_GATEWAY || 'https://gateway.pinata.cloud'}/ipfs/${cid}`;
+    return `${process.env.IPFS_PUBLIC_GATEWAY || "https://gateway.pinata.cloud"}/ipfs/${cid}`;
   }
 }
 

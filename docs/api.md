@@ -13,13 +13,64 @@ Production: https://your-domain.com/api/v1
 
 ## Authentication
 
-Stellar uses JWT-based authentication with privacy-enhanced features:
+Stellar uses JWT-based authentication with privacy-enhanced features.
+
+> **Issue #413 (WS1): authentication is enforced globally.** Every route under
+> `/api/v1` requires a valid bearer JWT (or API key via `x-api-key`) **except**
+> the explicitly whitelisted public endpoints: `/auth/*`, `/health`, and
+> `/sandbox`. Unauthenticated requests to any other route receive `401`.
+> Client-supplied identity headers (`x-user-id`, `x-session-id`) are never
+> trusted — identity comes only from the verified token.
 
 ```http
 Authorization: Bearer <jwt_token>
 X-Privacy-Level: high|maximum|standard|minimal
 X-Consent: true|false
 ```
+
+### API Keys (service-to-service)
+
+Service accounts authenticate with an API key issued from the `api_keys` table
+(only its SHA-256 digest is stored):
+
+```http
+x-api-key: <your-issued-api-key>
+```
+
+- Keys are verified with constant-time digest comparison against the stored
+  hash and must be active and unexpired (`expires_at`).
+- Permissions and rate-limit tier come from the key row, never from a prefix
+  in the key itself.
+- Bearer tokens are never treated as API keys, and API keys are never treated
+  as JWTs.
+
+### Idempotency (issue #413 WS4)
+
+Mutating endpoints (`POST /data/upload`, `POST /training/assessment/submit`,
+HSM key endpoints, privacy-budget mutations) accept an `Idempotency-Key`
+header (a UUID or 8–128 char `[A-Za-z0-9_-]` token):
+
+```http
+Idempotency-Key: 3f2a1c4e-8b6d-4e5f-9a0b-1c2d3e4f5a6b
+```
+
+A duplicate key replays the stored response instead of executing the handler
+again, so retried requests cannot double-spend, double-award, or create
+duplicate rows. Requests without a key on these endpoints are rejected with
+`400` (`IDEMPOTENCY_KEY_REQUIRED`).
+
+### Rate Limiting (issue #413 WS5)
+
+- Rate limits are enforced per IP behind the configured `trust proxy` hop
+  count; spoofable headers (`x-forwarded-for`, `x-client-ip`) are not trusted
+  as the key without the proxy.
+- The limiter **fails closed**: if the rate-limit store is unavailable,
+  protected routes return `503` rather than opening to traffic.
+- There is **no public emergency-bypass key**. Auth endpoints are throttled
+  per IP and accounts are locked for 15 minutes after repeated failed
+  logins.
+
+### Authentication Endpoints
 
 ### Authentication Endpoints
 
@@ -89,14 +140,23 @@ POST /data/upload
 
 **Headers:**
 - `Content-Type: multipart/form-data`
+- `Idempotency-Key: <uuid>` (required — issue #413 WS4)
 - `X-Privacy-Level: high`
 
-**Request Body:**
+**Request Body (multipart):**
 ```
 file: <dataset_file>
-privacyLevel: "high"
-encryptionRequired: true
+name: "My Dataset"
+size: <actual byte count>
 ```
+
+**WS3 upload hardening (issue #413):**
+- Uploads are capped at **100 MB** server-side (multer `fileSize` limit);
+  oversized uploads are rejected with `413 PAYLOAD_TOO_LARGE` before any
+  processing.
+- The client-reported `size` is **verified against the actual multipart
+  bytes**; a mismatch returns `400 SIZE_MISMATCH`. The stored size is always
+  the actual byte count, and a SHA-256 content hash is recorded.
 
 **Response:**
 ```json

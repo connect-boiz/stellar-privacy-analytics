@@ -2,21 +2,6 @@
  * Performance profiling and optimization utilities for chart rendering
  */
 
-// Extend Performance interface to include memory API
-declare global {
-  interface Performance {
-    memory?: {
-      usedJSHeapSize: number;
-      totalJSHeapSize: number;
-      jsHeapSizeLimit: number;
-    };
-  }
-
-  interface Window {
-    gc?: () => void;
-  }
-}
-
 export interface ProfileMetrics {
   renderTime: number;
   memoryUsage: number;
@@ -43,7 +28,7 @@ export class PerformanceProfiler {
     maxSamples: 100,
     enableFpsTracking: true,
     enableMemoryTracking: true,
-    enableCpuTracking: false
+    enableCpuTracking: false,
   };
   private intervalId: number | null = null;
   private frameCount: number = 0;
@@ -108,7 +93,8 @@ export class PerformanceProfiler {
 
       // Check for frame drops (target 60fps = 16.67ms per frame)
       const frameTime = currentTime - this.lastFrameTime;
-      if (frameTime > 16.67 * 2) { // More than 2 frames behind
+      if (frameTime > 16.67 * 2) {
+        // More than 2 frames behind
         this.frameDrops++;
       }
 
@@ -127,7 +113,7 @@ export class PerformanceProfiler {
       fps: this.calculateFps(),
       frameDrops: this.frameDrops,
       cpuTime: 0,
-      timestamp
+      timestamp,
     };
 
     if (this.options.enableMemoryTracking && performance.memory) {
@@ -170,13 +156,16 @@ export class PerformanceProfiler {
   public getAverageMetrics(): Partial<ProfileMetrics> {
     if (this.metrics.length === 0) return {};
 
-    const sum = this.metrics.reduce((acc, metric) => ({
-      renderTime: acc.renderTime + metric.renderTime,
-      memoryUsage: acc.memoryUsage + metric.memoryUsage,
-      fps: acc.fps + metric.fps,
-      frameDrops: acc.frameDrops + metric.frameDrops,
-      cpuTime: acc.cpuTime + metric.cpuTime
-    }), { renderTime: 0, memoryUsage: 0, fps: 0, frameDrops: 0, cpuTime: 0 });
+    const sum = this.metrics.reduce(
+      (acc, metric) => ({
+        renderTime: acc.renderTime + metric.renderTime,
+        memoryUsage: acc.memoryUsage + metric.memoryUsage,
+        fps: acc.fps + metric.fps,
+        frameDrops: acc.frameDrops + metric.frameDrops,
+        cpuTime: acc.cpuTime + metric.cpuTime,
+      }),
+      { renderTime: 0, memoryUsage: 0, fps: 0, frameDrops: 0, cpuTime: 0 }
+    );
 
     const count = this.metrics.length;
     return {
@@ -184,7 +173,7 @@ export class PerformanceProfiler {
       memoryUsage: sum.memoryUsage / count,
       fps: sum.fps / count,
       frameDrops: sum.frameDrops / count,
-      cpuTime: sum.cpuTime / count
+      cpuTime: sum.cpuTime / count,
     };
   }
 
@@ -221,13 +210,17 @@ export class PerformanceProfiler {
   }
 
   public exportMetrics(): string {
-    return JSON.stringify({
-      metrics: this.metrics,
-      average: this.getAverageMetrics(),
-      score: this.getPerformanceScore(),
-      options: this.options,
-      exportedAt: new Date().toISOString()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        metrics: this.metrics,
+        average: this.getAverageMetrics(),
+        score: this.getPerformanceScore(),
+        options: this.options,
+        exportedAt: new Date().toISOString(),
+      },
+      null,
+      2
+    );
   }
 
   public clearMetrics(): void {
@@ -282,7 +275,10 @@ export class ChartPerformanceOptimizer {
     this.renderCache.clear();
   }
 
-  public optimizeChartConfig(config: any, memoryPressure: 'low' | 'medium' | 'high' | 'critical'): any {
+  public optimizeChartConfig(
+    config: any,
+    memoryPressure: 'low' | 'medium' | 'high' | 'critical'
+  ): any {
     const optimized = { ...config };
 
     switch (memoryPressure) {
@@ -396,7 +392,7 @@ export class MemoryLeakDetector {
     const memoryInfo = {
       used: performance.memory.usedJSHeapSize || 0,
       total: performance.memory.totalJSHeapSize || 0,
-      limit: performance.memory.jsHeapSizeLimit || 0
+      limit: performance.memory.jsHeapSizeLimit || 0,
     };
 
     const usagePercentage = memoryInfo.limit > 0 ? memoryInfo.used / memoryInfo.limit : 0;
@@ -405,7 +401,7 @@ export class MemoryLeakDetector {
       console.warn('High memory usage detected:', {
         usage: `${(usagePercentage * 100).toFixed(1)}%`,
         used: `${(memoryInfo.used / 1024 / 1024).toFixed(1)} MB`,
-        objectCounts: Object.fromEntries(this.objectCounts)
+        objectCounts: Object.fromEntries(this.objectCounts),
       });
 
       // Suggest garbage collection

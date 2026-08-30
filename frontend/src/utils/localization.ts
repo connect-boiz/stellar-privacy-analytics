@@ -2,136 +2,136 @@ import { useTranslation } from 'react-i18next';
 
 // Locale configurations for different languages
 const localeConfigs = {
-  en: { 
-    locale: 'en-US', 
-    currency: 'USD', 
-    dateFormat: { 
-      short: 'MM/dd/yyyy', 
-      medium: 'MMM d, yyyy', 
-      long: 'MMMM d, yyyy' 
+  en: {
+    locale: 'en-US',
+    currency: 'USD',
+    dateFormat: {
+      short: 'MM/dd/yyyy',
+      medium: 'MMM d, yyyy',
+      long: 'MMMM d, yyyy',
     },
-    timeFormat: { 
-      short: 'h:mm a', 
-      medium: 'h:mm:ss a' 
-    }
+    timeFormat: {
+      short: 'h:mm a',
+      medium: 'h:mm:ss a',
+    },
   },
-  es: { 
-    locale: 'es-ES', 
-    currency: 'EUR', 
-    dateFormat: { 
-      short: 'dd/MM/yyyy', 
-      medium: 'd MMM yyyy', 
-      long: 'd MMMM yyyy' 
+  es: {
+    locale: 'es-ES',
+    currency: 'EUR',
+    dateFormat: {
+      short: 'dd/MM/yyyy',
+      medium: 'd MMM yyyy',
+      long: 'd MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
   },
-  fr: { 
-    locale: 'fr-FR', 
-    currency: 'EUR', 
-    dateFormat: { 
-      short: 'dd/MM/yyyy', 
-      medium: 'd MMM yyyy', 
-      long: 'd MMMM yyyy' 
+  fr: {
+    locale: 'fr-FR',
+    currency: 'EUR',
+    dateFormat: {
+      short: 'dd/MM/yyyy',
+      medium: 'd MMM yyyy',
+      long: 'd MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
   },
-  de: { 
-    locale: 'de-DE', 
-    currency: 'EUR', 
-    dateFormat: { 
-      short: 'dd.MM.yyyy', 
-      medium: 'd. MMM yyyy', 
-      long: 'd. MMMM yyyy' 
+  de: {
+    locale: 'de-DE',
+    currency: 'EUR',
+    dateFormat: {
+      short: 'dd.MM.yyyy',
+      medium: 'd. MMM yyyy',
+      long: 'd. MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
   },
-  zh: { 
-    locale: 'zh-CN', 
-    currency: 'CNY', 
-    dateFormat: { 
-      short: 'yyyy/MM/dd', 
-      medium: 'yyyy年M月d日', 
-      long: 'yyyy年M月d日' 
+  zh: {
+    locale: 'zh-CN',
+    currency: 'CNY',
+    dateFormat: {
+      short: 'yyyy/MM/dd',
+      medium: 'yyyy年M月d日',
+      long: 'yyyy年M月d日',
     },
-    timeFormat: { 
-      short: 'HH:mm', 
-      medium: 'HH:mm:ss' 
-    }
+    timeFormat: {
+      short: 'HH:mm',
+      medium: 'HH:mm:ss',
+    },
   },
-  ar: { 
-    locale: 'ar-SA', 
-    currency: 'SAR', 
-    dateFormat: { 
-      short: 'dd/MM/yyyy', 
-      medium: 'dd MMMM yyyy', 
-      long: 'dd MMMM yyyy' 
+  ar: {
+    locale: 'ar-SA',
+    currency: 'SAR',
+    dateFormat: {
+      short: 'dd/MM/yyyy',
+      medium: 'dd MMMM yyyy',
+      long: 'dd MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
   },
-  ja: { 
-    locale: 'ja-JP', 
-    currency: 'JPY', 
-    dateFormat: { 
-      short: 'yyyy/MM/dd', 
-      medium: 'yyyy年M月d日', 
-      long: 'yyyy年M月d日' 
+  ja: {
+    locale: 'ja-JP',
+    currency: 'JPY',
+    dateFormat: {
+      short: 'yyyy/MM/dd',
+      medium: 'yyyy年M月d日',
+      long: 'yyyy年M月d日',
     },
-    timeFormat: { 
-      short: 'HH:mm', 
-      medium: 'HH:mm:ss' 
-    }
+    timeFormat: {
+      short: 'HH:mm',
+      medium: 'HH:mm:ss',
+    },
   },
-  hi: { 
-    locale: 'hi-IN', 
-    currency: 'INR', 
-    dateFormat: { 
-      short: 'dd/MM/yyyy', 
-      medium: 'd MMM yyyy', 
-      long: 'd MMMM yyyy' 
+  hi: {
+    locale: 'hi-IN',
+    currency: 'INR',
+    dateFormat: {
+      short: 'dd/MM/yyyy',
+      medium: 'd MMM yyyy',
+      long: 'd MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
   },
-  pt: { 
-    locale: 'pt-BR', 
-    currency: 'BRL', 
-    dateFormat: { 
-      short: 'dd/MM/yyyy', 
-      medium: 'd MMM yyyy', 
-      long: 'd MMMM yyyy' 
+  pt: {
+    locale: 'pt-BR',
+    currency: 'BRL',
+    dateFormat: {
+      short: 'dd/MM/yyyy',
+      medium: 'd MMM yyyy',
+      long: 'd MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
   },
-  ru: { 
-    locale: 'ru-RU', 
-    currency: 'RUB', 
-    dateFormat: { 
-      short: 'dd.MM.yyyy', 
-      medium: 'd MMM yyyy', 
-      long: 'd MMMM yyyy' 
+  ru: {
+    locale: 'ru-RU',
+    currency: 'RUB',
+    dateFormat: {
+      short: 'dd.MM.yyyy',
+      medium: 'd MMM yyyy',
+      long: 'd MMMM yyyy',
     },
-    timeFormat: { 
-      short: 'H:mm', 
-      medium: 'H:mm:ss' 
-    }
-  }
+    timeFormat: {
+      short: 'H:mm',
+      medium: 'H:mm:ss',
+    },
+  },
 };
 
 // Measurement unit configurations
@@ -140,14 +140,14 @@ const measurementUnits = {
     length: { base: 'km', small: 'm', tiny: 'cm' },
     weight: { base: 'kg', small: 'g' },
     volume: { base: 'l', small: 'ml' },
-    temperature: { unit: '°C' }
+    temperature: { unit: '°C' },
   },
   imperial: {
     length: { base: 'mi', small: 'ft', tiny: 'in' },
     weight: { base: 'lb', small: 'oz' },
     volume: { base: 'gal', small: 'fl oz' },
-    temperature: { unit: '°F' }
-  }
+    temperature: { unit: '°F' },
+  },
 };
 
 // Hook for localization utilities
@@ -189,11 +189,14 @@ export const useLocalization = () => {
   };
 
   // Format date
-  const formatDate = (date: Date | string | number, format: 'short' | 'medium' | 'long' = 'medium') => {
+  const formatDate = (
+    date: Date | string | number,
+    format: 'short' | 'medium' | 'long' = 'medium'
+  ) => {
     try {
       const dateObj = new Date(date);
       if (isNaN(dateObj.getTime())) return 'Invalid Date';
-      
+
       return new Intl.DateTimeFormat(config.locale, {
         dateStyle: format,
       }).format(dateObj);
@@ -208,7 +211,7 @@ export const useLocalization = () => {
     try {
       const dateObj = new Date(date);
       if (isNaN(dateObj.getTime())) return 'Invalid Date';
-      
+
       return new Intl.DateTimeFormat(config.locale, {
         timeStyle: format,
       }).format(dateObj);
@@ -219,11 +222,14 @@ export const useLocalization = () => {
   };
 
   // Format date and time
-  const formatDateTime = (date: Date | string | number, dateFormat: 'short' | 'medium' | 'long' = 'medium') => {
+  const formatDateTime = (
+    date: Date | string | number,
+    dateFormat: 'short' | 'medium' | 'long' = 'medium'
+  ) => {
     try {
       const dateObj = new Date(date);
       if (isNaN(dateObj.getTime())) return 'Invalid Date';
-      
+
       return new Intl.DateTimeFormat(config.locale, {
         dateStyle: dateFormat,
         timeStyle: 'short',
@@ -239,7 +245,7 @@ export const useLocalization = () => {
     try {
       const dateObj = new Date(date);
       if (isNaN(dateObj.getTime())) return 'Invalid Date';
-      
+
       const now = new Date();
       const diffMs = now.getTime() - dateObj.getTime();
       const diffSeconds = Math.floor(diffMs / 1000);
@@ -285,10 +291,13 @@ export const useLocalization = () => {
   };
 
   // Format measurement value
-  const formatMeasurement = (value: number, type: 'length' | 'weight' | 'volume' | 'temperature') => {
+  const formatMeasurement = (
+    value: number,
+    type: 'length' | 'weight' | 'volume' | 'temperature'
+  ) => {
     const system = getMeasurementSystem();
     const units = measurementUnits[system][type];
-    
+
     switch (type) {
       case 'length':
         if (system === 'imperial') {
@@ -312,7 +321,7 @@ export const useLocalization = () => {
           }
           return `${formatNumber(value * 100, { maximumFractionDigits: 0 })} ${units.tiny}`;
         }
-      
+
       case 'weight':
         if (system === 'imperial') {
           const pounds = value / 0.453592;
@@ -328,7 +337,7 @@ export const useLocalization = () => {
           }
           return `${formatNumber(value, { maximumFractionDigits: 0 })} ${units.small}`;
         }
-      
+
       case 'volume':
         if (system === 'imperial') {
           const gallons = value / 3.78541;
@@ -344,15 +353,15 @@ export const useLocalization = () => {
           }
           return `${formatNumber(value, { maximumFractionDigits: 0 })} ${units.small}`;
         }
-      
+
       case 'temperature':
         if (system === 'imperial') {
-          const fahrenheit = (value * 9/5) + 32;
+          const fahrenheit = (value * 9) / 5 + 32;
           return `${formatNumber(fahrenheit, { maximumFractionDigits: 0 })}${units.unit}`;
         } else {
           return `${formatNumber(value, { maximumFractionDigits: 0 })}${units.unit}`;
         }
-      
+
       default:
         return formatNumber(value);
     }

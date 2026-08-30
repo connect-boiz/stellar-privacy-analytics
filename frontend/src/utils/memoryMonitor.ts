@@ -10,9 +10,9 @@ interface MemoryInfo {
 }
 
 interface MemoryThresholds {
-  warning: number;    // 0.8 = 80%
-  critical: number;   // 0.9 = 90%
-  emergency: number;  // 0.95 = 95%
+  warning: number; // 0.8 = 80%
+  critical: number; // 0.9 = 90%
+  emergency: number; // 0.95 = 95%
 }
 
 export class MemoryMonitor {
@@ -20,7 +20,7 @@ export class MemoryMonitor {
   private thresholds: MemoryThresholds = {
     warning: 0.8,
     critical: 0.9,
-    emergency: 0.95
+    emergency: 0.95,
   };
   private monitoringInterval: NodeJS.Timeout | null = null;
   private callbacks: Map<string, (memory: MemoryInfo) => void> = new Map();
@@ -45,7 +45,7 @@ export class MemoryMonitor {
       usedJSHeapSize: memory.usedJSHeapSize,
       totalJSHeapSize: memory.totalJSHeapSize,
       jsHeapSizeLimit: memory.jsHeapSizeLimit,
-      usagePercentage
+      usagePercentage,
     };
   }
 
@@ -83,7 +83,7 @@ export class MemoryMonitor {
     this.monitoringInterval = setInterval(() => {
       const memory = this.getMemoryInfo();
       if (memory) {
-        this.callbacks.forEach(callback => callback(memory));
+        this.callbacks.forEach((callback) => callback(memory));
       }
     }, intervalMs);
   }

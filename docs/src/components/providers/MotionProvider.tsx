@@ -1,11 +1,11 @@
-import { createContext, useContext } from 'react'
-import { motion } from 'framer-motion'
+import { createContext, useContext } from "react";
+import { motion } from "framer-motion";
 
 interface MotionProviderProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
-const MotionContext = createContext({})
+const MotionContext = createContext({});
 
 export function MotionProvider({ children }: MotionProviderProps) {
   return (
@@ -18,10 +18,10 @@ export function MotionProvider({ children }: MotionProviderProps) {
         {children}
       </motion.div>
     </MotionContext.Provider>
-  )
+  );
 }
 
 export function useMotion() {
-  const context = useContext(MotionContext)
-  return context
+  const context = useContext(MotionContext);
+  return context;
 }

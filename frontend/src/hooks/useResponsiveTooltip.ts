@@ -26,7 +26,7 @@ export const useResponsiveTooltip = ({
     align: preferredAlign,
     shouldFlip: false,
   });
-  
+
   const triggerRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLElement>(null);
   const viewportRef = useRef({
@@ -45,106 +45,113 @@ export const useResponsiveTooltip = ({
     updateViewport();
     window.addEventListener('resize', updateViewport);
     window.addEventListener('orientationchange', updateViewport);
-    
+
     return () => {
       window.removeEventListener('resize', updateViewport);
       window.removeEventListener('orientationchange', updateViewport);
     };
   }, [updateViewport]);
 
-  const calculateOptimalPosition = useCallback((
-    triggerRect: DOMRect,
-    contentSize: { width: number; height: number }
-  ): TooltipPosition => {
-    const { width: viewportWidth, height: viewportHeight } = viewportRef.current;
-    
-    // Calculate available space for each side
-    const space = {
-      top: triggerRect.top - boundaryPadding,
-      right: viewportWidth - triggerRect.right - boundaryPadding,
-      bottom: viewportHeight - triggerRect.bottom - boundaryPadding,
-      left: triggerRect.left - boundaryPadding,
-    };
+  const calculateOptimalPosition = useCallback(
+    (triggerRect: DOMRect, contentSize: { width: number; height: number }): TooltipPosition => {
+      const { width: viewportWidth, height: viewportHeight } = viewportRef.current;
 
-    // Determine if we need to flip based on available space
-    let optimalSide = preferredSide;
-    let shouldFlip = false;
+      // Calculate available space for each side
+      const space = {
+        top: triggerRect.top - boundaryPadding,
+        right: viewportWidth - triggerRect.right - boundaryPadding,
+        bottom: viewportHeight - triggerRect.bottom - boundaryPadding,
+        left: triggerRect.left - boundaryPadding,
+      };
 
-    if (flipEnabled) {
-      // Check if preferred side has enough space
-      const preferredSpace = space[preferredSide];
-      const requiredSpace = preferredSide === 'top' || preferredSide === 'bottom' 
-        ? contentSize.height + offset 
-        : contentSize.width + offset;
+      // Determine if we need to flip based on available space
+      let optimalSide = preferredSide;
+      let shouldFlip = false;
 
-      if (preferredSpace < requiredSpace) {
-        // Find the side with most space
-        const sides: Array<'top' | 'right' | 'bottom' | 'left'> = ['top', 'right', 'bottom', 'left'];
-        const sortedSides = sides.sort((a, b) => space[b] - space[a]);
-        
-        for (const side of sortedSides) {
-          const sideSpace = space[side];
-          const sideRequiredSpace = side === 'top' || side === 'bottom' 
-            ? contentSize.height + offset 
+      if (flipEnabled) {
+        // Check if preferred side has enough space
+        const preferredSpace = space[preferredSide];
+        const requiredSpace =
+          preferredSide === 'top' || preferredSide === 'bottom'
+            ? contentSize.height + offset
             : contentSize.width + offset;
-          
-          if (sideSpace >= sideRequiredSpace) {
-            optimalSide = side;
-            shouldFlip = side !== preferredSide;
-            break;
+
+        if (preferredSpace < requiredSpace) {
+          // Find the side with most space
+          const sides: Array<'top' | 'right' | 'bottom' | 'left'> = [
+            'top',
+            'right',
+            'bottom',
+            'left',
+          ];
+          const sortedSides = sides.sort((a, b) => space[b] - space[a]);
+
+          for (const side of sortedSides) {
+            const sideSpace = space[side];
+            const sideRequiredSpace =
+              side === 'top' || side === 'bottom'
+                ? contentSize.height + offset
+                : contentSize.width + offset;
+
+            if (sideSpace >= sideRequiredSpace) {
+              optimalSide = side;
+              shouldFlip = side !== preferredSide;
+              break;
+            }
           }
         }
       }
-    }
 
-    // Calculate optimal alignment
-    let optimalAlign = preferredAlign;
-    
-    if (optimalSide === 'top' || optimalSide === 'bottom') {
-      const triggerCenter = triggerRect.left + triggerRect.width / 2;
-      const contentWidth = contentSize.width;
-      
-      // Check if center alignment would overflow
-      if (preferredAlign === 'center') {
-        const leftPosition = triggerCenter - contentWidth / 2;
-        const rightPosition = triggerCenter + contentWidth / 2;
-        
-        if (leftPosition < boundaryPadding) {
-          optimalAlign = 'start';
-        } else if (rightPosition > viewportWidth - boundaryPadding) {
-          optimalAlign = 'end';
+      // Calculate optimal alignment
+      let optimalAlign = preferredAlign;
+
+      if (optimalSide === 'top' || optimalSide === 'bottom') {
+        const triggerCenter = triggerRect.left + triggerRect.width / 2;
+        const contentWidth = contentSize.width;
+
+        // Check if center alignment would overflow
+        if (preferredAlign === 'center') {
+          const leftPosition = triggerCenter - contentWidth / 2;
+          const rightPosition = triggerCenter + contentWidth / 2;
+
+          if (leftPosition < boundaryPadding) {
+            optimalAlign = 'start';
+          } else if (rightPosition > viewportWidth - boundaryPadding) {
+            optimalAlign = 'end';
+          }
+        }
+      } else {
+        const triggerCenter = triggerRect.top + triggerRect.height / 2;
+        const contentHeight = contentSize.height;
+
+        // Check if center alignment would overflow
+        if (preferredAlign === 'center') {
+          const topPosition = triggerCenter - contentHeight / 2;
+          const bottomPosition = triggerCenter + contentHeight / 2;
+
+          if (topPosition < boundaryPadding) {
+            optimalAlign = 'start';
+          } else if (bottomPosition > viewportHeight - boundaryPadding) {
+            optimalAlign = 'end';
+          }
         }
       }
-    } else {
-      const triggerCenter = triggerRect.top + triggerRect.height / 2;
-      const contentHeight = contentSize.height;
-      
-      // Check if center alignment would overflow
-      if (preferredAlign === 'center') {
-        const topPosition = triggerCenter - contentHeight / 2;
-        const bottomPosition = triggerCenter + contentHeight / 2;
-        
-        if (topPosition < boundaryPadding) {
-          optimalAlign = 'start';
-        } else if (bottomPosition > viewportHeight - boundaryPadding) {
-          optimalAlign = 'end';
-        }
-      }
-    }
 
-    return {
-      side: optimalSide,
-      align: optimalAlign,
-      shouldFlip,
-    };
-  }, [preferredSide, preferredAlign, offset, boundaryPadding, flipEnabled]);
+      return {
+        side: optimalSide,
+        align: optimalAlign,
+        shouldFlip,
+      };
+    },
+    [preferredSide, preferredAlign, offset, boundaryPadding, flipEnabled]
+  );
 
   const updatePosition = useCallback(() => {
     if (!triggerRef.current || !contentRef.current) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const contentRect = contentRef.current.getBoundingClientRect();
-    
+
     const contentSize = {
       width: contentRect.width,
       height: contentRect.height,

@@ -1,5 +1,5 @@
-import { EventEmitter } from 'events';
-import { logger } from '../../utils/logger';
+import { EventEmitter } from "events";
+import { logger } from "../../utils/logger";
 
 /**
  * Simplified secure transport for MPC node communication
@@ -16,14 +16,20 @@ export class SecureTransport extends EventEmitter {
     super();
     this.nodeId = nodeId;
     this.isEncrypted = encryptionEnabled;
-    
-    logger.info(`Secure transport initialized for node ${nodeId} with encryption: ${encryptionEnabled}`);
+
+    logger.info(
+      `Secure transport initialized for node ${nodeId} with encryption: ${encryptionEnabled}`,
+    );
   }
 
   /**
    * Connect to another MPC node
    */
-  async connectToNode(remoteNodeId: string, address: string, port: number): Promise<void> {
+  async connectToNode(
+    remoteNodeId: string,
+    address: string,
+    port: number,
+  ): Promise<void> {
     if (this.connections.has(remoteNodeId)) {
       logger.warn(`Already connected to node ${remoteNodeId}`);
       return;
@@ -34,15 +40,15 @@ export class SecureTransport extends EventEmitter {
       nodeId: remoteNodeId,
       address,
       port,
-      status: 'connected',
+      status: "connected",
       lastHeartbeat: new Date(),
-      messageCount: 0
+      messageCount: 0,
     };
 
     this.connections.set(remoteNodeId, connection);
     this.messageQueue.set(remoteNodeId, []);
-    
-    this.emit('connected', remoteNodeId);
+
+    this.emit("connected", remoteNodeId);
     logger.info(`Connected to node ${remoteNodeId} at ${address}:${port}`);
   }
 
@@ -52,11 +58,11 @@ export class SecureTransport extends EventEmitter {
   disconnectFromNode(nodeId: string): void {
     const connection = this.connections.get(nodeId);
     if (connection) {
-      connection.status = 'disconnected';
+      connection.status = "disconnected";
       this.connections.delete(nodeId);
       this.messageQueue.delete(nodeId);
-      
-      this.emit('disconnected', nodeId);
+
+      this.emit("disconnected", nodeId);
       logger.info(`Disconnected from node ${nodeId}`);
     }
   }
@@ -66,41 +72,47 @@ export class SecureTransport extends EventEmitter {
    */
   sendMessage(nodeId: string, message: any): boolean {
     const connection = this.connections.get(nodeId);
-    if (!connection || connection.status !== 'connected') {
+    if (!connection || connection.status !== "connected") {
       logger.warn(`No active connection to node ${nodeId}`);
       return false;
     }
 
     try {
       // Simulate message encryption
-      const encryptedMessage = this.isEncrypted ? this.encryptMessage(message) : message;
-      
+      const encryptedMessage = this.isEncrypted
+        ? this.encryptMessage(message)
+        : message;
+
       // Simulate message sending
       connection.messageCount++;
       connection.lastHeartbeat = new Date();
-      
+
       // Queue message for simulation
       const queue = this.messageQueue.get(nodeId);
       if (queue) {
         if (queue.length >= this.MAX_QUEUE_SIZE) {
           queue.shift(); // Remove oldest message to prevent unbounded growth
-          logger.warn(`Message queue for node ${nodeId} exceeded max size, dropping oldest message`);
+          logger.warn(
+            `Message queue for node ${nodeId} exceeded max size, dropping oldest message`,
+          );
         }
-        
+
         queue.push({
           ...encryptedMessage,
           timestamp: new Date(),
           from: this.nodeId,
-          to: nodeId
+          to: nodeId,
         });
       }
 
-      this.emit('messageSent', nodeId, message);
+      this.emit("messageSent", nodeId, message);
       logger.debug(`Message sent to node ${nodeId}`);
-      
+
       return true;
     } catch (error) {
-      logger.error(`Failed to send message to node ${nodeId}: ${error.message}`);
+      logger.error(
+        `Failed to send message to node ${nodeId}: ${error.message}`,
+      );
       return false;
     }
   }
@@ -124,12 +136,16 @@ export class SecureTransport extends EventEmitter {
   simulateMessageReceived(fromNodeId: string, message: any): void {
     try {
       // Simulate message decryption
-      const decryptedMessage = this.isEncrypted ? this.decryptMessage(message) : message;
-      
-      this.emit('messageReceived', fromNodeId, decryptedMessage);
+      const decryptedMessage = this.isEncrypted
+        ? this.decryptMessage(message)
+        : message;
+
+      this.emit("messageReceived", fromNodeId, decryptedMessage);
       logger.debug(`Message received from node ${fromNodeId}`);
     } catch (error) {
-      logger.error(`Failed to process message from ${fromNodeId}: ${error.message}`);
+      logger.error(
+        `Failed to process message from ${fromNodeId}: ${error.message}`,
+      );
     }
   }
 
@@ -138,7 +154,7 @@ export class SecureTransport extends EventEmitter {
    */
   getConnectionStatus(nodeId: string): ConnectionStatus {
     const connection = this.connections.get(nodeId);
-    return connection ? connection.status : 'disconnected';
+    return connection ? connection.status : "disconnected";
   }
 
   /**
@@ -146,7 +162,7 @@ export class SecureTransport extends EventEmitter {
    */
   getConnectedNodes(): string[] {
     return Array.from(this.connections.keys()).filter(
-      nodeId => this.connections.get(nodeId)?.status === 'connected'
+      (nodeId) => this.connections.get(nodeId)?.status === "connected",
     );
   }
 
@@ -162,9 +178,9 @@ export class SecureTransport extends EventEmitter {
    */
   sendHeartbeat(): void {
     const heartbeat = {
-      type: 'HEARTBEAT',
+      type: "HEARTBEAT",
       timestamp: new Date().toISOString(),
-      nodeId: this.nodeId
+      nodeId: this.nodeId,
     };
 
     this.broadcastMessage(heartbeat);
@@ -177,7 +193,7 @@ export class SecureTransport extends EventEmitter {
     const connection = this.connections.get(nodeId);
     if (connection) {
       connection.lastHeartbeat = new Date();
-      connection.status = 'connected';
+      connection.status = "connected";
     }
   }
 
@@ -189,10 +205,11 @@ export class SecureTransport extends EventEmitter {
     const inactiveNodes: string[] = [];
 
     for (const [nodeId, connection] of this.connections) {
-      const timeSinceLastHeartbeat = now.getTime() - connection.lastHeartbeat.getTime();
+      const timeSinceLastHeartbeat =
+        now.getTime() - connection.lastHeartbeat.getTime();
       if (timeSinceLastHeartbeat > timeoutMs) {
         inactiveNodes.push(nodeId);
-        connection.status = 'inactive';
+        connection.status = "inactive";
       }
     }
 
@@ -207,7 +224,7 @@ export class SecureTransport extends EventEmitter {
     return {
       ...message,
       encrypted: true,
-      checksum: this.calculateChecksum(JSON.stringify(message))
+      checksum: this.calculateChecksum(JSON.stringify(message)),
     };
   }
 
@@ -220,11 +237,11 @@ export class SecureTransport extends EventEmitter {
       return encryptedMessage;
     }
 
-    const { encrypted, checksum, ...message } = encryptedMessage;
+    const { _encrypted, checksum, ...message } = encryptedMessage;
     const calculatedChecksum = this.calculateChecksum(JSON.stringify(message));
-    
+
     if (checksum !== calculatedChecksum) {
-      throw new Error('Message integrity check failed');
+      throw new Error("Message integrity check failed");
     }
 
     return message;
@@ -237,7 +254,7 @@ export class SecureTransport extends EventEmitter {
     let hash = 0;
     for (let i = 0; i < data.length; i++) {
       const char = data.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash.toString(16);
@@ -260,7 +277,7 @@ export class SecureTransport extends EventEmitter {
       totalConnections,
       activeConnections,
       totalMessages,
-      encryptionEnabled: this.isEncrypted
+      encryptionEnabled: this.isEncrypted,
     };
   }
 
@@ -271,15 +288,17 @@ export class SecureTransport extends EventEmitter {
     for (const nodeId of this.connections.keys()) {
       this.disconnectFromNode(nodeId);
     }
-    
+
     // Explicitly clear all maps and buffers
     this.connections.clear();
-    this.messageQueue.forEach(queue => {
+    this.messageQueue.forEach((queue) => {
       queue.length = 0; // Clear array content
     });
     this.messageQueue.clear();
-    
-    logger.info(`Secure transport for node ${this.nodeId} cleaned up and buffers released`);
+
+    logger.info(
+      `Secure transport for node ${this.nodeId} cleaned up and buffers released`,
+    );
   }
 }
 
@@ -298,7 +317,7 @@ interface Connection {
 /**
  * Connection status enum
  */
-type ConnectionStatus = 'connected' | 'disconnected' | 'inactive' | 'error';
+type ConnectionStatus = "connected" | "disconnected" | "inactive" | "error";
 
 /**
  * Transport statistics interface
@@ -327,14 +346,14 @@ export interface MPCMessage {
  * Message types for MPC communication
  */
 export enum MPCMessageType {
-  SESSION_INIT = 'SESSION_INIT',
-  SESSION_JOIN = 'SESSION_JOIN',
-  SESSION_LEAVE = 'SESSION_LEAVE',
-  SHARE_DISTRIBUTION = 'SHARE_DISTRIBUTION',
-  SHARE_ACK = 'SHARE_ACK',
-  COMPUTATION_REQUEST = 'COMPUTATION_REQUEST',
-  COMPUTATION_RESPONSE = 'COMPUTATION_RESPONSE',
-  HEARTBEAT = 'HEARTBEAT',
-  HEARTBEAT_RESPONSE = 'HEARTBEAT_RESPONSE',
-  ERROR = 'ERROR'
+  SESSION_INIT = "SESSION_INIT",
+  SESSION_JOIN = "SESSION_JOIN",
+  SESSION_LEAVE = "SESSION_LEAVE",
+  SHARE_DISTRIBUTION = "SHARE_DISTRIBUTION",
+  SHARE_ACK = "SHARE_ACK",
+  COMPUTATION_REQUEST = "COMPUTATION_REQUEST",
+  COMPUTATION_RESPONSE = "COMPUTATION_RESPONSE",
+  HEARTBEAT = "HEARTBEAT",
+  HEARTBEAT_RESPONSE = "HEARTBEAT_RESPONSE",
+  ERROR = "ERROR",
 }

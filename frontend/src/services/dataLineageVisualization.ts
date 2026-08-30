@@ -4,16 +4,16 @@
 
 import {
   DatasetMetadata,
-  LineageMetadata,
-  LineageNode,
+  _LineageMetadata,
+  _LineageNode,
   LineageTransformation,
   LineageGraph,
   LineageGraphNode,
   LineageGraphEdge,
-  GraphLayout,
-  GraphPosition,
-  NodeStyle,
-  EdgeStyle
+  _GraphLayout,
+  _GraphPosition,
+  _NodeStyle,
+  EdgeStyle,
 } from '../types/dataCatalog';
 
 export interface LineageVisualizationConfig {
@@ -61,7 +61,15 @@ export interface VisualizationTheme {
 export interface LineageFilter {
   type: 'node' | 'edge' | 'transformation' | 'time' | 'privacy' | 'custom';
   field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'in' | 'not_in' | 'greater_than' | 'less_than' | 'between';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'in'
+    | 'not_in'
+    | 'greater_than'
+    | 'less_than'
+    | 'between';
   value: any;
   active: boolean;
 }
@@ -79,7 +87,7 @@ export interface ClusterStyle {
   border: string;
   background: string;
   opacity: number;
-    borderRadius: number;
+  borderRadius: number;
   padding: number;
 }
 
@@ -143,7 +151,7 @@ export class DataLineageVisualization {
           interactionEnabled: true,
           clusteringEnabled: true,
           filteringEnabled: true,
-          privacyMode: true
+          privacyMode: true,
         };
       }
       DataLineageVisualization.instance = new DataLineageVisualization(config);
@@ -162,30 +170,30 @@ export class DataLineageVisualization {
             transformation: '#10b981',
             source: '#f59e0b',
             sink: '#ef4444',
-            reference: '#8b5cf6'
+            reference: '#8b5cf6',
           },
           edges: {
             data_flow: '#64748b',
             dependency: '#94a3b8',
-            reference: '#cbd5e1'
+            reference: '#cbd5e1',
           },
           text: '#1e293b',
-          highlight: '#fbbf24'
+          highlight: '#fbbf24',
         },
         fonts: {
           node: 'Arial, sans-serif',
           edge: 'Arial, sans-serif',
-          label: 'Arial, sans-serif'
+          label: 'Arial, sans-serif',
         },
         sizes: {
           node: { min: 20, max: 60 },
-          edge: { min: 1, max: 5 }
+          edge: { min: 1, max: 5 },
         },
         styles: {
           borderRadius: 8,
           shadow: true,
-          gradient: false
-        }
+          gradient: false,
+        },
       },
       {
         name: 'dark',
@@ -196,30 +204,30 @@ export class DataLineageVisualization {
             transformation: '#34d399',
             source: '#fbbf24',
             sink: '#f87171',
-            reference: '#a78bfa'
+            reference: '#a78bfa',
           },
           edges: {
             data_flow: '#475569',
             dependency: '#64748b',
-            reference: '#94a3b8'
+            reference: '#94a3b8',
           },
           text: '#f1f5f9',
-          highlight: '#fbbf24'
+          highlight: '#fbbf24',
         },
         fonts: {
           node: 'Arial, sans-serif',
           edge: 'Arial, sans-serif',
-          label: 'Arial, sans-serif'
+          label: 'Arial, sans-serif',
         },
         sizes: {
           node: { min: 20, max: 60 },
-          edge: { min: 1, max: 5 }
+          edge: { min: 1, max: 5 },
         },
         styles: {
           borderRadius: 8,
           shadow: true,
-          gradient: true
-        }
+          gradient: true,
+        },
       },
       {
         name: 'privacy',
@@ -230,34 +238,34 @@ export class DataLineageVisualization {
             transformation: '#059669',
             source: '#d97706',
             sink: '#7c2d12',
-            reference: '#4c1d95'
+            reference: '#4c1d95',
           },
           edges: {
             data_flow: '#92400e',
             dependency: '#a16207',
-            reference: '#b45309'
+            reference: '#b45309',
           },
           text: '#451a03',
-          highlight: '#dc2626'
+          highlight: '#dc2626',
         },
         fonts: {
           node: 'Arial, sans-serif',
           edge: 'Arial, sans-serif',
-          label: 'Arial, sans-serif'
+          label: 'Arial, sans-serif',
         },
         sizes: {
           node: { min: 20, max: 60 },
-          edge: { min: 1, max: 5 }
+          edge: { min: 1, max: 5 },
         },
         styles: {
           borderRadius: 12,
           shadow: true,
-          gradient: true
-        }
-      }
+          gradient: true,
+        },
+      },
     ];
 
-    themes.forEach(theme => {
+    themes.forEach((theme) => {
       this.themes.set(theme.name, theme);
     });
   }
@@ -269,15 +277,15 @@ export class DataLineageVisualization {
         field: 'privacy.level',
         operator: 'in',
         value: ['public', 'internal'],
-        active: this.config.privacyMode
+        active: this.config.privacyMode,
       },
       {
         type: 'node',
         field: 'type',
         operator: 'in',
         value: ['dataset', 'transformation'],
-        active: true
-      }
+        active: true,
+      },
     ];
   }
 
@@ -294,8 +302,8 @@ export class DataLineageVisualization {
           background: '#e0e7ff',
           opacity: 0.3,
           borderRadius: 16,
-          padding: 20
-        }
+          padding: 20,
+        },
       },
       {
         id: 'system_clusters',
@@ -308,9 +316,9 @@ export class DataLineageVisualization {
           background: '#dcfce7',
           opacity: 0.3,
           borderRadius: 16,
-          padding: 20
-        }
-      }
+          padding: 20,
+        },
+      },
     ];
   }
 
@@ -326,7 +334,7 @@ export class DataLineageVisualization {
     } = {}
   ): Promise<LineageGraph> {
     const cacheKey = this.generateCacheKey(datasetId, options);
-    
+
     // Check cache first
     const cached = this.lineageCache.get(cacheKey);
     if (cached) {
@@ -397,7 +405,7 @@ export class DataLineageVisualization {
 
     // Add transformations
     const transformations = this.extractTransformations(metadata);
-    transformations.forEach(transformation => {
+    transformations.forEach((transformation) => {
       const transformationNode = this.createTransformationNode(transformation);
       if (!visitedNodes.has(transformation.id)) {
         nodes.push(transformationNode);
@@ -405,7 +413,7 @@ export class DataLineageVisualization {
       }
 
       // Add edges for transformations
-      transformation.sourceDatasets.forEach(sourceId => {
+      transformation.sourceDatasets.forEach((sourceId) => {
         const edgeId = `${sourceId}-${transformation.id}`;
         if (!visitedEdges.has(edgeId) && visitedNodes.has(sourceId)) {
           edges.push({
@@ -414,13 +422,13 @@ export class DataLineageVisualization {
             type: 'data_flow',
             weight: 0.8,
             style: this.getEdgeStyle('data_flow'),
-            metadata: { transformation: transformation.id }
+            metadata: { transformation: transformation.id },
           });
           visitedEdges.add(edgeId);
         }
       });
 
-      transformation.targetDatasets.forEach(targetId => {
+      transformation.targetDatasets.forEach((targetId) => {
         const edgeId = `${transformation.id}-${targetId}`;
         if (!visitedEdges.has(edgeId) && visitedNodes.has(targetId)) {
           edges.push({
@@ -429,7 +437,7 @@ export class DataLineageVisualization {
             type: 'data_flow',
             weight: 0.8,
             style: this.getEdgeStyle('data_flow'),
-            metadata: { transformation: transformation.id }
+            metadata: { transformation: transformation.id },
           });
           visitedEdges.add(edgeId);
         }
@@ -442,7 +450,7 @@ export class DataLineageVisualization {
       layout: {
         algorithm: this.config.layoutAlgorithm,
         parameters: this.getLayoutParameters(this.config.layoutAlgorithm),
-        optimized: false
+        optimized: false,
       },
       metadata: {
         generatedAt: Date.now(),
@@ -450,8 +458,8 @@ export class DataLineageVisualization {
         nodeCount: nodes.length,
         edgeCount: edges.length,
         depth: this.calculateGraphDepth(nodes, edges),
-        cycles: this.detectCycles(nodes, edges)
-      }
+        cycles: this.detectCycles(nodes, edges),
+      },
     };
   }
 
@@ -483,8 +491,10 @@ export class DataLineageVisualization {
               target: metadata.id,
               type: upstream.connectionType === 'direct' ? 'data_flow' : 'dependency',
               weight: upstream.strength,
-              style: this.getEdgeStyle(upstream.connectionType === 'direct' ? 'data_flow' : 'dependency'),
-              metadata: upstream.metadata
+              style: this.getEdgeStyle(
+                upstream.connectionType === 'direct' ? 'data_flow' : 'dependency'
+              ),
+              metadata: upstream.metadata,
             });
             visitedEdges.add(edgeId);
           }
@@ -532,8 +542,10 @@ export class DataLineageVisualization {
               target: downstream.datasetId,
               type: downstream.connectionType === 'direct' ? 'data_flow' : 'dependency',
               weight: downstream.strength,
-              style: this.getEdgeStyle(downstream.connectionType === 'direct' ? 'data_flow' : 'dependency'),
-              metadata: downstream.metadata
+              style: this.getEdgeStyle(
+                downstream.connectionType === 'direct' ? 'data_flow' : 'dependency'
+              ),
+              metadata: downstream.metadata,
             });
             visitedEdges.add(edgeId);
           }
@@ -569,14 +581,14 @@ export class DataLineageVisualization {
         size: nodeSize,
         shape: 'rectangle',
         border: theme.colors.text,
-        icon: this.getNodeIcon(nodeType)
+        icon: this.getNodeIcon(nodeType),
       },
       metadata: {
         dataset: metadata,
         privacy: metadata.privacy.level,
         quality: metadata.quality.overall.value,
-        usage: metadata.usage.statistics.totalQueries
-      }
+        usage: metadata.usage.statistics.totalQueries,
+      },
     };
   }
 
@@ -593,13 +605,13 @@ export class DataLineageVisualization {
         size: 40,
         shape: 'diamond',
         border: theme.colors.text,
-        icon: this.getTransformationIcon(transformation.type)
+        icon: this.getTransformationIcon(transformation.type),
       },
       metadata: {
         transformation: transformation,
         type: transformation.type,
-        timestamp: transformation.timestamp
-      }
+        timestamp: transformation.timestamp,
+      },
     };
   }
 
@@ -621,7 +633,7 @@ export class DataLineageVisualization {
       source: '📥',
       sink: '📤',
       reference: '🔗',
-      transformation: '⚙️'
+      transformation: '⚙️',
     };
     return iconMap[nodeType] || '📊';
   }
@@ -634,7 +646,7 @@ export class DataLineageVisualization {
       transform: '🔄',
       enrich: '➕',
       cleanse: '🧹',
-      anonymize: '🔒'
+      anonymize: '🔒',
     };
     return iconMap[type] || '⚙️';
   }
@@ -642,30 +654,30 @@ export class DataLineageVisualization {
   private calculateNodeSize(metadata: DatasetMetadata): number {
     const theme = this.themes.get(this.currentTheme)!;
     const { min, max } = theme.sizes.node;
-    
+
     // Calculate size based on usage and importance
     const usageScore = Math.min(metadata.usage.statistics.totalQueries / 1000, 1);
     const qualityScore = metadata.quality.overall.value / 100;
     const importanceScore = (usageScore + qualityScore) / 2;
-    
+
     return min + (max - min) * importanceScore;
   }
 
   private getEdgeStyle(edgeType: string): EdgeStyle {
     const theme = this.themes.get(this.currentTheme)!;
     const edgeColor = theme.colors.edges[edgeType] || theme.colors.edges.data_flow;
-    
+
     return {
       color: edgeColor,
       width: 2,
       style: 'solid',
-      arrow: edgeType === 'data_flow'
+      arrow: edgeType === 'data_flow',
     };
   }
 
   private extractTransformations(metadata: DatasetMetadata): LineageTransformation[] {
     // Extract transformations from processing metadata
-    return metadata.processing.pipelines.map(pipeline => ({
+    return metadata.processing.pipelines.map((pipeline) => ({
       id: pipeline.id,
       name: pipeline.name,
       type: pipeline.type as any,
@@ -675,11 +687,11 @@ export class DataLineageVisualization {
       logic: '',
       parameters: pipeline.parameters,
       timestamp: pipeline.lastRun,
-      owner: pipeline.createdBy
+      owner: pipeline.createdBy,
     }));
   }
 
-  private async getDatasetMetadata(datasetId: string): Promise<DatasetMetadata | null> {
+  private async getDatasetMetadata(_datasetId: string): Promise<DatasetMetadata | null> {
     // This would fetch metadata from the data catalog
     // For now, return null
     return null;
@@ -690,25 +702,25 @@ export class DataLineageVisualization {
       return graph;
     }
 
-    const privacyFilter = this.filters.find(f => f.type === 'privacy' && f.active);
+    const privacyFilter = this.filters.find((f) => f.type === 'privacy' && f.active);
     if (!privacyFilter) {
       return graph;
     }
 
     // Filter nodes based on privacy level
-    const filteredNodes = graph.nodes.filter(node => {
+    const filteredNodes = graph.nodes.filter((node) => {
       const privacyLevel = node.metadata?.privacy;
       if (!privacyLevel) return true;
-      
-      return Array.isArray(privacyFilter.value) 
+
+      return Array.isArray(privacyFilter.value)
         ? privacyFilter.value.includes(privacyLevel)
         : privacyFilter.value === privacyLevel;
     });
 
     // Filter edges to only include filtered nodes
-    const nodeIds = new Set(filteredNodes.map(n => n.id));
-    const filteredEdges = graph.edges.filter(edge => 
-      nodeIds.has(edge.source) && nodeIds.has(edge.target)
+    const nodeIds = new Set(filteredNodes.map((n) => n.id));
+    const filteredEdges = graph.edges.filter(
+      (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
     );
 
     return {
@@ -718,8 +730,8 @@ export class DataLineageVisualization {
       metadata: {
         ...graph.metadata,
         nodeCount: filteredNodes.length,
-        edgeCount: filteredEdges.length
-      }
+        edgeCount: filteredEdges.length,
+      },
     };
   }
 
@@ -729,13 +741,13 @@ export class DataLineageVisualization {
     }
 
     const clusteredGraph = { ...graph };
-    
+
     // Apply existing clusters
-    this.clusters.forEach(cluster => {
+    this.clusters.forEach((cluster) => {
       cluster.nodes = [];
-      
+
       // Assign nodes to clusters based on metadata
-      graph.nodes.forEach(node => {
+      graph.nodes.forEach((node) => {
         if (this.shouldAssignToCluster(node, cluster)) {
           cluster.nodes.push(node.id);
         }
@@ -758,7 +770,7 @@ export class DataLineageVisualization {
 
   private applyLayout(graph: LineageGraph): LineageGraph {
     const layoutedGraph = { ...graph };
-    
+
     switch (this.config.layoutAlgorithm) {
       case 'force':
         layoutedGraph.nodes = this.applyForceLayout(graph);
@@ -786,12 +798,12 @@ export class DataLineageVisualization {
   private applyForceLayout(graph: LineageGraph): LineageGraphNode[] {
     const nodes = [...graph.nodes];
     const edges = [...graph.edges];
-    
+
     // Initialize positions randomly
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       node.position = {
         x: Math.random() * 800 - 400,
-        y: Math.random() * 600 - 300
+        y: Math.random() * 600 - 300,
       };
     });
 
@@ -807,11 +819,11 @@ export class DataLineageVisualization {
           const dx = nodes[j].position.x - nodes[i].position.x;
           const dy = nodes[j].position.y - nodes[i].position.y;
           const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-          
+
           const force = (k * k) / distance;
           const fx = (dx / distance) * force;
           const fy = (dy / distance) * force;
-          
+
           nodes[i].position.x -= fx;
           nodes[i].position.y -= fy;
           nodes[j].position.x += fx;
@@ -820,19 +832,19 @@ export class DataLineageVisualization {
       }
 
       // Calculate attractive forces for connected nodes
-      edges.forEach(edge => {
-        const sourceNode = nodes.find(n => n.id === edge.source);
-        const targetNode = nodes.find(n => n.id === edge.target);
-        
+      edges.forEach((edge) => {
+        const sourceNode = nodes.find((n) => n.id === edge.source);
+        const targetNode = nodes.find((n) => n.id === edge.target);
+
         if (sourceNode && targetNode) {
           const dx = targetNode.position.x - sourceNode.position.x;
           const dy = targetNode.position.y - sourceNode.position.y;
           const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-          
+
           const force = (distance * distance) / k;
           const fx = (dx / distance) * force;
           const fy = (dy / distance) * force;
-          
+
           sourceNode.position.x += fx;
           sourceNode.position.y += fy;
           targetNode.position.x -= fx;
@@ -842,7 +854,7 @@ export class DataLineageVisualization {
 
       // Apply temperature cooling
       if (iter < iterations / 2) {
-        nodes.forEach(node => {
+        nodes.forEach((node) => {
           node.position.x += (Math.random() - 0.5) * temperature * (1 - iter / iterations);
           node.position.y += (Math.random() - 0.5) * temperature * (1 - iter / iterations);
         });
@@ -852,8 +864,8 @@ export class DataLineageVisualization {
     // Center the graph
     const centerX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
     const centerY = nodes.reduce((sum, n) => sum + n.position.y, 0) / nodes.length;
-    
-    nodes.forEach(node => {
+
+    nodes.forEach((node) => {
       node.position.x -= centerX;
       node.position.y -= centerY;
     });
@@ -864,20 +876,22 @@ export class DataLineageVisualization {
   private applyHierarchicalLayout(graph: LineageGraph): LineageGraphNode[] {
     const nodes = [...graph.nodes];
     const edges = [...graph.edges];
-    
+
     // Build hierarchy levels
     const levels = this.calculateHierarchyLevels(nodes, edges);
-    
+
     // Position nodes by level
     const levelHeight = 100;
-    nodes.forEach((node, index) => {
+    nodes.forEach((node, _index) => {
       const level = levels.get(node.id) || 0;
-      const nodesInLevel = Array.from(levels.values()).filter(l => l === level).length;
-      const positionInLevel = Array.from(levels.entries()).filter(([id, l]) => l === level).findIndex(([id]) => id === node.id);
-      
+      const nodesInLevel = Array.from(levels.values()).filter((l) => l === level).length;
+      const positionInLevel = Array.from(levels.entries())
+        .filter(([_id, l]) => l === level)
+        .findIndex(([id]) => id === node.id);
+
       node.position = {
         x: (positionInLevel - nodesInLevel / 2) * 150,
-        y: level * levelHeight
+        y: level * levelHeight,
       };
     });
 
@@ -889,12 +903,12 @@ export class DataLineageVisualization {
     const centerX = 0;
     const centerY = 0;
     const radius = Math.min(300, 800 / (2 * Math.PI));
-    
+
     nodes.forEach((node, index) => {
       const angle = (2 * Math.PI * index) / nodes.length;
       node.position = {
         x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle)
+        y: centerY + radius * Math.sin(angle),
       };
     });
 
@@ -905,14 +919,14 @@ export class DataLineageVisualization {
     const nodes = [...graph.nodes];
     const cols = Math.ceil(Math.sqrt(nodes.length));
     const spacing = 150;
-    
+
     nodes.forEach((node, index) => {
       const row = Math.floor(index / cols);
       const col = index % cols;
-      
+
       node.position = {
         x: (col - cols / 2) * spacing,
-        y: (row - nodes.length / cols / 2) * spacing
+        y: (row - nodes.length / cols / 2) * spacing,
       };
     });
 
@@ -922,25 +936,25 @@ export class DataLineageVisualization {
   private applyTreeLayout(graph: LineageGraph): LineageGraphNode[] {
     const nodes = [...graph.nodes];
     const edges = [...graph.edges];
-    
+
     // Find root nodes (nodes with no incoming edges)
     const incomingEdges = new Map<string, number>();
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       incomingEdges.set(edge.target, (incomingEdges.get(edge.target) || 0) + 1);
     });
-    
-    const rootNodes = nodes.filter(node => !incomingEdges.has(node.id));
-    
+
+    const rootNodes = nodes.filter((node) => !incomingEdges.has(node.id));
+
     // Position root nodes at the top
     const levelHeight = 120;
     const nodeSpacing = 100;
-    
+
     rootNodes.forEach((root, index) => {
       root.position = {
         x: (index - rootNodes.length / 2) * nodeSpacing,
-        y: 0
+        y: 0,
       };
-      
+
       // Position children recursively
       this.positionChildren(root, nodes, edges, 1, levelHeight, nodeSpacing, new Set());
     });
@@ -961,61 +975,66 @@ export class DataLineageVisualization {
     visited.add(parent.id);
 
     // Find child nodes
-    const childEdges = edges.filter(edge => edge.source === parent.id);
-    const children = childEdges.map(edge => nodes.find(n => n.id === edge.target)).filter(Boolean) as LineageGraphNode[];
-    
+    const childEdges = edges.filter((edge) => edge.source === parent.id);
+    const children = childEdges
+      .map((edge) => nodes.find((n) => n.id === edge.target))
+      .filter(Boolean) as LineageGraphNode[];
+
     children.forEach((child, index) => {
       child.position = {
         x: parent.position.x + (index - children.length / 2) * nodeSpacing,
-        y: parent.position.y + levelHeight
+        y: parent.position.y + levelHeight,
       };
-      
+
       // Recursively position grandchildren
       this.positionChildren(child, nodes, edges, level + 1, levelHeight, nodeSpacing, visited);
     });
   }
 
-  private calculateHierarchyLevels(nodes: LineageGraphNode[], edges: LineageGraphEdge[]): Map<string, number> {
+  private calculateHierarchyLevels(
+    nodes: LineageGraphNode[],
+    edges: LineageGraphEdge[]
+  ): Map<string, number> {
     const levels = new Map<string, number>();
     const visited = new Set<string>();
-    
+
     // Find root nodes
     const incomingEdges = new Map<string, number>();
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       incomingEdges.set(edge.target, (incomingEdges.get(edge.target) || 0) + 1);
     });
-    
-    const rootNodes = nodes.filter(node => !incomingEdges.has(node.id));
-    
+
+    const rootNodes = nodes.filter((node) => !incomingEdges.has(node.id));
+
     // BFS to calculate levels
     const queue: { node: LineageGraphNode; level: number }[] = [];
-    rootNodes.forEach(root => queue.push({ node: root, level: 0 }));
-    
+    rootNodes.forEach((root) => queue.push({ node: root, level: 0 }));
+
     while (queue.length > 0) {
       const { node, level } = queue.shift()!;
-      
+
       if (visited.has(node.id)) continue;
       visited.add(node.id);
       levels.set(node.id, level);
-      
+
       // Add children to queue
-      const childEdges = edges.filter(edge => edge.source === node.id);
-      childEdges.forEach(edge => {
-        const child = nodes.find(n => n.id === edge.target);
+      const childEdges = edges.filter((edge) => edge.source === node.id);
+      childEdges.forEach((edge) => {
+        const child = nodes.find((n) => n.id === edge.target);
         if (child && !visited.has(child.id)) {
           queue.push({ node: child, level: level + 1 });
         }
       });
     }
-    
+
     return levels;
   }
 
   private applyStyling(graph: LineageGraph): LineageGraph {
     const theme = this.themes.get(this.currentTheme)!;
-    
+
     // Apply theme-based styling to nodes and edges
-    graph.nodes.forEach(node => {
+    graph.nodes.forEach((node) => {
       // Apply privacy-based styling
       if (this.config.privacyMode && node.metadata?.privacy) {
         const privacyLevel = node.metadata.privacy;
@@ -1026,7 +1045,7 @@ export class DataLineageVisualization {
           node.style.border = '#f59e0b';
         }
       }
-      
+
       // Apply quality-based styling
       if (node.metadata?.quality) {
         const quality = node.metadata.quality;
@@ -1039,7 +1058,7 @@ export class DataLineageVisualization {
     });
 
     // Apply edge styling based on weight and type
-    graph.edges.forEach(edge => {
+    graph.edges.forEach((edge) => {
       if (edge.weight > 0.8) {
         edge.style.width = 3;
       } else if (edge.weight < 0.3) {
@@ -1057,26 +1076,26 @@ export class DataLineageVisualization {
         iterations: 100,
         temperature: 0.1,
         gravity: 0.1,
-        charge: -100
+        charge: -100,
       },
       hierarchical: {
         levelSeparation: 100,
         nodeSpacing: 150,
-        direction: 'TB'
+        direction: 'TB',
       },
       circular: {
         radius: 300,
-        startAngle: 0
+        startAngle: 0,
       },
       grid: {
         spacing: 150,
-        columns: 'auto'
+        columns: 'auto',
       },
       tree: {
         levelSeparation: 120,
         nodeSpacing: 100,
-        direction: 'TB'
-      }
+        direction: 'TB',
+      },
     };
 
     return parameters[algorithm] || {};
@@ -1097,7 +1116,7 @@ export class DataLineageVisualization {
         cycleCount++;
         return true;
       }
-      
+
       if (visited.has(nodeId)) {
         return false;
       }
@@ -1105,7 +1124,7 @@ export class DataLineageVisualization {
       visited.add(nodeId);
       recursionStack.add(nodeId);
 
-      const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+      const outgoingEdges = edges.filter((edge) => edge.source === nodeId);
       for (const edge of outgoingEdges) {
         if (dfs(edge.target)) {
           return true;
@@ -1116,7 +1135,7 @@ export class DataLineageVisualization {
       return false;
     };
 
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       if (!visited.has(node.id)) {
         dfs(node.id);
       }
@@ -1129,9 +1148,9 @@ export class DataLineageVisualization {
     const key = {
       datasetId,
       options,
-      filters: this.filters.filter(f => f.active),
+      filters: this.filters.filter((f) => f.active),
       clusters: this.clusters,
-      theme: this.currentTheme
+      theme: this.currentTheme,
     };
     return Buffer.from(JSON.stringify(key)).toString('base64');
   }
@@ -1142,7 +1161,7 @@ export class DataLineageVisualization {
   }
 
   public removeInteraction(interactionId: string): boolean {
-    const index = this.interactions.findIndex(i => i.target === interactionId);
+    const index = this.interactions.findIndex((i) => i.target === interactionId);
     if (index >= 0) {
       this.interactions.splice(index, 1);
       return true;
@@ -1160,7 +1179,7 @@ export class DataLineageVisualization {
   }
 
   public removeAnimation(animationId: string): boolean {
-    const index = this.animations.findIndex(a => a.target === animationId);
+    const index = this.animations.findIndex((a) => a.target === animationId);
     if (index >= 0) {
       this.animations.splice(index, 1);
       return true;
@@ -1178,7 +1197,7 @@ export class DataLineageVisualization {
   }
 
   public removeFilter(filterId: string): boolean {
-    const index = this.filters.findIndex(f => f.field === filterId);
+    const index = this.filters.findIndex((f) => f.field === filterId);
     if (index >= 0) {
       this.filters.splice(index, 1);
       return true;
@@ -1187,7 +1206,7 @@ export class DataLineageVisualization {
   }
 
   public toggleFilter(filterId: string): boolean {
-    const filter = this.filters.find(f => f.field === filterId);
+    const filter = this.filters.find((f) => f.field === filterId);
     if (filter) {
       filter.active = !filter.active;
       return true;
@@ -1205,7 +1224,7 @@ export class DataLineageVisualization {
   }
 
   public removeCluster(clusterId: string): boolean {
-    const index = this.clusters.findIndex(c => c.id === clusterId);
+    const index = this.clusters.findIndex((c) => c.id === clusterId);
     if (index >= 0) {
       this.clusters.splice(index, 1);
       return true;
@@ -1258,7 +1277,7 @@ export class DataLineageVisualization {
   } {
     return {
       size: this.lineageCache.size,
-      keys: Array.from(this.lineageCache.keys())
+      keys: Array.from(this.lineageCache.keys()),
     };
   }
 }

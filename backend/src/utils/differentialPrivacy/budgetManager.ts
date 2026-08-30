@@ -1,25 +1,25 @@
-import { createClient, RedisClientType } from 'redis';
-import { logger } from '../logger';
-import { PrivacyBudget, BudgetExhaustedException } from './types';
+import { createClient, RedisClientType } from "redis";
+import { logger } from "../logger";
+import { PrivacyBudget, BudgetExhaustedException } from "./types";
 
 export class PrivacyBudgetManager {
   private redis: RedisClientType;
   private static instance: PrivacyBudgetManager;
-  
+
   private constructor() {
     this.redis = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      url: process.env.REDIS_URL || "redis://localhost:6379",
       socket: {
-        reconnectStrategy: (retries) => Math.min(retries * 50, 500)
-      }
+        reconnectStrategy: (retries) => Math.min(retries * 50, 500),
+      },
     });
-    
-    this.redis.on('error', (err) => {
-      logger.error('Redis connection error:', err);
+
+    this.redis.on("error", (err) => {
+      logger.error("Redis connection error:", err);
     });
-    
-    this.redis.on('connect', () => {
-      logger.info('Connected to Redis for privacy budget management');
+
+    this.redis.on("connect", () => {
+      logger.info("Connected to Redis for privacy budget management");
     });
   }
 
@@ -35,31 +35,33 @@ export class PrivacyBudgetManager {
     try {
       await this.redis.connect();
     } catch (error) {
-      logger.error('Failed to connect to Redis:', error);
+      logger.error("Failed to connect to Redis:", error);
       throw error;
     }
   }
 
   async initializeBudget(
-    dataset: string, 
-    epsilon: number, 
-    delta: number = 1e-10
+    dataset: string,
+    epsilon: number,
+    delta: number = 1e-10,
   ): Promise<void> {
     const budget: PrivacyBudget = {
       epsilon,
       delta,
       remaining: epsilon,
       dataset,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
 
     await this.redis.setEx(
       `privacy_budget:${dataset}`,
       86400 * 30, // 30 days TTL
-      JSON.stringify(budget)
+      JSON.stringify(budget),
     );
 
-    logger.info(`Initialized privacy budget for dataset: ${dataset}, epsilon: ${epsilon}`);
+    logger.info(
+      `Initialized privacy budget for dataset: ${dataset}, epsilon: ${epsilon}`,
+    );
   }
 
   async getBudget(dataset: string): Promise<PrivacyBudget | null> {
@@ -79,11 +81,11 @@ export class PrivacyBudgetManager {
   }
 
   async consumeBudget(
-    dataset: string, 
-    epsilonCost: number
+    dataset: string,
+    epsilonCost: number,
   ): Promise<PrivacyBudget> {
     const budget = await this.getBudget(dataset);
-    
+
     if (!budget) {
       throw new Error(`No budget found for dataset: ${dataset}`);
     }
@@ -92,7 +94,7 @@ export class PrivacyBudgetManager {
       throw new BudgetExhaustedException(
         `Insufficient privacy budget. Required: ${epsilonCost}, Available: ${budget.remaining}`,
         dataset,
-        budget.remaining
+        budget.remaining,
       );
     }
 
@@ -102,17 +104,19 @@ export class PrivacyBudgetManager {
     await this.redis.setEx(
       `privacy_budget:${dataset}`,
       86400 * 30,
-      JSON.stringify(budget)
+      JSON.stringify(budget),
     );
 
-    logger.info(`Consumed ${epsilonCost} epsilon from dataset ${dataset}. Remaining: ${budget.remaining}`);
-    
+    logger.info(
+      `Consumed ${epsilonCost} epsilon from dataset ${dataset}. Remaining: ${budget.remaining}`,
+    );
+
     return budget;
   }
 
   async resetBudget(dataset: string, newEpsilon?: number): Promise<void> {
     const budget = await this.getBudget(dataset);
-    
+
     if (!budget) {
       throw new Error(`No budget found for dataset: ${dataset}`);
     }
@@ -123,15 +127,17 @@ export class PrivacyBudgetManager {
     await this.redis.setEx(
       `privacy_budget:${dataset}`,
       86400 * 30,
-      JSON.stringify(budget)
+      JSON.stringify(budget),
     );
 
-    logger.info(`Reset privacy budget for dataset: ${dataset} to ${budget.remaining}`);
+    logger.info(
+      `Reset privacy budget for dataset: ${dataset} to ${budget.remaining}`,
+    );
   }
 
   async getAllBudgets(): Promise<PrivacyBudget[]> {
     try {
-      const keys = await this.redis.keys('privacy_budget:*');
+      const keys = await this.redis.keys("privacy_budget:*");
       const budgets: PrivacyBudget[] = [];
 
       for (const key of keys) {
@@ -145,7 +151,7 @@ export class PrivacyBudgetManager {
 
       return budgets;
     } catch (error) {
-      logger.error('Error retrieving all budgets:', error);
+      logger.error("Error retrieving all budgets:", error);
       return [];
     }
   }
@@ -157,7 +163,7 @@ export class PrivacyBudgetManager {
 
   async checkBudget(dataset: string, epsilonCost: number): Promise<boolean> {
     const budget = await this.getBudget(dataset);
-    
+
     if (!budget) {
       return false;
     }
@@ -167,7 +173,7 @@ export class PrivacyBudgetManager {
 
   async getBudgetUsage(dataset: string): Promise<number> {
     const budget = await this.getBudget(dataset);
-    
+
     if (!budget) {
       return 0;
     }
@@ -177,6 +183,6 @@ export class PrivacyBudgetManager {
 
   async disconnect(): Promise<void> {
     await this.redis.disconnect();
-    logger.info('Disconnected from Redis');
+    logger.info("Disconnected from Redis");
   }
 }

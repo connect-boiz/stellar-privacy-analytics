@@ -1,5 +1,5 @@
 import React from 'react';
-import ConsentManagement from './components/ConsentManagement';
+import ConsentManagement from '../components/ConsentManagement';
 
 const ConsentPage: React.FC = () => {
   return (

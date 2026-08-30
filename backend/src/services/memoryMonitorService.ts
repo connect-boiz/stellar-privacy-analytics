@@ -1,7 +1,7 @@
-import { logger } from '../utils/logger';
-import * as os from 'os';
-import * as v8 from 'v8';
-import { EventEmitter } from 'events';
+import { logger } from "../utils/logger";
+import * as os from "os";
+import * as v8 from "v8";
+import { EventEmitter } from "events";
 
 export interface MemoryMetrics {
   heapUsed: number;
@@ -18,7 +18,7 @@ export interface MemoryMetrics {
 }
 
 export interface MemoryAlert {
-  level: 'warning' | 'critical' | 'emergency';
+  level: "warning" | "critical" | "emergency";
   message: string;
   metrics: MemoryMetrics;
   recommendations: string[];
@@ -42,12 +42,14 @@ export class MemoryMonitorService extends EventEmitter {
   private lastCleanupTime: number = 0;
   private cleanupCooldown: number = 30000; // 30 seconds
 
-  constructor(config: {
-    thresholds?: Partial<MemoryThresholds>;
-    monitoringInterval?: number;
-    maxHistorySize?: number;
-    cleanupCooldown?: number;
-  } = {}) {
+  constructor(
+    config: {
+      thresholds?: Partial<MemoryThresholds>;
+      monitoringInterval?: number;
+      maxHistorySize?: number;
+      cleanupCooldown?: number;
+    } = {},
+  ) {
     super();
 
     this.thresholds = {
@@ -56,15 +58,15 @@ export class MemoryMonitorService extends EventEmitter {
       systemWarning: 80,
       systemCritical: 90,
       emergencyCleanupThreshold: 95,
-      ...config.thresholds
+      ...config.thresholds,
     };
 
     this.maxHistorySize = config.maxHistorySize || 1000;
     this.cleanupCooldown = config.cleanupCooldown || 30000;
 
-    logger.info('Memory Monitor Service initialized', {
+    logger.info("Memory Monitor Service initialized", {
       thresholds: this.thresholds,
-      monitoringInterval: config.monitoringInterval || 5000
+      monitoringInterval: config.monitoringInterval || 5000,
     });
   }
 
@@ -73,7 +75,7 @@ export class MemoryMonitorService extends EventEmitter {
    */
   startMonitoring(intervalMs: number = 5000): void {
     if (this.isMonitoring) {
-      logger.warn('Memory monitoring is already active');
+      logger.warn("Memory monitoring is already active");
       return;
     }
 
@@ -82,7 +84,7 @@ export class MemoryMonitorService extends EventEmitter {
       this.collectMetrics();
     }, intervalMs);
 
-    logger.info('Memory monitoring started', { intervalMs });
+    logger.info("Memory monitoring started", { intervalMs });
   }
 
   /**
@@ -99,7 +101,7 @@ export class MemoryMonitorService extends EventEmitter {
     }
 
     this.isMonitoring = false;
-    logger.info('Memory monitoring stopped');
+    logger.info("Memory monitoring stopped");
   }
 
   /**
@@ -114,14 +116,15 @@ export class MemoryMonitorService extends EventEmitter {
       heapUsed: heapStats.used_heap_size,
       heapTotal: heapStats.total_heap_size,
       external: heapStats.external_memory,
-      arrayBuffers: heapStats.array_buffers_size,
+      arrayBuffers: heapStats.external_memory,
       rss: memUsage.rss,
       systemTotal: systemMem.total,
       systemFree: systemMem.free,
       systemUsed: systemMem.used,
-      heapUsagePercentage: (heapStats.used_heap_size / heapStats.total_heap_size) * 100,
+      heapUsagePercentage:
+        (heapStats.used_heap_size / heapStats.total_heap_size) * 100,
       systemUsagePercentage: (systemMem.used / systemMem.total) * 100,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // Store in history
@@ -145,14 +148,15 @@ export class MemoryMonitorService extends EventEmitter {
       heapUsed: heapStats.used_heap_size,
       heapTotal: heapStats.total_heap_size,
       external: heapStats.external_memory,
-      arrayBuffers: heapStats.array_buffers_size,
+      arrayBuffers: heapStats.external_memory,
       rss: memUsage.rss,
       systemTotal: systemMem.total,
       systemFree: systemMem.free,
       systemUsed: systemMem.used,
-      heapUsagePercentage: (heapStats.used_heap_size / heapStats.total_heap_size) * 100,
+      heapUsagePercentage:
+        (heapStats.used_heap_size / heapStats.total_heap_size) * 100,
       systemUsagePercentage: (systemMem.used / systemMem.total) * 100,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -174,18 +178,18 @@ export class MemoryMonitorService extends EventEmitter {
       const beforeMetrics = this.getCurrentMetrics();
       global.gc();
       const afterMetrics = this.getCurrentMetrics();
-      
+
       const freed = beforeMetrics.heapUsed - afterMetrics.heapUsed;
-      logger.info('Manual garbage collection executed', {
+      logger.info("Manual garbage collection executed", {
         freedBytes: freed,
         freedMB: Math.round(freed / 1024 / 1024),
         beforeHeapMB: Math.round(beforeMetrics.heapUsed / 1024 / 1024),
-        afterHeapMB: Math.round(afterMetrics.heapUsed / 1024 / 1024)
+        afterHeapMB: Math.round(afterMetrics.heapUsed / 1024 / 1024),
       });
-      
+
       return true;
     } else {
-      logger.warn('Garbage collection not available (run with --expose-gc)');
+      logger.warn("Garbage collection not available (run with --expose-gc)");
       return false;
     }
   }
@@ -196,11 +200,11 @@ export class MemoryMonitorService extends EventEmitter {
   async performEmergencyCleanup(): Promise<void> {
     const now = Date.now();
     if (now - this.lastCleanupTime < this.cleanupCooldown) {
-      logger.warn('Emergency cleanup on cooldown, skipping');
+      logger.warn("Emergency cleanup on cooldown, skipping");
       return;
     }
 
-    logger.warn('Performing emergency memory cleanup');
+    logger.warn("Performing emergency memory cleanup");
     const beforeMetrics = this.getCurrentMetrics();
 
     try {
@@ -209,27 +213,31 @@ export class MemoryMonitorService extends EventEmitter {
 
       // Clear metrics history if it's getting large
       if (this.metricsHistory.length > this.maxHistorySize / 2) {
-        this.metricsHistory = this.metricsHistory.slice(-this.maxHistorySize / 2);
-        logger.debug('Cleared metrics history to free memory');
+        this.metricsHistory = this.metricsHistory.slice(
+          -this.maxHistorySize / 2,
+        );
+        logger.debug("Cleared metrics history to free memory");
       }
 
       // Emit cleanup event for other services to react
-      this.emit('emergency-cleanup', { beforeMetrics, afterMetrics: this.getCurrentMetrics() });
+      this.emit("emergency-cleanup", {
+        beforeMetrics,
+        afterMetrics: this.getCurrentMetrics(),
+      });
 
       this.lastCleanupTime = now;
 
       const afterMetrics = this.getCurrentMetrics();
       const freed = beforeMetrics.heapUsed - afterMetrics.heapUsed;
-      
-      logger.info('Emergency cleanup completed', {
+
+      logger.info("Emergency cleanup completed", {
         freedBytes: freed,
         freedMB: Math.round(freed / 1024 / 1024),
         beforeHeapMB: Math.round(beforeMetrics.heapUsed / 1024 / 1024),
-        afterHeapMB: Math.round(afterMetrics.heapUsed / 1024 / 1024)
+        afterHeapMB: Math.round(afterMetrics.heapUsed / 1024 / 1024),
       });
-
     } catch (error) {
-      logger.error('Emergency cleanup failed', { error: error.message });
+      logger.error("Emergency cleanup failed", { error: error.message });
     }
   }
 
@@ -239,7 +247,8 @@ export class MemoryMonitorService extends EventEmitter {
   isMemoryCritical(): boolean {
     const metrics = this.getCurrentMetrics();
     return (
-      metrics.heapUsagePercentage >= this.thresholds.emergencyCleanupThreshold ||
+      metrics.heapUsagePercentage >=
+        this.thresholds.emergencyCleanupThreshold ||
       metrics.systemUsagePercentage >= this.thresholds.emergencyCleanupThreshold
     );
   }
@@ -252,23 +261,33 @@ export class MemoryMonitorService extends EventEmitter {
     const recommendations: string[] = [];
 
     if (currentMetrics.heapUsagePercentage > this.thresholds.heapWarning) {
-      recommendations.push('Consider implementing streaming for large datasets');
-      recommendations.push('Reduce batch sizes in data processing');
-      recommendations.push('Implement object pooling for frequently created objects');
+      recommendations.push(
+        "Consider implementing streaming for large datasets",
+      );
+      recommendations.push("Reduce batch sizes in data processing");
+      recommendations.push(
+        "Implement object pooling for frequently created objects",
+      );
     }
 
     if (currentMetrics.systemUsagePercentage > this.thresholds.systemWarning) {
-      recommendations.push('Consider horizontal scaling');
-      recommendations.push('Implement data partitioning');
-      recommendations.push('Add memory-efficient algorithms');
+      recommendations.push("Consider horizontal scaling");
+      recommendations.push("Implement data partitioning");
+      recommendations.push("Add memory-efficient algorithms");
     }
 
-    if (currentMetrics.arrayBuffers > 100 * 1024 * 1024) { // 100MB
-      recommendations.push('Large ArrayBuffer usage detected - consider streaming or chunking');
+    if (currentMetrics.arrayBuffers > 100 * 1024 * 1024) {
+      // 100MB
+      recommendations.push(
+        "Large ArrayBuffer usage detected - consider streaming or chunking",
+      );
     }
 
-    if (currentMetrics.external > 100 * 1024 * 1024) { // 100MB
-      recommendations.push('High external memory usage - check for native module leaks');
+    if (currentMetrics.external > 100 * 1024 * 1024) {
+      // 100MB
+      recommendations.push(
+        "High external memory usage - check for native module leaks",
+      );
     }
 
     return recommendations;
@@ -279,7 +298,7 @@ export class MemoryMonitorService extends EventEmitter {
    */
   private addToHistory(metrics: MemoryMetrics): void {
     this.metricsHistory.push(metrics);
-    
+
     // Trim history if it gets too large
     if (this.metricsHistory.length > this.maxHistorySize) {
       this.metricsHistory = this.metricsHistory.slice(-this.maxHistorySize);
@@ -293,62 +312,67 @@ export class MemoryMonitorService extends EventEmitter {
     const alerts: MemoryAlert[] = [];
 
     // Check heap usage
-    if (metrics.heapUsagePercentage >= this.thresholds.emergencyCleanupThreshold) {
+    if (
+      metrics.heapUsagePercentage >= this.thresholds.emergencyCleanupThreshold
+    ) {
       alerts.push({
-        level: 'emergency',
+        level: "emergency",
         message: `Heap usage critical: ${metrics.heapUsagePercentage.toFixed(1)}%`,
         metrics,
-        recommendations: [...this.getRecommendations(metrics), 'Immediate cleanup required'],
-        timestamp: Date.now()
+        recommendations: [
+          ...this.getRecommendations(metrics),
+          "Immediate cleanup required",
+        ],
+        timestamp: Date.now(),
       });
 
       // Trigger emergency cleanup
       this.performEmergencyCleanup();
     } else if (metrics.heapUsagePercentage >= this.thresholds.heapCritical) {
       alerts.push({
-        level: 'critical',
+        level: "critical",
         message: `Heap usage critical: ${metrics.heapUsagePercentage.toFixed(1)}%`,
         metrics,
         recommendations: this.getRecommendations(metrics),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } else if (metrics.heapUsagePercentage >= this.thresholds.heapWarning) {
       alerts.push({
-        level: 'warning',
+        level: "warning",
         message: `Heap usage high: ${metrics.heapUsagePercentage.toFixed(1)}%`,
         metrics,
         recommendations: this.getRecommendations(metrics),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     // Check system memory
     if (metrics.systemUsagePercentage >= this.thresholds.systemCritical) {
       alerts.push({
-        level: 'critical',
+        level: "critical",
         message: `System memory critical: ${metrics.systemUsagePercentage.toFixed(1)}%`,
         metrics,
         recommendations: this.getRecommendations(metrics),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } else if (metrics.systemUsagePercentage >= this.thresholds.systemWarning) {
       alerts.push({
-        level: 'warning',
+        level: "warning",
         message: `System memory high: ${metrics.systemUsagePercentage.toFixed(1)}%`,
         metrics,
         recommendations: this.getRecommendations(metrics),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     // Emit alerts
-    alerts.forEach(alert => {
-      this.emit('memory-alert', alert);
-      logger.warn('Memory alert', {
+    alerts.forEach((alert) => {
+      this.emit("memory-alert", alert);
+      logger.warn("Memory alert", {
         level: alert.level,
         message: alert.message,
         heapUsage: `${metrics.heapUsagePercentage.toFixed(1)}%`,
-        systemUsage: `${metrics.systemUsagePercentage.toFixed(1)}%`
+        systemUsage: `${metrics.systemUsagePercentage.toFixed(1)}%`,
       });
     });
   }
@@ -362,7 +386,7 @@ export class MemoryMonitorService extends EventEmitter {
     return {
       total,
       free,
-      used: total - free
+      used: total - free,
     };
   }
 
@@ -379,7 +403,7 @@ export class MemoryMonitorService extends EventEmitter {
       isMonitoring: this.isMonitoring,
       thresholds: this.thresholds,
       historySize: this.metricsHistory.length,
-      lastCleanupTime: this.lastCleanupTime
+      lastCleanupTime: this.lastCleanupTime,
     };
   }
 
@@ -390,7 +414,7 @@ export class MemoryMonitorService extends EventEmitter {
     this.stopMonitoring();
     this.metricsHistory = [];
     this.removeAllListeners();
-    logger.info('Memory Monitor Service destroyed');
+    logger.info("Memory Monitor Service destroyed");
   }
 }
 

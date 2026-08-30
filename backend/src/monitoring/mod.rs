@@ -1,8 +1,14 @@
-use crate::monitoring::{config::MonitoringConfig, prometheus_exporter::{MetricsCollector, create_metrics_route, create_authenticated_metrics_route}};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+pub mod config;
+pub mod prometheus_exporter;
+
+pub use self::config::MonitoringConfig;
+pub use self::prometheus_exporter::{
+    create_authenticated_metrics_route, create_metrics_route, MetricsCollector,
+};
+use base64::Engine;
+use log::{info, warn};
+use prometheus::Encoder;
 use warp::Filter;
-use log::{info, warn, error};
 
 #[derive(Clone)]
 pub struct MonitoringService {
@@ -14,77 +20,138 @@ impl MonitoringService {
     pub fn new(config: MonitoringConfig) -> Result<Self, String> {
         // Validate configuration
         config.validate()?;
-        
+
         let collector = MetricsCollector::new();
-        
-        Ok(Self {
-            config,
-            collector,
-        })
+
+        Ok(Self { config, collector })
     }
 
     /// Start the monitoring service with HTTP server
     pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
-        info!("Starting monitoring service on port {}", self.config.prometheus.port);
-        
+        info!(
+            "Starting monitoring service on port {}",
+            self.config.prometheus.port
+        );
+
         // Create routes
         let routes = self.create_routes();
-        
+
         // Start the server
         let addr = ([0, 0, 0, 0], self.config.prometheus.port);
-        warp::serve(routes)
-            .run(addr)
-            .await;
-        
+        warp::serve(routes).run(addr).await;
+
         Ok(())
     }
 
     /// Create HTTP routes for the monitoring service
-    fn create_routes(&self) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    fn create_routes(
+        &self,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        let collector = self.collector.clone();
+        let config = self.config.prometheus.clone();
+
+        let collector_for_metrics = collector.clone();
+        let metrics_handler = warp::path("metrics")
+            .and(warp::get())
+            .and(warp::any().map(move || collector_for_metrics.clone()))
+            .and(warp::header::optional::<String>("authorization"))
+            .and(warp::addr::remote())
+            .and_then(
+                move |collector: MetricsCollector,
+                      auth: Option<String>,
+                      addr: Option<std::net::SocketAddr>| {
+                    let config = config.clone();
+                    async move {
+                        // Check IP filtering
+                        if let Some(ref allowed_ips) = config.allowed_ips {
+                            if let Some(socket_addr) = addr {
+                                let ip_str = socket_addr.ip().to_string();
+                                if !allowed_ips.contains(&ip_str)
+                                    && !allowed_ips.contains(&"127.0.0.1".to_string())
+                                {
+                                    return Err(warp::reject::custom(MetricsError::Unauthorized));
+                                }
+                            } else {
+                                return Err(warp::reject::custom(MetricsError::Unauthorized));
+                            }
+                        }
+
+                        // Check auth
+                        if config.enable_auth {
+                            if let Some(auth_header) = auth {
+                                if let Some(encoded) = auth_header.strip_prefix("Basic ") {
+                                    if let Ok(decoded) = base64::engine::general_purpose::STANDARD
+                                        .decode(encoded.as_bytes())
+                                    {
+                                        if let Ok(credentials) = String::from_utf8(decoded) {
+                                            if let Some((user, pass)) = credentials.split_once(':')
+                                            {
+                                                if user
+                                                    == config.auth_username.as_deref().unwrap_or("")
+                                                    && pass
+                                                        == config
+                                                            .auth_password
+                                                            .as_deref()
+                                                            .unwrap_or("")
+                                                {
+                                                    // Auth passed
+                                                } else {
+                                                    return Err(warp::reject::custom(
+                                                        MetricsError::Unauthorized,
+                                                    ));
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    return Err(warp::reject::custom(MetricsError::Unauthorized));
+                                }
+                            } else {
+                                return Err(warp::reject::custom(MetricsError::Unauthorized));
+                            }
+                        }
+
+                        // Serve metrics
+                        let active_count = collector.get_active_session_count().await;
+                        let metrics = self::prometheus_exporter::get_metrics();
+                        metrics
+                            .smpc_sessions_active
+                            .with_label_values(&["all", "all"])
+                            .set(active_count as f64);
+
+                        let encoder = prometheus::TextEncoder::new();
+                        let metric_families = prometheus::gather();
+                        let mut buffer = Vec::new();
+                        encoder
+                            .encode(&metric_families, &mut buffer)
+                            .map_err(|_| warp::reject::custom(MetricsError::Encoding))?;
+
+                        let response = String::from_utf8(buffer)
+                            .map_err(|_| warp::reject::custom(MetricsError::Encoding))?;
+
+                        Ok::<_, warp::Rejection>(warp::reply::with_header(
+                            response,
+                            "Content-Type",
+                            "text/plain; version=0.0.4; charset=utf-8",
+                        ))
+                    }
+                },
+            );
+
+        let collector_for_health = collector.clone();
         let health_route = warp::path("health")
             .and(warp::get())
-            .and(warp::any().map(move || self.collector.clone()))
+            .and(warp::any().map(move || collector_for_health.clone()))
             .and_then(|collector: MetricsCollector| async move {
-                crate::monitoring::prometheus_exporter::health_check(&collector).await
+                Ok::<_, warp::Rejection>(self::prometheus_exporter::health_check(&collector).await)
             });
 
-        let metrics_route = if self.config.prometheus.enable_auth {
-            let username = self.config.prometheus.auth_username.as_ref().unwrap();
-            let password = self.config.prometheus.auth_password.as_ref().unwrap();
-            create_authenticated_metrics_route(self.collector.clone(), username, password)
-        } else {
-            create_metrics_route(self.collector.clone())
-        };
-
-        // Add IP filtering if configured
-        let metrics_route = if let Some(ref allowed_ips) = self.config.prometheus.allowed_ips {
-            let ip_filter = warp::addr::remote()
-                .and(warp::any().map(move || allowed_ips.clone()))
-                .and_then(|addr: Option<std::net::SocketAddr>, allowed: Vec<String>| async move {
-                    if let Some(socket_addr) = addr {
-                        let ip_str = socket_addr.ip().to_string();
-                        if allowed.contains(&ip_str) || allowed.contains(&"127.0.0.1".to_string()) {
-                            Ok::<(), warp::Rejection>(())
-                        } else {
-                            Err(warp::reject::custom(MetricsError::Unauthorized))
-                        }
-                    } else {
-                        Err(warp::reject::custom(MetricsError::Unauthorized))
-                    }
-                });
-            
-            ip_filter.and(metrics_route)
-        } else {
-            metrics_route
-        };
-
-        // Add CORS for development
         let cors = warp::cors()
             .allow_any_origin()
             .allow_headers(vec!["authorization", "content-type"])
             .allow_methods(vec!["GET", "POST"]);
 
-        health_route.or(metrics_route).with(cors)
+        health_route.or(metrics_handler).with(cors)
     }
 
     /// Generate and return Prometheus alert rules
@@ -114,6 +181,7 @@ impl MonitoringService {
 #[derive(Debug)]
 enum MetricsError {
     Unauthorized,
+    Encoding,
 }
 
 impl warp::reject::Reject for MetricsError {}
@@ -121,31 +189,45 @@ impl warp::reject::Reject for MetricsError {}
 // Middleware for automatic metrics collection
 pub struct MetricsMiddleware;
 
+impl Default for MetricsMiddleware {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MetricsMiddleware {
     pub fn new() -> Self {
         Self
     }
 
     /// Create middleware that automatically records API metrics
-    pub fn auto_record(collector: MetricsCollector) -> impl Filter<Extract = (), Error = warp::Rejection> + Clone {
+    pub fn auto_record(
+        collector: MetricsCollector,
+    ) -> impl Filter<Extract = (), Error = warp::Rejection> + Clone {
         warp::any()
             .and(warp::path::full())
             .and(warp::method())
             .and(warp::any().map(move || collector.clone()))
-            .and_then(|path: warp::path::FullPath, method: warp::http::Method, collector: MetricsCollector| async move {
-                let start_time = std::time::Instant::now();
-                
-                // This would be used in a real implementation to record the request
-                // For now, we just return success
-                collector.record_api_request(
-                    path.as_str(),
-                    method.as_str(),
-                    200,
-                    start_time.elapsed()
-                ).await;
-                
-                Ok::<(), warp::Rejection>(())
-            }))
+            .and_then(
+                |path: warp::path::FullPath,
+                 method: warp::http::Method,
+                 collector: MetricsCollector| async move {
+                    let start_time = std::time::Instant::now();
+
+                    collector
+                        .record_api_request(
+                            path.as_str(),
+                            method.as_str(),
+                            200,
+                            start_time.elapsed(),
+                        )
+                        .await;
+
+                    Ok::<(), warp::Rejection>(())
+                },
+            )
+            .map(|_: ()| ())
+            .untuple_one()
     }
 }
 
@@ -166,7 +248,7 @@ impl MetricsAggregator {
     /// Start the aggregation task
     pub async fn start(&self) {
         let mut interval = tokio::time::interval(self.report_interval);
-        
+
         loop {
             interval.tick().await;
             self.aggregate_and_report().await;
@@ -176,7 +258,7 @@ impl MetricsAggregator {
     async fn aggregate_and_report(&self) {
         let active_sessions = self.collector.get_active_session_count().await;
         let datasets = self.collector.datasets.read().await;
-        
+
         // Calculate aggregate metrics
         let total_epsilon_consumed: f64 = datasets.values().map(|d| d.epsilon_consumed).sum();
         let total_epsilon_budget: f64 = datasets.values().map(|d| d.epsilon_budget_total).sum();
@@ -196,15 +278,16 @@ impl MetricsAggregator {
 
         // Check for alert conditions
         if epsilon_utilization > 80.0 {
-            warn!("High epsilon utilization detected: {:.2}%", epsilon_utilization);
+            warn!("High epsilon utilization detected: {epsilon_utilization:.2}%");
         }
 
         if active_sessions > 50 {
-            warn!("High number of active SMPC sessions: {}", active_sessions);
+            warn!("High number of active SMPC sessions: {active_sessions}");
         }
 
         // Update gauge metrics
-        crate::monitoring::prometheus_exporter::get_metrics().smpc_sessions_active
+        self::prometheus_exporter::get_metrics()
+            .smpc_sessions_active
             .with_label_values(&["all", "all"])
             .set(active_sessions as f64);
     }
@@ -213,7 +296,6 @@ impl MetricsAggregator {
 // Health check utilities
 pub mod health {
     use super::*;
-    use serde_json::json;
 
     #[derive(Debug, serde::Serialize)]
     pub struct HealthStatus {
@@ -231,16 +313,17 @@ pub mod health {
         pub alerting: bool,
     }
 
-    pub async fn check_system_health(collector: &MetricsCollector) -> HealthStatus {
+    pub async fn check_system_health(_collector: &MetricsCollector) -> HealthStatus {
         let components = ComponentHealth {
-            metrics_collector: true, // We can reach the collector
+            metrics_collector: true,   // We can reach the collector
             prometheus_endpoint: true, // If we're here, the endpoint is working
-            alerting: true, // Alerting is configured
+            alerting: true,            // Alerting is configured
         };
 
-        let overall_status = if components.metrics_collector 
-            && components.prometheus_endpoint 
-            && components.alerting {
+        let overall_status = if components.metrics_collector
+            && components.prometheus_endpoint
+            && components.alerting
+        {
             "healthy".to_string()
         } else {
             "unhealthy".to_string()
@@ -280,7 +363,7 @@ mod tests {
     fn test_monitoring_service_invalid_config() {
         let mut config = MonitoringConfig::default();
         config.prometheus.port = 0; // Invalid port
-        
+
         let service = MonitoringService::new(config);
         assert!(service.is_err());
     }
@@ -288,15 +371,21 @@ mod tests {
     #[tokio::test]
     async fn test_metrics_collector() {
         let collector = MetricsCollector::new();
-        
+
         // Test dataset epsilon update
-        collector.update_dataset_epsilon("test_dataset", 0.5, 1.0).await;
-        
+        collector
+            .update_dataset_epsilon("test_dataset", 0.5, 1.0)
+            .await;
+
         // Test session management
-        collector.start_smpc_session("session_1", "standard", "medium", 2).await;
+        collector
+            .start_smpc_session("session_1", "standard", "medium", 2)
+            .await;
         assert_eq!(collector.get_active_session_count().await, 1);
-        
-        collector.complete_smpc_session("session_1", true, None).await;
+
+        collector
+            .complete_smpc_session("session_1", true, None)
+            .await;
         assert_eq!(collector.get_active_session_count().await, 0);
     }
 }

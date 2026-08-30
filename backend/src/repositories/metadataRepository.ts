@@ -1,6 +1,6 @@
-import { DatabaseService } from '../services/databaseService';
-import { PoolClient } from 'pg';
-import { logger } from '../utils/logger';
+import { DatabaseService } from "../services/databaseService";
+import { PoolClient } from "pg";
+import { logger } from "../utils/logger";
 
 export interface SanitizedMetadata {
   id: string;
@@ -11,7 +11,7 @@ export interface SanitizedMetadata {
   processingTime: number;
   processedAt: Date;
   version: number;
-  status: 'processed' | 'failed' | 'pending';
+  status: "processed" | "failed" | "pending";
   workerId?: string;
   retryCount: number;
 }
@@ -25,12 +25,12 @@ export interface PIIDetection {
     end: number;
   };
   confidence: number;
-  method: 'regex' | 'ner' | 'custom';
+  method: "regex" | "ner" | "custom";
 }
 
 export interface MetadataQuery {
   datasetId?: string;
-  status?: SanitizedMetadata['status'];
+  status?: SanitizedMetadata["status"];
   processedAfter?: Date;
   processedBefore?: Date;
   limit?: number;
@@ -48,27 +48,31 @@ export interface MetadataIndex {
 
 export class MetadataRepository {
   private isReadReplica: boolean;
+  private pool: any; // Database pool (PostgreSQL Pool)
 
-  constructor(private db: DatabaseService, options: { isReadReplica?: boolean } = {}) {
+  constructor(
+    private db: DatabaseService,
+    options: { isReadReplica?: boolean } = {},
+  ) {
     this.isReadReplica = options.isReadReplica || false;
-    
-    logger.info('Metadata Repository initialized', {
+    this.pool = (this.db as any).pool || this.db;
+
+    logger.info("Metadata Repository initialized", {
       isReadReplica: this.isReadReplica,
     });
   }
 
   private setupPoolEvents(): void {
-    this.pool.on('connect', (client) => {
-      logger.debug('New database connection established', {
+    this.pool.on("connect", (_client) => {
+      logger.debug("New database connection established", {
         isReadReplica: this.isReadReplica,
         totalCount: this.pool.totalCount,
         idleCount: this.pool.idleCount,
-        totalCount: this.pool.totalCount,
       });
     });
 
-    this.pool.on('error', (err, client) => {
-      logger.error('Database connection error:', {
+    this.pool.on("error", (err, client) => {
+      logger.error("Database connection error:", {
         error: err.message,
         isReadReplica: this.isReadReplica,
         client: {
@@ -78,16 +82,16 @@ export class MetadataRepository {
       });
     });
 
-    this.pool.on('remove', (client) => {
-      logger.debug('Database connection removed', {
+    this.pool.on("remove", (_client) => {
+      logger.debug("Database connection removed", {
         isReadReplica: this.isReadReplica,
         totalCount: this.pool.totalCount,
         idleCount: this.pool.idleCount,
       });
     });
 
-    this.pool.on('acquire', (client) => {
-      logger.debug('Database connection acquired', {
+    this.pool.on("acquire", (_client) => {
+      logger.debug("Database connection acquired", {
         isReadReplica: this.isReadReplica,
         totalCount: this.pool.totalCount,
         idleCount: this.pool.idleCount,
@@ -105,12 +109,12 @@ export class MetadataRepository {
     originalMetadata: Record<string, any>,
     piiDetections: PIIDetection[],
     processingTime: number,
-    workerId?: string
+    workerId?: string,
   ): Promise<string> {
     return await this.db.transaction(async (client) => {
       const id = this.generateMetadataId();
       const now = new Date();
-      
+
       // Insert main metadata record
       const insertQuery = `
         INSERT INTO sanitized_metadata (
@@ -130,13 +134,13 @@ export class MetadataRepository {
         processingTime,
         now,
         1,
-        'processed',
+        "processed",
         workerId,
         0,
       ];
 
       const result = await client.query(insertQuery, values);
-      
+
       // Create searchable index record
       await this.createSearchIndex(client, {
         id,
@@ -147,7 +151,7 @@ export class MetadataRepository {
         processedAt: now,
       });
 
-      logger.info('Sanitized metadata stored', {
+      logger.info("Sanitized metadata stored", {
         id,
         datasetId,
         piiDetectionsCount: piiDetections.length,
@@ -171,13 +175,13 @@ export class MetadataRepository {
       piiDetections: PIIDetection[];
       processingTime: number;
       processedAt: Date;
-    }
+    },
   ): Promise<void> {
     // Create searchable text from metadata
     const searchableText = this.extractSearchableText(indexData.metadata);
-    
+
     // Extract unique PII types
-    const piiTypes = [...new Set(indexData.piiDetections.map(d => d.type))];
+    const piiTypes = [...new Set(indexData.piiDetections.map((d) => d.type))];
 
     const insertQuery = `
       INSERT INTO metadata_search_index (
@@ -209,20 +213,20 @@ export class MetadataRepository {
   private extractSearchableText(metadata: Record<string, any>): string {
     const searchableParts: string[] = [];
 
-    const extractText = (obj: any, prefix: string = ''): void => {
+    const extractText = (obj: any, prefix: string = ""): void => {
       for (const [key, value] of Object.entries(obj)) {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           searchableParts.push(value);
-        } else if (typeof value === 'number') {
+        } else if (typeof value === "number") {
           searchableParts.push(value.toString());
-        } else if (typeof value === 'object' && value !== null) {
+        } else if (typeof value === "object" && value !== null) {
           extractText(value, `${prefix}${key}.`);
         }
       }
     };
 
     extractText(metadata);
-    return searchableParts.join(' ');
+    return searchableParts.join(" ");
   }
 
   /**
@@ -238,7 +242,7 @@ export class MetadataRepository {
     `;
 
     const rows = await this.db.query<any>(query, [id]);
-    
+
     if (rows.length === 0) {
       return null;
     }
@@ -249,9 +253,11 @@ export class MetadataRepository {
   /**
    * Get metadata by dataset ID
    */
-  async getMetadataByDatasetId(datasetId: string): Promise<SanitizedMetadata[]> {
+  async getMetadataByDatasetId(
+    datasetId: string,
+  ): Promise<SanitizedMetadata[]> {
     const client = await this.pool.connect();
-    
+
     try {
       const query = `
         SELECT id, dataset_id, original_metadata, sanitized_metadata, 
@@ -263,8 +269,8 @@ export class MetadataRepository {
       `;
 
       const result = await client.query(query, [datasetId]);
-      
-      return result.rows.map(row => this.mapRowToMetadata(row));
+
+      return result.rows.map((row) => this.mapRowToMetadata(row));
     } finally {
       client.release();
     }
@@ -278,9 +284,9 @@ export class MetadataRepository {
     total: number;
   }> {
     const client = await this.pool.connect();
-    
+
     try {
-      let whereClause = 'WHERE 1=1';
+      let whereClause = "WHERE 1=1";
       const values: any[] = [];
       let paramIndex = 1;
 
@@ -325,9 +331,9 @@ export class MetadataRepository {
 
       values.push(limit, offset);
       const dataResult = await client.query(dataQuery, values);
-      
+
       return {
-        metadata: dataResult.rows.map(row => this.mapRowToMetadata(row)),
+        metadata: dataResult.rows.map((row) => this.mapRowToMetadata(row)),
         total,
       };
     } finally {
@@ -345,15 +351,15 @@ export class MetadataRepository {
       piiTypes?: string[];
       limit?: number;
       offset?: number;
-    } = {}
+    } = {},
   ): Promise<{
     metadata: SanitizedMetadata[];
     total: number;
   }> {
     const client = await this.pool.connect();
-    
+
     try {
-      let whereClause = 'WHERE 1=1';
+      let whereClause = "WHERE 1=1";
       const values: any[] = [];
       let paramIndex = 1;
 
@@ -396,9 +402,9 @@ export class MetadataRepository {
 
       values.push(limit, offset);
       const dataResult = await client.query(dataQuery, values);
-      
+
       return {
-        metadata: dataResult.rows.map(row => this.mapRowToMetadata(row)),
+        metadata: dataResult.rows.map((row) => this.mapRowToMetadata(row)),
         total,
       };
     } finally {
@@ -411,11 +417,11 @@ export class MetadataRepository {
    */
   async updateMetadataStatus(
     id: string,
-    status: SanitizedMetadata['status'],
-    workerId?: string
+    status: SanitizedMetadata["status"],
+    workerId?: string,
   ): Promise<void> {
     const client = await this.pool.connect();
-    
+
     try {
       const query = `
         UPDATE sanitized_metadata
@@ -424,8 +430,8 @@ export class MetadataRepository {
       `;
 
       await client.query(query, [status, workerId, id]);
-      
-      logger.info('Metadata status updated', { id, status, workerId });
+
+      logger.info("Metadata status updated", { id, status, workerId });
     } finally {
       client.release();
     }
@@ -436,7 +442,7 @@ export class MetadataRepository {
    */
   async incrementRetryCount(id: string): Promise<void> {
     const client = await this.pool.connect();
-    
+
     try {
       const query = `
         UPDATE sanitized_metadata
@@ -445,8 +451,8 @@ export class MetadataRepository {
       `;
 
       await client.query(query, [id]);
-      
-      logger.info('Metadata retry count incremented', { id });
+
+      logger.info("Metadata retry count incremented", { id });
     } finally {
       client.release();
     }
@@ -469,7 +475,7 @@ export class MetadataRepository {
     }>;
   }> {
     const client = await this.pool.connect();
-    
+
     try {
       // Get basic statistics
       const statsQuery = `
@@ -499,7 +505,7 @@ export class MetadataRepository {
 
       const piiTypesResult = await client.query(piiTypesQuery);
       const commonPIITypes: Record<string, number> = {};
-      
+
       for (const row of piiTypesResult.rows) {
         commonPIITypes[row.pii_type] = parseInt(row.count);
       }
@@ -517,8 +523,8 @@ export class MetadataRepository {
       `;
 
       const trendResult = await client.query(trendQuery);
-      const processingTrend = trendResult.rows.map(row => ({
-        date: row.date.toISOString().split('T')[0],
+      const processingTrend = trendResult.rows.map((row) => ({
+        date: row.date.toISOString().split("T")[0],
         count: parseInt(row.count),
         avgTime: parseFloat(row.avg_time),
       }));
@@ -541,7 +547,7 @@ export class MetadataRepository {
    * Health check
    */
   async healthCheck(): Promise<{
-    status: 'healthy' | 'degraded' | 'unhealthy';
+    status: "healthy" | "degraded" | "unhealthy";
     timestamp: Date;
     database: {
       connected: boolean;
@@ -556,10 +562,10 @@ export class MetadataRepository {
   }> {
     try {
       const client = await this.pool.connect();
-      
+
       // Test basic connectivity
-      await client.query('SELECT 1');
-      
+      await client.query("SELECT 1");
+
       // Check if tables exist
       const tableCheck = await client.query(`
         SELECT EXISTS (
@@ -575,7 +581,7 @@ export class MetadataRepository {
 
       client.release();
 
-      const status = this.isReadReplica ? 'degraded' : 'healthy'; // Read replica is considered degraded for writes
+      const status = this.isReadReplica ? "degraded" : "healthy"; // Read replica is considered degraded for writes
 
       return {
         status,
@@ -592,10 +598,10 @@ export class MetadataRepository {
         },
       };
     } catch (error) {
-      logger.error('Health check failed:', error);
-      
+      logger.error("Health check failed:", error);
+
       return {
-        status: 'unhealthy',
+        status: "unhealthy",
         timestamp: new Date(),
         database: {
           connected: false,
@@ -620,7 +626,7 @@ export class MetadataRepository {
       datasetId: row.dataset_id,
       originalMetadata: JSON.parse(row.original_metadata),
       sanitizedMetadata: JSON.parse(row.sanitized_metadata),
-      piiDetections: JSON.parse(row.pii_detections || '[]'),
+      piiDetections: JSON.parse(row.pii_detections || "[]"),
       processingTime: row.processing_time,
       processedAt: row.processed_at,
       version: row.version,
@@ -642,7 +648,7 @@ export class MetadataRepository {
    */
   async close(): Promise<void> {
     await this.pool.end();
-    logger.info('Metadata Repository connection pool closed');
+    logger.info("Metadata Repository connection pool closed");
   }
 
   /**

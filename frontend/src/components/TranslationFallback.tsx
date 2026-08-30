@@ -13,7 +13,7 @@ export const TranslationFallback: React.FC<TranslationFallbackProps> = ({
   translationKey,
   fallbackValue,
   showWarning = false,
-  className = ''
+  className = '',
 }) => {
   const { t, i18n } = useTranslation();
 
@@ -28,13 +28,15 @@ export const TranslationFallback: React.FC<TranslationFallbackProps> = ({
   // Generate fallback value if not provided
   const generateFallback = () => {
     if (fallbackValue) return fallbackValue;
-    
+
     // Convert key to readable format
-    return translationKey
-      .split('.')
-      .pop()
-      ?.replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase()) || translationKey;
+    return (
+      translationKey
+        .split('.')
+        .pop()
+        ?.replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase()) || translationKey
+    );
   };
 
   const fallbackText = generateFallback();
@@ -67,17 +69,18 @@ export const withTranslationFallback = <P extends object>(
     // Override the t function to include fallback logic
     const tWithFallback = (key: string, options?: any) => {
       const translation = t(key, { ...options, defaultValue: '' });
-      
+
       if (translation && translation !== key) {
         return translation;
       }
 
       // Generate fallback
-      const fallback = key
-        .split('.')
-        .pop()
-        ?.replace(/([A-Z])/g, ' $1')
-        ?.replace(/^./, (str) => str.toUpperCase()) || key;
+      const fallback =
+        key
+          .split('.')
+          .pop()
+          ?.replace(/([A-Z])/g, ' $1')
+          ?.replace(/^./, (str) => str.toUpperCase()) || key;
 
       // Log in development
       if (process.env.NODE_ENV === 'development') {
@@ -103,17 +106,18 @@ export const useTranslationWithFallback = () => {
 
   const tWithFallback = (key: string, options?: any) => {
     const translation = t(key, { ...options, defaultValue: '' });
-    
+
     if (translation && translation !== key) {
       return translation;
     }
 
     // Generate fallback
-    const fallback = key
-      .split('.')
-      .pop()
-      ?.replace(/([A-Z])/g, ' $1')
-      ?.replace(/^./, (str) => str.toUpperCase()) || key;
+    const fallback =
+      key
+        .split('.')
+        .pop()
+        ?.replace(/([A-Z])/g, ' $1')
+        ?.replace(/^./, (str) => str.toUpperCase()) || key;
 
     // Log in development
     if (process.env.NODE_ENV === 'development') {
@@ -130,6 +134,6 @@ export const useTranslationWithFallback = () => {
     hasTranslation: (key: string) => {
       const translation = t(key, { defaultValue: '' });
       return translation && translation !== key;
-    }
+    },
   };
 };

@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  ExternalLink, 
-  Shield, 
-  ShieldAlert, 
+import EmptyState from './ui/EmptyState';
+import {
+  Search,
+  Filter,
+  Download,
+  ExternalLink,
+  Shield,
+  ShieldAlert,
   ShieldCheck,
   Calendar,
   User,
   Database,
   ChevronDown,
   RefreshCcw,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { clsx } from 'clsx';
@@ -47,7 +48,7 @@ export const AuditTable: React.FC = () => {
     search: '',
     category: '',
     riskLevel: '',
-    dateRange: 'all'
+    dateRange: 'all',
   });
 
   // Fetch data (simulated for now, would use backend)
@@ -55,8 +56,8 @@ export const AuditTable: React.FC = () => {
     const fetchLogs = async () => {
       setIsLoading(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const mockLogs: AuditLog[] = Array.from({ length: 1000 }).map((_, i) => ({
         id: `audit-${1000 - i}`,
         timestamp: new Date(Date.now() - i * 1000 * 60 * 15).toISOString(),
@@ -65,19 +66,21 @@ export const AuditTable: React.FC = () => {
         actor: {
           publicKey: `GD${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
           userId: `user_${Math.random().toString(36).substring(2, 6)}`,
-          ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`
+          ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
         },
         resource: {
           type: 'dataset',
-          id: `dataset_${Math.floor(Math.random() * 100)}`
+          id: `dataset_${Math.floor(Math.random() * 100)}`,
         },
         outcome: Math.random() > 0.1 ? 'success' : 'failure',
-        privacyBudgetConsumed: i % 4 === 0 ? parseFloat((Math.random() * 0.5).toFixed(3)) : undefined,
-        zkProofStatus: i % 4 === 0 ? (Math.random() > 0.05 ? 'passed' : 'failed') : 'not_applicable',
+        privacyBudgetConsumed:
+          i % 4 === 0 ? parseFloat((Math.random() * 0.5).toFixed(3)) : undefined,
+        zkProofStatus:
+          i % 4 === 0 ? (Math.random() > 0.05 ? 'passed' : 'failed') : 'not_applicable',
         stellarTransactionId: `tx_${Math.random().toString(16).substring(2, 10)}`,
-        riskLevel: i % 10 === 0 ? 'high' : 'low'
+        riskLevel: i % 10 === 0 ? 'high' : 'low',
       }));
-      
+
       setLogs(mockLogs);
       setIsLoading(false);
     };
@@ -86,34 +89,45 @@ export const AuditTable: React.FC = () => {
   }, []);
 
   const filteredLogs = useMemo(() => {
-    return logs.filter(log => {
-      const matchesSearch = 
+    return logs.filter((log) => {
+      const matchesSearch =
         log.actor.publicKey?.toLowerCase().includes(filters.search.toLowerCase()) ||
         log.resource.id?.toLowerCase().includes(filters.search.toLowerCase()) ||
         log.id.toLowerCase().includes(filters.search.toLowerCase());
-      
+
       const matchesCategory = !filters.category || log.category === filters.category;
       const matchesRisk = !filters.riskLevel || log.riskLevel === filters.riskLevel;
-      
+
       return matchesSearch && matchesCategory && matchesRisk;
     });
   }, [logs, filters]);
 
   const handleExport = () => {
     // CSV Export logic
-    const headers = ['ID', 'Timestamp', 'Actor', 'Resource', 'Action', 'Outcome', 'Epsilon', 'ZK Proof'];
+    const headers = [
+      'ID',
+      'Timestamp',
+      'Actor',
+      'Resource',
+      'Action',
+      'Outcome',
+      'Epsilon',
+      'ZK Proof',
+    ];
     const csvContent = [
       headers.join(','),
-      ...filteredLogs.map(log => [
-        log.id,
-        log.timestamp,
-        log.actor.publicKey,
-        log.resource.id,
-        log.action,
-        log.outcome,
-        log.privacyBudgetConsumed || '',
-        log.zkProofStatus
-      ].join(','))
+      ...filteredLogs.map((log) =>
+        [
+          log.id,
+          log.timestamp,
+          log.actor.publicKey,
+          log.resource.id,
+          log.action,
+          log.outcome,
+          log.privacyBudgetConsumed || '',
+          log.zkProofStatus,
+        ].join(',')
+      ),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -129,8 +143,13 @@ export const AuditTable: React.FC = () => {
     if (!log) return null;
 
     return (
-      <div style={style} className="flex items-center border-b border-gray-100 dark:border-obsidian-800 px-4 py-2 hover:bg-gray-50 dark:hover:bg-obsidian-800/50 transition-colors">
-        <div className="w-1/12 text-xs font-mono text-gray-500 truncate" title={log.id}>#{log.id.split('-')[1]}</div>
+      <div
+        style={style}
+        className="flex items-center border-b border-gray-100 dark:border-obsidian-800 px-4 py-2 hover:bg-gray-50 dark:hover:bg-obsidian-800/50 transition-colors"
+      >
+        <div className="w-1/12 text-xs font-mono text-gray-500 truncate" title={log.id}>
+          #{log.id.split('-')[1]}
+        </div>
         <div className="w-2/12 text-xs text-gray-600 dark:text-gray-400">
           {format(new Date(log.timestamp), 'MMM dd, HH:mm:ss')}
         </div>
@@ -175,19 +194,21 @@ export const AuditTable: React.FC = () => {
           )}
         </div>
         <div className="w-2/12 flex justify-end items-center gap-2">
-           <a 
-            href={`https://stellar.expert/explorer/testnet/tx/${log.stellarTransactionId}`} 
-            target="_blank" 
+          <a
+            href={`https://stellar.expert/explorer/testnet/tx/${log.stellarTransactionId}`}
+            target="_blank"
             rel="noopener noreferrer"
             className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-cyber-blue rounded-lg transition-colors"
             title="View on Stellar Expert"
           >
             <ExternalLink size={14} />
           </a>
-          <div className={clsx(
-            "w-2 h-2 rounded-full",
-            log.outcome === 'success' ? "bg-green-500 shadow-[0_0_5px_#22c55e]" : "bg-red-500"
-          )} />
+          <div
+            className={clsx(
+              'w-2 h-2 rounded-full',
+              log.outcome === 'success' ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-red-500'
+            )}
+          />
         </div>
       </div>
     );
@@ -200,41 +221,47 @@ export const AuditTable: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search by ID, Public Key, or Dataset..." 
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search by ID, Public Key, or Dataset..."
                 className="input-field pl-10 h-10"
                 value={filters.search}
-                onChange={(e) => setFilters({...filters, search: e.target.value})}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               />
             </div>
             <div className="flex items-center gap-2">
-               <div className="relative">
-                <select 
+              <div className="relative">
+                <select
                   className="appearance-none bg-slate-100 dark:bg-obsidian-800 border-none rounded-lg px-4 py-2 pr-10 text-sm focus:ring-2 focus:ring-cyber-blue"
                   value={filters.category}
-                  onChange={(e) => setFilters({...filters, category: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
                 >
                   <option value="">All Categories</option>
                   <option value="privacy_query">Privacy Query</option>
                   <option value="access_control">Access Control</option>
                   <option value="key_management">Key Management</option>
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={14}
+                />
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {}} 
+            <button
+              onClick={() => {}}
               className="p-2 bg-slate-100 dark:bg-obsidian-800 rounded-lg hover:bg-slate-200 transition-colors"
               title="Refresh Logs"
             >
               <RefreshCcw size={18} />
             </button>
-            <button 
+            <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 bg-cyber-blue text-black rounded-lg font-bold text-xs uppercase tracking-widest hover:opacity-80 transition-all shadow-[0_0_10px_rgba(0,240,255,0.3)]"
             >
@@ -251,8 +278,14 @@ export const AuditTable: React.FC = () => {
         <div className="w-2/12">Timestamp</div>
         <div className="w-3/12">Actor (Accessor)</div>
         <div className="w-2/12">Resource</div>
-        <div className="w-1/12 text-center text-cyber-blue"><Zap size={10} className="inline mr-1" />Epsilon</div>
-        <div className="w-1/12 text-center text-green-500"><Shield size={10} className="inline mr-1" />ZK-Proof</div>
+        <div className="w-1/12 text-center text-cyber-blue">
+          <Zap size={10} className="inline mr-1" />
+          Epsilon
+        </div>
+        <div className="w-1/12 text-center text-green-500">
+          <Shield size={10} className="inline mr-1" />
+          ZK-Proof
+        </div>
         <div className="w-2/12 text-right pr-4">Stellar / Status</div>
       </div>
 
@@ -261,7 +294,9 @@ export const AuditTable: React.FC = () => {
         {isLoading ? (
           <div className="h-full flex items-center justify-center">
             <ScanningEffect isLoading={true} className="w-64 h-32 flex items-center justify-center">
-               <div className="text-cyber-blue font-bold animate-pulse">Scanning Privacy Audit Logs...</div>
+              <div className="text-cyber-blue font-bold animate-pulse">
+                Scanning Privacy Audit Logs...
+              </div>
             </ScanningEffect>
           </div>
         ) : filteredLogs.length > 0 ? (
@@ -275,20 +310,41 @@ export const AuditTable: React.FC = () => {
             {Row}
           </List>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-gray-500">
-            <Search size={48} className="mb-4 opacity-20" />
-            <p>No audit logs found matching your filters</p>
-          </div>
+          <EmptyState
+            variant={
+              filters.search || filters.category || filters.riskLevel
+                ? 'no-search-results'
+                : 'no-audit-logs'
+            }
+            title={
+              filters.search || filters.category || filters.riskLevel
+                ? 'No matching audit logs'
+                : 'No audit logs yet'
+            }
+            description={
+              filters.search || filters.category || filters.riskLevel
+                ? 'Try adjusting your search or filter criteria.'
+                : 'Audit events will appear here as activity is recorded.'
+            }
+            className="h-full py-20"
+          />
         )}
       </div>
-      
+
       {/* Footer Info */}
       <div className="px-6 py-3 bg-gray-50 dark:bg-obsidian-900 border-t border-gray-200 dark:border-obsidian-800 text-[10px] text-gray-500 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> SUCCESS</span>
-          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> FAILURE</span>
+          <span className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div> SUCCESS
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div> FAILURE
+          </span>
         </div>
-        <div>TOTAL RECORDS: <span className="font-bold text-gray-700 dark:text-gray-300">{filteredLogs.length}</span></div>
+        <div>
+          TOTAL RECORDS:{' '}
+          <span className="font-bold text-gray-700 dark:text-gray-300">{filteredLogs.length}</span>
+        </div>
       </div>
     </div>
   );

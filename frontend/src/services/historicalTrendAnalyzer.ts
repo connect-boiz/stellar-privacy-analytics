@@ -2,12 +2,12 @@
  * Historical Trend Analysis Service
  */
 
-import { 
-  HistoricalTrend, 
-  PrivacyMetric, 
-  AnomalyDetection, 
-  ComplianceStatus,
-  PrivacyAlert 
+import {
+  HistoricalTrend,
+  PrivacyMetric,
+  _AnomalyDetection,
+  _ComplianceStatus,
+  _PrivacyAlert,
 } from '../types/privacyMetrics';
 
 export interface TrendAnalysisConfig {
@@ -52,7 +52,7 @@ export class HistoricalTrendAnalyzer {
           granularity: 'hour',
           smoothingFactor: 0.3,
           outlierThreshold: 2.5,
-          enablePredictions: true
+          enablePredictions: true,
         };
       }
       HistoricalTrendAnalyzer.instance = new HistoricalTrendAnalyzer(config);
@@ -80,10 +80,10 @@ export class HistoricalTrendAnalyzer {
 
     // Calculate statistics
     const statistics = this.calculateStatistics(aggregatedData);
-    
+
     // Detect anomalies
     const anomalies = this.detectAnomalies(aggregatedData, statistics);
-    
+
     // Calculate trend
     const trend = this.calculateTrend(aggregatedData);
 
@@ -94,7 +94,7 @@ export class HistoricalTrendAnalyzer {
       dataPoints: aggregatedData,
       statistics,
       anomalies,
-      trend
+      trend,
     };
 
     // Cache the result
@@ -115,7 +115,7 @@ export class HistoricalTrendAnalyzer {
           description: `${trend.metric} is ${trend.trend.direction} with ${(trend.trend.slope * 100).toFixed(2)}% change rate`,
           confidence: Math.abs(trend.trend.correlation),
           impact: Math.abs(trend.trend.slope) > 0.5 ? 'high' : 'medium',
-          recommendations: this.generateTrendRecommendations(trend)
+          recommendations: this.generateTrendRecommendations(trend),
         });
       }
 
@@ -130,8 +130,8 @@ export class HistoricalTrendAnalyzer {
           recommendations: [
             'Investigate the root cause of anomalies',
             'Consider adjusting alert thresholds',
-            'Review data quality and collection processes'
-          ]
+            'Review data quality and collection processes',
+          ],
         });
       }
 
@@ -148,8 +148,8 @@ export class HistoricalTrendAnalyzer {
             recommendations: [
               'Account for seasonal patterns in forecasting',
               'Adjust resource allocation based on seasonal patterns',
-              'Monitor for seasonal anomaly deviations'
-            ]
+              'Monitor for seasonal anomaly deviations',
+            ],
           });
         }
       }
@@ -174,14 +174,14 @@ export class HistoricalTrendAnalyzer {
     const timeInterval = this.getTimeInterval(dataPoints);
 
     const predictions: TrendPrediction[] = [];
-    
+
     for (let i = 1; i <= futurePoints; i++) {
-      const futureTimestamp = lastTimestamp + (i * timeInterval);
+      const futureTimestamp = lastTimestamp + i * timeInterval;
       const predictedValue = slope * futureTimestamp + intercept;
-      
+
       // Calculate confidence bounds based on historical variance
       const variance = this.calculatePredictionVariance(dataPoints, slope, intercept);
-      const confidence = Math.max(0.1, 1 - (variance / predictedValue));
+      const confidence = Math.max(0.1, 1 - variance / predictedValue);
       const margin = Math.sqrt(variance) * 1.96; // 95% confidence interval
 
       predictions.push({
@@ -189,7 +189,7 @@ export class HistoricalTrendAnalyzer {
         value: predictedValue,
         confidence,
         upperBound: predictedValue + margin,
-        lowerBound: Math.max(0, predictedValue - margin)
+        lowerBound: Math.max(0, predictedValue - margin),
       });
     }
 
@@ -217,7 +217,7 @@ export class HistoricalTrendAnalyzer {
     for (let i = 0; i < trends.length; i++) {
       for (let j = i + 1; j < trends.length; j++) {
         const correlation = this.calculateCorrelation(trends[i].dataPoints, trends[j].dataPoints);
-        
+
         if (!isNaN(correlation)) {
           let significance: 'low' | 'medium' | 'high' = 'low';
           if (Math.abs(correlation) > 0.7) significance = 'high';
@@ -227,7 +227,7 @@ export class HistoricalTrendAnalyzer {
             metric1: trends[i].metric,
             metric2: trends[j].metric,
             correlation,
-            significance
+            significance,
           });
 
           // Generate insights for strong correlations
@@ -247,10 +247,13 @@ export class HistoricalTrendAnalyzer {
   // Helper methods
   private filterMetricsByTimeRange(metrics: PrivacyMetric[], timeRange: string): PrivacyMetric[] {
     const range = this.getTimeRange(timeRange);
-    return metrics.filter(m => m.timestamp >= range.start && m.timestamp <= range.end);
+    return metrics.filter((m) => m.timestamp >= range.start && m.timestamp <= range.end);
   }
 
-  private aggregateMetrics(metrics: PrivacyMetric[], granularity: string): Array<{
+  private aggregateMetrics(
+    metrics: PrivacyMetric[],
+    granularity: string
+  ): Array<{
     timestamp: number;
     value: number;
     metadata?: Record<string, any>;
@@ -261,9 +264,9 @@ export class HistoricalTrendAnalyzer {
     const grouped = new Map<number, number[]>();
 
     // Group metrics by time intervals
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       const intervalStart = Math.floor(metric.timestamp / intervalMs) * intervalMs;
-      
+
       if (!grouped.has(intervalStart)) {
         grouped.set(intervalStart, []);
       }
@@ -285,8 +288,8 @@ export class HistoricalTrendAnalyzer {
         metadata: {
           count: values.length,
           min: Math.min(...values),
-          max: Math.max(...values)
-        }
+          max: Math.max(...values),
+        },
       });
     });
 
@@ -312,19 +315,20 @@ export class HistoricalTrendAnalyzer {
         avg: 0,
         median: 0,
         stdDev: 0,
-        trend: { direction: 'stable', slope: 0, correlation: 0 }
+        trend: { direction: 'stable', slope: 0, correlation: 0 },
       };
     }
 
-    const values = dataPoints.map(p => p.value);
+    const values = dataPoints.map((p) => p.value);
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
 
     const sortedValues = [...values].sort((a, b) => a - b);
-    const median = sortedValues.length % 2 === 0
-      ? (sortedValues[sortedValues.length / 2 - 1] + sortedValues[sortedValues.length / 2]) / 2
-      : sortedValues[Math.floor(sortedValues.length / 2)];
+    const median =
+      sortedValues.length % 2 === 0
+        ? (sortedValues[sortedValues.length / 2 - 1] + sortedValues[sortedValues.length / 2]) / 2
+        : sortedValues[Math.floor(sortedValues.length / 2)];
 
     const trend = this.calculateTrend(dataPoints);
 
@@ -334,7 +338,7 @@ export class HistoricalTrendAnalyzer {
       avg: mean,
       median,
       stdDev,
-      trend
+      trend,
     };
   }
 
@@ -348,7 +352,7 @@ export class HistoricalTrendAnalyzer {
     }
 
     const { slope, correlation } = this.calculateLinearRegression(dataPoints);
-    
+
     let direction: 'up' | 'down' | 'stable' = 'stable';
     if (Math.abs(slope) > 0.001) {
       direction = slope > 0 ? 'up' : 'down';
@@ -365,8 +369,8 @@ export class HistoricalTrendAnalyzer {
     const n = dataPoints.length;
     if (n < 2) return { slope: 0, intercept: 0, correlation: 0 };
 
-    const x = dataPoints.map(p => p.timestamp);
-    const y = dataPoints.map(p => p.value);
+    const x = dataPoints.map((p) => p.timestamp);
+    const y = dataPoints.map((p) => p.value);
 
     const sumX = x.reduce((sum, val) => sum + val, 0);
     const sumY = y.reduce((sum, val) => sum + val, 0);
@@ -379,7 +383,7 @@ export class HistoricalTrendAnalyzer {
     // Calculate correlation coefficient
     const meanX = sumX / n;
     const meanY = sumY / n;
-    
+
     let numerator = 0;
     let sumXSquared = 0;
     let sumYSquared = 0;
@@ -403,14 +407,14 @@ export class HistoricalTrendAnalyzer {
   ): Array<{ timestamp: number; value: number; score: number }> {
     const anomalies: Array<{ timestamp: number; value: number; score: number }> = [];
 
-    dataPoints.forEach(point => {
+    dataPoints.forEach((point) => {
       const zScore = Math.abs(point.value - statistics.mean) / statistics.stdDev;
-      
+
       if (zScore > this.config.outlierThreshold) {
         anomalies.push({
           timestamp: point.timestamp,
           value: point.value,
-          score: Math.min(zScore / this.config.outlierThreshold, 1)
+          score: Math.min(zScore / this.config.outlierThreshold, 1),
         });
       }
     });
@@ -428,9 +432,9 @@ export class HistoricalTrendAnalyzer {
       return { detected: false, period: 0, confidence: 0 };
     }
 
-    const values = dataPoints.map(p => p.value);
+    const values = dataPoints.map((p) => p.value);
     const maxLag = Math.min(dataPoints.length / 2, 168); // Check up to 1 week for hourly data
-    
+
     let maxCorrelation = 0;
     let bestPeriod = 0;
 
@@ -445,7 +449,7 @@ export class HistoricalTrendAnalyzer {
     return {
       detected: maxCorrelation > 0.6,
       period: bestPeriod,
-      confidence: maxCorrelation
+      confidence: maxCorrelation,
     };
   }
 
@@ -454,7 +458,7 @@ export class HistoricalTrendAnalyzer {
 
     const n = values.length - lag;
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-    
+
     let numerator = 0;
     let denominator = 0;
 
@@ -474,11 +478,11 @@ export class HistoricalTrendAnalyzer {
   ): number {
     // Align data points by timestamp
     const aligned = this.alignDataPoints(data1, data2);
-    
+
     if (aligned.length < 3) return NaN;
 
-    const values1 = aligned.map(p => p.value1);
-    const values2 = aligned.map(p => p.value2);
+    const values1 = aligned.map((p) => p.value1);
+    const values2 = aligned.map((p) => p.value2);
 
     const mean1 = values1.reduce((sum, val) => sum + val, 0) / values1.length;
     const mean2 = values2.reduce((sum, val) => sum + val, 0) / values2.length;
@@ -504,15 +508,15 @@ export class HistoricalTrendAnalyzer {
     data2: Array<{ timestamp: number; value: number }>
   ): Array<{ timestamp: number; value1: number; value2: number }> {
     const aligned: Array<{ timestamp: number; value1: number; value2: number }> = [];
-    const map2 = new Map(data2.map(p => [p.timestamp, p.value]));
+    const map2 = new Map(data2.map((p) => [p.timestamp, p.value]));
 
-    data1.forEach(point1 => {
+    data1.forEach((point1) => {
       const value2 = map2.get(point1.timestamp);
       if (value2 !== undefined) {
         aligned.push({
           timestamp: point1.timestamp,
           value1: point1.value,
-          value2
+          value2,
         });
       }
     });
@@ -525,7 +529,7 @@ export class HistoricalTrendAnalyzer {
     slope: number,
     intercept: number
   ): number {
-    const residuals = dataPoints.map(point => {
+    const residuals = dataPoints.map((point) => {
       const predicted = slope * point.timestamp + intercept;
       return point.value - predicted;
     });
@@ -557,11 +561,15 @@ export class HistoricalTrendAnalyzer {
     }
 
     if (trend.statistics.stdDev / trend.statistics.avg > 0.3) {
-      recommendations.push('High variability detected - consider implementing stabilization measures');
+      recommendations.push(
+        'High variability detected - consider implementing stabilization measures'
+      );
     }
 
     if (trend.anomalies.length > trend.dataPoints.length * 0.1) {
-      recommendations.push('High anomaly rate detected - review data quality and collection processes');
+      recommendations.push(
+        'High anomaly rate detected - review data quality and collection processes'
+      );
     }
 
     return recommendations;
@@ -575,12 +583,12 @@ export class HistoricalTrendAnalyzer {
       '24h': now - 24 * 60 * 60 * 1000,
       '7d': now - 7 * 24 * 60 * 60 * 1000,
       '30d': now - 30 * 24 * 60 * 60 * 1000,
-      '90d': now - 90 * 24 * 60 * 60 * 1000
+      '90d': now - 90 * 24 * 60 * 60 * 1000,
     };
-    
+
     return {
       start: ranges[timeRange as keyof typeof ranges] || ranges['24h'],
-      end: now
+      end: now,
     };
   }
 
@@ -590,9 +598,9 @@ export class HistoricalTrendAnalyzer {
       hour: 60 * 60 * 1000,
       day: 24 * 60 * 60 * 1000,
       week: 7 * 24 * 60 * 60 * 1000,
-      month: 30 * 24 * 60 * 60 * 1000
+      month: 30 * 24 * 60 * 60 * 1000,
     };
-    
+
     return intervals[granularity as keyof typeof intervals] || intervals['hour'];
   }
 
@@ -617,11 +625,15 @@ export class HistoricalTrendAnalyzer {
 
   // Export functionality
   public exportTrends(trends: HistoricalTrend[]): string {
-    return JSON.stringify({
-      trends,
-      exportedAt: Date.now(),
-      config: this.config
-    }, null, 2);
+    return JSON.stringify(
+      {
+        trends,
+        exportedAt: Date.now(),
+        config: this.config,
+      },
+      null,
+      2
+    );
   }
 
   // Batch analysis
@@ -632,7 +644,7 @@ export class HistoricalTrendAnalyzer {
     const trends: HistoricalTrend[] = [];
 
     for (const metricName of metricNames) {
-      const metricData = metrics.filter(m => m.metricType === metricName);
+      const metricData = metrics.filter((m) => m.metricType === metricName);
       if (metricData.length > 0) {
         const trend = await this.analyzeTrends(metricData, metricName);
         trends.push(trend);

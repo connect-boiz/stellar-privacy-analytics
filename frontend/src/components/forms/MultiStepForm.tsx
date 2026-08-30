@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Check, 
-  AlertCircle, 
-  Save, 
-  RotateCcw,
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  AlertCircle,
+  Save,
+  _RotateCcw,
   Clock,
-  Info
+  Info,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 
@@ -99,12 +99,12 @@ export function useStepForm() {
 }
 
 // Progress Indicator Component
-export function ProgressIndicator({ 
-  currentStep, 
-  totalSteps, 
-  steps, 
+export function ProgressIndicator({
+  currentStep,
+  totalSteps,
+  steps,
   completedSteps,
-  errors 
+  errors,
 }: ProgressProps) {
   return (
     <nav aria-label="Form progress" className="mb-8">
@@ -113,19 +113,20 @@ export function ProgressIndicator({
           const isCompleted = completedSteps.includes(index);
           const isCurrent = index === currentStep;
           const hasErrors = Object.keys(errors).length > 0 && isCurrent;
-          
+
           return (
             <li key={step.id} className="flex-1 relative">
               <div
                 className={`
                   flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-                  ${isCompleted 
-                    ? 'bg-green-600 border-green-600 text-white' 
-                    : isCurrent
-                      ? hasErrors
-                        ? 'bg-red-50 border-red-500 text-red-600'
-                        : 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-gray-100 border-gray-300 text-gray-500'
+                  ${
+                    isCompleted
+                      ? 'bg-green-600 border-green-600 text-white'
+                      : isCurrent
+                        ? hasErrors
+                          ? 'bg-red-50 border-red-500 text-red-600'
+                          : 'bg-blue-600 border-blue-600 text-white'
+                        : 'bg-gray-100 border-gray-300 text-gray-500'
                   }
                 `}
                 aria-current={isCurrent ? 'step' : undefined}
@@ -137,17 +138,17 @@ export function ProgressIndicator({
                 )}
               </div>
               <div className="mt-2 text-center">
-                <p className={`text-sm font-medium ${isCurrent ? 'text-blue-600' : 'text-gray-700'}`}>
+                <p
+                  className={`text-sm font-medium ${isCurrent ? 'text-blue-600' : 'text-gray-700'}`}
+                >
                   {step.title}
                 </p>
                 {step.description && (
-                  <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">
-                    {step.description}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">{step.description}</p>
                 )}
               </div>
               {index < totalSteps - 1 && (
-                <div 
+                <div
                   className={`absolute top-5 left-[calc(50%+2rem)] w-[calc(100%-4rem)] h-0.5 ${
                     completedSteps.includes(index) ? 'bg-green-600' : 'bg-gray-200'
                   }`}
@@ -163,7 +164,7 @@ export function ProgressIndicator({
 }
 
 // Step Summary Component
-export function StepSummary<T>({ values, steps, currentStep, onStepClick }: StepSummaryProps<T>) {
+export function StepSummary<T>({ _values, steps, currentStep, onStepClick }: StepSummaryProps<T>) {
   return (
     <div className="bg-gray-50 rounded-lg p-4 mb-6">
       <h3 className="text-sm font-medium text-gray-700 mb-3">Form Summary</h3>
@@ -200,14 +201,9 @@ interface RecoveryDialogProps {
 
 function RecoveryDialog({ isOpen, recoveryData, onRecover, onStartFresh }: RecoveryDialogProps) {
   const timeAgo = getTimeAgo(recoveryData.savedAt);
-  
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onStartFresh}
-      title="Recover Your Progress?"
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={onStartFresh} title="Recover Your Progress?" size="md">
       <div className="space-y-4">
         <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
           <Info className="w-5 h-5 text-blue-600 mt-0.5" aria-hidden="true" />
@@ -215,12 +211,10 @@ function RecoveryDialog({ isOpen, recoveryData, onRecover, onStartFresh }: Recov
             <p className="text-sm text-blue-800">
               We found your previously saved form data from <strong>{timeAgo}</strong>.
             </p>
-            <p className="text-sm text-blue-700 mt-1">
-              You were on step {recoveryData.step + 1}.
-            </p>
+            <p className="text-sm text-blue-700 mt-1">You were on step {recoveryData.step + 1}.</p>
           </div>
         </div>
-        
+
         <div className="flex gap-3">
           <button
             onClick={onRecover}
@@ -243,7 +237,7 @@ function RecoveryDialog({ isOpen, recoveryData, onRecover, onStartFresh }: Recov
 // Helper function
 function getTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  
+
   if (seconds < 60) return 'just now';
   if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
@@ -272,23 +266,26 @@ export function MultiStepForm<T extends Record<string, unknown>>({
   ariaLabel = 'Multi-step form',
   showStepNumbers = true,
   allowFreeNavigation = false,
-  confirmOnLeave = true,
-  children
+  _confirmOnLeave = true,
+  children,
 }: MultiStepFormProps<T> & { children?: React.ReactNode }) {
   const [internalStep, setInternalStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<number | null>(null);
+  const [_showLeaveConfirm, _setShowLeaveConfirm] = useState(false);
+  const [_pendingNavigation, _setPendingNavigation] = useState<number | null>(null);
   const [stepErrors, setStepErrors] = useState<Record<string, string>>(errors);
-  
+
   const currentStep = controlledStep ?? internalStep;
-  const setCurrentStep = useCallback((step: number) => {
-    if (controlledStep === undefined) {
-      setInternalStep(step);
-    }
-    onStepChange?.(step);
-  }, [controlledStep, onStepChange]);
+  const setCurrentStep = useCallback(
+    (step: number) => {
+      if (controlledStep === undefined) {
+        setInternalStep(step);
+      }
+      onStepChange?.(step);
+    },
+    [controlledStep, onStepChange]
+  );
 
   const stepRef = useRef<HTMLDivElement>(null);
 
@@ -312,27 +309,30 @@ export function MultiStepForm<T extends Record<string, unknown>>({
   }, [currentStep]);
 
   // Validate current step
-  const validateStep = useCallback((stepIndex: number): boolean => {
-    const step = steps[stepIndex];
-    if (!step.validate) return true;
-    
-    const stepErrors = step.validate(values);
-    if (stepErrors && Object.keys(stepErrors).length > 0) {
-      onErrorsChange?.(stepErrors);
-      return false;
-    }
-    
-    onErrorsChange?.({});
-    return true;
-  }, [steps, values, onErrorsChange]);
+  const validateStep = useCallback(
+    (stepIndex: number): boolean => {
+      const step = steps[stepIndex];
+      if (!step.validate) return true;
+
+      const stepErrors = step.validate(values);
+      if (stepErrors && Object.keys(stepErrors).length > 0) {
+        onErrorsChange?.(stepErrors);
+        return false;
+      }
+
+      onErrorsChange?.({});
+      return true;
+    },
+    [steps, values, onErrorsChange]
+  );
 
   // Navigate to next step
   const goNext = useCallback(() => {
     if (currentStep >= steps.length - 1) return;
-    
+
     if (!validateStep(currentStep)) return;
-    
-    setCompletedSteps(prev => [...prev.filter(s => s !== currentStep), currentStep]);
+
+    setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
     setCurrentStep(currentStep + 1);
   }, [currentStep, steps.length, validateStep, setCurrentStep]);
 
@@ -343,28 +343,31 @@ export function MultiStepForm<T extends Record<string, unknown>>({
   }, [currentStep, setCurrentStep]);
 
   // Navigate to specific step
-  const goToStep = useCallback((step: number) => {
-    if (step < 0 || step >= steps.length) return;
-    
-    if (!allowFreeNavigation && step > currentStep) {
-      // Need to validate all steps between current and target
-      let canProceed = true;
-      for (let i = currentStep; i < step; i++) {
-        if (!validateStep(i)) {
-          canProceed = false;
-          break;
+  const goToStep = useCallback(
+    (step: number) => {
+      if (step < 0 || step >= steps.length) return;
+
+      if (!allowFreeNavigation && step > currentStep) {
+        // Need to validate all steps between current and target
+        let canProceed = true;
+        for (let i = currentStep; i < step; i++) {
+          if (!validateStep(i)) {
+            canProceed = false;
+            break;
+          }
         }
+        if (!canProceed) return;
       }
-      if (!canProceed) return;
-    }
-    
-    setCurrentStep(step);
-  }, [steps.length, currentStep, allowFreeNavigation, validateStep, setCurrentStep]);
+
+      setCurrentStep(step);
+    },
+    [steps.length, currentStep, allowFreeNavigation, validateStep, setCurrentStep]
+  );
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
     if (!validateStep(currentStep)) return;
-    
+
     // Validate all steps
     let allValid = true;
     for (let i = 0; i < steps.length; i++) {
@@ -374,7 +377,7 @@ export function MultiStepForm<T extends Record<string, unknown>>({
         break;
       }
     }
-    
+
     if (allValid) {
       await onSubmit(values);
     }
@@ -397,7 +400,7 @@ export function MultiStepForm<T extends Record<string, unknown>>({
   const contextValue: StepFormContextValue = {
     errors: stepErrors,
     setFieldError: (field, error) => {
-      setStepErrors(prev => {
+      setStepErrors((prev) => {
         const next = { ...prev };
         if (error) {
           next[field] = error;
@@ -408,12 +411,12 @@ export function MultiStepForm<T extends Record<string, unknown>>({
       });
     },
     clearFieldError: (field) => {
-      setStepErrors(prev => {
+      setStepErrors((prev) => {
         const next = { ...prev };
         delete next[field];
         return next;
       });
-    }
+    },
   };
 
   const currentStepConfig = steps[currentStep];
@@ -441,20 +444,28 @@ export function MultiStepForm<T extends Record<string, unknown>>({
                 <Save className="w-4 h-4 animate-pulse" aria-hidden="true" />
                 <span>Saving...</span>
               </>
-            ) : lastSavedAt && (
-              <>
-                <Clock className="w-4 h-4" aria-hidden="true" />
-                <span>Last saved {getTimeAgo(lastSavedAt)}</span>
-              </>
+            ) : (
+              lastSavedAt && (
+                <>
+                  <Clock className="w-4 h-4" aria-hidden="true" />
+                  <span>Last saved {getTimeAgo(lastSavedAt)}</span>
+                </>
+              )
             )}
           </div>
         )}
 
         {/* Progress Indicator */}
         {renderProgress ? (
-          renderProgress({ currentStep, totalSteps: steps.length, steps, completedSteps, errors: stepErrors })
+          renderProgress({
+            currentStep,
+            totalSteps: steps.length,
+            steps,
+            completedSteps,
+            errors: stepErrors,
+          })
         ) : (
-          <ProgressIndicator 
+          <ProgressIndicator
             currentStep={currentStep}
             totalSteps={steps.length}
             steps={steps}
@@ -464,7 +475,8 @@ export function MultiStepForm<T extends Record<string, unknown>>({
         )}
 
         {/* Step Summary */}
-        {renderStepSummary && renderStepSummary({ values, steps, currentStep, onStepClick: goToStep })}
+        {renderStepSummary &&
+          renderStepSummary({ values, steps, currentStep, onStepClick: goToStep })}
 
         {/* Step Content */}
         <div
@@ -484,7 +496,7 @@ export function MultiStepForm<T extends Record<string, unknown>>({
             >
               {/* Step Header */}
               <div className="mb-6">
-                <h2 
+                <h2
                   id={`step-${currentStep}-title`}
                   className="text-xl font-semibold text-gray-900"
                 >
@@ -503,7 +515,7 @@ export function MultiStepForm<T extends Record<string, unknown>>({
 
               {/* Validation Errors Summary */}
               {Object.keys(stepErrors).length > 0 && (
-                <div 
+                <div
                   role="alert"
                   className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3"
                 >
@@ -520,10 +532,9 @@ export function MultiStepForm<T extends Record<string, unknown>>({
               )}
 
               {/* Step Content (children render prop) */}
-              {typeof children === 'function' 
+              {typeof children === 'function'
                 ? children({ step: currentStep, values, onChange, errors: stepErrors })
-                : children
-              }
+                : children}
             </motion.div>
           </AnimatePresence>
         </div>

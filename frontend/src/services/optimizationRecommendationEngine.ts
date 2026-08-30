@@ -9,7 +9,7 @@ import {
   Recommendation,
   OptimizationGoal,
   BudgetConstraints,
-  AllocationCategory
+  _AllocationCategory,
 } from '../types/privacyBudget';
 
 export interface OptimizationConfig {
@@ -50,7 +50,12 @@ export interface OptimizationPattern {
   id: string;
   name: string;
   description: string;
-  category: 'reallocation' | 'efficiency' | 'risk_mitigation' | 'cost_reduction' | 'performance_improvement';
+  category:
+    | 'reallocation'
+    | 'efficiency'
+    | 'risk_mitigation'
+    | 'cost_reduction'
+    | 'performance_improvement';
   conditions: PatternCondition[];
   actions: PatternAction[];
   expectedImpact: PatternImpact;
@@ -92,7 +97,9 @@ export class OptimizationRecommendationEngine {
     this.initializePatterns();
   }
 
-  static getInstance(config?: OptimizationRecommendationEngine['config']): OptimizationRecommendationEngine {
+  static getInstance(
+    config?: OptimizationRecommendationEngine['config']
+  ): OptimizationRecommendationEngine {
     if (!OptimizationRecommendationEngine.instance) {
       if (!config) {
         config = {
@@ -101,7 +108,7 @@ export class OptimizationRecommendationEngine {
           confidenceThreshold: 0.7,
           riskTolerance: 0.3,
           timeHorizon: 365,
-          optimizationTargets: ['roi', 'risk', 'privacy', 'utility']
+          optimizationTargets: ['roi', 'risk', 'privacy', 'utility'],
         };
       }
       OptimizationRecommendationEngine.instance = new OptimizationRecommendationEngine(config);
@@ -119,14 +126,14 @@ export class OptimizationRecommendationEngine {
         conditions: [
           { metric: 'totalROI', operator: 'lt', value: 0.15, weight: 0.4 },
           { metric: 'budgetUtilization', operator: 'gt', value: 0.8, weight: 0.3 },
-          { metric: 'efficiency', operator: 'lt', value: 70, weight: 0.3 }
+          { metric: 'efficiency', operator: 'lt', value: 70, weight: 0.3 },
         ],
         actions: [
           {
             type: 'reallocate',
             target: 'data_analysis',
-            parameters: { percentage: 0.1, from: 'data_collection' }
-          }
+            parameters: { percentage: 0.1, from: 'data_collection' },
+          },
         ],
         expectedImpact: {
           roi: 0.08,
@@ -134,11 +141,11 @@ export class OptimizationRecommendationEngine {
           privacy: 0.01,
           utility: 0.05,
           cost: -0.03,
-          efficiency: 0.1
+          efficiency: 0.1,
         },
         confidence: 0.85,
         frequency: 0.3,
-        successRate: 0.78
+        successRate: 0.78,
       },
       {
         id: 'high_risk_mitigation',
@@ -148,19 +155,19 @@ export class OptimizationRecommendationEngine {
         conditions: [
           { metric: 'riskScore', operator: 'gt', value: 70, weight: 0.5 },
           { metric: 'privacyScore', operator: 'lt', value: 75, weight: 0.3 },
-          { metric: 'complianceScore', operator: 'lt', value: 80, weight: 0.2 }
+          { metric: 'complianceScore', operator: 'lt', value: 80, weight: 0.2 },
         ],
         actions: [
           {
             type: 'reallocate',
             target: 'monitoring',
-            parameters: { percentage: 0.05, from: 'research' }
+            parameters: { percentage: 0.05, from: 'research' },
           },
           {
             type: 'add',
             target: 'compliance',
-            parameters: { amount: 50000 }
-          }
+            parameters: { amount: 50000 },
+          },
         ],
         expectedImpact: {
           roi: -0.02,
@@ -168,11 +175,11 @@ export class OptimizationRecommendationEngine {
           privacy: 0.12,
           utility: 0.01,
           cost: 0.05,
-          efficiency: -0.02
+          efficiency: -0.02,
         },
         confidence: 0.92,
         frequency: 0.25,
-        successRate: 0.85
+        successRate: 0.85,
       },
       {
         id: 'efficiency_optimization',
@@ -182,14 +189,14 @@ export class OptimizationRecommendationEngine {
         conditions: [
           { metric: 'efficiency', operator: 'lt', value: 65, weight: 0.4 },
           { metric: 'budgetUtilization', operator: 'gt', value: 0.9, weight: 0.3 },
-          { metric: 'costBenefitRatio', operator: 'lt', value: 1.1, weight: 0.3 }
+          { metric: 'costBenefitRatio', operator: 'lt', value: 1.1, weight: 0.3 },
         ],
         actions: [
           {
             type: 'optimize',
             target: 'all',
-            parameters: { method: 'linear_programming', objective: 'efficiency' }
-          }
+            parameters: { method: 'linear_programming', objective: 'efficiency' },
+          },
         ],
         expectedImpact: {
           roi: 0.03,
@@ -197,11 +204,11 @@ export class OptimizationRecommendationEngine {
           privacy: 0.02,
           utility: 0.04,
           cost: -0.02,
-          efficiency: 0.15
+          efficiency: 0.15,
         },
         confidence: 0.78,
         frequency: 0.4,
-        successRate: 0.72
+        successRate: 0.72,
       },
       {
         id: 'compliance_boost',
@@ -211,19 +218,19 @@ export class OptimizationRecommendationEngine {
         conditions: [
           { metric: 'complianceScore', operator: 'lt', value: 75, weight: 0.5 },
           { metric: 'riskScore', operator: 'gt', value: 60, weight: 0.3 },
-          { metric: 'privacyScore', operator: 'lt', value: 80, weight: 0.2 }
+          { metric: 'privacyScore', operator: 'lt', value: 80, weight: 0.2 },
         ],
         actions: [
           {
             type: 'add',
             target: 'compliance',
-            parameters: { amount: 75000 }
+            parameters: { amount: 75000 },
           },
           {
             type: 'adjust',
             target: 'compliance',
-            parameters: { efficiency_target: 0.9 }
-          }
+            parameters: { efficiency_target: 0.9 },
+          },
         ],
         expectedImpact: {
           roi: -0.01,
@@ -231,11 +238,11 @@ export class OptimizationRecommendationEngine {
           privacy: 0.15,
           utility: 0.02,
           cost: 0.04,
-          efficiency: 0.05
+          efficiency: 0.05,
         },
         confidence: 0.88,
         frequency: 0.2,
-        successRate: 0.82
+        successRate: 0.82,
       },
       {
         id: 'cost_reduction',
@@ -245,19 +252,19 @@ export class OptimizationRecommendationEngine {
         conditions: [
           { metric: 'costBenefitRatio', operator: 'lt', value: 1.0, weight: 0.4 },
           { metric: 'budgetUtilization', operator: 'lt', value: 0.7, weight: 0.3 },
-          { metric: 'efficiency', operator: 'gt', value: 70, weight: 0.3 }
+          { metric: 'efficiency', operator: 'gt', value: 70, weight: 0.3 },
         ],
         actions: [
           {
             type: 'remove',
             target: 'research',
-            parameters: { percentage: 0.5 }
+            parameters: { percentage: 0.5 },
           },
           {
             type: 'optimize',
             target: 'all',
-            parameters: { method: 'cost_minimization' }
-          }
+            parameters: { method: 'cost_minimization' },
+          },
         ],
         expectedImpact: {
           roi: 0.02,
@@ -265,15 +272,15 @@ export class OptimizationRecommendationEngine {
           privacy: -0.02,
           utility: -0.01,
           cost: -0.08,
-          efficiency: 0.03
+          efficiency: 0.03,
         },
         confidence: 0.75,
         frequency: 0.35,
-        successRate: 0.68
-      }
+        successRate: 0.68,
+      },
     ];
 
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       this.patterns.set(pattern.id, pattern);
     });
   }
@@ -297,15 +304,15 @@ export class OptimizationRecommendationEngine {
     }
 
     // Score and rank recommendations
-    const scoredRecommendations = recommendations.map(rec => ({
+    const scoredRecommendations = recommendations.map((rec) => ({
       ...rec,
-      score: this.scoreRecommendation(rec, context)
+      score: this.scoreRecommendation(rec, context),
     }));
 
     // Filter and sort
     const filteredRecommendations = scoredRecommendations
-      .filter(rec => rec.score.overall >= this.config.minImpactThreshold)
-      .filter(rec => rec.score.overall >= this.config.confidenceThreshold)
+      .filter((rec) => rec.score.overall >= this.config.minImpactThreshold)
+      .filter((rec) => rec.score.overall >= this.config.confidenceThreshold)
       .sort((a, b) => b.score.overall - a.score.overall)
       .slice(0, this.config.maxRecommendations);
 
@@ -360,10 +367,13 @@ export class OptimizationRecommendationEngine {
       totalWeight += condition.weight;
     }
 
-    return totalWeight > 0 && (totalScore / totalWeight) >= 0.6; // 60% threshold
+    return totalWeight > 0 && totalScore / totalWeight >= 0.6; // 60% threshold
   }
 
-  private createPatternRecommendation(pattern: OptimizationPattern, context: RecommendationContext): Recommendation | null {
+  private createPatternRecommendation(
+    pattern: OptimizationPattern,
+    context: RecommendationContext
+  ): Recommendation | null {
     const priority = this.calculatePriority(pattern.expectedImpact);
     const implementation = this.createImplementationPlan(pattern, context);
     const risks = this.identifyRisks(pattern, context);
@@ -382,11 +392,11 @@ export class OptimizationRecommendationEngine {
         privacy: pattern.expectedImpact.privacy,
         utility: pattern.expectedImpact.utility,
         cost: pattern.expectedImpact.cost,
-        confidence: pattern.confidence
+        confidence: pattern.confidence,
       },
       implementation,
       risks,
-      alternatives
+      alternatives,
     };
   }
 
@@ -429,8 +439,8 @@ export class OptimizationRecommendationEngine {
 
     // Analyze historical patterns
     const patterns = this.analyzeHistoricalPatterns(context);
-    
-    patterns.forEach(pattern => {
+
+    patterns.forEach((pattern) => {
       if (pattern.confidence > this.config.confidenceThreshold) {
         recommendations.push(this.createMLRecommendation(pattern, context));
       }
@@ -439,20 +449,18 @@ export class OptimizationRecommendationEngine {
     return recommendations;
   }
 
-  private scoreRecommendation(recommendation: Recommendation, context: RecommendationContext): RecommendationScore {
+  private scoreRecommendation(
+    recommendation: Recommendation,
+    context: RecommendationContext
+  ): RecommendationScore {
     const impact = this.calculateImpactScore(recommendation, context);
     const feasibility = this.calculateFeasibilityScore(recommendation, context);
     const risk = this.calculateRiskScore(recommendation, context);
     const cost = this.calculateCostScore(recommendation, context);
     const time = this.calculateTimeScore(recommendation, context);
 
-    const overall = (
-      impact * 0.3 +
-      feasibility * 0.25 +
-      (1 - risk) * 0.2 +
-      (1 - cost) * 0.15 +
-      (1 - time) * 0.1
-    );
+    const overall =
+      impact * 0.3 + feasibility * 0.25 + (1 - risk) * 0.2 + (1 - cost) * 0.15 + (1 - time) * 0.1;
 
     return {
       overall,
@@ -460,18 +468,18 @@ export class OptimizationRecommendationEngine {
       feasibility,
       risk,
       cost,
-      time
+      time,
     };
   }
 
   // Helper methods for creating specific recommendations
   private createROIRecommendation(context: RecommendationContext): Recommendation {
     const lowROICategories = context.currentAllocations
-      .filter(alloc => alloc.expectedROI < 0.1)
+      .filter((alloc) => alloc.expectedROI < 0.1)
       .sort((a, b) => a.expectedROI - b.expectedROI);
 
     const highROICategories = context.currentAllocations
-      .filter(alloc => alloc.expectedROI > 0.15)
+      .filter((alloc) => alloc.expectedROI > 0.15)
       .sort((a, b) => b.expectedROI - a.expectedROI);
 
     return {
@@ -479,7 +487,7 @@ export class OptimizationRecommendationEngine {
       type: 'optimization',
       priority: 'high',
       title: 'Improve ROI Performance',
-      description: `Reallocate budget from low ROI categories (${lowROICategories.map(c => c.category.name).join(', ')}) to high ROI categories (${highROICategories.map(c => c.category.name).join(', ')})`,
+      description: `Reallocate budget from low ROI categories (${lowROICategories.map((c) => c.category.name).join(', ')}) to high ROI categories (${highROICategories.map((c) => c.category.name).join(', ')})`,
       rationale: `Current ROI of ${(context.simulationResult.metrics.totalROI * 100).toFixed(1)}% is below the 15% target. Analysis shows potential for ${(lowROICategories.length * 0.05 * 100).toFixed(1)}% ROI improvement through reallocation.`,
       expectedImpact: {
         roi: 0.06,
@@ -487,7 +495,7 @@ export class OptimizationRecommendationEngine {
         privacy: 0.01,
         utility: 0.03,
         cost: -0.01,
-        confidence: 0.8
+        confidence: 0.8,
       },
       implementation: {
         steps: [
@@ -498,7 +506,7 @@ export class OptimizationRecommendationEngine {
             duration: 7,
             cost: 5000,
             prerequisites: [],
-            deliverables: ['ROI analysis report']
+            deliverables: ['ROI analysis report'],
           },
           {
             id: '2',
@@ -507,7 +515,7 @@ export class OptimizationRecommendationEngine {
             duration: 14,
             cost: 10000,
             prerequisites: ['1'],
-            deliverables: ['Reallocation plan', 'Impact analysis']
+            deliverables: ['Reallocation plan', 'Impact analysis'],
           },
           {
             id: '3',
@@ -516,16 +524,16 @@ export class OptimizationRecommendationEngine {
             duration: 21,
             cost: 15000,
             prerequisites: ['2'],
-            deliverables: ['Updated budget allocation', 'Performance monitoring']
-          }
+            deliverables: ['Updated budget allocation', 'Performance monitoring'],
+          },
         ],
         duration: 42,
         cost: 30000,
         resources: [
           { type: 'human', name: 'Financial Analyst', quantity: 2, unit: 'person', cost: 20000 },
-          { type: 'human', name: 'Budget Manager', quantity: 1, unit: 'person', cost: 10000 }
+          { type: 'human', name: 'Budget Manager', quantity: 1, unit: 'person', cost: 10000 },
         ],
-        dependencies: []
+        dependencies: [],
       },
       risks: [
         {
@@ -536,8 +544,8 @@ export class OptimizationRecommendationEngine {
           impact: 0.4,
           category: 'operational',
           mitigation: 'Phase implementation gradually',
-          owner: 'project-manager'
-        }
+          owner: 'project-manager',
+        },
       ],
       alternatives: [
         {
@@ -552,10 +560,10 @@ export class OptimizationRecommendationEngine {
             privacy: 0.01,
             utility: 0.02,
             cost: -0.005,
-            confidence: 0.9
-          }
-        }
-      ]
+            confidence: 0.9,
+          },
+        },
+      ],
     };
   }
 
@@ -573,7 +581,7 @@ export class OptimizationRecommendationEngine {
         privacy: 0.12,
         utility: 0.01,
         cost: 0.06,
-        confidence: 0.9
+        confidence: 0.9,
       },
       implementation: {
         steps: [
@@ -584,7 +592,7 @@ export class OptimizationRecommendationEngine {
             duration: 30,
             cost: 50000,
             prerequisites: [],
-            deliverables: ['Enhanced monitoring system', 'Alerting framework']
+            deliverables: ['Enhanced monitoring system', 'Alerting framework'],
           },
           {
             id: '2',
@@ -593,19 +601,19 @@ export class OptimizationRecommendationEngine {
             duration: 45,
             cost: 75000,
             prerequisites: ['1'],
-            deliverables: ['Privacy controls', 'Protection framework']
-          }
+            deliverables: ['Privacy controls', 'Protection framework'],
+          },
         ],
         duration: 75,
         cost: 125000,
         resources: [
           { type: 'human', name: 'Privacy Engineer', quantity: 3, unit: 'person', cost: 90000 },
-          { type: 'technical', name: 'Security Tools', quantity: 1, unit: 'suite', cost: 35000 }
+          { type: 'technical', name: 'Security Tools', quantity: 1, unit: 'suite', cost: 35000 },
         ],
-        dependencies: []
+        dependencies: [],
       },
       risks: [],
-      alternatives: []
+      alternatives: [],
     };
   }
 
@@ -623,7 +631,7 @@ export class OptimizationRecommendationEngine {
         privacy: 0.15,
         utility: 0.02,
         cost: 0.03,
-        confidence: 0.75
+        confidence: 0.75,
       },
       implementation: {
         steps: [
@@ -634,19 +642,19 @@ export class OptimizationRecommendationEngine {
             duration: 60,
             cost: 80000,
             prerequisites: [],
-            deliverables: ['Privacy technology suite', 'Implementation plan']
-          }
+            deliverables: ['Privacy technology suite', 'Implementation plan'],
+          },
         ],
         duration: 60,
         cost: 80000,
         resources: [
           { type: 'human', name: 'Privacy Specialist', quantity: 2, unit: 'person', cost: 60000 },
-          { type: 'technical', name: 'Privacy Tools', quantity: 1, unit: 'suite', cost: 20000 }
+          { type: 'technical', name: 'Privacy Tools', quantity: 1, unit: 'suite', cost: 20000 },
         ],
-        dependencies: []
+        dependencies: [],
       },
       risks: [],
-      alternatives: []
+      alternatives: [],
     };
   }
 
@@ -664,7 +672,7 @@ export class OptimizationRecommendationEngine {
         privacy: 0.02,
         utility: 0.04,
         cost: -0.02,
-        confidence: 0.8
+        confidence: 0.8,
       },
       implementation: {
         steps: [
@@ -675,19 +683,19 @@ export class OptimizationRecommendationEngine {
             duration: 30,
             cost: 25000,
             prerequisites: [],
-            deliverables: ['Process analysis', 'Optimization recommendations']
-          }
+            deliverables: ['Process analysis', 'Optimization recommendations'],
+          },
         ],
         duration: 30,
         cost: 25000,
         resources: [
           { type: 'human', name: 'Process Analyst', quantity: 2, unit: 'person', cost: 20000 },
-          { type: 'technical', name: 'Analysis Tools', quantity: 1, unit: 'license', cost: 5000 }
+          { type: 'technical', name: 'Analysis Tools', quantity: 1, unit: 'license', cost: 5000 },
         ],
-        dependencies: []
+        dependencies: [],
       },
       risks: [],
-      alternatives: []
+      alternatives: [],
     };
   }
 
@@ -705,7 +713,7 @@ export class OptimizationRecommendationEngine {
         privacy: 0.1,
         utility: 0.02,
         cost: 0.04,
-        confidence: 0.85
+        confidence: 0.85,
       },
       implementation: {
         steps: [
@@ -716,43 +724,49 @@ export class OptimizationRecommendationEngine {
             duration: 45,
             cost: 60000,
             prerequisites: [],
-            deliverables: ['Enhanced compliance program', 'Monitoring framework']
-          }
+            deliverables: ['Enhanced compliance program', 'Monitoring framework'],
+          },
         ],
         duration: 45,
         cost: 60000,
         resources: [
           { type: 'human', name: 'Compliance Officer', quantity: 2, unit: 'person', cost: 50000 },
-          { type: 'technical', name: 'Compliance Tools', quantity: 1, unit: 'suite', cost: 10000 }
+          { type: 'technical', name: 'Compliance Tools', quantity: 1, unit: 'suite', cost: 10000 },
         ],
-        dependencies: []
+        dependencies: [],
       },
       risks: [],
-      alternatives: []
+      alternatives: [],
     };
   }
 
   // Scoring helper methods
-  private calculateImpactScore(recommendation: Recommendation, context: RecommendationContext): number {
+  private calculateImpactScore(
+    recommendation: Recommendation,
+    context: RecommendationContext
+  ): number {
     const impact = recommendation.expectedImpact;
     const weights = context.objectives.weights || {
       roi: 0.3,
       risk: 0.2,
       privacy: 0.2,
       utility: 0.2,
-      cost: 0.1
+      cost: 0.1,
     };
 
     return (
-      (impact.roi * weights.roi) +
-      ((-impact.risk) * weights.risk) +
-      (impact.privacy * weights.privacy) +
-      (impact.utility * weights.utility) +
-      ((-impact.cost) * weights.cost)
+      impact.roi * weights.roi +
+      -impact.risk * weights.risk +
+      impact.privacy * weights.privacy +
+      impact.utility * weights.utility +
+      -impact.cost * weights.cost
     );
   }
 
-  private calculateFeasibilityScore(recommendation: Recommendation, context: RecommendationContext): number {
+  private calculateFeasibilityScore(
+    recommendation: Recommendation,
+    context: RecommendationContext
+  ): number {
     let feasibility = 0.8; // Base feasibility
 
     // Adjust based on implementation complexity
@@ -761,7 +775,9 @@ export class OptimizationRecommendationEngine {
     if (implementationComplexity > 5) feasibility -= 0.1;
 
     // Adjust based on cost
-    const costRatio = recommendation.implementation.cost / context.currentAllocations.reduce((sum, a) => sum + a.amount, 0);
+    const costRatio =
+      recommendation.implementation.cost /
+      context.currentAllocations.reduce((sum, a) => sum + a.amount, 0);
     if (costRatio > 0.1) feasibility -= 0.1;
     if (costRatio > 0.2) feasibility -= 0.1;
 
@@ -773,16 +789,26 @@ export class OptimizationRecommendationEngine {
     return Math.max(0, Math.min(1, feasibility));
   }
 
-  private calculateRiskScore(recommendation: Recommendation, context: RecommendationContext): number {
+  private calculateRiskScore(
+    recommendation: Recommendation,
+    _context: RecommendationContext
+  ): number {
     if (recommendation.risks.length === 0) return 0.1; // Low base risk
 
-    const avgProbability = recommendation.risks.reduce((sum, risk) => sum + risk.probability, 0) / recommendation.risks.length;
-    const avgImpact = recommendation.risks.reduce((sum, risk) => sum + risk.impact, 0) / recommendation.risks.length;
+    const avgProbability =
+      recommendation.risks.reduce((sum, risk) => sum + risk.probability, 0) /
+      recommendation.risks.length;
+    const avgImpact =
+      recommendation.risks.reduce((sum, risk) => sum + risk.impact, 0) /
+      recommendation.risks.length;
 
     return avgProbability * avgImpact;
   }
 
-  private calculateCostScore(recommendation: Recommendation, context: RecommendationContext): number {
+  private calculateCostScore(
+    recommendation: Recommendation,
+    context: RecommendationContext
+  ): number {
     const totalBudget = context.currentAllocations.reduce((sum, a) => sum + a.amount, 0);
     const costRatio = recommendation.implementation.cost / totalBudget;
 
@@ -792,9 +818,12 @@ export class OptimizationRecommendationEngine {
     return 0.9; // Very high cost
   }
 
-  private calculateTimeScore(recommendation: Recommendation, context: RecommendationContext): number {
+  private calculateTimeScore(
+    recommendation: Recommendation,
+    _context: RecommendationContext
+  ): number {
     const duration = recommendation.implementation.duration;
-    
+
     if (duration < 30) return 0.1; // Quick implementation
     if (duration < 60) return 0.3; // Medium implementation
     if (duration < 90) return 0.6; // Long implementation
@@ -803,15 +832,22 @@ export class OptimizationRecommendationEngine {
 
   // Additional helper methods
   private calculatePriority(impact: PatternImpact): 'low' | 'medium' | 'high' | 'critical' {
-    const totalImpact = Math.abs(impact.roi) + Math.abs(impact.risk) + Math.abs(impact.privacy) + Math.abs(impact.utility);
-    
+    const totalImpact =
+      Math.abs(impact.roi) +
+      Math.abs(impact.risk) +
+      Math.abs(impact.privacy) +
+      Math.abs(impact.utility);
+
     if (totalImpact > 0.3) return 'critical';
     if (totalImpact > 0.2) return 'high';
     if (totalImpact > 0.1) return 'medium';
     return 'low';
   }
 
-  private createImplementationPlan(pattern: OptimizationPattern, context: RecommendationContext): any {
+  private createImplementationPlan(
+    pattern: OptimizationPattern,
+    _context: RecommendationContext
+  ): any {
     const steps = pattern.actions.map((action, index) => ({
       id: `step-${index + 1}`,
       name: `Execute ${action.type} for ${action.target}`,
@@ -819,7 +855,7 @@ export class OptimizationRecommendationEngine {
       duration: 14, // Default 2 weeks per action
       cost: 25000, // Default cost
       prerequisites: index > 0 ? [`step-${index}`] : [],
-      deliverables: [`${action.type} completion report`]
+      deliverables: [`${action.type} completion report`],
     }));
 
     return {
@@ -827,14 +863,26 @@ export class OptimizationRecommendationEngine {
       duration: steps.length * 14,
       cost: steps.length * 25000,
       resources: [
-        { type: 'human', name: 'Privacy Analyst', quantity: 2, unit: 'person', cost: steps.length * 15000 },
-        { type: 'technical', name: 'Analysis Tools', quantity: 1, unit: 'license', cost: steps.length * 10000 }
+        {
+          type: 'human',
+          name: 'Privacy Analyst',
+          quantity: 2,
+          unit: 'person',
+          cost: steps.length * 15000,
+        },
+        {
+          type: 'technical',
+          name: 'Analysis Tools',
+          quantity: 1,
+          unit: 'license',
+          cost: steps.length * 10000,
+        },
       ],
-      dependencies: []
+      dependencies: [],
     };
   }
 
-  private identifyRisks(pattern: OptimizationPattern, context: RecommendationContext): any[] {
+  private identifyRisks(pattern: OptimizationPattern, _context: RecommendationContext): any[] {
     const risks: any[] = [];
 
     if (pattern.category === 'reallocation') {
@@ -846,7 +894,7 @@ export class OptimizationRecommendationEngine {
         impact: 0.4,
         category: 'operational',
         mitigation: 'Phase implementation gradually',
-        owner: 'budget-manager'
+        owner: 'budget-manager',
       });
     }
 
@@ -859,14 +907,17 @@ export class OptimizationRecommendationEngine {
         impact: 0.3,
         category: 'financial',
         mitigation: 'Include contingency budget',
-        owner: 'finance-team'
+        owner: 'finance-team',
       });
     }
 
     return risks;
   }
 
-  private generateAlternatives(pattern: OptimizationPattern, context: RecommendationContext): any[] {
+  private generateAlternatives(
+    pattern: OptimizationPattern,
+    _context: RecommendationContext
+  ): any[] {
     const alternatives: any[] = [];
 
     // Generate a conservative alternative
@@ -882,8 +933,8 @@ export class OptimizationRecommendationEngine {
         privacy: pattern.expectedImpact.privacy * 0.7,
         utility: pattern.expectedImpact.utility * 0.7,
         cost: pattern.expectedImpact.cost * 0.7,
-        confidence: pattern.confidence * 1.1
-      }
+        confidence: pattern.confidence * 1.1,
+      },
     });
 
     return alternatives;
@@ -891,21 +942,27 @@ export class OptimizationRecommendationEngine {
 
   private generateRationale(pattern: OptimizationPattern, context: RecommendationContext): string {
     const metrics = context.simulationResult.metrics;
-    const matchingConditions = pattern.conditions.filter(condition => {
+    const matchingConditions = pattern.conditions.filter((condition) => {
       const metricValue = (metrics as any)[condition.metric];
       if (metricValue === undefined) return false;
 
       switch (condition.operator) {
-        case 'gt': return metricValue > condition.value;
-        case 'gte': return metricValue >= condition.value;
-        case 'lt': return metricValue < condition.value;
-        case 'lte': return metricValue <= condition.value;
-        case 'eq': return metricValue === condition.value;
-        default: return false;
+        case 'gt':
+          return metricValue > condition.value;
+        case 'gte':
+          return metricValue >= condition.value;
+        case 'lt':
+          return metricValue < condition.value;
+        case 'lte':
+          return metricValue <= condition.value;
+        case 'eq':
+          return metricValue === condition.value;
+        default:
+          return false;
       }
     });
 
-    const conditionDescriptions = matchingConditions.map(condition => {
+    const conditionDescriptions = matchingConditions.map((condition) => {
       const metricValue = (metrics as any)[condition.metric];
       return `${condition.metric} is ${metricValue.toFixed(2)} (${condition.operator} ${condition.value})`;
     });
@@ -913,7 +970,7 @@ export class OptimizationRecommendationEngine {
     return `Based on analysis: ${conditionDescriptions.join(', ')}. This pattern has a success rate of ${(pattern.successRate * 100).toFixed(1)}% and confidence level of ${(pattern.confidence * 100).toFixed(1)}%.`;
   }
 
-  private analyzeHistoricalPatterns(context: RecommendationContext): any[] {
+  private analyzeHistoricalPatterns(_context: RecommendationContext): any[] {
     // Simplified historical pattern analysis
     // In a real implementation, this would use more sophisticated ML techniques
     const patterns: any[] = [];
@@ -924,15 +981,17 @@ export class OptimizationRecommendationEngine {
       const olderData = this.historicalData.slice(-10, -5);
 
       // Compare recent vs older performance
-      const recentAvgROI = recentData.reduce((sum, d) => sum + d.metrics.totalROI, 0) / recentData.length;
-      const olderAvgROI = olderData.reduce((sum, d) => sum + d.metrics.totalROI, 0) / olderData.length;
+      const recentAvgROI =
+        recentData.reduce((sum, d) => sum + d.metrics.totalROI, 0) / recentData.length;
+      const olderAvgROI =
+        olderData.reduce((sum, d) => sum + d.metrics.totalROI, 0) / olderData.length;
 
       if (recentAvgROI < olderAvgROI) {
         patterns.push({
           type: 'declining_roi',
           description: 'ROI has been declining in recent periods',
           confidence: 0.8,
-          recommendation: 'Focus on ROI improvement strategies'
+          recommendation: 'Focus on ROI improvement strategies',
         });
       }
     }
@@ -940,7 +999,7 @@ export class OptimizationRecommendationEngine {
     return patterns;
   }
 
-  private createMLRecommendation(pattern: any, context: RecommendationContext): Recommendation {
+  private createMLRecommendation(pattern: any, _context: RecommendationContext): Recommendation {
     return {
       id: `rec-ml-${Date.now()}`,
       type: 'optimization',
@@ -954,7 +1013,7 @@ export class OptimizationRecommendationEngine {
         privacy: 0.03,
         utility: 0.04,
         cost: 0.01,
-        confidence: pattern.confidence
+        confidence: pattern.confidence,
       },
       implementation: {
         steps: [
@@ -965,19 +1024,19 @@ export class OptimizationRecommendationEngine {
             duration: 30,
             cost: 40000,
             prerequisites: [],
-            deliverables: ['ML implementation', 'Performance monitoring']
-          }
+            deliverables: ['ML implementation', 'Performance monitoring'],
+          },
         ],
         duration: 30,
         cost: 40000,
         resources: [
           { type: 'human', name: 'Data Scientist', quantity: 1, unit: 'person', cost: 30000 },
-          { type: 'technical', name: 'ML Tools', quantity: 1, unit: 'license', cost: 10000 }
+          { type: 'technical', name: 'ML Tools', quantity: 1, unit: 'license', cost: 10000 },
         ],
-        dependencies: []
+        dependencies: [],
       },
       risks: [],
-      alternatives: []
+      alternatives: [],
     };
   }
 

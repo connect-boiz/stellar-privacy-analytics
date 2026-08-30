@@ -1,17 +1,17 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 
-import { ComplianceRule } from './entities/compliance-rule.entity';
-import { Violation } from './entities/violation.entity';
-import { ComplianceScan } from './entities/compliance-scan.entity';
+import { ComplianceRule } from "./entities/compliance-rule.entity";
+import { Violation } from "./entities/violation.entity";
+import { ComplianceScan } from "./entities/compliance-scan.entity";
 
-import { RuleExecutor } from './rules-engine/rule.executor';
-import { ScoreService } from './services/score.service';
-import { AlertService } from './services/alert.service';
+import { RuleExecutor } from "./rules-engine/rule.executor";
+import { ScoreService } from "./services/score.service";
+import { AlertService } from "./services/alert.service";
 
-@Processor('compliance-queue')
+@Processor("compliance-queue")
 export class ComplianceWorker extends WorkerHost {
   constructor(
     @InjectRepository(ComplianceRule)
@@ -35,7 +35,7 @@ export class ComplianceWorker extends WorkerHost {
       where: { regulation: job.data.regulation, active: true },
     });
 
-    let allViolations: Violation[] = [];
+    const allViolations: Violation[] = [];
 
     for (const rule of rules) {
       const violations = await this.ruleExecutor.run(rule);
@@ -49,7 +49,7 @@ export class ComplianceWorker extends WorkerHost {
     const scan = await this.scanRepo.save({
       regulation: job.data.regulation,
       score,
-      status: score > 80 ? 'passed' : 'failed',
+      status: score > 80 ? "passed" : "failed",
     });
 
     await this.alertService.send(allViolations);

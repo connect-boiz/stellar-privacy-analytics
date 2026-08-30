@@ -16,8 +16,13 @@ services:
       - ./backend/database/migrations:/docker-entrypoint-initdb.d
     networks:
       - stellar-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stellar -d stellar_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Redis Cache
+  # Redis Cache and Service Discovery
   redis:
     image: redis:7-alpine
     container_name: stellar-redis
@@ -25,8 +30,15 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
     networks:
       - stellar-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Backend API
   backend:
@@ -38,16 +50,51 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://stellar:password@postgres:5432/stellar_db
       - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=backend
+      - API_PORT=3001
+      - METRICS_PORT=9090
+      - AWS_REGION=us-east-1
     ports:
       - "3001:3001"
+      - "9090:9090"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
     networks:
       - stellar-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Service Discovery Dashboard
+  service-discovery-dashboard:
+    build:
+      context: ./service-discovery-dashboard
+      dockerfile: Dockerfile
+    container_name: stellar-service-discovery-dashboard
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - API_URL=http://backend:3001
+    ports:
+      - "3003:3000"
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - stellar-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Frontend Application
   frontend:
