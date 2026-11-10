@@ -4,10 +4,10 @@
   "description": "Service Discovery Dashboard for Stellar Privacy Analytics",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "node init && vite",
+    "build": "node init && vite build",
     "preview": "vite preview",
-    "start": "serve -s dist -l 3000",
+    "start": "node init && serve -s dist -l 3000",
     "lint": "echo 'No linter configured'",
     "type-check": "echo 'No type-check configured'",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json,html}\"",

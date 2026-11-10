@@ -4,7 +4,7 @@
   "description": "Stellar blockchain smart contracts for privacy-preserving analytics",
   "main": "index.js",
   "scripts": {
-    "build": "cargo build --target wasm32-unknown-unknown --release",
+    "build": "node init && cargo build --target wasm32-unknown-unknown --release",
     "compile": "cargo build --target wasm32-unknown-unknown --release",
     "deploy:testnet": "npm run build && ts-node scripts/deploy.ts testnet",
     "deploy:mainnet": "npm run build && ts-node scripts/deploy.ts mainnet",
@@ -15,7 +15,7 @@
     "test:ts": "echo 'TypeScript unit tests skipped: Soroban contracts are tested via cargo test (Rust). TS tests are aspirational and require Rust-to-TS bindings.'",
     "lint": "eslint test/**/*.ts scripts/**/*.ts",
     "lint:fix": "eslint test/**/*.ts scripts/**/*.ts --fix",
-    "type-check": "tsc --noEmit --project tsconfig.ci.json || echo '⚠️  Pre-existing type errors detected (non-blocking in CI)'",
+    "type-check": "tsc --noEmit --project tsconfig.ci.json || echo '\u26a0\ufe0f  Pre-existing type errors detected (non-blocking in CI)'",
     "format:check": "prettier --check \"test/**/*.ts\" \"scripts/**/*.ts\"",
     "format": "prettier --write \"test/**/*.ts\" \"scripts/**/*.ts\"",
     "simulate": "soroban contract simulate",

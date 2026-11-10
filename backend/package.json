@@ -4,9 +4,9 @@
   "description": "Privacy-first backend API for Stellar ecosystem",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
-    "build": "tsc --project tsconfig.ci.json",
-    "start": "node dist/index.js",
+    "dev": "node init && nodemon src/index.ts",
+    "build": "node init && tsc --project tsconfig.ci.json",
+    "start": "node init && node dist/index.js",
     "test": "jest --forceExit",
     "test:watch": "jest --watch",
     "test:load": "ts-node src/testing/runLoadTest.ts",
